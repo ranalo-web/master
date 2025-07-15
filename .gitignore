@@ -1,0 +1,13 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/work/FileContentIndex/903cffe2-b516-4e34-8983-8687284e4aad.vsidx
+/.vs/work/v17/DocumentLayout.backup.json
+*.bin
+/Ranalo/.vs/Ranalo/FileContentIndex/09a0fe8e-88c1-4b47-9211-4395fd70bf29.vsidx
+/Ranalo/.vs/Ranalo/FileContentIndex/cf04ae45-d636-4a23-a037-23f7a76288ec.vsidx
+/Ranalo/Ranalo/obj/Debug/net8.0/Ranalo.AssemblyInfo.cs
+/Ranalo/Ranalo/obj/Debug/net8.0/Ranalo.AssemblyInfoInputs.cache
+/Ranalo/Ranalo.Woocommece.Api/obj/Debug/net8.0/Ranalo.Woocommece.Api.AssemblyInfo.cs
+/Ranalo/Ranalo.Woocommece.Api/obj/Debug/net8.0/Ranalo.Woocommece.Api.AssemblyInfoInputs.cache
