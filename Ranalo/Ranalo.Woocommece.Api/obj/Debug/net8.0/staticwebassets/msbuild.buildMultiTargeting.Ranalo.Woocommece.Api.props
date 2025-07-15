@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\Ranalo.Woocommece.Api.props" />
+</Project>

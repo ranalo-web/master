@@ -1,0 +1,130 @@
+﻿@using Ranalo.Models
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model KosePaymentsViewModel
+@{
+	Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="nk-content-body">
+	<div class="nk-block-head nk-block-head-sm">
+		<div class="nk-block-between-md g-4">
+			<div class="nk-block-head-content">
+				<h3 class="nk-block-title page-title">All Payments</h3>
+				<div class="nk-block-des text-soft">
+					<p>Here are all payments from all accounts</p>
+				</div>
+			</div><!-- .nk-block-head-content -->
+			<div class="nk-block-head-content">
+				<ul class="nk-block-tools gx-3">
+					<li><a href="#" class="btn btn-white btn-dim btn-outline-primary"><em class="icon ni ni-reports"></em><span><span class="d-none d-sm-inline-block">Get</span> Invoice</span></a></li>
+				</ul>
+			</div>
+		</div><!-- .nk-block-between -->
+	</div><!-- .nk-block-head -->
+
+	<div class="nk-block">
+			<div class="col-12">
+			<div class="card">
+				<div class="card-body">
+						<form asp-action="Search" asp-controller="Home" method="post">
+							<input name="searchTerm" type="text" class="form-control mb-3" placeholder="Search...">
+							<button type="submit" class="btn btn-primary">Search</button>
+					</form>
+				</div>
+				</div>
+			</div>
+		</div>
+	<div class="card card-bordered card-preview">
+		<div class="card-inner">
+					<div class="card-header">
+
+				<h5 class="overline-title title">Payments - Page @Model.CurrentPage of @Model.TotalPages</h5>
+					</div>
+			<table class="table table-hover">
+						<thead>
+							<tr>
+						<th scope="col">AccountNo</th>
+								<th scope="col">Mpesa Code</th>
+								<th scope="col">Amount</th>
+								<th scope="col">Payment Date</th>
+							</tr>
+						</thead>
+						<tbody>
+							@{
+								foreach (var order in Model.Payments)
+								{
+									<tr>
+								<th scope="row">@order.AccountNo</th>
+								<td>@order.MpesaCode </td>
+								<td>
+									<div class="tb-tnx-total">
+										<span class="amount">@order.AmountValue</span>
+									</div>
+								</td>
+								<td>@order.PaymentDateValue</td>
+									</tr>
+								}
+							}
+						</tbody>
+					</table>
+				</div>
+		</div>
+
+	<div class="g">
+		<ul class="pagination justify-content-center justify-content-md-start">
+			@if (Model.CurrentPage > 1)
+			{
+				<li class="page-item">
+					<a class="page-link" href="/allpayments?page=@(Model.CurrentPage - 1)">Prev</a>
+				</li>
+			}
+
+			@{
+				var maxVisiblePages = 5;
+				var startPage = Math.Max(1, Model.CurrentPage - 2);
+				var endPage = Math.Min(Model.TotalPages, startPage + maxVisiblePages - 1);
+				if (endPage - startPage < maxVisiblePages - 1)
+				{
+					startPage = Math.Max(1, endPage - maxVisiblePages + 1);
+				}
+			}
+
+			@if (startPage > 1)
+			{
+				<li class="page-item">
+					<a class="page-link" href="/allpayments?page=1">1</a>
+				</li>
+				<li class="page-item">
+					<span class="page-link"><em class="icon ni ni-more-h"></em></span>
+				</li>
+			}
+
+			@for (int i = startPage; i <= endPage; i++)
+			{
+				<li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+					<a class="page-link" href="/allpayments?page=@i">@i</a>
+				</li>
+			}
+
+			@if (endPage < Model.TotalPages)
+			{
+				<li class="page-item">
+					<span class="page-link"><em class="icon ni ni-more-h"></em></span>
+				</li>
+				<li class="page-item">
+					<a class="page-link" href="/allpayments?page=@Model.TotalPages">@Model.TotalPages</a>
+				</li>
+			}
+
+			@if (Model.CurrentPage < Model.TotalPages)
+			{
+				<li class="page-item">
+					<a class="page-link" href="/allpayments?page=@(Model.CurrentPage + 1)">Next</a>
+				</li>
+			}
+		</ul>
+	</div>
+	</div>
+

@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "Ranalo\\Ranalo.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

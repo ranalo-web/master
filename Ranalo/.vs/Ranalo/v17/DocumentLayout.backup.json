@@ -1,0 +1,1293 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\work\\ranalo\\Ranalo\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\views\\login\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\views\\login\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\controllers\\logincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\controllers\\logincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\pages\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\pages\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\pages\\shared\\_loginlayout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\pages\\shared\\_loginlayout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\views\\home\\allpayments.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\views\\home\\allpayments.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\views\\login\\signup.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\views\\login\\signup.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\services\\applicationreportservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\services\\applicationreportservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\controllers\\customercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\controllers\\customercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\controllers\\approvercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\controllers\\approvercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\views\\approver\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\views\\approver\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\views\\customer\\customerdetails.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\views\\customer\\customerdetails.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\models\\customerdetails.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\models\\customerdetails.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\models\\accountsummary.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\models\\accountsummary.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\services\\syncservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\services\\syncservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\datastore\\applicationreportrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\datastore\\applicationreportrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\datastore\\iapplicationreportrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\datastore\\iapplicationreportrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\models\\awaitingapprovalviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\models\\awaitingapprovalviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\services\\woocommerceclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\services\\woocommerceclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\models\\paymentssummarytotals.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\models\\paymentssummarytotals.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\models\\imagesmetadata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\models\\imagesmetadata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\services\\iapplicationreportservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\services\\iapplicationreportservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\datastore\\wooorderrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\datastore\\wooorderrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\datastore\\repository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\datastore\\repository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\services\\paymentsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\services\\paymentsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\datastore\\product.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\datastore\\product.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\models\\awaitingapprovaldto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\models\\awaitingapprovaldto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\datastore\\wooorderproductrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\datastore\\wooorderproductrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\models\\imagesmetadata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\models\\imagesmetadata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\datastore\\iwooorderproductrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\datastore\\iwooorderproductrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\services\\isyncservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\services\\isyncservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\models\\wooorder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\models\\wooorder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\services\\iuserservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\services\\iuserservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\services\\userservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\services\\userservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\datastore\\irepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\datastore\\irepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\datastore\\datamodels\\users.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\datastore\\datamodels\\users.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\pages\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\pages\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\models\\kosepaymentsviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\models\\kosepaymentsviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\datastore\\dealer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\datastore\\dealer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\datastore\\role.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\datastore\\role.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\ranalo.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\ranalo.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\datastore\\iwooorderrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\datastore\\iwooorderrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\datastore\\synclogsrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\datastore\\synclogsrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\services\\paymentsummaryprocessor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\services\\paymentsummaryprocessor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\controllers\\cookiehelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\controllers\\cookiehelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\views\\home\\paymentsummary.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\views\\home\\paymentsummary.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\configuration\\loadusersettingsfromcookieattribute.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\configuration\\loadusersettingsfromcookieattribute.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\services\\datatableconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\services\\datatableconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\datastore\\device.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\datastore\\device.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\models\\device.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\models\\device.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\views\\home\\orphanedpayments.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\views\\home\\orphanedpayments.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\datastore\\isynclogsrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\datastore\\isynclogsrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\datastore\\kosepaymentsrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\datastore\\kosepaymentsrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\datastore\\ikosepaymentsrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\datastore\\ikosepaymentsrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\ranalo.woocommece.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\ranalo.woocommece.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\models\\syncpaymentslog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\models\\syncpaymentslog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\models\\synctype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\models\\synctype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\models\\syncstatus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\models\\syncstatus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\models\\orderproduct.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\models\\orderproduct.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\controllers\\valuescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\controllers\\valuescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\models\\datasynclog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\models\\datasynclog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|c:\\work\\ranalo\\ranalo\\ranalo.woocommece.api\\models\\order.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A89A918F-C0B0-4FDC-8B57-6D4E72924085}|Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj|solutionrelative:ranalo.woocommece.api\\models\\order.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\pages\\shared\\_layout.cshtml.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\pages\\shared\\_layout.cshtml.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\models\\loginmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\models\\loginmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\pages\\_viewimports.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\pages\\_viewimports.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\pages\\_viewstart.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\pages\\_viewstart.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\views\\login.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\views\\login.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\views\\logout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\views\\logout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\_viewimports.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\_viewimports.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|c:\\work\\ranalo\\ranalo\\ranalo\\pages\\index.cshtml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{413FE523-6D1E-4B29-8374-5BD17A06CC80}|Ranalo\\Ranalo.csproj|solutionrelative:ranalo\\pages\\index.cshtml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:133:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Login\\Index.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Views\\Login\\Index.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Login\\Index.cshtml",
+              "RelativeToolTip": "Ranalo\\Views\\Login\\Index.cshtml",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAA8AAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-07-15T15:06:14.623Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "_Layout.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\Shared\\_Layout.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Pages\\Shared\\_Layout.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\Shared\\_Layout.cshtml",
+              "RelativeToolTip": "Ranalo\\Pages\\Shared\\_Layout.cshtml",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAQwA0AAABGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-28T22:01:01.795Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "CustomerDetails.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Customer\\CustomerDetails.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Views\\Customer\\CustomerDetails.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Customer\\CustomerDetails.cshtml",
+              "RelativeToolTip": "Ranalo\\Views\\Customer\\CustomerDetails.cshtml",
+              "ViewState": "AgIAACEAAAAAAAAAAAAAADQAAAAeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-07-10T23:05:15.875Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "LoginController.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Controllers\\LoginController.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Controllers\\LoginController.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Controllers\\LoginController.cs",
+              "RelativeToolTip": "Ranalo\\Controllers\\LoginController.cs",
+              "ViewState": "AgIAAFUAAAAAAAAAAAD4v1oAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-28T22:30:18.386Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Signup.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Login\\Signup.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Views\\Login\\Signup.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Login\\Signup.cshtml",
+              "RelativeToolTip": "Ranalo\\Views\\Login\\Signup.cshtml",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAAADQAAAALAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-29T11:22:02.965Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "CustomerController.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Controllers\\CustomerController.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Controllers\\CustomerController.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Controllers\\CustomerController.cs",
+              "RelativeToolTip": "Ranalo\\Controllers\\CustomerController.cs",
+              "ViewState": "AgIAABoAAAAAAAAAAAAcwCkAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-11T00:00:30.793Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "_LoginLayout.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\Shared\\_LoginLayout.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Pages\\Shared\\_LoginLayout.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\Shared\\_LoginLayout.cshtml*",
+              "RelativeToolTip": "Ranalo\\Pages\\Shared\\_LoginLayout.cshtml*",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAABMAAABVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-28T22:13:40.187Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "HomeController.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Controllers\\HomeController.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Controllers\\HomeController.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Controllers\\HomeController.cs",
+              "RelativeToolTip": "Ranalo\\Controllers\\HomeController.cs",
+              "ViewState": "AgIAAHMAAAAAAAAAAAAqwIEAAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-29T07:30:16.346Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Approver\\Index.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Views\\Approver\\Index.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Approver\\Index.cshtml",
+              "RelativeToolTip": "Ranalo\\Views\\Approver\\Index.cshtml",
+              "ViewState": "AgIAAB4AAAAAAAAAAAAqwDwAAABNAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-07-10T09:15:41.231Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "AllPayments.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Home\\AllPayments.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Views\\Home\\AllPayments.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Home\\AllPayments.cshtml",
+              "RelativeToolTip": "Ranalo\\Views\\Home\\AllPayments.cshtml",
+              "ViewState": "AgIAABsAAAAAAAAAAAAAACcAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-06-23T09:23:20.354Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ApplicationReportService.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\ApplicationReportService.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Services\\ApplicationReportService.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\ApplicationReportService.cs",
+              "RelativeToolTip": "Ranalo\\Services\\ApplicationReportService.cs",
+              "ViewState": "AgIAADMAAAAAAAAAAAAtwGsAAABZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-13T10:28:19.55Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "ApproverController.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Controllers\\ApproverController.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Controllers\\ApproverController.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Controllers\\ApproverController.cs",
+              "RelativeToolTip": "Ranalo\\Controllers\\ApproverController.cs",
+              "ViewState": "AgIAABEAAAAAAAAAAAAqwBkAAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-10T09:42:44.566Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "AccountSummary.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\AccountSummary.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Models\\AccountSummary.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\AccountSummary.cs",
+              "RelativeToolTip": "Ranalo\\Models\\AccountSummary.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-11T16:01:41.063Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "CustomerDetails.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\CustomerDetails.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Models\\CustomerDetails.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\CustomerDetails.cs",
+              "RelativeToolTip": "Ranalo\\Models\\CustomerDetails.cs",
+              "ViewState": "AgIAAAwAAAAAAAAAAAA9wBcAAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-10T23:07:13.184Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "HomeController.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Controllers\\HomeController.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Controllers\\HomeController.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Controllers\\HomeController.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Controllers\\HomeController.cs",
+              "ViewState": "AgIAAIwAAAAAAAAAAAAAAKAAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T14:39:43.441Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "SyncService.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Services\\SyncService.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Services\\SyncService.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Services\\SyncService.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Services\\SyncService.cs",
+              "ViewState": "AgIAAEEAAAAAAAAAAAAWwEoAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T14:54:51.959Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "IApplicationReportRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\IApplicationReportRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo\\DataStore\\IApplicationReportRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\IApplicationReportRepository.cs",
+              "RelativeToolTip": "Ranalo\\DataStore\\IApplicationReportRepository.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAADwvxQAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-18T12:45:14.019Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "ApplicationReportRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\ApplicationReportRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo\\DataStore\\ApplicationReportRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\ApplicationReportRepository.cs",
+              "RelativeToolTip": "Ranalo\\DataStore\\ApplicationReportRepository.cs",
+              "ViewState": "AgIAAAsBAAAAAAAAAAAgwB0BAABBAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-13T10:31:10.15Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "AwaitingApprovalViewModel.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\AwaitingApprovalViewModel.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Models\\AwaitingApprovalViewModel.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\AwaitingApprovalViewModel.cs",
+              "RelativeToolTip": "Ranalo\\Models\\AwaitingApprovalViewModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-02T10:27:04.277Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "WooCommerceClient.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\WooCommerceClient.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Services\\WooCommerceClient.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\WooCommerceClient.cs",
+              "RelativeToolTip": "Ranalo\\Services\\WooCommerceClient.cs",
+              "ViewState": "AgIAACQAAAAAAAAAAAAAAC4AAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-11T23:22:58.264Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "PaymentsSummaryTotals.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\PaymentsSummaryTotals.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Models\\PaymentsSummaryTotals.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\PaymentsSummaryTotals.cs",
+              "RelativeToolTip": "Ranalo\\Models\\PaymentsSummaryTotals.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-18T13:29:27.247Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "ImagesMetadata.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\ImagesMetadata.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Models\\ImagesMetadata.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\ImagesMetadata.cs",
+              "RelativeToolTip": "Ranalo\\Models\\ImagesMetadata.cs",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAAAAIAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-10T16:30:40.16Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "IApplicationReportService.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\IApplicationReportService.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Services\\IApplicationReportService.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\IApplicationReportService.cs",
+              "RelativeToolTip": "Ranalo\\Services\\IApplicationReportService.cs",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAowBgAAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-18T12:37:38.944Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "Repository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\Repository.cs",
+              "RelativeDocumentMoniker": "Ranalo\\DataStore\\Repository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\Repository.cs",
+              "RelativeToolTip": "Ranalo\\DataStore\\Repository.cs",
+              "ViewState": "AgIAADIAAAAAAAAAAAAqwAYAAAApAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-29T08:00:15.676Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "WooOrderRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\WooOrderRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\DataStore\\WooOrderRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\WooOrderRepository.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\DataStore\\WooOrderRepository.cs",
+              "ViewState": "AgIAAEIAAAAAAAAAAAAcwFgAAAA2AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T14:59:35.472Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "PaymentsService.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\PaymentsService.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Services\\PaymentsService.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\PaymentsService.cs",
+              "RelativeToolTip": "Ranalo\\Services\\PaymentsService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEMAAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-23T09:45:05.332Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "Product.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\Product.cs",
+              "RelativeDocumentMoniker": "Ranalo\\DataStore\\Product.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\Product.cs",
+              "RelativeToolTip": "Ranalo\\DataStore\\Product.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-29T23:03:57.462Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "AwaitingApprovalDto.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\AwaitingApprovalDto.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Models\\AwaitingApprovalDto.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\AwaitingApprovalDto.cs",
+              "RelativeToolTip": "Ranalo\\Models\\AwaitingApprovalDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-10T23:25:01.661Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "ImagesMetadata.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\ImagesMetadata.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Models\\ImagesMetadata.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\ImagesMetadata.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Models\\ImagesMetadata.cs",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAAAAsAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-10T16:34:12.221Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "ISyncService.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Services\\ISyncService.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Services\\ISyncService.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Services\\ISyncService.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Services\\ISyncService.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAowBIAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T22:49:14.533Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "WooOrderProductRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\WooOrderProductRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\DataStore\\WooOrderProductRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\WooOrderProductRepository.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\DataStore\\WooOrderProductRepository.cs",
+              "ViewState": "AgIAADYAAAAAAAAAAAAYwEsAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T16:22:22.979Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "WooOrder.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\WooOrder.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Models\\WooOrder.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\WooOrder.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Models\\WooOrder.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAIAywBcAAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T14:24:18.729Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "IWooOrderProductRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\IWooOrderProductRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\DataStore\\IWooOrderProductRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\IWooOrderProductRepository.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\DataStore\\IWooOrderProductRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAqwAoAAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-10T16:49:26.884Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 34,
+              "Title": "UserService.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\UserService.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Services\\UserService.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\UserService.cs",
+              "RelativeToolTip": "Ranalo\\Services\\UserService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-28T23:28:54.039Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 36,
+              "Title": "Users.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\DataModels\\Users.cs",
+              "RelativeDocumentMoniker": "Ranalo\\DataStore\\DataModels\\Users.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\DataModels\\Users.cs",
+              "RelativeToolTip": "Ranalo\\DataStore\\DataModels\\Users.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAqwAoAAAAeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-29T07:57:51.718Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 35,
+              "Title": "IRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\IRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo\\DataStore\\IRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\IRepository.cs",
+              "RelativeToolTip": "Ranalo\\DataStore\\IRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-29T08:03:05.301Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
+              "Title": "IUserService.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\IUserService.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Services\\IUserService.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\IUserService.cs",
+              "RelativeToolTip": "Ranalo\\Services\\IUserService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-29T22:26:18.721Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 37,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Program.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Program.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Program.cs",
+              "RelativeToolTip": "Ranalo\\Program.cs",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAMwBAAAAA2AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-28T22:45:37.292Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 39,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\Index.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Pages\\Index.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\Index.cshtml",
+              "RelativeToolTip": "Ranalo\\Pages\\Index.cshtml",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAABIAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-28T22:00:54.052Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 38,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Program.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Program.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Program.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABsAAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-10T15:15:01.184Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 40,
+              "Title": "KosePaymentsViewModel.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\KosePaymentsViewModel.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Models\\KosePaymentsViewModel.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\KosePaymentsViewModel.cs",
+              "RelativeToolTip": "Ranalo\\Models\\KosePaymentsViewModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-02T10:09:58.69Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 41,
+              "Title": "Dealer.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\Dealer.cs",
+              "RelativeDocumentMoniker": "Ranalo\\DataStore\\Dealer.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\Dealer.cs",
+              "RelativeToolTip": "Ranalo\\DataStore\\Dealer.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAAAAsAAAAnAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-29T08:21:23.486Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 42,
+              "Title": "Role.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\Role.cs",
+              "RelativeDocumentMoniker": "Ranalo\\DataStore\\Role.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\Role.cs",
+              "RelativeToolTip": "Ranalo\\DataStore\\Role.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-29T23:04:26.446Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 43,
+              "Title": "Ranalo.csproj",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Ranalo.csproj",
+              "RelativeDocumentMoniker": "Ranalo\\Ranalo.csproj",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Ranalo.csproj",
+              "RelativeToolTip": "Ranalo\\Ranalo.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-05-29T08:10:13.945Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 46,
+              "Title": "appsettings.Development.json",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\appsettings.Development.json",
+              "RelativeDocumentMoniker": "Ranalo\\appsettings.Development.json",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\appsettings.Development.json",
+              "RelativeToolTip": "Ranalo\\appsettings.Development.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAFAQAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-05-29T08:29:24.38Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 44,
+              "Title": "IWooOrderRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\IWooOrderRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\DataStore\\IWooOrderRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\IWooOrderRepository.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\DataStore\\IWooOrderRepository.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAgAAAAiAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T15:04:59.535Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 45,
+              "Title": "SyncLogsRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\SyncLogsRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\DataStore\\SyncLogsRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\SyncLogsRepository.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\DataStore\\SyncLogsRepository.cs",
+              "ViewState": "AgIAAEsAAAAAAAAAAAAEwFMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T15:09:46.72Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 47,
+              "Title": "PaymentSummaryProcessor.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\PaymentSummaryProcessor.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Services\\PaymentSummaryProcessor.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\PaymentSummaryProcessor.cs",
+              "RelativeToolTip": "Ranalo\\Services\\PaymentSummaryProcessor.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAmwA0AAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-23T09:42:47.666Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 48,
+              "Title": "CookieHelper.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Controllers\\CookieHelper.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Controllers\\CookieHelper.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Controllers\\CookieHelper.cs",
+              "RelativeToolTip": "Ranalo\\Controllers\\CookieHelper.cs",
+              "ViewState": "AgIAABoAAAAAAAAAAAAMwCEAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-26T16:30:51.687Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 49,
+              "Title": "PaymentSummary.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Home\\PaymentSummary.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Views\\Home\\PaymentSummary.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Home\\PaymentSummary.cshtml",
+              "RelativeToolTip": "Ranalo\\Views\\Home\\PaymentSummary.cshtml",
+              "ViewState": "AgIAAAUAAAAAAAAAAAAAAAoAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-06-18T13:42:37.885Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 53,
+              "Title": "Device.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\Device.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Models\\Device.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\Device.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Models\\Device.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAiwJsAAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-13T15:43:44.137Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 52,
+              "Title": "Device.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\Device.cs",
+              "RelativeDocumentMoniker": "Ranalo\\DataStore\\Device.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\DataStore\\Device.cs",
+              "RelativeToolTip": "Ranalo\\DataStore\\Device.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-23T10:42:17.663Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 51,
+              "Title": "DataTableConverter.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\DataTableConverter.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Services\\DataTableConverter.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Services\\DataTableConverter.cs",
+              "RelativeToolTip": "Ranalo\\Services\\DataTableConverter.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAAewFkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-23T09:56:55.525Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 50,
+              "Title": "LoadUserSettingsFromCookieAttribute.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Configuration\\LoadUserSettingsFromCookieAttribute.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Configuration\\LoadUserSettingsFromCookieAttribute.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Configuration\\LoadUserSettingsFromCookieAttribute.cs",
+              "RelativeToolTip": "Ranalo\\Configuration\\LoadUserSettingsFromCookieAttribute.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAUwBgAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-26T17:15:36.162Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 54,
+              "Title": "OrphanedPayments.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Home\\OrphanedPayments.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Views\\Home\\OrphanedPayments.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Home\\OrphanedPayments.cshtml",
+              "RelativeToolTip": "Ranalo\\Views\\Home\\OrphanedPayments.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-06-18T10:40:02.138Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 57,
+              "Title": "IKosePaymentsRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\IKosePaymentsRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\DataStore\\IKosePaymentsRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\IKosePaymentsRepository.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\DataStore\\IKosePaymentsRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAqwA4AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-10T15:45:44.859Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 56,
+              "Title": "KosePaymentsRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\KosePaymentsRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\DataStore\\KosePaymentsRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\KosePaymentsRepository.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\DataStore\\KosePaymentsRepository.cs",
+              "ViewState": "AgIAAJ0AAAAAAAAAAAAkwKcAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-10T15:09:31.371Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 55,
+              "Title": "ISyncLogsRepository.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\ISyncLogsRepository.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\DataStore\\ISyncLogsRepository.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\DataStore\\ISyncLogsRepository.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\DataStore\\ISyncLogsRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAqwAoAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-14T00:49:27.138Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 58,
+              "Title": "Ranalo.Woocommece.Api.csproj",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-06-03T22:49:26.6Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 59,
+              "Title": "appsettings.Development.json",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\appsettings.Development.json",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\appsettings.Development.json",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\appsettings.Development.json",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\appsettings.Development.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAADAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-05-30T10:32:21.228Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 60,
+              "Title": "SyncPaymentsLog.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\SyncPaymentsLog.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Models\\SyncPaymentsLog.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\SyncPaymentsLog.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Models\\SyncPaymentsLog.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-07T22:01:29.709Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 65,
+              "Title": "DataSyncLog.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\DataSyncLog.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Models\\DataSyncLog.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\DataSyncLog.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Models\\DataSyncLog.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T14:30:04.82Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 61,
+              "Title": "SyncType.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\SyncType.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Models\\SyncType.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\SyncType.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Models\\SyncType.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T14:38:11.417Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 64,
+              "Title": "ValuesController.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Controllers\\ValuesController.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Controllers\\ValuesController.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Controllers\\ValuesController.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Controllers\\ValuesController.cs",
+              "ViewState": "AgIAADQAAAAAAAAAAAAqwE0AAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-30T10:37:29.919Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 62,
+              "Title": "SyncStatus.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\SyncStatus.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Models\\SyncStatus.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\SyncStatus.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Models\\SyncStatus.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T14:36:31.436Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 63,
+              "Title": "OrderProduct.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\OrderProduct.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Models\\OrderProduct.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\OrderProduct.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Models\\OrderProduct.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T16:20:32.845Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 66,
+              "Title": "Order.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\Order.cs",
+              "RelativeDocumentMoniker": "Ranalo.Woocommece.Api\\Models\\Order.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Models\\Order.cs",
+              "RelativeToolTip": "Ranalo.Woocommece.Api\\Models\\Order.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-03T22:50:14.448Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 69,
+              "Title": "_ViewImports.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\_ViewImports.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Pages\\_ViewImports.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\_ViewImports.cshtml",
+              "RelativeToolTip": "Ranalo\\Pages\\_ViewImports.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-29T07:33:54.181Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 72,
+              "Title": "Logout.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Logout.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Views\\Logout.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Logout.cshtml",
+              "RelativeToolTip": "Ranalo\\Views\\Logout.cshtml",
+              "ViewState": "AgIAAA0AAAAAAAAAACBjwCMAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-29T07:24:18.749Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 73,
+              "Title": "_ViewImports.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\_ViewImports.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\_ViewImports.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\_ViewImports.cshtml",
+              "RelativeToolTip": "Ranalo\\_ViewImports.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-29T07:12:24.471Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 68,
+              "Title": "LoginModel.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\LoginModel.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Models\\LoginModel.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Models\\LoginModel.cs",
+              "RelativeToolTip": "Ranalo\\Models\\LoginModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-29T07:11:35.191Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 74,
+              "Title": "launchSettings.json",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Properties\\launchSettings.json",
+              "RelativeDocumentMoniker": "Ranalo\\Properties\\launchSettings.json",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Properties\\launchSettings.json",
+              "RelativeToolTip": "Ranalo\\Properties\\launchSettings.json",
+              "ViewState": "AgIAABMAAAAAAAAAACBjwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-05-28T22:19:14.264Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 75,
+              "Title": "Index.cshtml.cs",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\Index.cshtml.cs",
+              "RelativeDocumentMoniker": "Ranalo\\Pages\\Index.cshtml.cs",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\Index.cshtml.cs",
+              "RelativeToolTip": "Ranalo\\Pages\\Index.cshtml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-28T22:16:11.596Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 71,
+              "Title": "Login.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Login.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Views\\Login.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Views\\Login.cshtml",
+              "RelativeToolTip": "Ranalo\\Views\\Login.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADQAAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-28T22:15:46.515Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 67,
+              "Title": "_Layout.cshtml.css",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\Shared\\_Layout.cshtml.css",
+              "RelativeDocumentMoniker": "Ranalo\\Pages\\Shared\\_Layout.cshtml.css",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\Shared\\_Layout.cshtml.css",
+              "RelativeToolTip": "Ranalo\\Pages\\Shared\\_Layout.cshtml.css",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2025-05-28T22:12:23.143Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 70,
+              "Title": "_ViewStart.cshtml",
+              "DocumentMoniker": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\_ViewStart.cshtml",
+              "RelativeDocumentMoniker": "Ranalo\\Pages\\_ViewStart.cshtml",
+              "ToolTip": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Pages\\_ViewStart.cshtml",
+              "RelativeToolTip": "Ranalo\\Pages\\_ViewStart.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-28T22:19:26.417Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

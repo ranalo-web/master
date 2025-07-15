@@ -1,0 +1,436 @@
+﻿@using Ranalo.Models
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model CustomerDetails
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+@functions {
+    private string SetStatusBadge(string status)
+    {
+        var statusClass = "";
+        switch (status)
+        {
+            case "approval-waiting":
+                statusClass = "lead-text text-warning";
+                break;
+            case "cancelled":
+                statusClass = "lead-text text-danger";
+                break;
+            case "rejected":
+                statusClass = "lead-text text-danger";
+                break;
+            case "approved":
+                statusClass = "lead-text text-success";
+                break;
+            default:
+                statusClass = "";
+                break;
+        }
+
+        return statusClass;
+    }
+
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between g-3">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Customer Details</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Customer infomation when the order was made</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/@ViewBag.BackLink" class="btn btn-outline-light bg-white d-none d-sm-inline-flex"><em class="icon ni ni-arrow-left"></em><span>Back</span></a>
+                <a href="/ViewBag.BackLink" class="btn btn-icon btn-outline-light bg-white d-inline-flex d-sm-none"><em class="icon ni ni-arrow-left"></em></a>
+            </div>
+        </div>
+    </div><!-- .nk-block-head -->
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-lg-4 col-xl-4 col-xxl-3">
+                <div class="card card-bordered">
+                    <div class="card-inner-group">
+                        <div class="card-inner">
+                            <div class="user-card user-card-s2">
+                                <div class="user-avatar lg bg-primary">
+                                    <img src="@Model.IdentityImages.FirstOrDefault(x=>x.Key == "photo_of_applicant").Url" alt="">
+                                </div>
+                                <div class="user-info">
+                                    <div class="badge bg-light rounded-pill ucap">Platinam</div>
+                                    <h5>@Model.FirstName @Model.LastName</h5>
+                                    <span class="sub-text">@Model.Email </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner card-inner-sm">
+                            <ul class="btn-toolbar justify-center gx-1">
+                                <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-shield-off"></em></a></li>
+                                <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-mail"></em></a></li>
+                                <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-bookmark"></em></a></li>
+                                <li><a href="#" class="btn btn-trigger btn-icon text-danger"><em class="icon ni ni-na"></em></a></li>
+                            </ul>
+                        </div>
+                        <div class="card-inner">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="profile-stats">
+                                        <span class="amount">23</span>
+                                        <span class="sub-text">Total Order</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="profile-stats">
+                                        <span class="amount">20</span>
+                                        <span class="sub-text">Complete</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="profile-stats">
+                                        <span class="amount">3</span>
+                                        <span class="sub-text">Progress</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- .card-inner -->
+                        <div class="card-inner">
+                            <h6 class="overline-title mb-2">Short Details</h6>
+                            <div class="row g-3">
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">User ID:</span>
+                                    <span>@Model.CustomerId</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Billing Email:</span>
+                                    <span>@Model.Email</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Billing Address:</span>
+                                    <span>@Model.Address1</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Phone:</span>
+                                    <span>@Model.Phone</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">National ID:</span>
+                                    <span>@Model.NationalId</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Order Modified:</span>
+                                    <span>@Model.DateModified</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Status:</span>
+                                    <span class="@SetStatusBadge(Model.Status)">@Model.Status</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Ordered At:</span>
+                                    <span>@Model.DateCreated</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Dealer Ref:</span>
+                                    <span>@Model.DealerRef</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">IMEI:</span>
+                                    <span>@Model.IMEI</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Mpesa Code:</span>
+                                    <span>@Model.MpesaDepositRef</span>
+                                </div>
+                            </div>
+                        </div><!-- .card-inner -->
+                    </div>
+                </div>
+            </div><!-- .col -->
+            <div class="col-lg-8 col-xl-8 col-xxl-9">
+                <div class="card card-bordered">
+                    <div class="card-inner">
+                        <div class="nk-block">
+                            <div class="overline-title-alt mb-2 mt-2">In Account</div>
+                            <div class="profile-balance">
+                                <div class="profile-balance-group gx-4">
+                                    <div class="profile-balance-sub">
+                                        <div class="profile-balance-amount">
+                                            <div class="number">@Model.TotalAmount <small class="currency currency-usd">KES</small></div>
+                                        </div>
+                                        <div class="profile-balance-subtitle">Order Amount</div>
+                                    </div>
+                                   @*  <div class="profile-balance-sub">
+                                        <span class="profile-balance-plus text-soft"><em class="icon ni ni-plus"></em></span>
+                                        <div class="profile-balance-amount">
+                                            <div class="number">1,643</div>
+                                        </div>
+                                        <div class="profile-balance-subtitle">Credit Points</div>
+                                    </div> *@
+                                </div>
+                            </div>
+                        </div>
+                        <div class="nk-block">
+                            <div class="nk-block">
+                                <div class="card card-bordered">
+                                    <div class="card-aside-wrap">
+                                        <div class="card-content">
+                                            <div class="card-inner">
+                                                @if (Model.Summary != null)
+                                                {
+                                                    <div class="nk-block">
+                                                        <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                                            <h5 class="title">Loan Details</h5>
+                                                        </div>
+
+                                                        <div class="row gy-5">
+                                                            <div class="col-md-3 col-lg-2 col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">Loan Amount</span><span> KES @Model.Summary.LoanBalance.ToString("F2") </span></div>
+                                                            </div>
+                                                            <div class="col-md-3 col-lg-2 col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">Deposit</span><span>KES @Model.Summary.Deposit.ToString("F2") </span></div>
+                                                            </div>
+                                                            <div class="col-md-3 col-lg-2  col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">Frequency</span><span>Daily</span></div>
+                                                            </div>
+                                                            <div class="col-md-3 col-lg-2  col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">Duration</span><span>1 year</span></div>
+                                                            </div>
+                                                            <div class="col-md-3 col-lg-2  col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">Start Date</span><span>@Model.Summary.FirstPaymentDate.ToString("dd MMM yyyy")</span></div>
+                                                            </div>
+                                                            <div class="col-md-3 col-lg-2  col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">End Date</span><span>@Model.Summary.ContractEndDate.ToString("dd MMM yyyy")</span></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="nk-divider divider md"></div>
+                                                    <div class="nk-block">
+                                                        <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                                            <h5 class="title">Schedule</h5>
+                                                        </div>
+                                                        <div class="row gy-5">
+                                                            <div class="col-md-2 col-sm-4 col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">Daily</span><span class="amount text-primary">@Model.Summary.Daily.ToString("F2")</span></div>
+                                                            </div>
+                                                            <div class="col-md-2 col-sm-4 col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">Weekely</span><span class="amount text-success">@Model.Summary.Weekly.ToString("F2")</span></div>
+                                                            </div>
+                                                            <div class="col-md-2 col-sm-4 col-12">
+                                                                <div class="profile-stats"><span class="profile-ud-label">Monthly</span><span class="amount text-warning">@Model.Summary.Monthly.ToString("F2")</span></div>
+                                                            </div>
+                                                            <div class="col-md-3 col-sm-4 col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">First Payment</span><span>@Model.Summary.FirstPaymentDate.ToString("dd MMM yyyy")</span></div>
+                                                            </div>
+                                                            <div class="col-md-3 col-sm-4 col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">Last Payment</span><span>@Model.Summary.LastPaymentDate.ToString("dd MMM yyyy")</span></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="nk-divider divider md"></div>
+                                                    <div class="nk-block">
+                                                        <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                                            <h5 class="title">Loan Status</h5>
+                                                        </div>
+                                                        <div class="row gy-5">
+                                                            <div class="col-12 col-md-10 col-lg-8">
+                                                                <div class="profile-stats">
+                                                                    <div class="progress progress-lg">
+                                                                        @{
+                                                                            int percentagePaid = 0;
+                                                                            DateTime today = DateTime.Today;
+
+                                                                            if (today <= Model.Summary.FirstPaymentDate)
+                                                                            {
+                                                                                percentagePaid = 0;
+                                                                            }
+                                                                            else if (today >= Model.Summary.ContractEndDate)
+                                                                            {
+                                                                                percentagePaid = 100;
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                double totalDays = (Model.Summary.ContractEndDate - Model.Summary.FirstPaymentDate).TotalDays;
+                                                                                double elapsedDays = (today - Model.Summary.FirstPaymentDate).TotalDays;
+                                                                                percentagePaid = (int)Math.Round((elapsedDays / totalDays) * 100);
+
+                                                                            }
+                                                                            <div class="progress-bar progress-bar-striped bg-success" data-progress="@percentagePaid" style="width: @percentagePaid %;">@percentagePaid %</div>
+                                                                        }
+                                                                        
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="nk-divider divider md"></div>
+                                                }
+                                                
+                                              @*   <div class="nk-block">
+                                                    <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                                        <h5 class="title"><code>Notice</code></h5>
+                                                    </div>
+                                                    <div class="row gy-5">
+                                                        <div class="col-12">
+                                                            <dt>If you pay your EMI late, you may attract additional charges from your lender. If you make a payment towards your EMI which is after your due date but within your lender's grace period, there is usually an added 'late fee' that you will have to pay alongside your EMI amount.</dt>
+                                                        </div>
+                                                    </div>
+                                                </div> *@
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="nk-block">
+                            <h6 class="lead-text mb-3">Identity Verification</h6>
+                            <div class="row">
+                                <div class="col-xl-12">
+                                    <div class="card card-bordered">
+                                        <div class="chat-profile-group">
+                                            <div class="chat-profile-body collapse show">
+                                                <div class="chat-profile-body-inner">
+                                                    <ul class="chat-profile-media">
+                                                        @foreach (var image in Model.IdentityImages)
+                                                        {
+                                                            <li>
+                                                                <a href="@image.Url" target="_blank">
+                                                                    <img src="@image.Url" class="user-avatar lg rounded" alt="">
+                                                                </a>
+                                                                <span class="sub-text">@image.Key.Replace("_", " ")</span>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- .col -->
+                                @*  
+                                <div class="col-xl-12 col-xxl-6">
+                                    <div class="card card-bordered">
+                                        <div class="card-inner">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="icon-circle icon-circle-lg bg-indigo">
+                                                        <em class="icon ni ni-american-express"></em>
+                                                    </div>
+                                                    <div class="ms-3">
+                                                        <h6 class="lead-text">American Express <span class="text-soft ml-1">**** 4352</span></h6>
+                                                        <span class="sub-text">Expires Feb 2024</span>
+                                                    </div>
+                                                </div>
+                                                <ul class="btn-toolbar justify-center gx-1 me-n1 flex-nowrap">
+                                                    <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-edit"></em></a></li>
+                                                    <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-trash"></em></a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div><!-- .col -->
+                                <div class="col-xl-12 col-xxl-6">
+                                    <div class="card card-bordered">
+                                        <div class="card-inner">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="icon-circle icon-circle-lg bg-orange">
+                                                        <em class="icon ni ni-mc"></em>
+                                                    </div>
+                                                    <div class="ms-3">
+                                                        <h6 class="lead-text">Mastercard <span class="text-soft ml-1">**** 9478</span></h6>
+                                                        <span class="sub-text text-danger">Expired</span>
+                                                    </div>
+                                                </div>
+                                                <ul class="btn-toolbar justify-center gx-1 me-n1 flex-nowrap">
+                                                    <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-edit"></em></a></li>
+                                                    <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-trash"></em></a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div><!-- .col -->
+                                <div class="col-xl-12 col-xxl-6">
+                                    <button class="h-100 w-100 bg-white border border-dashed round-sm p-4 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#add-card">
+                                        <span class="text-soft">Add New Card</span>
+                                    </button>
+                                </div><!-- .col --> *@
+
+
+                            </div><!-- .row -->
+                        </div>
+                        <div class="nk-block">
+                            @if (Model.Status == "approval-waiting")
+                            {
+                                <h6 class="lead-text">Order Approval</h6>
+                                <div class="card card-bordered">
+                                    <div class="card-inner">
+                                        <div class="between-center flex-wrap flex-md-nowrap g-3">
+                                            <div class="media media-center gx-3 wide-xs">
+                                                <div class="media-object">
+                                                    <em class="icon icon-circle icon-circle-lg ni ni-user-check-fill"></em>
+                                                </div>
+                                                <div class="media-content">
+                                                    <p>After checking and verifying customer details, please approve the order.</p>
+                                                </div>
+                                            </div>
+                                            <form action="/approve-order" method="post">
+                                                <div class="nk-block-actions flex-shrink-0">
+                                                    <input name="orderId" type="hidden" value="@Model.OrderID">
+                                                    <button type="submit" class="btn btn-lg btn-success">Approve</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div><!-- .nk-card-inner -->
+                                </div>
+
+                                <!-- .nk-card -->
+                            }
+
+                            @if (Model.Status != "rejected" || Model.Status != "cancelled")
+                            {
+                                <h6 class="lead-text">Reject Order</h6>
+                                <div class="card card-bordered">
+                                    <div class="card-inner">
+                                        <div class="between-center flex-wrap flex-md-nowrap g-3">
+                                            <div class="media media-center gx-3 wide-xs">
+                                                <div class="media-object">
+                                                    <em class="icon icon-circle icon-circle-lg ni ni-user-cross-fill"></em>
+                                                </div>
+                                                <div class="media-content">
+                                                    <p>You can reject an order if it doesnt meet the required checks.</p>
+                                                </div>
+                                            </div>
+                                            <form action="/reject-order" method="post">
+                                                <div class="nk-block-actions flex-shrink-0">
+                                                    <input name="orderId" type="hidden" value="@Model.OrderID">
+                                                    <button type="submit" class="btn btn-lg btn-danger">Reject</button>
+                                                </div>
+                                            </form>
+
+                                        </div>
+                                    </div><!-- .nk-card-inner -->
+                                </div>
+
+                                <!-- .nk-card -->
+                            }
+
+
+
+                            <div class="nk-block-head nk-block-head-sm">
+                                <div class="nk-block-head-content">
+                                    <h6 class="nk-block-title">The application is still under development <a href="#" class="link link-primary ms-auto">Contact Admin</a></h6>
+                                    <div class="nk-block-des">
+                                        <p>Please report any issues you find to the admin.</p>
+                                    </div>
+                                </div>
+                            </div><!-- .nk-block-head -->
+                        </div>
+                    </div><!-- .card-inner -->
+                </div><!-- .card -->
+            </div><!-- .col -->
+        </div><!-- .row -->
+    </div><!-- .nk-block -->
+</div>

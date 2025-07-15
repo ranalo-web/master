@@ -1,0 +1,2789 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Ranalo.bundle.scp.css",
+      "PackagePath": "staticwebassets\\Ranalo.ofvlkq17hs.bundle.scp.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\dashlite.css",
+      "PackagePath": "staticwebassets\\assets\\css\\dashlite.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\dashlite.min.css",
+      "PackagePath": "staticwebassets\\assets\\css\\dashlite.min.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\dashlite.rtl.css",
+      "PackagePath": "staticwebassets\\assets\\css\\dashlite.rtl.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\dashlite.rtl.min.css",
+      "PackagePath": "staticwebassets\\assets\\css\\dashlite.rtl.min.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\editors\\quill.css",
+      "PackagePath": "staticwebassets\\assets\\css\\editors\\quill.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\editors\\quill.rtl.css",
+      "PackagePath": "staticwebassets\\assets\\css\\editors\\quill.rtl.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\editors\\summernote.css",
+      "PackagePath": "staticwebassets\\assets\\css\\editors\\summernote.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\editors\\summernote.rtl.css",
+      "PackagePath": "staticwebassets\\assets\\css\\editors\\summernote.rtl.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\editors\\tinymce.css",
+      "PackagePath": "staticwebassets\\assets\\css\\editors\\tinymce.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\editors\\tinymce.rtl.css",
+      "PackagePath": "staticwebassets\\assets\\css\\editors\\tinymce.rtl.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\libs\\bootstrap-icons.css",
+      "PackagePath": "staticwebassets\\assets\\css\\libs\\bootstrap-icons.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\libs\\fontawesome-icons.css",
+      "PackagePath": "staticwebassets\\assets\\css\\libs\\fontawesome-icons.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\libs\\jstree.css",
+      "PackagePath": "staticwebassets\\assets\\css\\libs\\jstree.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\libs\\themify-icons.css",
+      "PackagePath": "staticwebassets\\assets\\css\\libs\\themify-icons.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\skins\\theme-blue.css",
+      "PackagePath": "staticwebassets\\assets\\css\\skins\\theme-blue.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\skins\\theme-egyptian.css",
+      "PackagePath": "staticwebassets\\assets\\css\\skins\\theme-egyptian.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\skins\\theme-green.css",
+      "PackagePath": "staticwebassets\\assets\\css\\skins\\theme-green.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\skins\\theme-purple.css",
+      "PackagePath": "staticwebassets\\assets\\css\\skins\\theme-purple.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\skins\\theme-red.css",
+      "PackagePath": "staticwebassets\\assets\\css\\skins\\theme-red.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\style-email.css",
+      "PackagePath": "staticwebassets\\assets\\css\\style-email.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\css\\theme.css",
+      "PackagePath": "staticwebassets\\assets\\css\\theme.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nioicon.svg",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nioicon.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nioicon.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nioicon.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nioicon.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nioicon.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nunito-Bold.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nunito-Bold.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nunito-Bold.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nunito-Bold.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nunito-Bold.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nunito-Bold.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nunito-Bold.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nunito-Bold.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nunito-Regular.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nunito-Regular.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nunito-Regular.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nunito-Regular.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nunito-Regular.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nunito-Regular.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Nunito-Regular.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Nunito-Regular.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Bold.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Bold.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Bold.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Bold.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Bold.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Bold.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Bold.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Bold.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Light.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Light.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Light.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Light.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Light.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Light.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Light.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Light.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Medium.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Medium.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Medium.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Medium.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Medium.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Medium.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Medium.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Medium.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Regular.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Regular.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Regular.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Regular.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Regular.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Regular.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\Roboto-Regular.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\Roboto-Regular.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\bootstrap-icons.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\bootstrap-icons.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\bootstrap-icons.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\bootstrap-icons.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-brands-400.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-brands-400.svg",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-brands-400.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-brands-400.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-brands-400.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-brands-400.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-regular-400.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-regular-400.svg",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-regular-400.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-regular-400.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-regular-400.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-regular-400.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-solid-900.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-solid-900.svg",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-solid-900.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-solid-900.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\fa-solid-900.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\fa-solid-900.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\summernote.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\summernote.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\summernote.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\summernote.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\summernote.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\summernote.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\summernote.woff2",
+      "PackagePath": "staticwebassets\\assets\\fonts\\summernote.woff2"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\themify.eot",
+      "PackagePath": "staticwebassets\\assets\\fonts\\themify.eot"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\themify.svg",
+      "PackagePath": "staticwebassets\\assets\\fonts\\themify.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\themify.ttf",
+      "PackagePath": "staticwebassets\\assets\\fonts\\themify.ttf"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\themify.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\themify.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\fonts\\tinymce-mobile.woff",
+      "PackagePath": "staticwebassets\\assets\\fonts\\tinymce-mobile.woff"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\images\\jsTree\\32px-dark.png",
+      "PackagePath": "staticwebassets\\assets\\images\\jsTree\\32px-dark.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\images\\jsTree\\32px.png",
+      "PackagePath": "staticwebassets\\assets\\images\\jsTree\\32px.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\images\\jsTree\\40px-dark.png",
+      "PackagePath": "staticwebassets\\assets\\images\\jsTree\\40px-dark.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\images\\jsTree\\40px.png",
+      "PackagePath": "staticwebassets\\assets\\images\\jsTree\\40px.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\images\\jsTree\\throbber-dark.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\jsTree\\throbber-dark.gif"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\images\\jsTree\\throbber.gif",
+      "PackagePath": "staticwebassets\\assets\\images\\jsTree\\throbber.gif"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\apps\\calendar.js",
+      "PackagePath": "staticwebassets\\assets\\js\\apps\\calendar.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\apps\\chats.js",
+      "PackagePath": "staticwebassets\\assets\\js\\apps\\chats.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\apps\\file-manager.js",
+      "PackagePath": "staticwebassets\\assets\\js\\apps\\file-manager.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\apps\\inbox.js",
+      "PackagePath": "staticwebassets\\assets\\js\\apps\\inbox.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\apps\\kanban.js",
+      "PackagePath": "staticwebassets\\assets\\js\\apps\\kanban.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\apps\\messages.js",
+      "PackagePath": "staticwebassets\\assets\\js\\apps\\messages.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\bundle.js",
+      "PackagePath": "staticwebassets\\assets\\js\\bundle.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\chart-cms.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\chart-cms.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\chart-crm.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\chart-crm.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\chart-crypto.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\chart-crypto.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\chart-ecommerce.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\chart-ecommerce.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\chart-hotel.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\chart-hotel.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\chart-invest.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\chart-invest.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\chart-lms.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\chart-lms.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\chart-loan.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\chart-loan.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\chart-widgets.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\chart-widgets.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\gd-analytics.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\gd-analytics.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\gd-default.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\gd-default.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\gd-hospital.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\gd-hospital.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\gd-invest.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\gd-invest.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\gd-pharmacy.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\gd-pharmacy.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\hospital-report.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\hospital-report.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\charts\\pharmacy-report.js",
+      "PackagePath": "staticwebassets\\assets\\js\\charts\\pharmacy-report.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\editors.js",
+      "PackagePath": "staticwebassets\\assets\\js\\editors.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\example-chart.js",
+      "PackagePath": "staticwebassets\\assets\\js\\example-chart.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\example-dragula.js",
+      "PackagePath": "staticwebassets\\assets\\js\\example-dragula.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\example-listbox.js",
+      "PackagePath": "staticwebassets\\assets\\js\\example-listbox.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\example-map.js",
+      "PackagePath": "staticwebassets\\assets\\js\\example-map.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\example-sweetalert.js",
+      "PackagePath": "staticwebassets\\assets\\js\\example-sweetalert.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\example-toastr.js",
+      "PackagePath": "staticwebassets\\assets\\js\\example-toastr.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\example-tree.js",
+      "PackagePath": "staticwebassets\\assets\\js\\example-tree.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\datatable-btns.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\datatable-btns.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\dragula.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\dragula.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\dual-listbox.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\dual-listbox.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\editors\\quill.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\editors\\quill.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\editors\\skins\\content\\dark\\content.css",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\editors\\skins\\content\\dark\\content.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\editors\\skins\\content\\default\\content.css",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\editors\\skins\\content\\default\\content.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\editors\\summernote.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\editors\\summernote.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\editors\\tinymce.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\editors\\tinymce.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\fullcalendar.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\fullcalendar.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\jkanban.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\jkanban.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\jqvmap.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\jqvmap.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\jstree.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\jstree.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\libs\\tagify.js",
+      "PackagePath": "staticwebassets\\assets\\js\\libs\\tagify.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\assets\\js\\scripts.js",
+      "PackagePath": "staticwebassets\\assets\\js\\scripts.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\Ranalo_Credit_Logo.png",
+      "PackagePath": "staticwebassets\\images\\Ranalo_Credit_Logo.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\avatar\\a-sm.jpg",
+      "PackagePath": "staticwebassets\\images\\avatar\\a-sm.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\avatar\\b-sm.jpg",
+      "PackagePath": "staticwebassets\\images\\avatar\\b-sm.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\avatar\\c-sm.jpg",
+      "PackagePath": "staticwebassets\\images\\avatar\\c-sm.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\avatar\\d-sm.jpg",
+      "PackagePath": "staticwebassets\\images\\avatar\\d-sm.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\cms\\sq\\a.jpg",
+      "PackagePath": "staticwebassets\\images\\cms\\sq\\a.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\cms\\sq\\b.jpg",
+      "PackagePath": "staticwebassets\\images\\cms\\sq\\b.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\cms\\sq\\c.jpg",
+      "PackagePath": "staticwebassets\\images\\cms\\sq\\c.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\cms\\sq\\d.jpg",
+      "PackagePath": "staticwebassets\\images\\cms\\sq\\d.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\cms\\sq\\e.jpg",
+      "PackagePath": "staticwebassets\\images\\cms\\sq\\e.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\cms\\sq\\f.jpg",
+      "PackagePath": "staticwebassets\\images\\cms\\sq\\f.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\cms\\sq\\g.jpg",
+      "PackagePath": "staticwebassets\\images\\cms\\sq\\g.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\cms\\sq\\h.jpg",
+      "PackagePath": "staticwebassets\\images\\cms\\sq\\h.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\cms\\sq\\small-a.jpg",
+      "PackagePath": "staticwebassets\\images\\cms\\sq\\small-a.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\coins\\bch.svg",
+      "PackagePath": "staticwebassets\\images\\coins\\bch.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\coins\\bnb.svg",
+      "PackagePath": "staticwebassets\\images\\coins\\bnb.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\coins\\btc.svg",
+      "PackagePath": "staticwebassets\\images\\coins\\btc.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\coins\\eos.svg",
+      "PackagePath": "staticwebassets\\images\\coins\\eos.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\coins\\eth.svg",
+      "PackagePath": "staticwebassets\\images\\coins\\eth.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\coins\\ltc.svg",
+      "PackagePath": "staticwebassets\\images\\coins\\ltc.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\coins\\trx.svg",
+      "PackagePath": "staticwebassets\\images\\coins\\trx.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\coins\\usdt.svg",
+      "PackagePath": "staticwebassets\\images\\coins\\usdt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\coins\\xlm.svg",
+      "PackagePath": "staticwebassets\\images\\coins\\xlm.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\coins\\xps.svg",
+      "PackagePath": "staticwebassets\\images\\coins\\xps.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\crm\\brand\\a.png",
+      "PackagePath": "staticwebassets\\images\\crm\\brand\\a.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\crm\\brand\\b.png",
+      "PackagePath": "staticwebassets\\images\\crm\\brand\\b.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\crm\\product\\a.jpg",
+      "PackagePath": "staticwebassets\\images\\crm\\product\\a.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\crm\\product\\b.jpg",
+      "PackagePath": "staticwebassets\\images\\crm\\product\\b.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\crm\\product\\c.jpg",
+      "PackagePath": "staticwebassets\\images\\crm\\product\\c.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\crm\\product\\d.jpg",
+      "PackagePath": "staticwebassets\\images\\crm\\product\\d.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\crm\\product\\e.jpg",
+      "PackagePath": "staticwebassets\\images\\crm\\product\\e.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\crm\\product\\f.jpg",
+      "PackagePath": "staticwebassets\\images\\crm\\product\\f.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\crm\\product\\g.jpg",
+      "PackagePath": "staticwebassets\\images\\crm\\product\\g.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\email\\kyc-pending.png",
+      "PackagePath": "staticwebassets\\images\\email\\kyc-pending.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\email\\kyc-progress.png",
+      "PackagePath": "staticwebassets\\images\\email\\kyc-progress.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\email\\kyc-success.png",
+      "PackagePath": "staticwebassets\\images\\email\\kyc-success.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\favicon.png",
+      "PackagePath": "staticwebassets\\images\\favicon.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\arg.png",
+      "PackagePath": "staticwebassets\\images\\flags\\arg.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\aus.png",
+      "PackagePath": "staticwebassets\\images\\flags\\aus.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\bangladesh.png",
+      "PackagePath": "staticwebassets\\images\\flags\\bangladesh.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\canada.png",
+      "PackagePath": "staticwebassets\\images\\flags\\canada.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\china-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\china-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\china.png",
+      "PackagePath": "staticwebassets\\images\\flags\\china.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\english-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\english-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\english.png",
+      "PackagePath": "staticwebassets\\images\\flags\\english.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\french-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\french-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\french.png",
+      "PackagePath": "staticwebassets\\images\\flags\\french.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\germany-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\germany-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\germany.png",
+      "PackagePath": "staticwebassets\\images\\flags\\germany.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\iran-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\iran-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\iran.png",
+      "PackagePath": "staticwebassets\\images\\flags\\iran.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\italy-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\italy-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\italy.png",
+      "PackagePath": "staticwebassets\\images\\flags\\italy.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\kenya.jpeg",
+      "PackagePath": "staticwebassets\\images\\flags\\kenya.jpeg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\mexico.png",
+      "PackagePath": "staticwebassets\\images\\flags\\mexico.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\philipine.png",
+      "PackagePath": "staticwebassets\\images\\flags\\philipine.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\portugal.png",
+      "PackagePath": "staticwebassets\\images\\flags\\portugal.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\s-africa.png",
+      "PackagePath": "staticwebassets\\images\\flags\\s-africa.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\spain-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\spain-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\spain.png",
+      "PackagePath": "staticwebassets\\images\\flags\\spain.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\spanish-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\spanish-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\spanish.png",
+      "PackagePath": "staticwebassets\\images\\flags\\spanish.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\switzerland-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\switzerland-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\switzerland.png",
+      "PackagePath": "staticwebassets\\images\\flags\\switzerland.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\turkey-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\turkey-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\turkey.png",
+      "PackagePath": "staticwebassets\\images\\flags\\turkey.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\uk-sq.png",
+      "PackagePath": "staticwebassets\\images\\flags\\uk-sq.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\flags\\uk.png",
+      "PackagePath": "staticwebassets\\images\\flags\\uk.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\gfx\\error-404.svg",
+      "PackagePath": "staticwebassets\\images\\gfx\\error-404.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\gfx\\error-504.svg",
+      "PackagePath": "staticwebassets\\images\\gfx\\error-504.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\gfx\\job-survey.svg",
+      "PackagePath": "staticwebassets\\images\\gfx\\job-survey.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\gfx\\survey.svg",
+      "PackagePath": "staticwebassets\\images\\gfx\\survey.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\gfx\\work-desk.svg",
+      "PackagePath": "staticwebassets\\images\\gfx\\work-desk.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\1.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\1.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\2.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\2.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\3.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\3.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\4.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\4.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\5.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\5.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\6.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\6.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\7.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\7.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\a.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\a.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\b.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\b.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\c.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\c.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\d.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\d.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\e.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\e.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\f.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\f.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\g.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\g.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\h.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\h.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\i.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\i.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\j.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\j.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\k.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\k.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\hospital\\l.png",
+      "PackagePath": "staticwebassets\\images\\hospital\\l.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\account-secure.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\account-secure.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\bills.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\bills.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\card-credit.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\card-credit.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\card-debit.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\card-debit.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\card-secure.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\card-secure.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\code-scan.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\code-scan.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\codes.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\codes.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\completely-satisfied.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\completely-satisfied.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\connect-secure.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\connect-secure.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\customize.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\customize.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\devices.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\devices.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\doc-checked.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\doc-checked.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\emails.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\emails.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\excel.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\excel.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-doc.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-doc.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-excel.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-excel.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-media.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-media.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-pdf.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-pdf.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-code-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-code-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-code.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-code.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-doc-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-doc-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-doc.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-doc.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-media-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-media-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-media.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-media.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-movie-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-movie-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-movie.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-movie.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-music-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-music-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-music.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-music.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-pdf-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-pdf-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-pdf.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-pdf.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-ppt-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-ppt-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-ppt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-ppt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-sheet-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-sheet-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-sheet.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-sheet.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-text-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-text-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-text.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-text.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-zip-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-zip-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-type-zip.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-type-zip.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-word.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-word.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\file-zip.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\file-zip.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\folder-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\folder-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\folder-secure-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\folder-secure-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\folder-secure.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\folder-secure.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\folder-shared-alt.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\folder-shared-alt.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\folder-shared.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\folder-shared.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\folder.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\folder.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\fornt-end-developer.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\fornt-end-developer.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\freelancing-service.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\freelancing-service.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\friends.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\friends.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\help-desk.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\help-desk.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\id-back.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\id-back.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\id-front.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\id-front.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\invoice.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\invoice.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\kyc-dv.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\kyc-dv.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\kyc-nid.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\kyc-nid.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\kyc-pp.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\kyc-pp.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\loop.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\loop.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\newspaper.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\newspaper.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\not-satisfied.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\not-satisfied.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\password-secure.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\password-secure.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\plan-s1.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\plan-s1.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\plan-s2.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\plan-s2.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\plan-s3.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\plan-s3.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\print-advertize.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\print-advertize.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\product-cc.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\product-cc.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\product-ee.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\product-ee.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\product-ig.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\product-ig.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\product-pp.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\product-pp.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\product-sc.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\product-sc.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\profile.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\profile.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\project-duplicate.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\project-duplicate.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\project-import.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\project-import.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\project-kanban.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\project-kanban.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\project-scrum.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\project-scrum.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\quite-satisfied.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\quite-satisfied.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\recheck.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\recheck.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\reports.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\reports.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\satisfied.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\satisfied.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\search-engine.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\search-engine.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\settings.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\settings.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\support-account.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\support-account.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\support-general.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\support-general.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\support-payment.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\support-payment.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\support-secure.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\support-secure.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\support.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\support.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\sync.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\sync.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\ux-designer.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\ux-designer.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\icons\\zip.svg",
+      "PackagePath": "staticwebassets\\images\\icons\\zip.svg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\index.njk",
+      "PackagePath": "staticwebassets\\images\\index.njk"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\logo-dark-small.png",
+      "PackagePath": "staticwebassets\\images\\logo-dark-small.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\logo-dark-small2x.png",
+      "PackagePath": "staticwebassets\\images\\logo-dark-small2x.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\logo-dark.png",
+      "PackagePath": "staticwebassets\\images\\logo-dark.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\logo-dark2x.png",
+      "PackagePath": "staticwebassets\\images\\logo-dark2x.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\logo-small.png",
+      "PackagePath": "staticwebassets\\images\\logo-small.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\logo-small2x.png",
+      "PackagePath": "staticwebassets\\images\\logo-small2x.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\logo.png",
+      "PackagePath": "staticwebassets\\images\\logo.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\logo2x.png",
+      "PackagePath": "staticwebassets\\images\\logo2x.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\a.png",
+      "PackagePath": "staticwebassets\\images\\product\\a.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\b.png",
+      "PackagePath": "staticwebassets\\images\\product\\b.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\c.png",
+      "PackagePath": "staticwebassets\\images\\product\\c.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\d.png",
+      "PackagePath": "staticwebassets\\images\\product\\d.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\e.png",
+      "PackagePath": "staticwebassets\\images\\product\\e.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\f.png",
+      "PackagePath": "staticwebassets\\images\\product\\f.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\g.png",
+      "PackagePath": "staticwebassets\\images\\product\\g.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\h.png",
+      "PackagePath": "staticwebassets\\images\\product\\h.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\i.png",
+      "PackagePath": "staticwebassets\\images\\product\\i.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\j.png",
+      "PackagePath": "staticwebassets\\images\\product\\j.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\lg-a.jpg",
+      "PackagePath": "staticwebassets\\images\\product\\lg-a.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\lg-b.jpg",
+      "PackagePath": "staticwebassets\\images\\product\\lg-b.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\lg-c.jpg",
+      "PackagePath": "staticwebassets\\images\\product\\lg-c.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\lg-d.jpg",
+      "PackagePath": "staticwebassets\\images\\product\\lg-d.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\lg-e.jpg",
+      "PackagePath": "staticwebassets\\images\\product\\lg-e.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\lg-f.jpg",
+      "PackagePath": "staticwebassets\\images\\product\\lg-f.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\lg-g.jpg",
+      "PackagePath": "staticwebassets\\images\\product\\lg-g.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\lg-h.jpg",
+      "PackagePath": "staticwebassets\\images\\product\\lg-h.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\product\\video-a.jpg",
+      "PackagePath": "staticwebassets\\images\\product\\video-a.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\qr\\qr-code.png",
+      "PackagePath": "staticwebassets\\images\\qr\\qr-code.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\slides\\promo-a.png",
+      "PackagePath": "staticwebassets\\images\\slides\\promo-a.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\slides\\promo-a2x.png",
+      "PackagePath": "staticwebassets\\images\\slides\\promo-a2x.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\slides\\promo-b.png",
+      "PackagePath": "staticwebassets\\images\\slides\\promo-b.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\slides\\promo-b2x.png",
+      "PackagePath": "staticwebassets\\images\\slides\\promo-b2x.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\slides\\promo-c.png",
+      "PackagePath": "staticwebassets\\images\\slides\\promo-c.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\slides\\promo-c2x.png",
+      "PackagePath": "staticwebassets\\images\\slides\\promo-c2x.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\slides\\slide-a.jpg",
+      "PackagePath": "staticwebassets\\images\\slides\\slide-a.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\slides\\slide-b.jpg",
+      "PackagePath": "staticwebassets\\images\\slides\\slide-b.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\slides\\slide-c.jpg",
+      "PackagePath": "staticwebassets\\images\\slides\\slide-c.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\socials\\facebook.png",
+      "PackagePath": "staticwebassets\\images\\socials\\facebook.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\socials\\medium.png",
+      "PackagePath": "staticwebassets\\images\\socials\\medium.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\socials\\twitter.png",
+      "PackagePath": "staticwebassets\\images\\socials\\twitter.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\socials\\youtube.png",
+      "PackagePath": "staticwebassets\\images\\socials\\youtube.png"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\stock\\a.jpg",
+      "PackagePath": "staticwebassets\\images\\stock\\a.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\stock\\b.jpg",
+      "PackagePath": "staticwebassets\\images\\stock\\b.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\stock\\c.jpg",
+      "PackagePath": "staticwebassets\\images\\stock\\c.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\stock\\d.jpg",
+      "PackagePath": "staticwebassets\\images\\stock\\d.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\stock\\e.jpg",
+      "PackagePath": "staticwebassets\\images\\stock\\e.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\stock\\f.jpg",
+      "PackagePath": "staticwebassets\\images\\stock\\f.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\stock\\g.jpg",
+      "PackagePath": "staticwebassets\\images\\stock\\g.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\stock\\h.jpg",
+      "PackagePath": "staticwebassets\\images\\stock\\h.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\theme\\a.jpg",
+      "PackagePath": "staticwebassets\\images\\theme\\a.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\theme\\b.jpg",
+      "PackagePath": "staticwebassets\\images\\theme\\b.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\theme\\c.jpg",
+      "PackagePath": "staticwebassets\\images\\theme\\c.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\theme\\d.jpg",
+      "PackagePath": "staticwebassets\\images\\theme\\d.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\theme\\e.jpg",
+      "PackagePath": "staticwebassets\\images\\theme\\e.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\images\\theme\\f.jpg",
+      "PackagePath": "staticwebassets\\images\\theme\\f.jpg"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\apps\\calendar.js",
+      "PackagePath": "staticwebassets\\js\\apps\\calendar.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\apps\\chats.js",
+      "PackagePath": "staticwebassets\\js\\apps\\chats.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\apps\\file-manager.js",
+      "PackagePath": "staticwebassets\\js\\apps\\file-manager.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\apps\\inbox.js",
+      "PackagePath": "staticwebassets\\js\\apps\\inbox.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\apps\\kanban.js",
+      "PackagePath": "staticwebassets\\js\\apps\\kanban.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\apps\\messages.js",
+      "PackagePath": "staticwebassets\\js\\apps\\messages.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\bundle.js",
+      "PackagePath": "staticwebassets\\js\\bundle.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\chart-cms.js",
+      "PackagePath": "staticwebassets\\js\\charts\\chart-cms.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\chart-crm.js",
+      "PackagePath": "staticwebassets\\js\\charts\\chart-crm.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\chart-crypto.js",
+      "PackagePath": "staticwebassets\\js\\charts\\chart-crypto.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\chart-ecommerce.js",
+      "PackagePath": "staticwebassets\\js\\charts\\chart-ecommerce.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\chart-hotel.js",
+      "PackagePath": "staticwebassets\\js\\charts\\chart-hotel.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\chart-invest.js",
+      "PackagePath": "staticwebassets\\js\\charts\\chart-invest.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\chart-lms.js",
+      "PackagePath": "staticwebassets\\js\\charts\\chart-lms.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\chart-loan.js",
+      "PackagePath": "staticwebassets\\js\\charts\\chart-loan.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\chart-widgets.js",
+      "PackagePath": "staticwebassets\\js\\charts\\chart-widgets.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\gd-analytics.js",
+      "PackagePath": "staticwebassets\\js\\charts\\gd-analytics.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\gd-default.js",
+      "PackagePath": "staticwebassets\\js\\charts\\gd-default.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\gd-hospital.js",
+      "PackagePath": "staticwebassets\\js\\charts\\gd-hospital.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\gd-invest.js",
+      "PackagePath": "staticwebassets\\js\\charts\\gd-invest.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\gd-pharmacy.js",
+      "PackagePath": "staticwebassets\\js\\charts\\gd-pharmacy.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\hospital-report.js",
+      "PackagePath": "staticwebassets\\js\\charts\\hospital-report.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\charts\\pharmacy-report.js",
+      "PackagePath": "staticwebassets\\js\\charts\\pharmacy-report.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\editors.js",
+      "PackagePath": "staticwebassets\\js\\editors.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\example-chart.js",
+      "PackagePath": "staticwebassets\\js\\example-chart.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\example-dragula.js",
+      "PackagePath": "staticwebassets\\js\\example-dragula.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\example-listbox.js",
+      "PackagePath": "staticwebassets\\js\\example-listbox.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\example-map.js",
+      "PackagePath": "staticwebassets\\js\\example-map.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\example-sweetalert.js",
+      "PackagePath": "staticwebassets\\js\\example-sweetalert.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\example-toastr.js",
+      "PackagePath": "staticwebassets\\js\\example-toastr.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\example-tree.js",
+      "PackagePath": "staticwebassets\\js\\example-tree.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\datatable-btns.js",
+      "PackagePath": "staticwebassets\\js\\libs\\datatable-btns.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\dragula.js",
+      "PackagePath": "staticwebassets\\js\\libs\\dragula.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\dual-listbox.js",
+      "PackagePath": "staticwebassets\\js\\libs\\dual-listbox.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\editors\\quill.js",
+      "PackagePath": "staticwebassets\\js\\libs\\editors\\quill.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\editors\\skins\\content\\dark\\content.css",
+      "PackagePath": "staticwebassets\\js\\libs\\editors\\skins\\content\\dark\\content.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\editors\\skins\\content\\default\\content.css",
+      "PackagePath": "staticwebassets\\js\\libs\\editors\\skins\\content\\default\\content.css"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\editors\\summernote.js",
+      "PackagePath": "staticwebassets\\js\\libs\\editors\\summernote.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\editors\\tinymce.js",
+      "PackagePath": "staticwebassets\\js\\libs\\editors\\tinymce.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\fullcalendar.js",
+      "PackagePath": "staticwebassets\\js\\libs\\fullcalendar.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\jkanban.js",
+      "PackagePath": "staticwebassets\\js\\libs\\jkanban.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\jqvmap.js",
+      "PackagePath": "staticwebassets\\js\\libs\\jqvmap.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\jstree.js",
+      "PackagePath": "staticwebassets\\js\\libs\\jstree.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\libs\\tagify.js",
+      "PackagePath": "staticwebassets\\js\\libs\\tagify.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\scripts.js",
+      "PackagePath": "staticwebassets\\js\\scripts.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jquery-steps\\jquery.steps.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jquery-steps\\jquery.steps.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jquery-steps\\jquery.steps.min.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jquery-steps\\jquery.steps.min.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\jquery.vmap.min.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\jquery.vmap.min.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.africa.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.africa.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.asia.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.asia.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.australia.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.australia.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.europe.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.europe.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.north-america.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.north-america.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.south-america.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\continents\\jquery.vmap.south-america.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.algeria.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.algeria.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.argentina.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.argentina.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.brazil.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.brazil.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.canada.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.canada.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.europe.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.europe.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.france.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.france.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.germany.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.germany.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.greece.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.greece.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.iran.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.iran.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.iraq.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.iraq.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.russia.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.russia.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.tunisia.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.tunisia.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.turkey.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.turkey.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.usa.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.usa.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\jqvmap\\maps\\jquery.vmap.world.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\jqvmap\\maps\\jquery.vmap.world.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\knob\\jquery.knob.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\knob\\jquery.knob.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\knob\\jquery.knob.min.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\knob\\jquery.knob.min.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\nioapp\\nioapp.min.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\nioapp\\nioapp.min.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\prettify.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\prettify.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\quill\\quill.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\quill\\quill.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\js\\vendors\\quill\\quill.min.js",
+      "PackagePath": "staticwebassets\\js\\vendors\\quill\\quill.min.js"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\_dashlite_variables.scss",
+      "PackagePath": "staticwebassets\\scss\\_dashlite_variables.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\apps\\_asterisk.scss",
+      "PackagePath": "staticwebassets\\scss\\apps\\_asterisk.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\apps\\_attach.scss",
+      "PackagePath": "staticwebassets\\scss\\apps\\_attach.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\apps\\_chats.scss",
+      "PackagePath": "staticwebassets\\scss\\apps\\_chats.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\apps\\_file-manager.scss",
+      "PackagePath": "staticwebassets\\scss\\apps\\_file-manager.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\apps\\_inbox.scss",
+      "PackagePath": "staticwebassets\\scss\\apps\\_inbox.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\apps\\_messages.scss",
+      "PackagePath": "staticwebassets\\scss\\apps\\_messages.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\apps\\_reply-comment.scss",
+      "PackagePath": "staticwebassets\\scss\\apps\\_reply-comment.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\copywriter\\_editor.scss",
+      "PackagePath": "staticwebassets\\scss\\copywriter\\_editor.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\copywriter\\_filter.scss",
+      "PackagePath": "staticwebassets\\scss\\copywriter\\_filter.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\copywriter\\_history.scss",
+      "PackagePath": "staticwebassets\\scss\\copywriter\\_history.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\copywriter\\_style.scss",
+      "PackagePath": "staticwebassets\\scss\\copywriter\\_style.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\_components.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\_components.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\_dark-skin.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\_dark-skin.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\_layouts.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\_layouts.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\_misc.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\_misc.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\_mode-override.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\_mode-override.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\_pages.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\_pages.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\_preview.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\_preview.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\_style.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\_style.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\_utilites.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\_utilites.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_accordions.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_accordions.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_alert.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_alert.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_badge.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_badge.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_block.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_block.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_card.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_card.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_data-list.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_data-list.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_dropdown.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_dropdown.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_feature.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_feature.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_forms.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_forms.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_icons.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_icons.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_link.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_link.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_list.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_list.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_misc.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_misc.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_modal.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_modal.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_nav.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_nav.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_preloader.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_preloader.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_projects.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_projects.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_rating.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_rating.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_search.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_search.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_sliders.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_sliders.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_stepper.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_stepper.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_table.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_table.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_team.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_team.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_text.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_text.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_title.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_title.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_toggle.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_toggle.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_users.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_users.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\components\\_wgm.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\components\\_wgm.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\fonts\\_nunito.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\fonts\\_nunito.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\fonts\\_roboto.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\fonts\\_roboto.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\layouts\\_base.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\layouts\\_base.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\layouts\\_footer.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\layouts\\_footer.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\layouts\\_header.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\layouts\\_header.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\layouts\\_menu-main.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\layouts\\_menu-main.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\layouts\\_sidebar.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\layouts\\_sidebar.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\layouts\\_split.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\layouts\\_split.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\pages\\_misc.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\pages\\_misc.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\pages\\auths\\_base.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\pages\\auths\\_base.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\pages\\errors\\_base.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\pages\\errors\\_base.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\utilites\\_noclass.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\utilites\\_noclass.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\utilites\\_reboot.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\utilites\\_reboot.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\utilites\\_sizing.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\utilites\\_sizing.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\core\\utilites\\_spacing.scss",
+      "PackagePath": "staticwebassets\\scss\\core\\utilites\\_spacing.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\crypto\\_style.scss",
+      "PackagePath": "staticwebassets\\scss\\crypto\\_style.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\crypto\\_variables.scss",
+      "PackagePath": "staticwebassets\\scss\\crypto\\_variables.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\crypto\\base\\_common.scss",
+      "PackagePath": "staticwebassets\\scss\\crypto\\base\\_common.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\crypto\\base\\_tranx.scss",
+      "PackagePath": "staticwebassets\\scss\\crypto\\base\\_tranx.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\crypto\\base\\_wallet.scss",
+      "PackagePath": "staticwebassets\\scss\\crypto\\base\\_wallet.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\crypto\\base\\_widgets.scss",
+      "PackagePath": "staticwebassets\\scss\\crypto\\base\\_widgets.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\crypto\\pages\\_accounts.scss",
+      "PackagePath": "staticwebassets\\scss\\crypto\\pages\\_accounts.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\crypto\\pages\\_buysell.scss",
+      "PackagePath": "staticwebassets\\scss\\crypto\\pages\\_buysell.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\dashlite.scss",
+      "PackagePath": "staticwebassets\\scss\\dashlite.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\editors\\quill.scss",
+      "PackagePath": "staticwebassets\\scss\\editors\\quill.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\editors\\summernote.scss",
+      "PackagePath": "staticwebassets\\scss\\editors\\summernote.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\editors\\tinymce.scss",
+      "PackagePath": "staticwebassets\\scss\\editors\\tinymce.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\_bootstrap.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\_bootstrap.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\_extend.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\_extend.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\_variables.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\_variables.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_alert.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_alert.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_badge.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_badge.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_breadcrumb.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_breadcrumb.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_button-group.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_button-group.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_buttons.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_buttons.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_card.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_card.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_custom-forms.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_custom-forms.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_dropdown.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_dropdown.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_forms.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_forms.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_grid.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_grid.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_link.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_link.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_media.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_media.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_modal.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_modal.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_nav.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_nav.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_pagination.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_pagination.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_placeholders.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_placeholders.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_progress.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_progress.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_tables.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_tables.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_toast.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_toast.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\components\\_tooltip.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\components\\_tooltip.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\utilites\\_background.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\utilites\\_background.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\utilites\\_borders.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\utilites\\_borders.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\utilites\\_common.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\utilites\\_common.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\utilites\\_flex.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\utilites\\_flex.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\utilites\\_position.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\utilites\\_position.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\utilites\\_reboot.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\utilites\\_reboot.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\utilites\\_sizing.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\utilites\\_sizing.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\utilites\\_spacing.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\utilites\\_spacing.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\utilites\\_text.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\utilites\\_text.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\extend\\bootstrap\\utilites\\_type.scss",
+      "PackagePath": "staticwebassets\\scss\\extend\\bootstrap\\utilites\\_type.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\_style.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\_style.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\comps\\_authors.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\comps\\_authors.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\comps\\_members.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\comps\\_members.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\comps\\_pricing.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\comps\\_pricing.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\comps\\_profiles.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\comps\\_profiles.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\comps\\_reacts.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\comps\\_reacts.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\comps\\_tb-compact.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\comps\\_tb-compact.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\comps\\_tb-odr.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\comps\\_tb-odr.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\comps\\_tb-tnx.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\comps\\_tb-tnx.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\comps\\_wizard.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\comps\\_wizard.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\tables\\_base.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\tables\\_base.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\tables\\_tranx.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\tables\\_tranx.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_coins.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_coins.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_cta.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_cta.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_db-analytic.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_db-analytic.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_db-invest.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_db-invest.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_ecommerce.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_ecommerce.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_gallery.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_gallery.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_help.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_help.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_invoice.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_invoice.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_kyc-form.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_kyc-form.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_misc.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_misc.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_pricing.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_pricing.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_products.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_products.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_referral.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_referral.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_timeline.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_timeline.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\global\\wgs\\_wg1.scss",
+      "PackagePath": "staticwebassets\\scss\\global\\wgs\\_wg1.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\invest\\_style.scss",
+      "PackagePath": "staticwebassets\\scss\\invest\\_style.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\invest\\_variables.scss",
+      "PackagePath": "staticwebassets\\scss\\invest\\_variables.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\invest\\base\\_cards.scss",
+      "PackagePath": "staticwebassets\\scss\\invest\\base\\_cards.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\invest\\base\\_common.scss",
+      "PackagePath": "staticwebassets\\scss\\invest\\base\\_common.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\invest\\base\\_widgets.scss",
+      "PackagePath": "staticwebassets\\scss\\invest\\base\\_widgets.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\invest\\pages\\_global.scss",
+      "PackagePath": "staticwebassets\\scss\\invest\\pages\\_global.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\invest\\pages\\_invest.scss",
+      "PackagePath": "staticwebassets\\scss\\invest\\pages\\_invest.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\invest\\pages\\_misc.scss",
+      "PackagePath": "staticwebassets\\scss\\invest\\pages\\_misc.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\invest\\pages\\_scheme.scss",
+      "PackagePath": "staticwebassets\\scss\\invest\\pages\\_scheme.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\libs\\bootstrap-icons.scss",
+      "PackagePath": "staticwebassets\\scss\\libs\\bootstrap-icons.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\libs\\fontawesome-icons.scss",
+      "PackagePath": "staticwebassets\\scss\\libs\\fontawesome-icons.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\libs\\jstree.scss",
+      "PackagePath": "staticwebassets\\scss\\libs\\jstree.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\libs\\themify-icons.scss",
+      "PackagePath": "staticwebassets\\scss\\libs\\themify-icons.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\loan\\_style.scss",
+      "PackagePath": "staticwebassets\\scss\\loan\\_style.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\loan\\base\\_widgets.scss",
+      "PackagePath": "staticwebassets\\scss\\loan\\base\\_widgets.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\loan\\pages\\_loan.scss",
+      "PackagePath": "staticwebassets\\scss\\loan\\pages\\_loan.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\skins\\_variable_blue.scss",
+      "PackagePath": "staticwebassets\\scss\\skins\\_variable_blue.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\skins\\_variable_egyptian.scss",
+      "PackagePath": "staticwebassets\\scss\\skins\\_variable_egyptian.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\skins\\_variable_green.scss",
+      "PackagePath": "staticwebassets\\scss\\skins\\_variable_green.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\skins\\_variable_purple.scss",
+      "PackagePath": "staticwebassets\\scss\\skins\\_variable_purple.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\skins\\_variable_red.scss",
+      "PackagePath": "staticwebassets\\scss\\skins\\_variable_red.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\skins\\theme-blue.scss",
+      "PackagePath": "staticwebassets\\scss\\skins\\theme-blue.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\skins\\theme-egyptian.scss",
+      "PackagePath": "staticwebassets\\scss\\skins\\theme-egyptian.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\skins\\theme-green.scss",
+      "PackagePath": "staticwebassets\\scss\\skins\\theme-green.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\skins\\theme-purple.scss",
+      "PackagePath": "staticwebassets\\scss\\skins\\theme-purple.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\skins\\theme-red.scss",
+      "PackagePath": "staticwebassets\\scss\\skins\\theme-red.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\style-email.scss",
+      "PackagePath": "staticwebassets\\scss\\style-email.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\subscription\\_style.scss",
+      "PackagePath": "staticwebassets\\scss\\subscription\\_style.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\subscription\\pages\\_download.scss",
+      "PackagePath": "staticwebassets\\scss\\subscription\\pages\\_download.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\subscription\\pages\\_plans.scss",
+      "PackagePath": "staticwebassets\\scss\\subscription\\pages\\_plans.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\support\\_style.scss",
+      "PackagePath": "staticwebassets\\scss\\support\\_style.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\theme.scss",
+      "PackagePath": "staticwebassets\\scss\\theme.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\tickets\\_style.scss",
+      "PackagePath": "staticwebassets\\scss\\tickets\\_style.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\_dragula.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\_dragula.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\_fullcalendar.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\_fullcalendar.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\_jkanban.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\_jkanban.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\_jqvmap.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\_jqvmap.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\_map.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\_map.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\_prettify.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\_prettify.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\_simplebar.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\_simplebar.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\_tagify.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\_tagify.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\bootstrap-icons\\_bootstrap-icons.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\bootstrap-icons\\_bootstrap-icons.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\bundle.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\bundle.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\datatable\\_buttons.bootstrap4.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\datatable\\_buttons.bootstrap4.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\datatable\\_datatable.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\datatable\\_datatable.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\datepicker\\_bootstrap-datepicker.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\datepicker\\_bootstrap-datepicker.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\dropzone\\_dropzone.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\dropzone\\_dropzone.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\dual-listbox\\_dual-listbox.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\dual-listbox\\_dual-listbox.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_animated.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_animated.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_bordered-pulled.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_bordered-pulled.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_core.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_core.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_fixed-width.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_fixed-width.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_icons.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_icons.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_larger.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_larger.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_list.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_list.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_mixins.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_mixins.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_rotated-flipped.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_rotated-flipped.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_screen-reader.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_screen-reader.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_shims.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_shims.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_stacked.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_stacked.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\_variables.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\_variables.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\brands.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\brands.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\fontawesome.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\fontawesome.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\regular.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\regular.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\solid.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\solid.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\fontawesome\\v4-shims.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\fontawesome\\v4-shims.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\jsTree\\_style.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\jsTree\\_style.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\magnific-popup\\_main.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\magnific-popup\\_main.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\magnific-popup\\_settings.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\magnific-popup\\_settings.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\nioicon\\_variables.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\nioicon\\_variables.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\nioicon\\nioicon.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\nioicon\\nioicon.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\nouislider\\_nouislider.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\nouislider\\_nouislider.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\quill\\_quill.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\quill\\_quill.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\select2\\_dropdown.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\select2\\_dropdown.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\select2\\_multiple.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\select2\\_multiple.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\select2\\_single.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\select2\\_single.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\select2\\core.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\select2\\core.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\select2\\mixins\\_gradients.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\select2\\mixins\\_gradients.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\select2\\theme\\default\\_multiple.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\select2\\theme\\default\\_multiple.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\select2\\theme\\default\\_single.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\select2\\theme\\default\\_single.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\select2\\theme\\default\\layout.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\select2\\theme\\default\\layout.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\slick\\_slick.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\slick\\_slick.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\_common.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\_common.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\_elements.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\_elements.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\_font.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\_font.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_btn-group.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_btn-group.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_buttons.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_buttons.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_common.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_common.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_dropdown.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_dropdown.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_form.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_form.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_mixins.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_mixins.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_modal.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_modal.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_popover.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_popover.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_toolbar.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_toolbar.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_tooltip.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_tooltip.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\_variables.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\_variables.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\styles\\mixins\\buttons.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\styles\\mixins\\buttons.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\summernote\\summernote-lite.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\summernote\\summernote-lite.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\_sweetalert2.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\_sweetalert2.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\scss\\_animations.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\scss\\_animations.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\scss\\_body.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\scss\\_body.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\scss\\_core.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\scss\\_core.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\scss\\_mixins.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\scss\\_mixins.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\scss\\_polyfills.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\scss\\_polyfills.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\scss\\_theming.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\scss\\_theming.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\scss\\_toasts-animations.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\scss\\_toasts-animations.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\scss\\_toasts-body.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\scss\\_toasts-body.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\scss\\_toasts.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\scss\\_toasts.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\sweetalert2\\variables.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\sweetalert2\\variables.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\themify-icons\\_themify-icons.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\themify-icons\\_themify-icons.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\timepicker\\_jquery.timepicker.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\timepicker\\_jquery.timepicker.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\tinymce\\_content.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\tinymce\\_content.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\tinymce\\ui\\_content.inline.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\tinymce\\ui\\_content.inline.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\tinymce\\ui\\_content.mobile.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\tinymce\\ui\\_content.mobile.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\tinymce\\ui\\_content.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\tinymce\\ui\\_content.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\tinymce\\ui\\_skin.mobile.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\tinymce\\ui\\_skin.mobile.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\tinymce\\ui\\_skin.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\tinymce\\ui\\_skin.scss"
+    },
+    {
+      "Id": "C:\\work\\ranalo\\Ranalo\\Ranalo\\wwwroot\\scss\\vendors\\toastr\\_toastr.scss",
+      "PackagePath": "staticwebassets\\scss\\vendors\\toastr\\_toastr.scss"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.Ranalo.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.Ranalo.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.Ranalo.props",
+      "PackagePath": "build\\Ranalo.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.Ranalo.props",
+      "PackagePath": "buildMultiTargeting\\Ranalo.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.Ranalo.props",
+      "PackagePath": "buildTransitive\\Ranalo.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

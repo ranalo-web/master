@@ -1,0 +1,54 @@
+﻿@using Ranalo.Models
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model List<PaymentsSummaryTotals>
+@{
+    Layout = "_Layout";
+}
+
+
+<main class="content">
+	<div class="container-fluid p-0">
+
+		<h1 class="h3 mb-3"><strong>Payments</strong> Summary</h1>
+		<div class="row">
+			<div>
+				<div class="card flex-fill">
+					<div class="card-header">
+
+						<h5 class="card-title mb-0">Payments with no Account</h5>
+					</div>
+					<table class="table table-hover my-0">
+						<thead>
+							<tr>
+								<th>Account</th>
+								<th>Total Paid</th>
+								<th>First</th>
+								<th>Last</th>
+								<th>First Payment</th>
+								<th>Last Payment</th>
+							</tr>
+						</thead>
+						<tbody>
+							@{
+								foreach (var order in Model)
+								{
+									<tr>
+										<td>@order.Account </td>
+										<td>@order.TotalPaid </td>
+										<td>@order.First </td>
+										<td>@order.Last</td>
+										<td>@order.FirstPayment.AmountValue</td>
+										<td>@order.LastPayment.AmountValue </td>
+									</tr>
+								}
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</main>

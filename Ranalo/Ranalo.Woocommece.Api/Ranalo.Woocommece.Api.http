@@ -1,0 +1,6 @@
+@Ranalo.Woocommece.Api_HostAddress = http://localhost:5128
+
+GET {{Ranalo.Woocommece.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
