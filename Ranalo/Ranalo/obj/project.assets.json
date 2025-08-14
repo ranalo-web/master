@@ -3358,11 +3358,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Ranalo.csproj",
+      "projectUniqueName": "C:\\work\\ranalo\\work\\Ranalo\\Ranalo\\Ranalo.csproj",
       "projectName": "Ranalo",
-      "projectPath": "C:\\work\\ranalo\\Ranalo\\Ranalo\\Ranalo.csproj",
+      "projectPath": "C:\\work\\ranalo\\work\\Ranalo\\Ranalo\\Ranalo.csproj",
       "packagesPath": "C:\\Users\\SpencerMabanga\\.nuget\\packages\\",
-      "outputPath": "C:\\work\\ranalo\\Ranalo\\Ranalo\\obj\\",
+      "outputPath": "C:\\work\\ranalo\\work\\Ranalo\\Ranalo\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

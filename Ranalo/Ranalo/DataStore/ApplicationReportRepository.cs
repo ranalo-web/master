@@ -290,6 +290,33 @@ namespace Ranalo.DataStore
             return await _db.QueryFirstOrDefaultAsync<CustomerDetails>(sql, new { OrderId = orderId});
         }
 
+        public async Task<CustomerDetails?> GetCustomerDetailsByFirstMpesaCode(string firstMpesaCode)
+        {
+            var sql = @" SELECT wo.OrderID,
+                        		 wo.[Status],
+                        		 wo.DateCreated,
+                        		 wo.DateModified,
+                        		 wo.TotalAmount,
+                        		 wo.CustomerId,
+                        		 wo.FirstName,
+                        		 wo.LastName,
+                        		 wo.Address1,
+                        		 wo.Email,
+                        		 wo.Phone,
+                        		 wo.IMEI,
+                        		 wo.NationalId,
+                        		 wo.DealerRef,
+                        		 wo.MpesaDepositRef,
+                        		 woi.[Url]
+                          FROM [dbo].[Woo_Orders] wo
+                          LEFT JOIN [dbo].[Woo_Orders_Images] woi
+                          ON wo.OrderID = woi.OrderId
+                          where wo.MpesaDepositRef = @FirstMpesaCode";
+
+            return await _db.QueryFirstOrDefaultAsync<CustomerDetails>(sql, new { FirstMpesaCode = firstMpesaCode });
+        }
+
+
         public async Task<IEnumerable<ImagesMetadata>> GetIdentityImagesForOrder(long orderId)
         {
             var sql = @" SELECT woi.[Id]
@@ -583,6 +610,184 @@ namespace Ranalo.DataStore
         public Task<AccountSummary?> GetAccountSummary(string customerAccount)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<IEnumerable<PaymentSummary>> GetPaymentSummaryByDeviceGroupAsync(int deviceGroupId)
+        {
+            var sql = @"WITH 
+                        ValidPayments AS (
+                            SELECT *
+                            FROM KosePayments
+                            WHERE TRY_CAST(AccountNo AS BIGINT) IS NOT NULL
+                        ),
+                        PTable1 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, 
+                                SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
+                            FROM ValidPayments
+                            GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                        ),
+                        PTable4 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                p.Amount AS Last_Paid_Amount,
+                                p.PaymentDate AS LastPaidDate,
+                                p.MpesaCode AS Last_MPesaCode
+                            FROM ValidPayments p
+                            INNER JOIN (
+                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MAX(PaymentDate) AS Last_Payment_Date
+                                FROM ValidPayments
+                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                            ) t3 
+                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t3.AccountNo 
+                             AND p.PaymentDate = t3.Last_Payment_Date	
+                        ),
+                        PTable5 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
+                                p.PaymentDate AS FirstPaidDate,
+                                p.MpesaCode AS First_MPesaCode
+                            FROM ValidPayments p
+                            INNER JOIN (
+                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
+                                FROM ValidPayments
+                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                            ) t2 
+                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t2.AccountNo 
+                             AND p.PaymentDate = t2.First_Payment_Date
+                        ),
+                        ContractInf0 AS (
+                        	select d.Id, wo.TotalAmount 
+                        	from Devices d
+                        	inner join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
+                        	left join Woo_Orders wo on wo.MpesaDepositRef = p.MpesaCode
+                        	where  wo.MpesaDepositRef is not null
+                        )
+                        
+                        SELECT 
+                            t1.AccountNo,
+                            t1.Total_Paid AS TotalPaid,
+                            t5.FirstPaidDate,
+                            t5.First_Paid_Amount As FirstPaymentAmount,
+                            t5.First_MPesaCode as FirstMPesaCode,
+                            t4.LastPaidDate,
+                            t4.Last_Paid_Amount AS LastPaymentAmount,
+                            t4.Last_MPesaCode AS LastMPesaCode,
+                            d.Make,
+                            d.Model,
+                            d.LastConnectedAt,
+                            d.Locked,
+                            d.EnrolledOn,
+                            d.DeviceGroupId,
+                            d.[Name],
+                            d.ImeiNo,
+                            d.NextLockDate,
+                        	t6.TotalAmount,
+                            d.Status,
+                            d.LockType
+                        FROM PTable1 t1
+                        JOIN Devices d 
+                          ON t1.AccountNo = d.Id
+                        JOIN PTable5 t5 
+                          ON t1.AccountNo = t5.AccountNo
+                        JOIN PTable4 t4 
+                          ON t1.AccountNo = t4.AccountNo
+                        JOIN ContractInf0 t6
+                        	ON t1.AccountNo = t6.Id
+                        -- filter after full aggregation
+                        WHERE d.DeviceGroupId = @DeviceGroupId
+                        ORDER BY t1.AccountNo;";
+
+            return await _db.QueryAsync<PaymentSummary>(sql, new { DeviceGroupId = deviceGroupId });
+        }
+
+        public async Task<IEnumerable<PaymentSummary>> GetPaymentSummaryAsync()
+        {
+            var sql = @"WITH 
+                        ValidPayments AS (
+                            SELECT *
+                            FROM KosePayments
+                            WHERE TRY_CAST(AccountNo AS BIGINT) IS NOT NULL
+                        ),
+                        PTable1 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, 
+                                SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
+                            FROM ValidPayments
+                            GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                        ),
+                        PTable4 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                p.Amount AS Last_Paid_Amount,
+                                p.PaymentDate AS LastPaidDate,
+                                p.MpesaCode AS Last_MPesaCode
+                            FROM ValidPayments p
+                            INNER JOIN (
+                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MAX(PaymentDate) AS Last_Payment_Date
+                                FROM ValidPayments
+                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                            ) t3 
+                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t3.AccountNo 
+                             AND p.PaymentDate = t3.Last_Payment_Date	
+                        ),
+                        PTable5 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
+                                p.PaymentDate AS FirstPaidDate,
+                                p.MpesaCode AS First_MPesaCode
+                            FROM ValidPayments p
+                            INNER JOIN (
+                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
+                                FROM ValidPayments
+                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                            ) t2 
+                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t2.AccountNo 
+                             AND p.PaymentDate = t2.First_Payment_Date
+                        ),
+                        ContractInf0 AS (
+                        	select d.Id, wo.TotalAmount 
+                        	from Devices d
+                        	inner join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
+                        	left join Woo_Orders wo on wo.MpesaDepositRef = p.MpesaCode
+                        	where  wo.MpesaDepositRef is not null
+                        )
+                        
+                        SELECT 
+                            t1.AccountNo,
+                            t1.Total_Paid AS TotalPaid,
+                            t5.FirstPaidDate,
+                            t5.First_Paid_Amount As FirstPaymentAmount,
+                            t5.First_MPesaCode as FirstMPesaCode,
+                            t4.LastPaidDate,
+                            t4.Last_Paid_Amount AS LastPaymentAmount,
+                            t4.Last_MPesaCode AS LastMPesaCode,
+                            d.Make,
+                            d.Model,
+                            d.LastConnectedAt,
+                            d.Locked,
+                            d.EnrolledOn,
+                            d.DeviceGroupId,
+                            d.[Name],
+                            d.ImeiNo,
+                            d.NextLockDate,
+                        	t6.TotalAmount,
+                            d.Status,
+                            d.LockType
+                        FROM PTable1 t1
+                        JOIN Devices d 
+                          ON t1.AccountNo = d.Id
+                        JOIN PTable5 t5 
+                          ON t1.AccountNo = t5.AccountNo
+                        JOIN PTable4 t4 
+                          ON t1.AccountNo = t4.AccountNo
+                        JOIN ContractInf0 t6
+                        	ON t1.AccountNo = t6.Id
+                        ORDER BY t1.AccountNo;";
+
+            return await _db.QueryAsync<PaymentSummary>(sql);
         }
     }
 }

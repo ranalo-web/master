@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Ranalo")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+916b1269ea2dd2d9619847069802590c6c1e1fd5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9f6a5941ceec4634483184e20f5183e96a546904")]
 [assembly: System.Reflection.AssemblyProductAttribute("Ranalo")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Ranalo")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

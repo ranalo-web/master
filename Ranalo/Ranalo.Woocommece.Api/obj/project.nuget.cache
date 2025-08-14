@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "L8ifZ3GZWPI=",
+  "dgSpecHash": "TlHm+Z9o/Uc=",
   "success": true,
-  "projectFilePath": "C:\\work\\ranalo\\Ranalo\\Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj",
+  "projectFilePath": "C:\\work\\ranalo\\work\\Ranalo\\Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\SpencerMabanga\\.nuget\\packages\\dapper\\2.1.66\\dapper.2.1.66.nupkg.sha512",
     "C:\\Users\\SpencerMabanga\\.nuget\\packages\\microsoft.extensions.apidescription.server\\6.0.5\\microsoft.extensions.apidescription.server.6.0.5.nupkg.sha512",

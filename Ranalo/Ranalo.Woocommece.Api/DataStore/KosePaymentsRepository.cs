@@ -168,5 +168,56 @@ namespace Ranalo.Woocommece.Api.DataStore
                 }
         }
 
+        public async Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords)
+        {
+            const string updateQuery = @"UPDATE [dbo].[Devices]
+                                            SET [Name] = @Name
+                                               ,[ImeiNo] = @ImeiNo
+                                               ,[ImeiNo2] = @ImeiNo2
+                                               ,[SerialNo] = @SerialNo
+                                               ,[IsTv] = @IsTv
+                                               ,[PhoneNumber] = @PhoneNumber
+                                               ,[Model] = @Model
+                                               ,[Make] = @Make
+                                               ,[OsVersion] = @OsVersion
+                                               ,[SdkVersion] = @SdkVersion
+                                               ,[Status] = @Status
+                                               ,[Locked] = @Locked
+                                               ,[LockType] = @LockType
+                                               ,[DeviceGroupId] = @DeviceGroupId
+                                               ,[AdminLockType] = @AdminLockType
+                                               ,[AdminLocked] = @AdminLocked
+                                               ,[AppVersionCode] = @AppVersionCode
+                                               ,[AppVersionName] = @AppVersionName
+                                               ,[CreatedAt] = @CreatedAt
+                                               ,[CustomerName] = @CustomerName
+                                               ,[CustomerEmail] = @CustomerEmail
+                                               ,[CustomerAddress] = @CustomerAddress
+                                               ,[CustomerPhoneNumber] = @CustomerPhoneNumber
+                                               ,[UnlockCode] = @UnlockCode
+                                               ,[ValidityOfUnlockCode] = @ValidityOfUnlockCode
+                                               ,[IsActivated] = @IsActivated
+                                               ,[IsLockedOnSimSwap] = @IsLockedOnSimSwap
+                                               ,[FirstLockDate] = @FirstLockDate
+                                               ,[FirstLockDateIsoFormat] = @FirstLockDateIsoFormat
+                                               ,[NextLockDate] = @NextLockDate
+                                               ,[NextLockDateIsoFormat] = @NextLockDateIsoFormat
+                                               ,[EulaStatus] = @EulaStatus
+                                               ,[EulaActionPerformedOn] = @EulaActionPerformedOn
+                                               ,[LastConnectedAt] = @LastConnectedAt
+                                               ,[GettingStartedButtonClicked] = @GettingStartedButtonClicked
+                                               ,[EnrollmentStatus] = @EnrollmentStatus
+                                               ,[EnrollmentFailureReason] = @EnrollmentFailureReason
+                                               ,[AdditionalSetupDone] = @AdditionalSetupDone
+                                               ,[BatteryOptimizationGranted] = @BatteryOptimizationGranted
+                                               ,[EnrolledOn] = @EnrolledOn
+                                               ,[DlcStatus] = @DlcStatus
+                                          WHERE [Id] = @Id";
+
+            foreach (var record in groupedRecords)
+            {
+                await _db.ExecuteAsync(updateQuery, record);
+            }
+        }
     }
 }

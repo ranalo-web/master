@@ -1,5 +1,6 @@
 ﻿using Ranalo.DataStore;
 using Ranalo.Models;
+using System.Drawing.Printing;
 using System.Linq;
 
 namespace Ranalo.Services
@@ -8,10 +9,12 @@ namespace Ranalo.Services
     {
         private readonly IApplicationReportRepository _applicationReportRepository;
         private readonly IRepository _repository;
-        public ApplicationReportService(IApplicationReportRepository applicationReportRepository, IRepository repository)
+        private readonly IContractCalculatorService _calculatorService;
+        public ApplicationReportService(IApplicationReportRepository applicationReportRepository, IRepository repository, IContractCalculatorService calculatorService  )
         {
             _applicationReportRepository = applicationReportRepository;
             _repository = repository;
+            _calculatorService = calculatorService;
         }
 
         public async Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrders(string searchTerm = "", int page = 1, int pageSize = 10)
@@ -146,6 +149,83 @@ namespace Ranalo.Services
             string result = await client.UpdateOrderStatusAsync(orderId, "approved");
 
             return await _applicationReportRepository.ApproveOrder(orderId);
+        }
+
+        public async Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int? deviceGroupId)
+        {
+
+            var mobileStatusReports = new List<MobileStatusReport>();
+            //Get payment Summary
+            IEnumerable<PaymentSummary> paymentSummary;
+            if(deviceGroupId != null)
+            {
+                paymentSummary = await _applicationReportRepository.GetPaymentSummaryByDeviceGroupAsync((int)deviceGroupId);
+            }
+            else
+            {
+                paymentSummary = await _applicationReportRepository.GetPaymentSummaryAsync();
+            }
+
+            if (paymentSummary != null) 
+            {
+                foreach (var payment in paymentSummary)
+                {
+                    var dailyRate = _calculatorService.CalculateDailyRate(payment.TotalAmount);
+                    var statusRow = new MobileStatusReport()
+                    {
+                        TotalPaid = payment.TotalPaid,
+                        Deposit = _calculatorService.CalculateDeposit(payment.TotalAmount),
+                        TotalDue = _calculatorService.CalculateTotalDue(payment.TotalAmount, payment.FirstPaidDate),
+                        AccountNo = payment.AccountNo,
+                        DeviceGroupId = payment.DeviceGroupId,
+                        FirstName = await GetFirstNameByMpesa(payment.FirstMPesaCode),
+                        ImeiNo = payment.ImeiNo,
+                        Arrears = _calculatorService.CalculateArears(payment.TotalAmount, payment.TotalPaid, payment.FirstPaidDate),
+                        ArrearsAmt = 0, //Ask Eddie 
+                        Comms = 0, //Ask Eddie for Calculation
+                        Daily = dailyRate,
+                        DateEnrolled = payment.DateEnrolled,
+                        DeviceGroup = "",  //Work this out
+                        EnrolledOn = DateHelper.ParseCustomDate(payment.EnrolledOn),
+                        LagDays = _calculatorService.CalculateLagDays(payment.FirstPaidDate, payment.EnrolledOn),
+                        LastConnectedAt = payment.LastConnectedAt,
+                        LastPaymentDate = payment.LastPaidDate,
+                        LastPaidAmt = payment.LastPaymentAmount,
+                        FirstPaidAmt = payment.FirstPaymentAmount,
+                        FirstPaymentDate = payment.FirstPaidDate,
+                        LiveFlag = "1", //Ask Eddie Not sure what this is
+                        Locked = payment.Locked,
+                        Make = payment.Make,
+                        Model = payment.Model,
+                        Monthly = _calculatorService.CalculateMonthlyRate(dailyRate),
+                        NotPaying7D = _calculatorService.HasNotPaidInLast7Days(payment.LastPaidDate) ? 1 : 0,
+                        RePaymentIntervals = "Daily",
+                        SaleWeek = DateTime.Now, //Ask Eddie Whats this????
+                        Weekly = _calculatorService.CalculateWeekleyRate(dailyRate),
+                        LoanBalance = _calculatorService.CalculateOutstandingAmount(payment.TotalAmount, payment.TotalPaid),
+                        TotalLoan = dailyRate * 30 * 12,
+                        NumberDaysLifeTime = _calculatorService.CalculateDaysContractEnd(payment.FirstPaidDate),
+                        NextLockDate = payment.NextLockDate,
+                        Status = payment.Status,
+                        LockType = payment.LockType
+                    };
+
+                    mobileStatusReports.Add(statusRow);
+                }
+            }
+
+            return mobileStatusReports;
+
+        }
+
+        private async Task<string> GetFirstNameByMpesa(string? firstMPesaCode)
+        {
+            if (string.IsNullOrEmpty(firstMPesaCode)) return "";
+
+            var customerDetails = await _applicationReportRepository.GetCustomerDetailsByFirstMpesaCode(firstMPesaCode);
+
+            if (customerDetails == null) return "";
+            return customerDetails.FirstName;
         }
     }
 }

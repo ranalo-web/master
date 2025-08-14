@@ -39,6 +39,25 @@ namespace Ranalo.DataStore
             await _context.SaveChangesAsync();
         }
 
+        public async Task<User> CreateUserAsync(User newUser)
+        {
+            try
+            {
+                // Add the user to the DbSet
+                await _context.Users.AddAsync(newUser);
+
+                // Save changes to the database
+                await _context.SaveChangesAsync();
+
+                return newUser; // now it has the generated UserId
+            }
+            catch (Exception ex)
+            {
+                // log exception if needed
+                throw;
+            }
+        }
+
         public async Task<User?> GetByEmailAndPasswordAsync(string email, string password)
         {
             try
@@ -67,6 +86,35 @@ namespace Ranalo.DataStore
             }
 
         }
+        public async Task<IEnumerable<User>> GetAllUsersAsync()
+        {
+            try
+            {
+                return await _context.Users.AsNoTracking().ToListAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+
+        }
+
+        public async Task<IEnumerable<User>> GetUsersByDealerIdAsync(int dealerId)
+        {
+            try
+            {
+                return await _context.Users
+                .Where(x => x.DealerId == dealerId)
+                .ToListAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+
+        }
 
         public async Task<Dealer?> GetDealerByUserIdAsync(int userId)
         {
@@ -81,6 +129,20 @@ namespace Ranalo.DataStore
                 throw;
             }
 
+        }
+
+        public async Task<User?> GetUserByEmailAsync(string email)
+        {
+            try
+            {
+                return await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == email);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
     }
 }

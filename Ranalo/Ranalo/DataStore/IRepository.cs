@@ -14,5 +14,10 @@ namespace Ranalo.DataStore
         Task<Dealer?> GetDealerByUserIdAsync(int userId);
 
         Task<User?> GetByCustomerIdAsync(int userId);
+        Task<IEnumerable<User>> GetUsersByDealerIdAsync(int dealerId);
+        Task<IEnumerable<User>> GetAllUsersAsync();
+
+        Task<User> CreateUserAsync(User newUser);
+        Task<User?> GetUserByEmailAsync(string email);
     }
 }

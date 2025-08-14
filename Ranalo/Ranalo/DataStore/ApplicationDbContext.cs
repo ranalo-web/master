@@ -39,6 +39,18 @@ namespace Ranalo.DataStore
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+      
+            modelBuilder.Entity<User>()
+            .Ignore(u => u.Role);
+
+            modelBuilder.Entity<User>()
+            .Property(u => u.RoleId)
+            .HasConversion<int>();
+
+            modelBuilder.Entity<User>()
+            .Property(u => u.Status)
+            .HasConversion<int>();
+
             base.OnModelCreating(modelBuilder);
         }
     }

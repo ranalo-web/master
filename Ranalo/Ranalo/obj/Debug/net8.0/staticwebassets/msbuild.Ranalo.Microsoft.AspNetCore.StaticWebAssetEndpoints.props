@@ -5236,13 +5236,13 @@
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Ranalo.ofvlkq17hs.bundle.scp.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-nGFHOsRcsvSgCf6W1kCgn14xrH7ZR3w9Lmqumcql6dg="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"1124"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022nGFHOsRcsvSgCf6W1kCgn14xrH7ZR3w9Lmqumcql6dg=\u0022"},{"Name":"Last-Modified","Value":"Mon, 14 Jul 2025 13:16:16 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"1124"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022nGFHOsRcsvSgCf6W1kCgn14xrH7ZR3w9Lmqumcql6dg=\u0022"},{"Name":"Last-Modified","Value":"Wed, 16 Jul 2025 08:31:59 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Ranalo/Ranalo.ofvlkq17hs.bundle.scp.css">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Ranalo.ofvlkq17hs.bundle.scp.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"ofvlkq17hs"},{"Name":"integrity","Value":"sha256-nGFHOsRcsvSgCf6W1kCgn14xrH7ZR3w9Lmqumcql6dg="},{"Name":"label","Value":"_content/Ranalo/Ranalo.bundle.scp.css"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"1124"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022nGFHOsRcsvSgCf6W1kCgn14xrH7ZR3w9Lmqumcql6dg=\u0022"},{"Name":"Last-Modified","Value":"Mon, 14 Jul 2025 13:16:16 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"1124"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022nGFHOsRcsvSgCf6W1kCgn14xrH7ZR3w9Lmqumcql6dg=\u0022"},{"Name":"Last-Modified","Value":"Wed, 16 Jul 2025 08:31:59 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/Ranalo/scss/apps/_asterisk.h07j3tmk9z.scss">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\scss\apps\_asterisk.scss'))</AssetFile>

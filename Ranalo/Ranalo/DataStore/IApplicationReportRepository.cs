@@ -18,6 +18,7 @@ namespace Ranalo.DataStore
 
         Task<IEnumerable<Device>> GetAllDevicesAsync();
         Task<CustomerDetails?> GetCustomerDetails(long orderId);
+        Task<CustomerDetails?> GetCustomerDetailsByFirstMpesaCode(string firstMpesaCode);
         Task<int> RejectOrder(long orderId);
 
         Task<int> ApproveOrder(long orderId);
@@ -26,5 +27,7 @@ namespace Ranalo.DataStore
         Task<AccountSummary?> GetPaymentSummaryForAccountId(string accountNo);
         Task<string?> GetCustomerAccountByMpesa(string mpesaDepositRef);
         Task<AccountSummary?> GetAccountSummary(string customerAccount);
+        Task<IEnumerable<PaymentSummary>> GetPaymentSummaryByDeviceGroupAsync(int deviceGroupId);
+        Task<IEnumerable<PaymentSummary>> GetPaymentSummaryAsync();
     }
 }

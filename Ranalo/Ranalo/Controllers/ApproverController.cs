@@ -26,10 +26,10 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
             ViewBag.BackLink = "approver";
-            ViewBag.IsAdmin = settings.RoleId == 1;
-            ViewBag.IsApprover = settings.RoleId == 5;
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
 
-            if (settings.RoleId == 1 || settings.RoleId == 5)
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
                 var allAwaitngApproval = await _applicationReportService.GetAwaitingApprovalOrders(page: page, pageSize: pageSize);
                 var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
@@ -59,7 +59,7 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            if (settings.RoleId == 2)
+            if (settings.RoleId == UserRole.Dealer)
             {
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
                 ViewBag.UserName = dealer.CompanyName;
@@ -70,8 +70,8 @@ namespace Ranalo.Controllers
                 ViewBag.UserName = user.KnownAs;
             }
 
-            ViewBag.IsAdmin = settings.RoleId == 1;
-            ViewBag.IsApprover = settings.RoleId == 5;
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             var isApproved = await _applicationReportService.RejectOrderAsync(orderId);
             //var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, "searchTerm");
             return Redirect($"/customer-details/{orderId}");
@@ -87,7 +87,7 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            if (settings.RoleId == 2)
+            if (settings.RoleId == UserRole.Dealer)
             {
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
                 ViewBag.UserName = dealer.CompanyName;
@@ -98,8 +98,8 @@ namespace Ranalo.Controllers
                 ViewBag.UserName = user.KnownAs;
             }
 
-            ViewBag.IsAdmin = settings.RoleId == 1;
-            ViewBag.IsApprover = settings.RoleId == 5;
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             var isApproved = await _applicationReportService.ApproveOrderAsync(orderId);
 
             return Redirect($"/customer-details/{orderId}");

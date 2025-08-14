@@ -25,7 +25,7 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            if (settings.RoleId == 2)
+            if (settings.RoleId == UserRole.Dealer)
             {
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
                 ViewBag.UserName = dealer.CompanyName;
@@ -37,8 +37,8 @@ namespace Ranalo.Controllers
             }
 
 
-            ViewBag.IsAdmin = settings.RoleId == 1;
-            ViewBag.IsApprover = settings.RoleId == 5;
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             var customerDetails = await _applicationReportService.GetCustomerDetailsByOrderIdAsync(orderId);
 
             return View(customerDetails);

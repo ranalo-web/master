@@ -7,5 +7,2302 @@ by editing this MSBuild file. In order to learn more about this please visit htt
   <PropertyGroup>
     <TimeStampOfAssociatedLegacyPublishXmlFile />
     <EncryptedPassword>AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAgXgI7yioEU6/xjKVS3gHwwAAAAACAAAAAAAQZgAAAAEAACAAAADvw07gsZMOEmkfVXeBItGt1YqMChl/kwQNGULLzn91qgAAAAAOgAAAAAIAACAAAAAIuVvgTxSierR1mQEJ/S5twEGuSu2PSRjeHgHRy6730oAAAACe3rLR1q8oRuI1AusPkIBrTzM0AzvyAlxbmB84QYcyMN9kR9iXuSnknrrqGmN78e8ndsVxFHQZpotVCQ5hv09YAagZrH2CF5Iq/637MXxpSyO8K9b9bYjKgd4QnpJ/ga5hen46vbupKpPJBK2cCRzVr545+Y08IXCZZTRo2FK7xUAAAAAVeHDrTC5ze3PXAb9Ugp2vYCBCL+e8gcIWHGrd2QzIHmsKo93RbwkYtFoJpPrJDHkcc+CSBu81sVQr7JDmfdE2</EncryptedPassword>
+    <_PublishTargetUrl>ftps://waws-prod-yt1-033.ftp.azurewebsites.windows.net/site/wwwroot</_PublishTargetUrl>
+    <History>True|2025-07-23T16:28:21.7692607Z||;True|2025-07-16T17:11:30.7869973+01:00||;False|2025-07-15T17:12:31.7504044+01:00||;</History>
+    <LastFailureDetails />
   </PropertyGroup>
+  <ItemGroup>
+    <File Include="appsettings.Development.json">
+      <publishTime>05/30/2025 01:00:02</publishTime>
+    </File>
+    <File Include="appsettings.json">
+      <publishTime>05/28/2025 23:00:24</publishTime>
+    </File>
+    <File Include="Azure.Core.dll">
+      <publishTime>02/26/2024 15:24:40</publishTime>
+    </File>
+    <File Include="Azure.Identity.dll">
+      <publishTime>10/06/2024 17:43:48</publishTime>
+    </File>
+    <File Include="Dapper.dll">
+      <publishTime>06/02/2025 12:16:30</publishTime>
+    </File>
+    <File Include="EntityFramework.dll">
+      <publishTime>06/16/2024 21:46:24</publishTime>
+    </File>
+    <File Include="EntityFramework.SqlServer.dll">
+      <publishTime>06/16/2024 21:47:04</publishTime>
+    </File>
+    <File Include="Microsoft.Bcl.AsyncInterfaces.dll">
+      <publishTime>04/14/2020 22:39:12</publishTime>
+    </File>
+    <File Include="Microsoft.Data.SqlClient.dll">
+      <publishTime>08/27/2024 19:22:48</publishTime>
+    </File>
+    <File Include="Microsoft.EntityFrameworkCore.Abstractions.dll">
+      <publishTime>04/16/2025 22:15:18</publishTime>
+    </File>
+    <File Include="Microsoft.EntityFrameworkCore.dll">
+      <publishTime>04/16/2025 22:15:56</publishTime>
+    </File>
+    <File Include="Microsoft.EntityFrameworkCore.Relational.dll">
+      <publishTime>04/16/2025 22:16:22</publishTime>
+    </File>
+    <File Include="Microsoft.EntityFrameworkCore.SqlServer.dll">
+      <publishTime>04/16/2025 22:17:40</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.Caching.Abstractions.dll">
+      <publishTime>04/15/2025 19:07:08</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.Caching.Memory.dll">
+      <publishTime>04/15/2025 19:13:08</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.Configuration.Abstractions.dll">
+      <publishTime>04/15/2025 19:04:52</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.DependencyInjection.Abstractions.dll">
+      <publishTime>04/15/2025 19:12:26</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.DependencyInjection.dll">
+      <publishTime>04/15/2025 19:12:50</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.Logging.Abstractions.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.Logging.dll">
+      <publishTime>04/15/2025 19:13:16</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.Options.dll">
+      <publishTime>04/15/2025 19:12:48</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.Primitives.dll">
+      <publishTime>04/15/2025 19:03:40</publishTime>
+    </File>
+    <File Include="Microsoft.Identity.Client.dll">
+      <publishTime>06/06/2024 23:09:28</publishTime>
+    </File>
+    <File Include="Microsoft.Identity.Client.Extensions.Msal.dll">
+      <publishTime>06/06/2024 23:14:52</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.Abstractions.dll">
+      <publishTime>01/12/2023 04:56:56</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.JsonWebTokens.dll">
+      <publishTime>01/12/2023 04:34:00</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.Logging.dll">
+      <publishTime>01/12/2023 04:35:22</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.Protocols.dll">
+      <publishTime>01/12/2023 04:37:28</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.Protocols.OpenIdConnect.dll">
+      <publishTime>01/12/2023 04:48:08</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.Tokens.dll">
+      <publishTime>01/12/2023 04:41:50</publishTime>
+    </File>
+    <File Include="Microsoft.SqlServer.Server.dll">
+      <publishTime>01/27/2022 17:19:08</publishTime>
+    </File>
+    <File Include="Microsoft.Win32.SystemEvents.dll">
+      <publishTime>10/23/2021 00:40:24</publishTime>
+    </File>
+    <File Include="Ranalo.deps.json">
+      <publishTime>07/23/2025 16:54:48</publishTime>
+    </File>
+    <File Include="Ranalo.dll">
+      <publishTime>07/23/2025 16:54:46</publishTime>
+    </File>
+    <File Include="Ranalo.exe">
+      <publishTime>07/23/2025 16:54:46</publishTime>
+    </File>
+    <File Include="Ranalo.pdb">
+      <publishTime>07/23/2025 16:54:46</publishTime>
+    </File>
+    <File Include="Ranalo.runtimeconfig.json">
+      <publishTime>07/15/2025 16:39:29</publishTime>
+    </File>
+    <File Include="Ranalo.staticwebassets.endpoints.json">
+      <publishTime>07/15/2025 16:39:39</publishTime>
+    </File>
+    <File Include="runtimes/browser/lib/net8.0/System.Text.Encodings.Web.dll">
+      <publishTime>04/15/2025 19:09:10</publishTime>
+    </File>
+    <File Include="runtimes/unix/lib/net6.0/Microsoft.Data.SqlClient.dll">
+      <publishTime>08/27/2024 19:22:48</publishTime>
+    </File>
+    <File Include="runtimes/unix/lib/net6.0/System.Drawing.Common.dll">
+      <publishTime>10/23/2021 00:51:42</publishTime>
+    </File>
+    <File Include="runtimes/unix/lib/netcoreapp2.1/System.Data.SqlClient.dll">
+      <publishTime>10/27/2023 00:34:06</publishTime>
+    </File>
+    <File Include="runtimes/win-arm/native/Microsoft.Data.SqlClient.SNI.dll">
+      <publishTime>11/08/2023 19:56:28</publishTime>
+    </File>
+    <File Include="runtimes/win-arm64/native/Microsoft.Data.SqlClient.SNI.dll">
+      <publishTime>11/08/2023 19:56:28</publishTime>
+    </File>
+    <File Include="runtimes/win-arm64/native/sni.dll">
+      <publishTime>12/07/2017 11:24:24</publishTime>
+    </File>
+    <File Include="runtimes/win-x64/native/Microsoft.Data.SqlClient.SNI.dll">
+      <publishTime>11/08/2023 19:56:18</publishTime>
+    </File>
+    <File Include="runtimes/win-x64/native/sni.dll">
+      <publishTime>12/07/2017 11:24:22</publishTime>
+    </File>
+    <File Include="runtimes/win-x86/native/Microsoft.Data.SqlClient.SNI.dll">
+      <publishTime>11/08/2023 19:56:18</publishTime>
+    </File>
+    <File Include="runtimes/win-x86/native/sni.dll">
+      <publishTime>12/07/2017 11:24:22</publishTime>
+    </File>
+    <File Include="runtimes/win/lib/net6.0/Microsoft.Data.SqlClient.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="runtimes/win/lib/net6.0/Microsoft.Win32.SystemEvents.dll">
+      <publishTime>10/23/2021 00:40:18</publishTime>
+    </File>
+    <File Include="runtimes/win/lib/net6.0/System.Drawing.Common.dll">
+      <publishTime>10/23/2021 00:48:10</publishTime>
+    </File>
+    <File Include="runtimes/win/lib/net6.0/System.Runtime.Caching.dll">
+      <publishTime>10/23/2021 00:52:44</publishTime>
+    </File>
+    <File Include="runtimes/win/lib/net6.0/System.Security.Cryptography.ProtectedData.dll">
+      <publishTime>10/23/2021 00:51:04</publishTime>
+    </File>
+    <File Include="runtimes/win/lib/net6.0/System.Windows.Extensions.dll">
+      <publishTime>10/23/2021 00:49:58</publishTime>
+    </File>
+    <File Include="runtimes/win/lib/netcoreapp2.1/System.Data.SqlClient.dll">
+      <publishTime>10/27/2023 00:34:10</publishTime>
+    </File>
+    <File Include="System.ClientModel.dll">
+      <publishTime>03/01/2024 17:43:00</publishTime>
+    </File>
+    <File Include="System.CodeDom.dll">
+      <publishTime>10/23/2021 00:47:46</publishTime>
+    </File>
+    <File Include="System.Configuration.ConfigurationManager.dll">
+      <publishTime>08/19/2022 20:58:02</publishTime>
+    </File>
+    <File Include="System.Data.SqlClient.dll">
+      <publishTime>10/27/2023 00:27:26</publishTime>
+    </File>
+    <File Include="System.Diagnostics.DiagnosticSource.dll">
+      <publishTime>04/15/2025 19:03:48</publishTime>
+    </File>
+    <File Include="System.Drawing.Common.dll">
+      <publishTime>10/23/2021 00:49:12</publishTime>
+    </File>
+    <File Include="System.Formats.Asn1.dll">
+      <publishTime>04/15/2025 19:04:28</publishTime>
+    </File>
+    <File Include="System.IdentityModel.Tokens.Jwt.dll">
+      <publishTime>01/12/2023 04:31:48</publishTime>
+    </File>
+    <File Include="System.IO.Pipelines.dll">
+      <publishTime>04/15/2025 19:04:20</publishTime>
+    </File>
+    <File Include="System.Memory.Data.dll">
+      <publishTime>08/04/2021 16:45:54</publishTime>
+    </File>
+    <File Include="System.Runtime.Caching.dll">
+      <publishTime>10/23/2021 00:52:02</publishTime>
+    </File>
+    <File Include="System.Security.Cryptography.ProtectedData.dll">
+      <publishTime>10/23/2021 00:51:04</publishTime>
+    </File>
+    <File Include="System.Security.Permissions.dll">
+      <publishTime>10/23/2021 00:49:50</publishTime>
+    </File>
+    <File Include="System.Text.Encodings.Web.dll">
+      <publishTime>04/15/2025 19:08:54</publishTime>
+    </File>
+    <File Include="System.Text.Json.dll">
+      <publishTime>04/15/2025 19:09:42</publishTime>
+    </File>
+    <File Include="System.Windows.Extensions.dll">
+      <publishTime>10/23/2021 00:49:44</publishTime>
+    </File>
+    <File Include="web.config">
+      <publishTime>07/23/2025 16:55:02</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/dashlite.css">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/dashlite.min.css">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/dashlite.rtl.css">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/dashlite.rtl.min.css">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/editors/quill.css">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/editors/quill.rtl.css">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/editors/summernote.css">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/editors/summernote.rtl.css">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/editors/tinymce.css">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/editors/tinymce.rtl.css">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/libs/bootstrap-icons.css">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/libs/fontawesome-icons.css">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/libs/jstree.css">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/libs/themify-icons.css">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/skins/theme-blue.css">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/skins/theme-egyptian.css">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/skins/theme-green.css">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/skins/theme-purple.css">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/skins/theme-red.css">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/style-email.css">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/css/theme.css">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/bootstrap-icons.woff">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/bootstrap-icons.woff2">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-brands-400.eot">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-brands-400.svg">
+      <publishTime>05/21/2025 11:15:20</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-brands-400.ttf">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-brands-400.woff">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-brands-400.woff2">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-regular-400.eot">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-regular-400.svg">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-regular-400.ttf">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-regular-400.woff">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-regular-400.woff2">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-solid-900.eot">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-solid-900.svg">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-solid-900.ttf">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-solid-900.woff">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/fa-solid-900.woff2">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nioicon.svg">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nioicon.ttf">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nioicon.woff">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nunito-Bold.eot">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nunito-Bold.ttf">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nunito-Bold.woff">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nunito-Bold.woff2">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nunito-Regular.eot">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nunito-Regular.ttf">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nunito-Regular.woff">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Nunito-Regular.woff2">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Bold.eot">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Bold.ttf">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Bold.woff">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Bold.woff2">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Light.eot">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Light.ttf">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Light.woff">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Light.woff2">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Medium.eot">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Medium.ttf">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Medium.woff">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Medium.woff2">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Regular.eot">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Regular.ttf">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Regular.woff">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/Roboto-Regular.woff2">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/summernote.eot">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/summernote.ttf">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/summernote.woff">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/summernote.woff2">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/themify.eot">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/themify.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/themify.ttf">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/themify.woff">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/fonts/tinymce-mobile.woff">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/images/jsTree/32px-dark.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/images/jsTree/32px.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/images/jsTree/40px-dark.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/images/jsTree/40px.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/images/jsTree/throbber-dark.gif">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/images/jsTree/throbber.gif">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/apps/calendar.js">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/apps/chats.js">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/apps/file-manager.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/apps/inbox.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/apps/kanban.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/apps/messages.js">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/bundle.js">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/chart-cms.js">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/chart-crm.js">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/chart-crypto.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/chart-ecommerce.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/chart-hotel.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/chart-invest.js">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/chart-lms.js">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/chart-loan.js">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/chart-widgets.js">
+      <publishTime>05/21/2025 11:15:20</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/gd-analytics.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/gd-default.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/gd-hospital.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/gd-invest.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/gd-pharmacy.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/hospital-report.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/charts/pharmacy-report.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/editors.js">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/example-chart.js">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/example-dragula.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/example-listbox.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/example-map.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/example-sweetalert.js">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/example-toastr.js">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/example-tree.js">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/datatable-btns.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/dragula.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/dual-listbox.js">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/editors/quill.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/editors/skins/content/dark/content.css">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/editors/skins/content/default/content.css">
+      <publishTime>05/21/2025 11:15:20</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/editors/summernote.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/editors/tinymce.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/fullcalendar.js">
+      <publishTime>05/21/2025 11:15:20</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/jkanban.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/jqvmap.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/jstree.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/libs/tagify.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/assets/js/scripts.js">
+      <publishTime>05/21/2025 11:15:20</publishTime>
+    </File>
+    <File Include="wwwroot/images/avatar/a-sm.jpg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/avatar/b-sm.jpg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/avatar/c-sm.jpg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/avatar/d-sm.jpg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/cms/sq/a.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/cms/sq/b.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/cms/sq/c.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/cms/sq/d.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/cms/sq/e.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/cms/sq/f.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/cms/sq/g.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/cms/sq/h.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/cms/sq/small-a.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/coins/bch.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/coins/bnb.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/coins/btc.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/coins/eos.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/coins/eth.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/coins/ltc.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/coins/trx.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/coins/usdt.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/coins/xlm.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/coins/xps.svg">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/crm/brand/a.png">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/crm/brand/b.png">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/crm/product/a.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/crm/product/b.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/crm/product/c.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/crm/product/d.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/crm/product/e.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/crm/product/f.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/crm/product/g.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/email/kyc-pending.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/email/kyc-progress.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/email/kyc-success.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/favicon.png">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/arg.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/aus.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/bangladesh.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/canada.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/china-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/china.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/english-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/english.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/french-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/french.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/germany-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/germany.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/iran-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/iran.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/italy-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/italy.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/kenya.jpeg">
+      <publishTime>07/15/2025 09:32:01</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/mexico.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/philipine.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/portugal.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/s-africa.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/spain-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/spain.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/spanish-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/spanish.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/switzerland-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/switzerland.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/turkey-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/turkey.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/uk-sq.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/flags/uk.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/gfx/error-404.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/gfx/error-504.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/gfx/job-survey.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/gfx/survey.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/gfx/work-desk.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/1.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/2.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/3.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/4.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/5.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/6.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/7.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/a.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/b.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/c.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/d.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/e.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/f.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/g.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/h.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/i.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/j.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/k.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/hospital/l.png">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/account-secure.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/bills.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/card-credit.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/card-debit.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/card-secure.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/code-scan.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/codes.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/completely-satisfied.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/connect-secure.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/customize.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/devices.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/doc-checked.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/emails.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/excel.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-doc.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-excel.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-media.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-pdf.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-code-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-code.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-doc-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-doc.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-media-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-media.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-movie-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-movie.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-music-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-music.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-pdf-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-pdf.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-ppt-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-ppt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-sheet-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-sheet.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-text-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-text.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-zip-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-type-zip.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-word.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/file-zip.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/folder-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/folder-secure-alt.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/folder-secure.svg">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/folder-shared-alt.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/folder-shared.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/folder.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/fornt-end-developer.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/freelancing-service.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/friends.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/help-desk.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/id-back.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/id-front.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/invoice.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/kyc-dv.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/kyc-nid.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/kyc-pp.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/loop.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/newspaper.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/not-satisfied.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/password-secure.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/plan-s1.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/plan-s2.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/plan-s3.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/print-advertize.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/product-cc.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/product-ee.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/product-ig.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/product-pp.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/product-sc.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/profile.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/project-duplicate.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/project-import.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/project-kanban.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/project-scrum.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/quite-satisfied.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/recheck.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/reports.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/satisfied.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/search-engine.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/settings.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/support-account.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/support-general.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/support-payment.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/support-secure.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/support.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/sync.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/ux-designer.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/icons/zip.svg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/index.njk">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/images/logo-dark-small.png">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/images/logo-dark-small2x.png">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/images/logo-dark.png">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/images/logo-dark2x.png">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/images/logo-small.png">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/images/logo-small2x.png">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/images/logo.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/logo2x.png">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/a.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/b.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/c.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/d.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/e.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/f.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/g.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/h.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/i.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/j.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/lg-a.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/lg-b.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/lg-c.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/lg-d.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/lg-e.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/lg-f.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/lg-g.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/lg-h.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/product/video-a.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/qr/qr-code.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/Ranalo_Credit_Logo.png">
+      <publishTime>07/15/2025 12:24:02</publishTime>
+    </File>
+    <File Include="wwwroot/images/slides/promo-a.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/slides/promo-a2x.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/slides/promo-b.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/slides/promo-b2x.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/slides/promo-c.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/slides/promo-c2x.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/slides/slide-a.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/slides/slide-b.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/slides/slide-c.jpg">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/socials/facebook.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/socials/medium.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/socials/twitter.png">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/images/socials/youtube.png">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/stock/a.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/stock/b.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/stock/c.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/stock/d.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/stock/e.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/stock/f.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/stock/g.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/stock/h.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/theme/a.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/theme/b.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/theme/c.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/theme/d.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/theme/e.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/images/theme/f.jpg">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/js/apps/calendar.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/apps/chats.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/apps/file-manager.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/apps/inbox.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/apps/kanban.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/apps/messages.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/bundle.js">
+      <publishTime>05/21/2025 11:15:16</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/chart-cms.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/chart-crm.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/chart-crypto.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/chart-ecommerce.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/chart-hotel.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/chart-invest.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/chart-lms.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/chart-loan.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/chart-widgets.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/gd-analytics.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/gd-default.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/gd-hospital.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/gd-invest.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/gd-pharmacy.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/hospital-report.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/charts/pharmacy-report.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/editors.js">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/js/example-chart.js">
+      <publishTime>05/21/2025 11:15:18</publishTime>
+    </File>
+    <File Include="wwwroot/js/example-dragula.js">
+      <publishTime>05/21/2025 11:15:20</publishTime>
+    </File>
+    <File Include="wwwroot/js/example-listbox.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/example-map.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/example-sweetalert.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/example-toastr.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/example-tree.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/datatable-btns.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/dragula.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/dual-listbox.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/editors/quill.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/editors/skins/content/dark/content.css">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/editors/skins/content/default/content.css">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/editors/summernote.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/editors/tinymce.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/fullcalendar.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/jkanban.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/jqvmap.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/jstree.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/libs/tagify.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/scripts.js">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jquery-steps/jquery.steps.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jquery-steps/jquery.steps.min.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/jquery.vmap.min.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/continents/jquery.vmap.africa.js">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/continents/jquery.vmap.asia.js">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/continents/jquery.vmap.australia.js">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/continents/jquery.vmap.europe.js">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/continents/jquery.vmap.north-america.js">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/continents/jquery.vmap.south-america.js">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.algeria.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.argentina.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.brazil.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.canada.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.europe.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.france.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.germany.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.greece.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.iran.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.iraq.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.russia.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.tunisia.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.turkey.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.usa.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/jqvmap/maps/jquery.vmap.world.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/knob/jquery.knob.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/knob/jquery.knob.min.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/nioapp/nioapp.min.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/prettify.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/quill/quill.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/vendors/quill/quill.min.js">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/Ranalo.styles.css">
+      <publishTime>06/27/2025 00:49:20</publishTime>
+    </File>
+    <File Include="wwwroot/scss/apps/_asterisk.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/apps/_attach.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/apps/_chats.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/apps/_file-manager.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/apps/_inbox.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/apps/_messages.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/apps/_reply-comment.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/copywriter/_editor.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/copywriter/_filter.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/copywriter/_history.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/copywriter/_style.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_accordions.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_alert.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_badge.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_block.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_card.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_data-list.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_dropdown.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_feature.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_forms.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_icons.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_link.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_list.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_misc.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_modal.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_nav.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_preloader.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_projects.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_rating.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_search.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_sliders.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_stepper.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_table.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_team.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_text.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_title.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_toggle.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_users.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/components/_wgm.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/fonts/_nunito.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/fonts/_roboto.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/layouts/_base.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/layouts/_footer.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/layouts/_header.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/layouts/_menu-main.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/layouts/_sidebar.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/layouts/_split.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/pages/auths/_base.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/pages/errors/_base.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/pages/_misc.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/utilites/_noclass.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/utilites/_reboot.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/utilites/_sizing.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/utilites/_spacing.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/_components.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/_dark-skin.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/_layouts.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/_misc.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/_mode-override.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/_pages.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/_preview.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/_style.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/core/_utilites.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/crypto/base/_common.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/crypto/base/_tranx.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/crypto/base/_wallet.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/crypto/base/_widgets.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/crypto/pages/_accounts.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/crypto/pages/_buysell.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/crypto/_style.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/crypto/_variables.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/dashlite.scss">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/scss/editors/quill.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/editors/summernote.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/editors/tinymce.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_alert.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_badge.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_breadcrumb.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_button-group.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_buttons.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_card.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_custom-forms.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_dropdown.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_forms.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_grid.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_link.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_media.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_modal.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_nav.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_pagination.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_placeholders.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_progress.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_tables.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_toast.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/components/_tooltip.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/utilites/_background.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/utilites/_borders.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/utilites/_common.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/utilites/_flex.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/utilites/_position.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/utilites/_reboot.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/utilites/_sizing.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/utilites/_spacing.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/utilites/_text.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/utilites/_type.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/_bootstrap.scss">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/_extend.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/extend/bootstrap/_variables.scss">
+      <publishTime>05/21/2025 11:15:14</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/comps/_authors.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/comps/_members.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/comps/_pricing.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/comps/_profiles.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/comps/_reacts.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/comps/_tb-compact.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/comps/_tb-odr.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/comps/_tb-tnx.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/comps/_wizard.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/tables/_base.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/tables/_tranx.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_coins.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_cta.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_db-analytic.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_db-invest.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_ecommerce.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_gallery.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_help.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_invoice.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_kyc-form.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_misc.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_pricing.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_products.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_referral.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_timeline.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/wgs/_wg1.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/global/_style.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/invest/base/_cards.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/invest/base/_common.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/invest/base/_widgets.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/invest/pages/_global.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/invest/pages/_invest.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/invest/pages/_misc.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/invest/pages/_scheme.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/invest/_style.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/invest/_variables.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/libs/bootstrap-icons.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/libs/fontawesome-icons.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/libs/jstree.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/libs/themify-icons.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/loan/base/_widgets.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/loan/pages/_loan.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/loan/_style.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/skins/theme-blue.scss">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/scss/skins/theme-egyptian.scss">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/scss/skins/theme-green.scss">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/scss/skins/theme-purple.scss">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/scss/skins/theme-red.scss">
+      <publishTime>05/21/2025 11:21:42</publishTime>
+    </File>
+    <File Include="wwwroot/scss/skins/_variable_blue.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/skins/_variable_egyptian.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/skins/_variable_green.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/skins/_variable_purple.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/skins/_variable_red.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+    <File Include="wwwroot/scss/style-email.scss">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/scss/subscription/pages/_download.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/subscription/pages/_plans.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/subscription/_style.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/support/_style.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/theme.scss">
+      <publishTime>05/21/2025 11:15:24</publishTime>
+    </File>
+    <File Include="wwwroot/scss/tickets/_style.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/bootstrap-icons/_bootstrap-icons.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/bundle.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/datatable/_buttons.bootstrap4.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/datatable/_datatable.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/datepicker/_bootstrap-datepicker.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/dropzone/_dropzone.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/dual-listbox/_dual-listbox.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/brands.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/fontawesome.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/regular.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/solid.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/v4-shims.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_animated.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_bordered-pulled.scss">
+      <publishTime>05/21/2025 11:15:30</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_core.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_fixed-width.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_icons.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_larger.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_list.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_mixins.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_rotated-flipped.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_screen-reader.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_shims.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_stacked.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/fontawesome/_variables.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/jsTree/_style.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/magnific-popup/_main.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/magnific-popup/_settings.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/nioicon/nioicon.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/nioicon/_variables.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/nouislider/_nouislider.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/quill/_quill.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/select2/core.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/select2/mixins/_gradients.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/select2/theme/default/layout.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/select2/theme/default/_multiple.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/select2/theme/default/_single.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/select2/_dropdown.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/select2/_multiple.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/select2/_single.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/slick/_slick.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/mixins/buttons.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_btn-group.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_buttons.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_common.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_dropdown.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_form.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_mixins.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_modal.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_popover.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_toolbar.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_tooltip.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/styles/_variables.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/summernote-lite.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/_common.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/_elements.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/summernote/_font.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/scss/_animations.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/scss/_body.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/scss/_core.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/scss/_mixins.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/scss/_polyfills.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/scss/_theming.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/scss/_toasts-animations.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/scss/_toasts-body.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/scss/_toasts.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/variables.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/sweetalert2/_sweetalert2.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/themify-icons/_themify-icons.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/timepicker/_jquery.timepicker.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/tinymce/ui/_content.inline.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/tinymce/ui/_content.mobile.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/tinymce/ui/_content.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/tinymce/ui/_skin.mobile.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/tinymce/ui/_skin.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/tinymce/_content.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/toastr/_toastr.scss">
+      <publishTime>05/21/2025 11:15:32</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/_dragula.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/_fullcalendar.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/_jkanban.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/_jqvmap.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/_map.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/_prettify.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/_simplebar.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/vendors/_tagify.scss">
+      <publishTime>05/21/2025 11:15:28</publishTime>
+    </File>
+    <File Include="wwwroot/scss/_dashlite_variables.scss">
+      <publishTime>05/21/2025 11:15:26</publishTime>
+    </File>
+  </ItemGroup>
 </Project>

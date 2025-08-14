@@ -22,6 +22,8 @@ builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IApplicationReportService, ApplicationReportService>();
 builder.Services.AddScoped<IApplicationReportRepository, ApplicationReportRepository>();
+builder.Services.AddScoped<IContractCalculatorService, ContractCalculatorService>();
+//Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int deviceGroupId)
 //IUserService
 
 var app = builder.Build();

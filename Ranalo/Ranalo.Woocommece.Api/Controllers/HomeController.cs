@@ -362,13 +362,15 @@ namespace Ranalo.Woocommece.Api.Controllers
 
             if(latestDeviceId != null)
             {
-                currentDevices = currentDevices.Where(x=>x.Id > latestDeviceId.Id).ToList();
+                var devicesToCreate = currentDevices.Where(x=>x.Id > latestDeviceId.Id).ToList();
+                if (devicesToCreate.Any())
+                {
+                    await _syncService.CreateDevicesToDatabaseAsync(devicesToCreate);
+                }
             }
 
-            if(currentDevices.Any())
-            {
-                await _syncService.CreateDevicesToDatabaseAsync(currentDevices);
-            }
+            //Lets update them all
+            await _syncService.UpdateDevicesToDatabaseAsync(currentDevices);
 
             return Ok(currentDevices);
         }

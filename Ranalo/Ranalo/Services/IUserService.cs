@@ -12,5 +12,13 @@ namespace Ranalo.Services
         Task<Dealer?> GetDealerByUserId(int userId);
 
         Task<User?> GetUserByCustomerIdAsync(int userId);
+
+        Task<List<User>> GetUsersByDealerIdAsync(int dealerId);
+
+        Task<List<User>> GetAllUsersAsync();
+
+        Task AddUserAsync(User user);
+
+
     }
 }

@@ -120,6 +120,11 @@ namespace Ranalo.Woocommece.Api.Services
             await _kosePaymentsRepository.SaveDevicesToDatabaseAsync(groupedRecords);
         }
 
+        public async Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords)
+        {
+            await _kosePaymentsRepository.UpdateDevicesToDatabaseAsync(groupedRecords);
+        }
+
         public async Task<Device?> GetLatestDeviceId()
         {
             return await _syncLogsRepository.GetLatestDeviceAsync();

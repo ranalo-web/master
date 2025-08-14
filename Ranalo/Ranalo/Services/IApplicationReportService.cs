@@ -25,5 +25,10 @@ namespace Ranalo.Services
         Task<int> ApproveOrderAsync(long orderId);
 
         Task<int> RejectOrderAsync(long orderId);
+
+        Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int? deviceGroupId);
+        
+
+
     }
 }

@@ -11,5 +11,6 @@ namespace Ranalo.Woocommece.Api.DataStore
         Task SaveToDatabaseAsync(Dictionary<string, List<MpesaRecord>> groupedRecords);
 
         Task SaveDevicesToDatabaseAsync(List<Device> groupedRecords);
+        Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords);
     }
 }

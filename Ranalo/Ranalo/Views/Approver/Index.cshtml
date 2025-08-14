@@ -42,6 +42,21 @@
 
         return "Search...";
     }
+
+    private string GetInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "string.Empty";
+
+        // Split by spaces and take first character of each word
+        var initials = fullName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => char.ToUpper(word[0]))
+            .Take(2) // only take first 2 initials
+            .ToArray();
+
+        return new string(initials);
+    }
 }
 
 <div class="nk-content-body">
@@ -243,7 +258,7 @@
                                         <a href="html/customer-details.html">
                                             <div class="user-card">
                                                 <div class="user-avatar xs bg-primary">
-                                                    <span>BG</span>
+                                                    <span>@GetInitials(order.FirstName + " " + order.LastName)</span>
                                                 </div>
                                                 <div class="user-name">
                                                     <span class="tb-lead">@order.FirstName @order.LastName  <span class="dot dot-success d-lg-none ms-1"></span></span>

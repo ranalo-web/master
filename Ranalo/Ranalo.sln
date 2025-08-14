@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ranalo", "Ranalo\Ranalo.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ranalo.Woocommece.Api", "Ranalo.Woocommece.Api\Ranalo.Woocommece.Api.csproj", "{A89A918F-C0B0-4FDC-8B57-6D4E72924085}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ranolo.Web.Tests", "Ranolo.Web.Tests\Ranolo.Web.Tests.csproj", "{EBE4C63C-4871-4799-9E35-784F77F88780}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,9 +25,16 @@ Global
 		{A89A918F-C0B0-4FDC-8B57-6D4E72924085}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A89A918F-C0B0-4FDC-8B57-6D4E72924085}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A89A918F-C0B0-4FDC-8B57-6D4E72924085}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBE4C63C-4871-4799-9E35-784F77F88780}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBE4C63C-4871-4799-9E35-784F77F88780}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBE4C63C-4871-4799-9E35-784F77F88780}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBE4C63C-4871-4799-9E35-784F77F88780}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EBE4C63C-4871-4799-9E35-784F77F88780} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {51B5C8E2-6D64-45A8-9105-AB73A29F9150}

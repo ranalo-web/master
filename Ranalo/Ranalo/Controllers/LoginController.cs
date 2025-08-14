@@ -62,11 +62,11 @@ namespace Ranalo.Controllers
 
                     switch (user.RoleId)
                     {
-                        case 1:
+                        case UserRole.Admin:
                             return RedirectToAction("Index", "Home");
-                        case 2:
+                        case UserRole.Dealer:
                             return RedirectToAction("Index", "Home");
-                        case 5:
+                        case UserRole.Approver:
                             return RedirectToAction("Index", "Approver");
                         default:
                             break;

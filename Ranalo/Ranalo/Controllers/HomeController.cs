@@ -2,6 +2,7 @@
 using Ranalo.Configuration;
 using Ranalo.DataStore;
 using Ranalo.DataStore.DataModels;
+using Ranalo.Models;
 using Ranalo.Services;
 using System.Drawing.Printing;
 
@@ -28,9 +29,9 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
             ViewBag.BackLink = "dashboard";
-            ViewBag.IsAdmin = settings.RoleId == 1;
-            ViewBag.IsApprover = settings.RoleId == 5;
-            if (settings.RoleId == 1)
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
+            if (settings.RoleId == UserRole.Admin)
             {
                 var allAwaitngApproval = await _applicationReportService.GetAwaitingApprovalOrders(page:page, pageSize:pageSize);
                 ViewData["OrdersStatus"] = "Waiting Approval";
@@ -38,7 +39,7 @@ namespace Ranalo.Controllers
                 return View("~/Views/Home/Index.cshtml", allAwaitngApproval);
             }
 
-            if(settings.RoleId == 5)
+            if(settings.RoleId == UserRole.Approver)
             {
                 return RedirectToAction("Index", "Approver");
             }
@@ -61,8 +62,8 @@ namespace Ranalo.Controllers
             }
             var dealer = await _userService.GetDealerByUserId(settings.UserId);
             ViewBag.UserName = dealer.CompanyName;
-            ViewBag.IsAdmin = settings.RoleId == 1;
-            ViewBag.IsApprover = settings.RoleId == 5;
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             var allAwaitngApproval = await _applicationReportService.GetOrphanedPaymentsAsync();
 
             return View(allAwaitngApproval);
@@ -77,7 +78,7 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
             
-            if (settings.RoleId == 2)
+            if (settings.RoleId == UserRole.Dealer)
             {
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
                 ViewBag.UserName = dealer.CompanyName;
@@ -89,9 +90,9 @@ namespace Ranalo.Controllers
             }
 
 
-                ViewBag.IsAdmin = settings.RoleId == 1;
-            ViewBag.IsApprover = settings.RoleId == 5;
-            if (settings.RoleId == 1 || settings.RoleId == 5)
+                ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
                 var allPayments = await _applicationReportService.GetAllPaymentsAsync(page:page, pageSize:pageSize);
 
@@ -113,8 +114,8 @@ namespace Ranalo.Controllers
             }
             var dealer = await _userService.GetDealerByUserId(settings.UserId);
             ViewBag.UserName = dealer.CompanyName;
-            ViewBag.IsAdmin = settings.RoleId == 1;
-            ViewBag.IsApprover = settings.RoleId == 5;
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             var allAwaitngApproval = await _applicationReportService.PaymentsSummary();
 
             return View(allAwaitngApproval.ToList());
@@ -130,7 +131,7 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            if (settings.RoleId == 2)
+            if (settings.RoleId == UserRole.Dealer)
             {
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
                 ViewBag.UserName = dealer.CompanyName;
@@ -141,10 +142,10 @@ namespace Ranalo.Controllers
                 ViewBag.UserName = user.KnownAs;
             }
 
-            ViewBag.IsAdmin = settings.RoleId == 1;
-            ViewBag.IsApprover = settings.RoleId == 5;
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
 
-            if (settings.RoleId == 1 || settings.RoleId == 5)
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
                 var allPayments = await _applicationReportService.GetAllPaymentsAsync(searchTerm);
 
@@ -166,9 +167,9 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            ViewBag.IsAdmin = settings.RoleId == 1;
-            ViewBag.IsApprover = settings.RoleId == 5;
-            if (settings.RoleId == 1)
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
+            if (settings.RoleId == UserRole.Admin)
             {
                 var allAwaitngApproval = await _applicationReportService.GetAwaitingApprovalOrders(searchTerm);
                 allAwaitngApproval.SearchTerm = searchTerm;
@@ -178,7 +179,7 @@ namespace Ranalo.Controllers
             }
 
 
-            if (settings.RoleId == 5)
+            if (settings.RoleId == UserRole.Approver)
             {
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
                 ViewBag.UserName = dealer.CompanyName;
@@ -196,6 +197,118 @@ namespace Ranalo.Controllers
             return View(waitingApprovalByUser);
         }
 
+        [Route("users")]
+        public async Task<IActionResult> Users()
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (settings.RoleId == UserRole.Dealer)
+            {
+                var dealer = await _userService.GetDealerByUserId(settings.UserId);
+                ViewBag.UserName = dealer.CompanyName;
+                settings.DealerId = dealer.DealerId;
+            }
+            else
+            {
+                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
+                ViewBag.UserName = user.KnownAs;
+            }
+
+
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                var users = new UsersViewModel()
+                {
+                    Users = await _userService.GetAllUsersAsync()
+                };
+
+                return View(users);
+            }
+
+            var dealerUsers = new UsersViewModel()
+            {
+                Users = await _userService.GetUsersByDealerIdAsync(settings.DealerId)
+            };
+
+            return View(dealerUsers);
+        }
+
+
+        [Route("adduser")]
+        public async Task<IActionResult> AddUser()
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (settings.RoleId == UserRole.Dealer)
+            {
+                var dealer = await _userService.GetDealerByUserId(settings.UserId);
+                ViewBag.UserName = dealer.CompanyName;
+                settings.DealerId = dealer.DealerId;
+            }
+            else
+            {
+                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
+                ViewBag.UserName = user.KnownAs;
+            }
+
+
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
+
+            return View();
+        }
+
+        [HttpPost]
+        [Route("adduser")]
+        public async Task<IActionResult> AddUserSubmit(User userDetails)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (settings.RoleId == UserRole.Dealer)
+            {
+                var dealer = await _userService.GetDealerByUserId(settings.UserId);
+                ViewBag.UserName = dealer.CompanyName;
+                settings.DealerId = dealer.DealerId;
+            }
+            else
+            {
+                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
+                ViewBag.UserName = user.KnownAs;
+            }
+
+
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
+
+            try
+            {
+                userDetails.Status = UserStatus.Active;
+                userDetails.DealerId = settings.DealerId;
+                userDetails.IsActive = true;
+                await _userService.AddUserAsync(userDetails);
+            }
+            catch (Exception)
+            {
+
+                return View("AddUser");
+            }
+
+            return RedirectToAction("Users");
+        }
 
     }
 }

@@ -16,6 +16,7 @@ namespace Ranalo.Woocommece.Api.Services
         Task CreateKoseBatchPaymentAsync(Dictionary<string, List<MpesaRecord>> records);
 
         Task CreateDevicesToDatabaseAsync(List<Device> groupedRecords);
+        Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords);
         Task<Device?> GetLatestDeviceId();
 
         Task<List<int>> UpdateImagesAsync(long orderId, List<ImagesMetadata> imagesForUpdate);
