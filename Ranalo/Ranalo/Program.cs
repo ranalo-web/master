@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore.SqlServer;
 using Ranalo.Services;
 using System.Data;
 using System.Data.SqlClient;
+using Ranalo;
+using Ranalo.ScheduledServices;
+using Ranalo.Woocommece.Api.DataStore;
+using Ranalo.Woocommece.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,14 +21,34 @@ builder.Services.AddScoped<IDbConnection>(sp =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Register your repository
+builder.Services.AddScoped<IWooOrderRepository, WooOrderRepository>();
+builder.Services.AddScoped<ISyncLogsRepository, SyncLogsRepository>();
+builder.Services.AddScoped<IWooOrderProductRepository, WooOrderProductRepository>();
+builder.Services.AddScoped<ISyncService, SyncService>();
+builder.Services.AddScoped<IKosePaymentsRepository, KosePaymentsRepository>();
+
 
 builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IApplicationReportService, ApplicationReportService>();
 builder.Services.AddScoped<IApplicationReportRepository, ApplicationReportRepository>();
 builder.Services.AddScoped<IContractCalculatorService, ContractCalculatorService>();
+builder.Services.AddScoped<IDeviceService, DeviceService>();
+builder.Services.AddScoped<IDevicesRepository, DevicesRepository>();
 //Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int deviceGroupId)
 //IUserService
+builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
+builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
+builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+
+builder.Services.AddDistributedMemoryCache(); // or use Redis, etc.
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 var app = builder.Build();
 
@@ -42,6 +66,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
+app.UseMiddleware<UserSettingsMiddleware>();
 app.MapRazorPages();
 //app.MapFallbackToPage("/Pages/Login");
 app.MapControllerRoute(

@@ -25,5 +25,20 @@
         public string? MpesaDepositRef { get; set; }
         public List<OrderProduct>? Products { get; set; }
         public List<ImagesMetadata>? ImagesMetadata { get; set; }
+
+        public Contact? NextOfKin { get; set; }
+
+        public UserMetaData? MetaData { get; set; }
+    }
+
+
+    public class UserMetaData
+    {   
+        public Guid Id { get; set; } // From API
+        public long OrderId { get; set; } // Foreign key to a user or parent entity
+        public List<MetaDataEntry>? MetaData { get; set; } // from value["meta_data"]
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
     }
 }

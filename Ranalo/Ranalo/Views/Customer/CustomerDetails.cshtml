@@ -258,7 +258,7 @@
                                                                             }
                                                                             <div class="progress-bar progress-bar-striped bg-success" data-progress="@percentagePaid" style="width: @percentagePaid %;">@percentagePaid %</div>
                                                                         }
-                                                                        
+
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -266,8 +266,8 @@
                                                     </div>
                                                     <div class="nk-divider divider md"></div>
                                                 }
-                                                
-                                              @*   <div class="nk-block">
+
+                                                @*   <div class="nk-block">
                                                     <div class="nk-block-head nk-block-head-sm nk-block-between">
                                                         <h5 class="title"><code>Notice</code></h5>
                                                     </div>
@@ -362,63 +362,190 @@
                             </div><!-- .row -->
                         </div>
                         <div class="nk-block">
-                            @if (Model.Status == "approval-waiting")
+                            @if (ViewBag.IsDealer == false)
                             {
-                                <h6 class="lead-text">Order Approval</h6>
-                                <div class="card card-bordered">
-                                    <div class="card-inner">
-                                        <div class="between-center flex-wrap flex-md-nowrap g-3">
-                                            <div class="media media-center gx-3 wide-xs">
-                                                <div class="media-object">
-                                                    <em class="icon icon-circle icon-circle-lg ni ni-user-check-fill"></em>
+                                @if (Model.Status == "approval-waiting")
+                                {
+                                    <h6 class="lead-text">Order Approval</h6>
+                                    <div class="card card-bordered">
+                                        <div class="card-inner">
+                                            <div class="between-center flex-wrap flex-md-nowrap g-3">
+                                                <div class="media media-center gx-3 wide-xs">
+                                                    <div class="media-object">
+                                                        <em class="icon icon-circle icon-circle-lg ni ni-user-check-fill"></em>
+                                                    </div>
+                                                    <div class="media-content">
+                                                        <p>After checking and verifying customer details, please approve the order.</p>
+                                                    </div>
                                                 </div>
-                                                <div class="media-content">
-                                                    <p>After checking and verifying customer details, please approve the order.</p>
-                                                </div>
+                                                <form action="/approve-order" method="post">
+                                                    <div class="nk-block-actions flex-shrink-0">
+                                                        <input name="orderId" type="hidden" value="@Model.OrderID">
+                                                        <button type="submit" class="btn btn-lg btn-success">Approve</button>
+                                                    </div>
+                                                </form>
                                             </div>
-                                            <form action="/approve-order" method="post">
-                                                <div class="nk-block-actions flex-shrink-0">
-                                                    <input name="orderId" type="hidden" value="@Model.OrderID">
-                                                    <button type="submit" class="btn btn-lg btn-success">Approve</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div><!-- .nk-card-inner -->
-                                </div>
+                                        </div><!-- .nk-card-inner -->
+                                    </div>
 
-                                <!-- .nk-card -->
+                                    <!-- .nk-card -->
+                                }
+
+                                @if (Model.Status != "rejected" || Model.Status != "cancelled")
+                                {
+                                    <h6 class="lead-text">Reject Order</h6>
+                                    <div class="card card-bordered">
+                                        <div class="card-inner">
+                                            <div class="between-center flex-wrap flex-md-nowrap g-3">
+                                                <div class="media media-center gx-3 wide-xs">
+                                                    <div class="media-object">
+                                                        <em class="icon icon-circle icon-circle-lg ni ni-user-cross-fill"></em>
+                                                    </div>
+                                                    <div class="media-content">
+                                                        <p>You can reject an order if it doesnt meet the required checks.</p>
+                                                    </div>
+                                                </div>
+                                                <form action="/reject-order" method="post">
+                                                    <div class="nk-block-actions flex-shrink-0">
+                                                        <input name="orderId" type="hidden" value="@Model.OrderID">
+                                                        <button type="submit" class="btn btn-lg btn-danger">Reject</button>
+                                                    </div>
+                                                </form>
+
+                                            </div>
+                                        </div><!-- .nk-card-inner -->
+                                    </div>
+
+                                    <!-- .nk-card -->
+                                }
+
+
                             }
 
-                            @if (Model.Status != "rejected" || Model.Status != "cancelled")
-                            {
-                                <h6 class="lead-text">Reject Order</h6>
-                                <div class="card card-bordered">
-                                    <div class="card-inner">
-                                        <div class="between-center flex-wrap flex-md-nowrap g-3">
-                                            <div class="media media-center gx-3 wide-xs">
-                                                <div class="media-object">
-                                                    <em class="icon icon-circle icon-circle-lg ni ni-user-cross-fill"></em>
-                                                </div>
-                                                <div class="media-content">
-                                                    <p>You can reject an order if it doesnt meet the required checks.</p>
-                                                </div>
-                                            </div>
-                                            <form action="/reject-order" method="post">
-                                                <div class="nk-block-actions flex-shrink-0">
-                                                    <input name="orderId" type="hidden" value="@Model.OrderID">
-                                                    <button type="submit" class="btn btn-lg btn-danger">Reject</button>
-                                                </div>
-                                            </form>
 
+                        </div>
+
+                        @if (Model.Product != null)
+                        {
+                            <div class="nk-block">
+                                <div class="nk-block-head">
+                                    <h5 class="title">Device Information</h5>
+                                    <p>Phone Info Card</p>
+                                </div><!-- .nk-block-head -->
+                                <div class="profile-ud-list">
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Name</span>
+                                            <span class="profile-ud-value">@Model.Product.ProductName</span>
                                         </div>
-                                    </div><!-- .nk-card-inner -->
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Storage</span>
+                                            <span class="profile-ud-value">@Model.Product.ProductStorage</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">SKU</span>
+                                            <span class="profile-ud-value">@Model.Product.Sku</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">RAM</span>
+                                            <span class="profile-ud-value">@Model.Product.ProductRam</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Product Id</span>
+                                            <span class="profile-ud-value">@Model.Product.ProductId</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Color</span>
+                                            <span class="profile-ud-value">@Model.Product.ProductColor</span>
+                                        </div>
+                                    </div>
+                                </div><!-- .profile-ud-list -->
+                            </div>
+
+                            <!-- .nk-block -->
+                        }
+
+
+                        @if (Model.NextOfKin != null)
+                        {
+                                <div class="nk-block">
+                                <div class="nk-block-head nk-block-head-line">
+                                    <h6 class="title overline-title text-base">Next of kin details</h6>
+                                </div><!-- .nk-block-head -->
+                                <div class="profile-ud-list">
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Name</span>
+                                                <span class="profile-ud-value">@Model.NextOfKin?.Name</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Email</span>
+                                                <span class="profile-ud-value">@Model.NextOfKin?.Email</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Phone</span>
+                                                <span class="profile-ud-value">@Model.NextOfKin?.Phone</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Address</span>
+                                                <span class="profile-ud-value">@Model.NextOfKin?.Address</span>
+                                        </div>
+                                    </div>
+                                </div><!-- .profile-ud-list -->
+                            </div>
+
+                            <!-- .nk-block -->
+                        }
+                        
+
+                        <div class="nk-divider divider md"></div>
+                        <div class="nk-block">
+                            <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                <h5 class="title">Customer Note</h5>
+                                <button type="button" data-bs-toggle="modal" data-bs-target="#modalCustomerNotes" class="link link-primary ms-auto">+ Add Note</button>
+                            </div><!-- .nk-block-head -->
+                            @if(Model.Notes.Any())
+                            {
+                                <div class="bq-note">
+                                @foreach (var note in Model.Notes)
+                                {
+                                        <div class="bq-note-item">
+                                            <div class="bq-note-text">
+                                                <p>@note.Note </p>
+                                            </div>
+                                            <div class="bq-note-meta">
+                                                <span class="bq-note-added">Added on <span class="date">@note.Created.ToString("MMMM dd, yyyy")</span> at <span class="time">@note.Created.ToString("HH:mm:ss")</span></span>
+                                                <span class="bq-note-sep sep">|</span>
+                                                <span class="bq-note-by">By <span>@note.UserName</span></span>
+                                                @* <a href="#" class="link link-sm link-danger">Delete Note</a> *@
+                                            </div>
+                                        </div>
+
+                                        <!-- .bq-note-item -->
+                                }
                                 </div>
-
-                                <!-- .nk-card -->
+                                <!-- .bq-note -->
                             }
-
-
-
+                            
+                        </div><!-- .nk-block -->
+                        <div class="nk-divider divider md"></div>
+                        <div class="nk-block">
                             <div class="nk-block-head nk-block-head-sm">
                                 <div class="nk-block-head-content">
                                     <h6 class="nk-block-title">The application is still under development <a href="#" class="link link-primary ms-auto">Contact Admin</a></h6>
@@ -428,9 +555,42 @@
                                 </div>
                             </div><!-- .nk-block-head -->
                         </div>
+
                     </div><!-- .card-inner -->
                 </div><!-- .card -->
             </div><!-- .col -->
         </div><!-- .row -->
     </div><!-- .nk-block -->
 </div>
+
+<!-- Modal Content Code -->
+<div class="modal fade" tabindex="-1" id="modalCustomerNotes">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <button class="close" data-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross"></em>
+            </button>
+            <div class="modal-header">
+                <h5 class="modal-title">Customer Note</h5>
+            </div>
+            <form action="/add-note" method="post">
+                <input name="orderId" type="hidden" value="@Model.OrderID">
+                <div class="modal-body">
+                    <div class="nk-block nk-block-lg">
+                        <div class="card">
+                            <div class="card-inner">
+                                <textarea name="customerNote" class="tinymce-toolbar form-control">Add note!</textarea>
+                            </div>
+                        </div>
+                    </div><!-- .nk-block -->
+                </div>
+                <div class="modal-footer bg-light">
+                    <button data-bs-dismiss="modal" class="btn btn-lg btn-danger">Cancel</button>
+                    <button type="submit" class="btn btn-lg btn-primary">Save</button>
+                </div>
+            </form>
+           
+        </div>
+    </div>
+</div>
+

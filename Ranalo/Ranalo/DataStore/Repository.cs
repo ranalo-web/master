@@ -58,6 +58,33 @@ namespace Ranalo.DataStore
             }
         }
 
+        public async Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash)
+        {
+            try
+            {
+                // Find the user by ID
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    throw new InvalidOperationException($"User with ID {userId} not found.");
+                }
+
+                // Update password
+                user.PasswordHash = newPasswordHash; // Assume it's already hashed
+                user.LastLogin = DateTime.UtcNow;    // Optional: track modification time
+
+                // Save changes
+                await _context.SaveChangesAsync();
+
+                return user;
+            }
+            catch (Exception)
+            {
+                // Could log the exception before rethrowing
+                throw;
+            }
+        }
+
         public async Task<User?> GetByEmailAndPasswordAsync(string email, string password)
         {
             try
@@ -141,6 +168,43 @@ namespace Ranalo.DataStore
             catch (Exception)
             {
 
+                throw;
+            }
+        }
+
+        public async Task<User?> GetUserByPasswordAsync(string password)
+        {
+            try
+            {
+                return await _context.Users
+                .FirstOrDefaultAsync(u => u.PasswordHash == password);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        public async Task UpdateUserLastLogin(User user)
+        {
+            try
+            {
+                // Find the user by ID
+                var currentUser = await _context.Users.FindAsync(user.UserId);
+                if (currentUser == null)
+                {
+                    throw new InvalidOperationException($"User with ID {currentUser.UserId} not found.");
+                }
+
+                currentUser.LastLogin = DateTime.UtcNow;    // Optional: track modification time
+
+                // Save changes
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+                // Could log the exception before rethrowing
                 throw;
             }
         }

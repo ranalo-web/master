@@ -20,5 +20,15 @@ namespace Ranalo.Woocommece.Api.Services
         Task<Device?> GetLatestDeviceId();
 
         Task<List<int>> UpdateImagesAsync(long orderId, List<ImagesMetadata> imagesForUpdate);
+
+        Task<List<WooOrder>> SyncWooOrders();
+
+        Task<Dictionary<string, List<MpesaRecord>>> SyncPayments();
+
+        Task<List<Device>> DeviceUnlockPull();
+
+        Task<WooOrder> OrderById(int orderId);
+
+        Task<List<int>> SyncUpdateImagesWooOrders();
     }
 }

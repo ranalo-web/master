@@ -22,7 +22,7 @@ namespace Ranalo.Controllers
             if (string.IsNullOrEmpty(cookie))
             {
                 return View();
-                
+
             }
 
             var cookieValue = CookieHelper.Deserialize<User>(cookie);
@@ -35,7 +35,7 @@ namespace Ranalo.Controllers
             // Optional: set it to HttpContext.Items if you want to use it elsewhere
             HttpContext.Items["UserSettings"] = cookieValue;
 
-            return RedirectToAction("Index", "Home");
+            return Redirect("/Index");
         }
 
         [HttpPost]
@@ -60,12 +60,17 @@ namespace Ranalo.Controllers
                         SameSite = SameSiteMode.Strict
                     });
 
+                    ViewBag.BackLink = "dashboard";
+                    ViewBag.IsAdmin = user.RoleId == UserRole.Admin;
+                    ViewBag.IsApprover = user.RoleId == UserRole.Approver;
+
+
                     switch (user.RoleId)
                     {
                         case UserRole.Admin:
                             return RedirectToAction("Index", "Home");
                         case UserRole.Dealer:
-                            return RedirectToAction("Index", "Home");
+                            return Redirect("/Index");
                         case UserRole.Approver:
                             return RedirectToAction("Index", "Approver");
                         default:
@@ -83,6 +88,59 @@ namespace Ranalo.Controllers
             }
         }
 
+
+        [HttpPost]
+        [Route("reset")]
+        public async Task<IActionResult> ResetPassword(string email, string oldpassword, string newpassword)
+        {
+            try
+            {
+                // Get user by email and password
+                var user = await _usersService.LoginUser(email, oldpassword);
+                if (user != null)
+                {
+                    var updatedUser = await _usersService.UpdateUserPasswordAsync(user.UserId, newpassword);
+                    //Set the user cookie
+                    var cookieValue = CookieHelper.Serialize(user);
+
+                    Response.Cookies.Append("UserSettings", cookieValue, new CookieOptions
+                    {
+                        Expires = DateTimeOffset.UtcNow.AddDays(30),
+                        HttpOnly = true,
+                        Secure = true,
+                        IsEssential = true,
+                        SameSite = SameSiteMode.Strict
+                    });
+
+                    ViewBag.BackLink = "Index";
+                    ViewBag.IsAdmin = user.RoleId == UserRole.Admin;
+                    ViewBag.IsApprover = user.RoleId == UserRole.Approver;
+
+                    return View("ResetSuccess");
+                }
+
+                return RedirectToAction("Index"); ;
+            }
+            catch (Exception)
+            {
+
+                return View("Index");
+            }
+        }
+
+        [HttpGet]
+        [Route("reset")]
+        public IActionResult ResetPassword()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        [Route("reset-success")]
+        public IActionResult ResetSuccess()
+        {
+            return RedirectToAction("Index");
+        }
 
         [HttpGet]
         [Route("logout")]

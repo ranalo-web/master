@@ -38,16 +38,56 @@
                                     <h6 class="overline-title text-primary-alt">Dashboard &amp; Panels</h6>
                                 </li>
 
+                                <li class="nk-menu-item">
+                                    <a href="/index" class="nk-menu-link">
+                                        <span class="nk-menu-icon"><em class="icon ni ni-presentation"></em></span>
+                                        <span class="nk-menu-text">Home</span>
+                                    </a>
+                                </li><!-- .nk-menu-item -->
+                                <li class="nk-menu-item">
+                                    <a href="/dashboard" class="nk-menu-link">
+                                        <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
+                                        <span class="nk-menu-text">Orders</span>
+                                    </a>
+                                </li>
+                                @if (ViewBag.IsAdmin || ViewBag.IsApprover)
+                                {
+                                    <li class="nk-menu-item ">
+                                        <a class="nk-menu-link " href="/approver">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
+                                            <span class="nk-menu-text">Approver</span>
+                                        </a>
+                                    </li>
+                                }
+
+
                                 <li class="nk-menu-item has-sub">
-                                    <a class="nk-menu-link nk-menu-toggle" href="dashboard">
+                                    <a class="nk-menu-link nk-menu-toggle" href="users">
                                         <span class="nk-menu-icon">
-                                            <em class="icon ni ni-dashlite"></em>
+                                            <em class="icon ni ni-user-list"></em>
                                         </span>
-                                        <span class="nk-menu-text">Dashboards</span>
+                                        <span class="nk-menu-text">Users</span>
                                     </a>
                                     <ul class="nk-menu-sub">
 
-                                        @if (ViewBag.IsAdmin)
+                                        <li class="nk-menu-item ">
+                                            <a class="nk-menu-link " href="/users">
+                                                <span class="nk-menu-text">Users</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+
+                                <li class="nk-menu-item has-sub">
+                                    <a class="nk-menu-link nk-menu-toggle" href="payments">
+                                        <span class="nk-menu-icon">
+                                            <em class="icon ni ni-tranx"></em>
+                                        </span>
+                                        <span class="nk-menu-text">Payments</span>
+                                    </a>
+                                    <ul class="nk-menu-sub">
+
+                                        @if ((bool)(ViewData["IsAdmin"] ?? false))
                                         {
                                             <li class="nk-menu-item ">
                                                 <a class="nk-menu-link " href="/orphanedpayments">
@@ -67,25 +107,49 @@
                                                 <span class="nk-menu-text">All Payments</span>
                                             </a>
                                         </li>
+                                    </ul>
+                                </li>
+
+                                <li class="nk-menu-item has-sub">
+                                    <a class="nk-menu-link nk-menu-toggle" href="devices">
+                                        <span class="nk-menu-icon">
+                                            <em class="icon ni ni-mobile"></em>
+                                        </span>
+                                        <span class="nk-menu-text">Devices</span>
+                                    </a>
+                                    <ul class="nk-menu-sub">
                                         <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/users">
-                                                <span class="nk-menu-text">Users</span>
+                                            <a class="nk-menu-link " href="/devices-with-no-orders">
+                                                <span class="nk-menu-text">No Orders</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+
+                                <li class="nk-menu-item has-sub">
+                                    <a class="nk-menu-link nk-menu-toggle" href="reports">
+                                        <span class="nk-menu-icon">
+                                            <em class="icon ni ni-reports"></em>
+                                        </span>
+                                        <span class="nk-menu-text">Reports</span>
+                                    </a>
+                                    <ul class="nk-menu-sub">
+                                        <li class="nk-menu-item ">
+                                            <a class="nk-menu-link " href="/statusreport">
+                                                <span class="nk-menu-text">Status Report</span>
                                             </a>
                                         </li>
                                         @if (ViewBag.IsAdmin || ViewBag.IsApprover)
                                         {
                                             <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/approver">
-                                                    <span class="nk-menu-text">Approver</span>
+                                                <a class="nk-menu-link " href="/missingmpesacode">
+                                                    <span class="nk-menu-text">Missing Mpesa</span>
                                                 </a>
                                             </li>
                                         }
-                                       <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/statusreport">
-                                                <span class="nk-menu-text">Status Report</span>
-                                            </a>
-                                        </li>
-								</ul>
+                                    </ul>
+                                </li>
+
                             </ul>
                         </div><!-- .nk-sidebar-menu -->
                     </div><!-- .nk-sidebar-content -->
@@ -455,6 +519,7 @@
     <!-- JavaScript -->
     <script src="./assets/js/bundle.js?ver=3.3.0"></script>
     <script src="./assets/js/scripts.js?ver=3.3.0"></script>
+    <script src="./assets/js/charts/gd-pharmacy.js?ver=3.3.0"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 

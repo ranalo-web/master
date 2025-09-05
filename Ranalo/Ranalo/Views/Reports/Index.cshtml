@@ -1,0 +1,539 @@
+﻿@using Ranalo.Models
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model StatusReportViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+@functions
+{
+    private string SetStatusBadge(int notPaid)
+    {
+        var statusClass = "";
+
+        if(notPaid == 1)
+        {
+            return "badge badge-dim bg-danger";
+        }else
+        {
+            return "badge badge-dim bg-success";
+        }
+
+        return statusClass;
+    }
+
+    private string SetSearchTerm()
+    {
+        if (!string.IsNullOrEmpty(Model.SearchTerm))
+        {
+            return Model.SearchTerm;
+        }
+
+        return "Search...";
+    }
+
+    private string GetInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "string.Empty";
+
+        // Split by spaces and take first character of each word
+        var initials = fullName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => char.ToUpper(word[0]))
+            .Take(2) // only take first 2 initials
+            .ToArray();
+
+        return new string(initials);
+    }
+}
+
+<div class="nk-content-body">
+
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Status Report Summary</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Status reports for each account</p>
+                </div>
+            </div><!-- .nk-block-head-content -->
+            <div class="nk-block-head-content">
+                <div class="toggle-wrap nk-block-tools-toggle">
+                    <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu"><em class="icon ni ni-menu-alt-r"></em></a>
+                    <div class="toggle-expand-content" data-content="pageMenu">
+                        <ul class="nk-block-tools g-3">
+                            <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
+                            <li class="nk-block-tools-opt">
+                                <div class="drodown">
+                                    <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <ul class="link-list-opt no-bdr">
+                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#add-loan"><span>Add Loan</span></a></li>
+                                            <li><a href="#"><span>Import Loan</span></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div><!-- .toggle-wrap -->
+            </div><!-- .nk-block-head-content -->
+        </div><!-- .nk-block-between -->
+    </div><!-- .nk-block-head -->
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner position-relative card-tools-toggle">
+                    <div class="card-title-group">
+                        <div class="card-tools">
+                            <div class="form-inline flex-nowrap gx-3">
+                                <div class="form-wrap w-150px">
+                                    <select class="form-select form-select-sm js-select2" data-search="off" data-placeholder="Bulk Action">
+                                        <option value="">Bulk Action</option>
+                                        <option value="email">Send Email</option>
+                                        <option value="group">Disbursed Loan</option>
+                                        <option value="delete">Delete User</option>
+                                    </select>
+                                </div>
+                                <div class="btn-wrap">
+                                    <span class="d-none d-md-block"><button class="btn btn-dim btn-outline-light disabled">Apply</button></span>
+                                    <span class="d-md-none"><button class="btn btn-dim btn-outline-light btn-icon disabled"><em class="icon ni ni-arrow-right"></em></button></span>
+                                </div>
+                            </div><!-- .form-inline -->
+                        </div><!-- .card-tools -->
+                        <div class="card-tools me-n1">
+                            <ul class="btn-toolbar gx-1">
+                                <li>
+                                    <a href="#" class="btn btn-icon search-toggle toggle-search" data-target="search"><em class="icon ni ni-search"></em></a>
+                                </li><!-- li -->
+                                <li class="btn-toolbar-sep"></li><!-- li -->
+                                <li>
+                                    <div class="toggle-wrap">
+                                        <a href="#" class="btn btn-icon btn-trigger toggle" data-target="cardTools"><em class="icon ni ni-menu-right"></em></a>
+                                        <div class="toggle-content" data-content="cardTools">
+                                            <ul class="btn-toolbar gx-1">
+                                                <li class="toggle-close">
+                                                    <a href="#" class="btn btn-icon btn-trigger toggle" data-target="cardTools"><em class="icon ni ni-arrow-left"></em></a>
+                                                </li><!-- li -->
+                                                <li>
+                                                    <div class="dropdown">
+                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
+                                                            <div class="dot dot-primary"></div>
+                                                            <em class="icon ni ni-filter-alt"></em>
+                                                        </a>
+                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
+                                                            <div class="dropdown-head">
+                                                                <span class="sub-title dropdown-title">Filter Borrower</span>
+                                                                <div class="dropdown">
+                                                                    <a href="#" class="btn btn-sm btn-icon">
+                                                                        <em class="icon ni ni-more-h"></em>
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                            <div class="dropdown-body dropdown-body-rg">
+                                                                <div class="row gx-6 gy-3">
+                                                                    <div class="col-12">
+                                                                        <div class="form-group">
+                                                                            <label class="overline-title overline-title-alt">Category</label>
+                                                                            <select class="form-select form-select-sm js-select2">
+                                                                                <option value="education">Education</option>
+                                                                                <option value="emergency">Emergency</option>
+                                                                                <option value="daily">Daily</option>
+                                                                                <option value="kibaba">Kibaba</option>
+                                                                                <option value="bilashi">Bilashi</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-6">
+                                                                        <div class="form-group">
+                                                                            <label class="overline-title overline-title-alt">Interest</label>
+                                                                            <select class="form-select form-select-sm js-select2">
+                                                                                <option value="5">5%</option>
+                                                                                <option value="7">7%</option>
+                                                                                <option value="10">10%</option>
+                                                                                <option value="15">15%</option>
+                                                                                <option value="20">20%</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-6">
+                                                                        <div class="form-group">
+                                                                            <label class="overline-title overline-title-alt">Status</label>
+                                                                            <select class="form-select form-select-sm js-select2">
+                                                                                <option value="approved">Approved</option>
+                                                                                <option value="pending">Pending</option>
+                                                                                <option value="rejected">Rejected</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12">
+                                                                        <div class="form-group">
+                                                                            <button type="button" class="btn btn-secondary">Filter</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="dropdown-foot between">
+                                                                <a class="clickable" href="#">Reset Filter</a>
+                                                                <a href="#">Save Filter</a>
+                                                            </div>
+                                                        </div><!-- .filter-wg -->
+                                                    </div><!-- .dropdown -->
+                                                </li><!-- li -->
+                                                <li>
+                                                    <div class="dropdown">
+                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
+                                                            <em class="icon ni ni-setting"></em>
+                                                        </a>
+                                                        <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
+                                                            <ul class="link-check">
+                                                                <li><span>Show</span></li>
+                                                                <li class="active"><a href="#">10</a></li>
+                                                                <li><a href="#">20</a></li>
+                                                                <li><a href="#">50</a></li>
+                                                            </ul>
+                                                            <ul class="link-check">
+                                                                <li><span>Order</span></li>
+                                                                <li class="active"><a href="#">DESC</a></li>
+                                                                <li><a href="#">ASC</a></li>
+                                                            </ul>
+                                                        </div>
+                                                    </div><!-- .dropdown -->
+                                                </li><!-- li -->
+                                            </ul><!-- .btn-toolbar -->
+                                        </div><!-- .toggle-content -->
+                                    </div><!-- .toggle-wrap -->
+                                </li><!-- li -->
+                            </ul><!-- .btn-toolbar -->
+                        </div><!-- .card-tools -->
+                    </div><!-- .card-title-group -->
+                    <div class="card-search search-wrap" data-search="search">
+                        <div class="card-body">
+                            <div class="search-content">
+                                <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
+                                <input type="text" class="form-control border-transparent form-focus-none" placeholder="Search by borrower or category">
+                                <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                            </div>
+                        </div>
+                    </div><!-- .card-search -->
+                </div><!-- .card-inner -->
+                <div class="card-inner p-0">
+                    <div class="nk-tb-list nk-tb-ulist">
+                        <div class="nk-tb-item nk-tb-head">
+                            <div class="nk-tb-col nk-tb-col-check">
+                                <div class="custom-control custom-control-sm custom-checkbox notext">
+                                    <input type="checkbox" class="custom-control-input" id="uid">
+                                    <label class="custom-control-label" for="uid"></label>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Daily Rate</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Deposit</span></div>
+                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Total Paid</span></div>
+                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Arrears</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Due</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Balance</span></div>
+                            
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Status</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Enrolled On</span></div>
+                            <div class="nk-tb-col nk-tb-col-tools text-end">
+                                <div class="dropdown">
+                                    <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-offset="0,5"><em class="icon ni ni-plus"></em></a>
+                                    <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
+                                        <ul class="link-tidy sm no-bdr">
+                                            <li>
+                                                <div class="custom-control custom-control-sm custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" checked="" id="bl">
+                                                    <label class="custom-control-label" for="bl">Category</label>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="custom-control custom-control-sm custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" checked="" id="ph">
+                                                    <label class="custom-control-label" for="ph">Amount</label>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="custom-control custom-control-sm custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" id="vri">
+                                                    <label class="custom-control-label" for="vri">Interest</label>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- .nk-tb-item -->
+                        @foreach (var report in Model.StatusReports)
+                        {
+                            <div class="nk-tb-item">
+                                <div class="nk-tb-col nk-tb-col-check">
+                                    <div class="custom-control custom-control-sm custom-checkbox notext">
+                                        <input type="checkbox" class="custom-control-input" id="uid1">
+                                        <label class="custom-control-label" for="uid1"></label>
+                                    </div>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <div class="user-card">
+                                        <div class="user-avatar bg-primary">
+                                            <span>AB</span>
+                                        </div>
+                                        <div class="user-info">
+                                            <span class="tb-lead">@report.FirstName</span>
+                                            <span>AC: @report.AccountNo</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    <span>@report.Daily</span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span>@report.Deposit </span>
+                                </div>
+                                <div class="nk-tb-col tb-col">
+                                    <span>@report.TotalPaid</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-lg">
+                                    <span>@report.Arrears</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-xxl">
+                                    <span>@report.TotalDue</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-xxl">
+                                    <span>@report.LoanBalance</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    <span class="@SetStatusBadge(report.NotPaying7D)">Arrears</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-xxl">
+                                    <span>@report.EnrolledOn?.ToString("dd MMM yyyy")</span>
+                                </div>
+                                <div class="nk-tb-col nk-tb-col-tools">
+                                    <ul class="nk-tb-actions gx-2">
+                                        <li class="nk-tb-action-hidden">
+                                            <a href="/statussummary/@report.AccountNo" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Disbursed Loan">
+                                                <em class="icon ni ni-user-check-fill"></em>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <div class="drodown">
+                                                <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                                <div class="dropdown-menu dropdown-menu-end">
+                                                    <ul class="link-list-opt no-bdr">
+                                                        <li><a href="#"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
+                                                        <li><a href="#edit-loan" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>View Account</span></a></li>
+                                                       @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- .nk-tb-item -->
+                        }
+                        
+
+                        
+                    </div><!-- .nk-tb-list -->
+                </div><!-- .card-inner -->
+                <div class="card-inner">
+                    <div class="nk-block-between-md g-3">
+                        <div class="g">
+                            <ul class="pagination justify-content-center justify-content-md-start">
+                                @if (Model.CurrentPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="/statusreport?page=@(Model.CurrentPage - 1)">Prev</a>
+                                    </li>
+                                }
+
+                                @{
+                                    var maxVisiblePages = 5;
+                                    var startPage = Math.Max(1, Model.CurrentPage - 2);
+                                    var endPage = Math.Min(Model.TotalPages, startPage + maxVisiblePages - 1);
+                                    if (endPage - startPage < maxVisiblePages - 1)
+                                    {
+                                        startPage = Math.Max(1, endPage - maxVisiblePages + 1);
+                                    }
+                                }
+
+                                @if (startPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="/statusreport?page=1">1</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <span class="page-link"><em class="icon ni ni-more-h"></em></span>
+                                    </li>
+                                }
+
+                                @for (int i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                        <a class="page-link" href="/statusreport?page=@i">@i</a>
+                                    </li>
+                                }
+
+                                @if (endPage < Model.TotalPages)
+                                {
+                                    <li class="page-item">
+                                        <span class="page-link"><em class="icon ni ni-more-h"></em></span>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="/statusreport?page=@Model.TotalPages">@Model.TotalPages</a>
+                                    </li>
+                                }
+
+                                @if (Model.CurrentPage < Model.TotalPages)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="/statusreport?page=@(Model.CurrentPage + 1)">Next</a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="g">
+                            <div class="pagination-goto d-flex justify-content-center justify-content-md-start gx-3">
+                                <div>Page</div>
+                                <div>
+                                    <select class="form-select js-select2" data-search="on" data-dropdown="xs center">
+                                        <option value="page-1">1</option>
+                                        <option value="page-2">2</option>
+                                        <option value="page-4">4</option>
+                                        <option value="page-5">5</option>
+                                        <option value="page-6">6</option>
+                                        <option value="page-7">7</option>
+                                        <option value="page-8">8</option>
+                                        <option value="page-9">9</option>
+                                        <option value="page-10">10</option>
+                                        <option value="page-11">11</option>
+                                        <option value="page-12">12</option>
+                                        <option value="page-13">13</option>
+                                        <option value="page-14">14</option>
+                                        <option value="page-15">15</option>
+                                        <option value="page-16">16</option>
+                                        <option value="page-17">17</option>
+                                        <option value="page-18">18</option>
+                                        <option value="page-19">19</option>
+                                        <option value="page-20">20</option>
+                                    </select>
+                                </div>
+                                <div>OF 102</div>
+                            </div>
+                        </div><!-- .pagination-goto -->
+                    </div><!-- .nk-block-between --><!-- .pagination -->
+                </div><!-- .card-inner -->
+            </div><!-- .card-inner-group -->
+        </div><!-- .card -->
+    </div><!-- .nk-block -->
+</div>
+
+<div class="modal fade" tabindex="-1" id="edit-loan">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Update Loan</h5>
+                <form action="#" class="mt-2">
+                    <div class="row g-gs">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-name">Borrower Name</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" class="form-control" id="edit-name" value="Abu Bin Ishtiyak" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-acc">Account No.</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" class="form-control" id="edit-acc" value="100567" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Category</label>
+                                <div class="form-control-wrap">
+                                    <select class="form-select js-select2">
+                                        <option value="education">Education</option>
+                                        <option value="emergency">Emergency</option>
+                                        <option value="daily">Daily</option>
+                                        <option value="kibaba">Kibaba</option>
+                                        <option value="bilashi">Bilashi</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-amount">Amount</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" class="form-control" id="edit-amount" value="20000" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-interest">Interest(%)</label>
+                                <div class="form-control-wrap">
+                                    <select class="form-select js-select2">
+                                        <option value="5">5%</option>
+                                        <option value="7">7%</option>
+                                        <option value="10">10%</option>
+                                        <option value="15">15%</option>
+                                        <option value="20">20%</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-month">Month</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" class="form-control" id="edit-month" value="6" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-income">Borrower Income</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" class="form-control" id="edit-income" value="10000" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-date">Date</label>
+                                <div class="form-control-wrap">
+                                    <div class="form-icon form-icon-left">
+                                        <em class="icon ni ni-calendar"></em>
+                                    </div>
+                                    <input type="text" id="edit-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="btn btn-lg btn-primary">Update Loan</a>
+                                </li>
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div><!-- .Edit Modal-Content -->

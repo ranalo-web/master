@@ -1,5 +1,7 @@
 ﻿using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
+using Ranalo.Woocommece.Api.Models;
+using ImagesMetadata = Ranalo.Models.ImagesMetadata;
 
 namespace Ranalo.DataStore
 {
@@ -11,7 +13,7 @@ namespace Ranalo.DataStore
         Task<AwaitingApprovalViewModel> GetAllWaitingApprovalAsync(string searchTerm = "", int page = 1, int pageSize = 10);
         Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int dealerId, string searchTerm, int page, int pageSize);
 
-        Task<IEnumerable<KosePayments>> GetOrphanedPaymentsAsync();
+        Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize);
 
         Task<IEnumerable<AwaitingApprovalDto>> GetAllOrdersAsync();
         Task<IEnumerable<Dealer>> GetAllDealersAsync();
@@ -29,5 +31,11 @@ namespace Ranalo.DataStore
         Task<AccountSummary?> GetAccountSummary(string customerAccount);
         Task<IEnumerable<PaymentSummary>> GetPaymentSummaryByDeviceGroupAsync(int deviceGroupId);
         Task<IEnumerable<PaymentSummary>> GetPaymentSummaryAsync();
+        Task CreateCustomerNote(CustomerNote newNote);
+        Task<List<CustomerNote>> GetNotesByOrderId(long orderId);
+        Task<WooOrderProduct?> GetProductDetailsForOrder(long orderId);
+        Task<Contact?> GetNextOfKinForOrder(long orderId);
+
+        Task<AwaitingApprovalViewModel> GetAllMissingMpesaAsync(string searchTerm = "", int page = 1, int pageSize = 10);
     }
 }

@@ -10,5 +10,7 @@ namespace Ranalo.Woocommece.Api.DataStore
         Task<OrderProduct?> GetLastCreatedProductOrderAsync();
         Task<int> InsertAsync(OrderProduct product);
         Task<int> InsertImageDetailsAsync(long orderId, ImagesMetadata imageDetail);
+        Task InsertMetaDataAsync(UserMetaData metaData);
+        Task InsertNextOfKinAsync(Contact nextOfKin);
     }
 }

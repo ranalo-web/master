@@ -54,9 +54,9 @@ namespace Ranalo.Services
         public async Task<DataTable> PaymentsWithOrphanedSummary()
         {
             var payments = await _reportsService.GetAllPaymentsAsync();
-            var allOrphaned = await _reportsService.GetOrphanedPaymentsAsync();
+            var allOrphaned = await _reportsService.GetOrphanedPaymentsAsync(1, 1000);
 
-            var orphaned = allOrphaned.DistinctBy(r => r.MpesaCode).ToList();
+            var orphaned = allOrphaned.Payments?.DistinctBy(r => r.MpesaCode).ToList();
             //.DistinctBy(r => r.MpesaCode).ToList();
             var merged = from p in payments.Payments
                          join o in orphaned on p.MpesaCode equals o.MpesaCode into oo

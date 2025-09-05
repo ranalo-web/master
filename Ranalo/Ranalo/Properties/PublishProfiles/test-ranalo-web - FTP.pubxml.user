@@ -8,7 +8,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
     <TimeStampOfAssociatedLegacyPublishXmlFile />
     <EncryptedPassword>AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAgXgI7yioEU6/xjKVS3gHwwAAAAACAAAAAAAQZgAAAAEAACAAAADvw07gsZMOEmkfVXeBItGt1YqMChl/kwQNGULLzn91qgAAAAAOgAAAAAIAACAAAAAIuVvgTxSierR1mQEJ/S5twEGuSu2PSRjeHgHRy6730oAAAACe3rLR1q8oRuI1AusPkIBrTzM0AzvyAlxbmB84QYcyMN9kR9iXuSnknrrqGmN78e8ndsVxFHQZpotVCQ5hv09YAagZrH2CF5Iq/637MXxpSyO8K9b9bYjKgd4QnpJ/ga5hen46vbupKpPJBK2cCRzVr545+Y08IXCZZTRo2FK7xUAAAAAVeHDrTC5ze3PXAb9Ugp2vYCBCL+e8gcIWHGrd2QzIHmsKo93RbwkYtFoJpPrJDHkcc+CSBu81sVQr7JDmfdE2</EncryptedPassword>
     <_PublishTargetUrl>ftps://waws-prod-yt1-033.ftp.azurewebsites.windows.net/site/wwwroot</_PublishTargetUrl>
-    <History>True|2025-07-23T16:28:21.7692607Z||;True|2025-07-16T17:11:30.7869973+01:00||;False|2025-07-15T17:12:31.7504044+01:00||;</History>
+    <History>True|2025-08-18T08:50:47.2613370Z||;False|2025-08-17T15:36:10.6494348+01:00||;False|2025-08-17T15:27:45.6980025+01:00||;False|2025-08-17T14:58:34.6605011+01:00||;False|2025-08-17T14:56:20.8993066+01:00||;False|2025-08-17T14:46:35.7320674+01:00||;True|2025-07-23T17:28:21.7692607+01:00||;True|2025-07-16T17:11:30.7869973+01:00||;False|2025-07-15T17:12:31.7504044+01:00||;</History>
     <LastFailureDetails />
   </PropertyGroup>
   <ItemGroup>
@@ -40,43 +40,43 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>08/27/2024 19:22:48</publishTime>
     </File>
     <File Include="Microsoft.EntityFrameworkCore.Abstractions.dll">
-      <publishTime>04/16/2025 22:15:18</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.EntityFrameworkCore.dll">
-      <publishTime>04/16/2025 22:15:56</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.EntityFrameworkCore.Relational.dll">
-      <publishTime>04/16/2025 22:16:22</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.EntityFrameworkCore.SqlServer.dll">
-      <publishTime>04/16/2025 22:17:40</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Extensions.Caching.Abstractions.dll">
-      <publishTime>04/15/2025 19:07:08</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Extensions.Caching.Memory.dll">
-      <publishTime>04/15/2025 19:13:08</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Extensions.Configuration.Abstractions.dll">
-      <publishTime>04/15/2025 19:04:52</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Extensions.DependencyInjection.Abstractions.dll">
-      <publishTime>04/15/2025 19:12:26</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Extensions.DependencyInjection.dll">
-      <publishTime>04/15/2025 19:12:50</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Extensions.Logging.Abstractions.dll">
       <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Extensions.Logging.dll">
-      <publishTime>04/15/2025 19:13:16</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Extensions.Options.dll">
-      <publishTime>04/15/2025 19:12:48</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Extensions.Primitives.dll">
-      <publishTime>04/15/2025 19:03:40</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Identity.Client.dll">
       <publishTime>06/06/2024 23:09:28</publishTime>
@@ -102,29 +102,50 @@ by editing this MSBuild file. In order to learn more about this please visit htt
     <File Include="Microsoft.IdentityModel.Tokens.dll">
       <publishTime>01/12/2023 04:41:50</publishTime>
     </File>
+    <File Include="Microsoft.OpenApi.dll">
+      <publishTime>06/03/2024 16:00:56</publishTime>
+    </File>
     <File Include="Microsoft.SqlServer.Server.dll">
-      <publishTime>01/27/2022 17:19:08</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Microsoft.Win32.SystemEvents.dll">
       <publishTime>10/23/2021 00:40:24</publishTime>
     </File>
+    <File Include="Newtonsoft.Json.dll">
+      <publishTime>08/03/2023 07:09:54</publishTime>
+    </File>
     <File Include="Ranalo.deps.json">
-      <publishTime>07/23/2025 16:54:48</publishTime>
+      <publishTime>09/03/2025 10:14:31</publishTime>
     </File>
     <File Include="Ranalo.dll">
-      <publishTime>07/23/2025 16:54:46</publishTime>
+      <publishTime>09/02/2025 12:10:35</publishTime>
     </File>
     <File Include="Ranalo.exe">
-      <publishTime>07/23/2025 16:54:46</publishTime>
+      <publishTime>09/03/2025 10:14:29</publishTime>
     </File>
     <File Include="Ranalo.pdb">
-      <publishTime>07/23/2025 16:54:46</publishTime>
+      <publishTime>09/03/2025 10:14:28</publishTime>
     </File>
     <File Include="Ranalo.runtimeconfig.json">
-      <publishTime>07/15/2025 16:39:29</publishTime>
+      <publishTime>08/17/2025 14:44:59</publishTime>
     </File>
     <File Include="Ranalo.staticwebassets.endpoints.json">
       <publishTime>07/15/2025 16:39:39</publishTime>
+    </File>
+    <File Include="Ranalo.Woocommece.Api.deps.json">
+      <publishTime>08/17/2025 14:43:51</publishTime>
+    </File>
+    <File Include="Ranalo.Woocommece.Api.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Ranalo.Woocommece.Api.exe">
+      <publishTime>03/09/2025 09:37:59</publishTime>
+    </File>
+    <File Include="Ranalo.Woocommece.Api.pdb">
+      <publishTime>03/09/2025 09:37:56</publishTime>
+    </File>
+    <File Include="Ranalo.Woocommece.Api.runtimeconfig.json">
+      <publishTime>08/17/2025 14:43:53</publishTime>
     </File>
     <File Include="runtimes/browser/lib/net8.0/System.Text.Encodings.Web.dll">
       <publishTime>04/15/2025 19:09:10</publishTime>
@@ -180,6 +201,15 @@ by editing this MSBuild file. In order to learn more about this please visit htt
     <File Include="runtimes/win/lib/netcoreapp2.1/System.Data.SqlClient.dll">
       <publishTime>10/27/2023 00:34:10</publishTime>
     </File>
+    <File Include="Swashbuckle.AspNetCore.Swagger.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Swashbuckle.AspNetCore.SwaggerGen.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Swashbuckle.AspNetCore.SwaggerUI.dll">
+      <publishTime>05/21/2024 17:42:50</publishTime>
+    </File>
     <File Include="System.ClientModel.dll">
       <publishTime>03/01/2024 17:43:00</publishTime>
     </File>
@@ -187,13 +217,13 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>10/23/2021 00:47:46</publishTime>
     </File>
     <File Include="System.Configuration.ConfigurationManager.dll">
-      <publishTime>08/19/2022 20:58:02</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="System.Data.SqlClient.dll">
       <publishTime>10/27/2023 00:27:26</publishTime>
     </File>
     <File Include="System.Diagnostics.DiagnosticSource.dll">
-      <publishTime>04/15/2025 19:03:48</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="System.Drawing.Common.dll">
       <publishTime>10/23/2021 00:49:12</publishTime>
@@ -205,7 +235,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>01/12/2023 04:31:48</publishTime>
     </File>
     <File Include="System.IO.Pipelines.dll">
-      <publishTime>04/15/2025 19:04:20</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="System.Memory.Data.dll">
       <publishTime>08/04/2021 16:45:54</publishTime>
@@ -220,16 +250,16 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>10/23/2021 00:49:50</publishTime>
     </File>
     <File Include="System.Text.Encodings.Web.dll">
-      <publishTime>04/15/2025 19:08:54</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="System.Text.Json.dll">
-      <publishTime>04/15/2025 19:09:42</publishTime>
+      <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="System.Windows.Extensions.dll">
       <publishTime>10/23/2021 00:49:44</publishTime>
     </File>
     <File Include="web.config">
-      <publishTime>07/23/2025 16:55:02</publishTime>
+      <publishTime>09/03/2025 10:14:49</publishTime>
     </File>
     <File Include="wwwroot/assets/css/dashlite.css">
       <publishTime>05/21/2025 11:21:42</publishTime>

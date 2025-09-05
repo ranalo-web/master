@@ -23,6 +23,13 @@ namespace Ranalo.Services
             return result;
 
         }
+
+        public async Task<AwaitingApprovalViewModel> GetMissingMpesaOrders(string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var result = await _applicationReportRepository.GetAllMissingMpesaAsync(searchTerm, page, pageSize);
+            return result;
+
+        }
         public async Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrdersByUser(int userId, string searchTerm, int page, int pageSize)
         {
             var dealerDetails = await _repository.GetDealerByUserIdAsync(userId);
@@ -38,10 +45,10 @@ namespace Ranalo.Services
         }
 
 
-        public async Task<List<KosePayments>?> GetOrphanedPaymentsAsync()
+        public async Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize)
         {
-            var result = await _applicationReportRepository.GetOrphanedPaymentsAsync();
-            return result.ToList();
+            var result = await _applicationReportRepository.GetOrphanedPaymentsAsync(page, pageSize);
+            return result;
 
         }
         public async Task<List<AwaitingApprovalDto>> GetAllOrdersAsync()
@@ -74,9 +81,9 @@ namespace Ranalo.Services
         public async Task<IEnumerable<PaymentsSummaryTotals>> PaymentsSummary()
         {
             var payments = await GetAllPaymentsAsync();
-            var allOrphaned = await GetOrphanedPaymentsAsync();
+            var allOrphaned = await GetOrphanedPaymentsAsync(1, 10000);
 
-            var orphaned = allOrphaned.DistinctBy(r => r.MpesaCode).ToList();
+            var orphaned = allOrphaned.Payments?.DistinctBy(r => r.MpesaCode).ToList();
             //.DistinctBy(r => r.MpesaCode).ToList();
             var merged = from p in payments.Payments
                          join o in orphaned on p.MpesaCode equals o.MpesaCode into oo
@@ -116,6 +123,10 @@ namespace Ranalo.Services
 
             customerDetails?.IdentityImages?.AddRange(identityImages.ToList());
 
+            //Populate Order device details
+            customerDetails.Product = await _applicationReportRepository.GetProductDetailsForOrder(customerDetails.Id);
+
+            customerDetails.NextOfKin = await _applicationReportRepository.GetNextOfKinForOrder(orderId);
             //Now lets get AccountId by Mpesa
             var customerAccount = await _applicationReportRepository.GetCustomerAccountByMpesa(customerDetails.MpesaDepositRef);
             if(!string.IsNullOrEmpty(customerAccount))
@@ -226,6 +237,24 @@ namespace Ranalo.Services
 
             if (customerDetails == null) return "";
             return customerDetails.FirstName;
+        }
+
+        public async Task AddCustomerNoteAsync(int userId, long orderId, string customerNote)
+        {
+            var newNote = new CustomerNote()
+            {
+                UserId = userId,
+                Created = DateTime.UtcNow,
+                Note = customerNote,
+                OrderId = orderId,
+                Id = Guid.NewGuid()
+            };
+            await _applicationReportRepository.CreateCustomerNote(newNote);
+        }
+
+        public async Task<List<CustomerNote>> GetNotesByOrderIdAsync(long orderId)
+        {
+            return await _applicationReportRepository.GetNotesByOrderId(orderId);
         }
     }
 }

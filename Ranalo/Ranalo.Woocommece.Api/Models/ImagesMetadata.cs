@@ -1,4 +1,7 @@
-﻿namespace Ranalo.Woocommece.Api.Models
+﻿using Newtonsoft.Json;
+using Ranalo.Woocommece.Api.Services;
+
+namespace Ranalo.Woocommece.Api.Models
 {
     public class ImagesMetadata
     {
@@ -15,6 +18,7 @@
     {
         public int Id { get; set; }
         public string Key { get; set; }
-        public string Value { get; set; }
+        [JsonConverter(typeof(NewtonsoftValueAsStringConverter))]
+        public string? Value { get; set; }
     }
 }

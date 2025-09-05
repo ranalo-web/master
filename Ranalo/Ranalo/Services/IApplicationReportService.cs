@@ -8,7 +8,7 @@ namespace Ranalo.Services
         Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrders(string searchTerm = "", int page = 1, int pageSize = 10);
         Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrdersByUser(int userId, string searchTerm = "", int page = 1, int pageSize = 10);
 
-        Task<List<KosePayments>?> GetOrphanedPaymentsAsync();
+        Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize);
 
         Task<IEnumerable<PaymentsSummaryTotals>> PaymentsSummary();
 
@@ -27,8 +27,10 @@ namespace Ranalo.Services
         Task<int> RejectOrderAsync(long orderId);
 
         Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int? deviceGroupId);
-        
+        Task AddCustomerNoteAsync(int userId, long orderId, string customerNote);
 
+        Task<List<CustomerNote>> GetNotesByOrderIdAsync(long orderId);
 
+        Task<AwaitingApprovalViewModel> GetMissingMpesaOrders(string searchTerm = "", int page = 1, int pageSize = 10);
     }
 }

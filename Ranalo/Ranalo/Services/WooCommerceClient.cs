@@ -45,5 +45,44 @@ namespace Ranalo.Services
                 throw new Exception($"Failed to update order {orderId} (status {response.StatusCode}): {error}");
             }
         }
+
+        public async Task<string> UpdateOrderMpesaAsync(long orderId, string newmpesaCode)
+        {
+            var url = $"{_baseUrl}/orders/{orderId}" +
+                      $"?consumer_key={_consumerKey}&consumer_secret={_consumerSecret}";
+
+            var updatePayload = new
+            {
+                meta_data = new[]
+                {
+                    new {
+                        id = 332387, // existing meta ID if updating
+                        key = "mpesa_deposit_reference",
+                        value = newmpesaCode
+                    }
+                }
+            };
+
+            var payload = JsonSerializer.Serialize(updatePayload);
+
+            var request = new HttpRequestMessage(HttpMethod.Patch, url)
+            {
+                Content = new StringContent(payload, Encoding.UTF8, "application/json")
+            };
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Order {orderId} status updated to '{newmpesaCode}'");
+                return jsonResponse;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Failed to update order {orderId} (status {response.StatusCode}): {error}");
+            }
+        }
     }
 }

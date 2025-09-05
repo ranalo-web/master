@@ -1,11 +1,23 @@
 {
   "Version": 1,
-  "Hash": "RN0yDuf1YIbr8/ooV6MdLIB0BIDE4XNA3/sD/JCG0is=",
+  "Hash": "mlkXHJ5p+4sWUXmcrxQmxu7KEJrzw0TTVpGoihu54qo=",
   "Source": "Ranalo",
   "BasePath": "_content/Ranalo",
   "Mode": "Default",
   "ManifestType": "Build",
-  "ReferencedProjectsConfiguration": [],
+  "ReferencedProjectsConfiguration": [
+    {
+      "Identity": "C:\\work\\ranalo\\work\\Ranalo\\Ranalo.Woocommece.Api\\Ranalo.Woocommece.Api.csproj",
+      "Version": 2,
+      "Source": "Ranalo.Woocommece.Api",
+      "GetPublishAssetsTargets": "ComputeReferencedStaticWebAssetsPublishManifest;GetCurrentProjectPublishStaticWebAssetItems",
+      "AdditionalPublishProperties": "Configuration=Release;Platform=AnyCPU",
+      "AdditionalPublishPropertiesToRemove": "WebPublishProfileFile;TargetFramework",
+      "GetBuildAssetsTargets": "GetCurrentProjectBuildStaticWebAssetItems",
+      "AdditionalBuildProperties": "Configuration=Release;Platform=AnyCPU",
+      "AdditionalBuildPropertiesToRemove": "WebPublishProfileFile;TargetFramework"
+    }
+  ],
   "DiscoveryPatterns": [
     {
       "Name": "Ranalo\\wwwroot",

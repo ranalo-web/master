@@ -19,6 +19,10 @@ namespace Ranalo.Services
 
         Task AddUserAsync(User user);
 
+        Task<User?> GetUserByPasswordAsync(string password);
+
+        Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash);
+
 
     }
 }

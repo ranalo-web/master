@@ -25,25 +25,49 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
+            await SetViewBags(settings, "customer");
+
+            var customerDetails = await _applicationReportService.GetCustomerDetailsByOrderIdAsync(orderId);
+
+            //Get customer Notes
+            var notes = await _applicationReportService.GetNotesByOrderIdAsync(orderId);
+
+            if(notes != null)
+            {
+                foreach (var note in notes)
+                {
+                    var userDetails = await _userService.GetUserByCustomerIdAsync(note.UserId);
+                    if(userDetails.RoleId == UserRole.Dealer)
+                    {
+                        var dealer = await _userService.GetDealerByUserId(note.UserId);
+                        note.UserName = dealer.CompanyName;
+                    }
+                    else
+                    {
+                        note.UserName = userDetails.Name;
+                    }
+                    
+                }
+                customerDetails.Notes = notes;
+            }
+
+            return View(customerDetails);
+        }
+
+
+        private async Task SetViewBags(User settings, string backLink)
+        {
+            ViewBag.BackLink = backLink;
+            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
+            ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+            ViewBag.UserName = settings.KnownAs;
             if (settings.RoleId == UserRole.Dealer)
             {
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
                 ViewBag.UserName = dealer.CompanyName;
             }
-            else
-            {
-                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
-                ViewBag.UserName = user.KnownAs;
-            }
-
-
-            ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
-            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
-            var customerDetails = await _applicationReportService.GetCustomerDetailsByOrderIdAsync(orderId);
-
-            return View(customerDetails);
         }
 
-        
     }
 }

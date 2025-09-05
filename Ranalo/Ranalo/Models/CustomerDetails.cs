@@ -1,7 +1,10 @@
-﻿namespace Ranalo.Models
+﻿using Ranalo.Woocommece.Api.Models;
+
+namespace Ranalo.Models
 {
-    public class CustomerDetails 
+    public class CustomerDetails
     {
+        public int Id { get; set; }
         public int OrderID { get; set; }
         public string Status { get; set; }
         public DateTime DateCreated { get; set; }
@@ -23,5 +26,9 @@
 
         public List<ImagesMetadata> IdentityImages { get; set; } = new List<ImagesMetadata>();
         public AccountSummary? Summary { get; set; }
+
+        public List<CustomerNote>? Notes { get; set; }
+        public WooOrderProduct? Product { get; set; }
+        public Contact? NextOfKin { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 using System.Data;
 using Dapper;
 using System.Drawing.Printing;
+using Ranalo.Woocommece.Api.Models;
 
 namespace Ranalo.DataStore
 {
@@ -70,7 +71,121 @@ namespace Ranalo.DataStore
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
             };
         }
+
+        public async Task<AwaitingApprovalViewModel> GetAllMissingMpesaAsync(string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var offset = (page - 1) * pageSize;
+
+            var countSql = @"SELECT COUNT(*) 
+                FROM [dbo].[Woo_Orders]
+                WHERE [MpesaDepositRef] = ''
+                AND [Status] != 'cancelled'
+                AND (
+                        @SearchTerm IS NULL
+                        OR FirstName LIKE '%' + @SearchTerm + '%'
+                        OR DealerRef LIKE '%' + @SearchTerm + '%'
+                        OR Email LIKE '%' + @SearchTerm + '%'
+                    )";
+
+            var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchParam });
+
+            var sql = @"SELECT [Id]
+                    ,[OrderID]
+                    ,[Status]
+                    ,[DateCreated]
+                    ,[FirstName]
+                    ,[LastName]
+                    ,[Address1]
+                    ,[Email]
+                    ,[Phone]
+                    ,[NationalId]
+                    ,[DealerRef]
+                    ,[MpesaDepositRef]
+                FROM [dbo].[Woo_Orders]  
+                WHERE [MpesaDepositRef] = ''
+                  AND [Status] != 'cancelled'
+                AND (
+                        @SearchTerm IS NULL
+                        OR FirstName LIKE '%' + @SearchTerm + '%'
+                        OR DealerRef LIKE '%' + @SearchTerm + '%'
+                        OR Email LIKE '%' + @SearchTerm + '%'
+                    )
+                ORDER BY [DateCreated] DESC
+                OFFSET @Offset ROWS 
+                FETCH NEXT @pageSize ROWS ONLY";
+            var records = await _db.QueryAsync<AwaitingApprovalDto>(sql, new { SearchTerm = searchParam, offset, pageSize });
+
+            return new AwaitingApprovalViewModel()
+            {
+                AwaitingApprovals = records.ToList(),
+                CurrentPage = page,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+            };
+        }
+
         public async Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var offset = (page - 1) * pageSize;
+
+            var countSql = @"SELECT COUNT(*) 
+                FROM [dbo].[Woo_Orders] wo
+	                    INNER JOIN KosePayments kp
+	                    ON kp.MpesaCode = wo.MpesaDepositRef
+	                    INNER JOIN Devices d on TRY_CAST(kp.AccountNo AS bigint) = d.Id
+	                    INNER JOIN Dealers dl on dl.DealerReference = d.DeviceGroupId
+                        WHERE dl.DealerId = @dealerId
+                        AND (
+                        @SearchTerm IS NULL
+                        OR WO.FirstName LIKE '%' + @SearchTerm + '%'
+                        OR WO.DealerRef LIKE '%' + @SearchTerm + '%'
+                        OR WO.Email LIKE '%' + @SearchTerm + '%'
+                        OR KP.MpesaCode LIKE '%' + @SearchTerm + '%'
+                    )";
+            var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchParam, dealerId });
+
+            var sql = @"SELECT wo.[Id]
+                            ,[OrderID]
+                            ,wo.[Status]
+                            ,[DateCreated]
+                            ,[FirstName]
+                            ,[LastName]
+                            ,[Address1]
+                            ,wo.[Email]
+                            ,wo.[Phone]
+                            ,[NationalId]
+                            ,[DealerRef]
+                            ,[MpesaDepositRef]
+                        FROM [dbo].[Woo_Orders] wo
+	                    INNER JOIN KosePayments kp
+	                    ON kp.MpesaCode = wo.MpesaDepositRef
+	                    INNER JOIN Devices d on TRY_CAST(kp.AccountNo AS bigint) = d.Id
+	                    INNER JOIN Dealers dl on dl.DealerReference = d.DeviceGroupId
+                        WHERE dl.DealerId = @dealerId
+                        AND (
+                        @SearchTerm IS NULL
+                        OR WO.FirstName LIKE '%' + @SearchTerm + '%'
+                        OR WO.DealerRef LIKE '%' + @SearchTerm + '%'
+                        OR WO.Email LIKE '%' + @SearchTerm + '%'
+                        OR KP.MpesaCode LIKE '%' + @SearchTerm + '%'
+                    )
+                        ORDER BY [DateCreated] DESC
+                        OFFSET @Offset ROWS 
+                        FETCH NEXT @pageSize ROWS ONLY";
+
+            var records = await _db.QueryAsync<AwaitingApprovalDto>(sql, new { SearchTerm = searchParam, dealerId, offset, pageSize });
+
+            return new AwaitingApprovalViewModel()
+            {
+                AwaitingApprovals = records.ToList(),
+                CurrentPage = page,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+            };
+        }
+
+
+        public async Task<AwaitingApprovalViewModel> GetAllMissingMpesaForUserAsync(int dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var offset = (page - 1) * pageSize;
 
@@ -149,14 +264,34 @@ namespace Ranalo.DataStore
             return await _db.QueryAsync<AwaitingApprovalDto>(sql);
         }
 
-        public async Task<IEnumerable<KosePayments>> GetOrphanedPaymentsAsync()
+        public async Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize)
         {
+            var offset = (page - 1) * pageSize;
+
+            var countSql = @"SELECT COUNT(*)
+                            FROM KosePayments kp
+                        LEFT JOIN Devices D ON D.Id = TRY_CAST(kp.AccountNo AS BIGINT)
+                        WHERE D.Id is null";
+
             var sql = @" SELECT kp.MpesaCode, kp.AccountNo, kp.AmountValue, kp.PaymentDateValue 
                         FROM KosePayments kp
                         LEFT JOIN Devices D ON D.Id = TRY_CAST(kp.AccountNo AS BIGINT)
                         WHERE D.Id is null
-                        ORDER BY kp.PaymentDateValue desc";
-            return await _db.QueryAsync<KosePayments>(sql);
+                        ORDER BY kp.PaymentDateValue desc
+                        OFFSET @Offset ROWS 
+                        FETCH NEXT @pageSize ROWS ONLY";
+
+            var payments = await _db.QueryAsync<KosePayments>(sql, new { offset, pageSize });
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql);
+
+            return new KosePaymentsViewModel()
+            {
+                CurrentPage = page,
+                Payments = payments.ToList(),
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+            };
+
+
         }
 
         public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(string searchTerm = "", int page = 1, int pageSize = 10)
@@ -266,7 +401,8 @@ namespace Ranalo.DataStore
 
         public async  Task<CustomerDetails?> GetCustomerDetails(long orderId)
         {
-            var sql = @" SELECT wo.OrderID,
+            var sql = @" SELECT wo.Id,
+                                wo.OrderID,
                         		 wo.[Status],
                         		 wo.DateCreated,
                         		 wo.DateModified,
@@ -317,7 +453,7 @@ namespace Ranalo.DataStore
         }
 
 
-        public async Task<IEnumerable<ImagesMetadata>> GetIdentityImagesForOrder(long orderId)
+        public async Task<IEnumerable<Models.ImagesMetadata>> GetIdentityImagesForOrder(long orderId)
         {
             var sql = @" SELECT woi.[Id]
                                 ,woi.[ImageId]
@@ -333,7 +469,7 @@ namespace Ranalo.DataStore
                           ON wo.OrderID = woi.OrderId
                           where wo.OrderID = @OrderId";
 
-            return await _db.QueryAsync<ImagesMetadata>(sql, new { OrderId = orderId });
+            return await _db.QueryAsync<Models.ImagesMetadata>(sql, new { OrderId = orderId });
         }
 
         public async Task<int> RejectOrder(long orderId)
@@ -788,6 +924,59 @@ namespace Ranalo.DataStore
                         ORDER BY t1.AccountNo;";
 
             return await _db.QueryAsync<PaymentSummary>(sql);
+        }
+
+        public async Task CreateCustomerNote(CustomerNote newNote)
+        {
+            var sql = @"
+            INSERT INTO [dbo].[CustomerNote]
+            ([Id]
+            ,[OrderId]
+            ,[UserId]
+            ,[Note]
+            ,[Created])
+           VALUES
+            (@Id
+            ,@OrderId
+            ,@UserId
+            ,@Note
+            ,@Created)
+        ";
+
+            await _db.ExecuteScalarAsync<int>(sql, newNote);
+        }
+
+        public async Task<List<CustomerNote>> GetNotesByOrderId(long orderId)
+        {
+            var sql = @" SELECT *
+                        FROM [dbo].[CustomerNote]
+                          WHERE OrderId = @OrderId";
+
+            var records = await _db.QueryAsync<CustomerNote>(sql, new { OrderId = orderId });
+
+            return records.ToList();
+        }
+
+        public async Task<WooOrderProduct?> GetProductDetailsForOrder(long orderId)
+        {
+            var sql = @" SELECT *
+                        FROM [dbo].[Woo_OrderProduct]
+                          WHERE OrderId = @OrderId";
+
+            var record = await _db.QueryFirstOrDefaultAsync<WooOrderProduct>(sql, new { OrderId = orderId });
+
+            return record;
+        }
+
+        public async Task<Contact?> GetNextOfKinForOrder(long orderId)
+        {
+            var sql = @" SELECT *
+                        FROM [dbo].[Woo_Orders_NextOfKin]
+                          WHERE OrderId = @OrderId";
+
+            var record = await _db.QueryFirstOrDefaultAsync<Contact>(sql, new { OrderId = orderId });
+
+            return record;
         }
     }
 }

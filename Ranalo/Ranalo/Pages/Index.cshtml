@@ -4,274 +4,541 @@
     ViewData["Title"] = "Home page";
 }
 
-<main class="content">
-	<div class="container-fluid p-0">
-
-		<h1 class="h3 mb-3"><strong>Orders</strong> Dashboard</h1>
-
-		<div class="row">
-			<div class="col-xl-6 col-xxl-5 d-flex">
-				<div class="w-100">
-					<div class="row">
-						<div class="col-sm-6">
-							<div class="card">
-								<div class="card-body">
-									<div class="row">
-										<div class="col mt-0">
-											<h5 class="card-title">Sales</h5>
-										</div>
-
-										<div class="col-auto">
-											<div class="stat text-primary">
-												<i class="align-middle" data-feather="truck"></i>
-											</div>
-										</div>
-									</div>
-									<h1 class="mt-1 mb-3">2.382</h1>
-									<div class="mb-0">
-										<span class="text-danger"> <i class="mdi mdi-arrow-bottom-right"></i> -3.65% </span>
-										<span class="text-muted">Since last week</span>
-									</div>
-								</div>
-							</div>
-							<div class="card">
-								<div class="card-body">
-									<div class="row">
-										<div class="col mt-0">
-											<h5 class="card-title">Visitors</h5>
-										</div>
-
-										<div class="col-auto">
-											<div class="stat text-primary">
-												<i class="align-middle" data-feather="users"></i>
-											</div>
-										</div>
-									</div>
-									<h1 class="mt-1 mb-3">14.212</h1>
-									<div class="mb-0">
-										<span class="text-success"> <i class="mdi mdi-arrow-bottom-right"></i> 5.25% </span>
-										<span class="text-muted">Since last week</span>
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="col-sm-6">
-							<div class="card">
-								<div class="card-body">
-									<div class="row">
-										<div class="col mt-0">
-											<h5 class="card-title">Earnings</h5>
-										</div>
-
-										<div class="col-auto">
-											<div class="stat text-primary">
-												<i class="align-middle" data-feather="dollar-sign"></i>
-											</div>
-										</div>
-									</div>
-									<h1 class="mt-1 mb-3">$21.300</h1>
-									<div class="mb-0">
-										<span class="text-success"> <i class="mdi mdi-arrow-bottom-right"></i> 6.65% </span>
-										<span class="text-muted">Since last week</span>
-									</div>
-								</div>
-							</div>
-							<div class="card">
-								<div class="card-body">
-									<div class="row">
-										<div class="col mt-0">
-											<h5 class="card-title">Orders</h5>
-										</div>
-
-										<div class="col-auto">
-											<div class="stat text-primary">
-												<i class="align-middle" data-feather="shopping-cart"></i>
-											</div>
-										</div>
-									</div>
-									<h1 class="mt-1 mb-3">64</h1>
-									<div class="mb-0">
-										<span class="text-danger"> <i class="mdi mdi-arrow-bottom-right"></i> -2.25% </span>
-										<span class="text-muted">Since last week</span>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="col-xl-6 col-xxl-7">
-				<div class="card flex-fill w-100">
-					<div class="card-header">
-
-						<h5 class="card-title mb-0">Recent Movement</h5>
-					</div>
-					<div class="card-body py-3">
-						<div class="chart chart-sm">
-							<canvas id="chartjs-dashboard-line"></canvas>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div class="row">
-			<div class="col-12 col-md-6 col-xxl-3 d-flex order-2 order-xxl-3">
-				<div class="card flex-fill w-100">
-					<div class="card-header">
-
-						<h5 class="card-title mb-0">Browser Usage</h5>
-					</div>
-					<div class="card-body d-flex">
-						<div class="align-self-center w-100">
-							<div class="py-3">
-								<div class="chart chart-xs">
-									<canvas id="chartjs-dashboard-pie"></canvas>
-								</div>
-							</div>
-
-							<table class="table mb-0">
-								<tbody>
-									<tr>
-										<td>Chrome</td>
-										<td class="text-end">4306</td>
-									</tr>
-									<tr>
-										<td>Firefox</td>
-										<td class="text-end">3801</td>
-									</tr>
-									<tr>
-										<td>IE</td>
-										<td class="text-end">1689</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="col-12 col-md-12 col-xxl-6 d-flex order-3 order-xxl-2">
-				<div class="card flex-fill w-100">
-					<div class="card-header">
-
-						<h5 class="card-title mb-0">Real-Time</h5>
-					</div>
-					<div class="card-body px-4">
-						<div id="world_map" style="height:350px;"></div>
-					</div>
-				</div>
-			</div>
-			<div class="col-12 col-md-6 col-xxl-3 d-flex order-1 order-xxl-1">
-				<div class="card flex-fill">
-					<div class="card-header">
-
-						<h5 class="card-title mb-0">Calendar</h5>
-					</div>
-					<div class="card-body d-flex">
-						<div class="align-self-center w-100">
-							<div class="chart">
-								<div id="datetimepicker-dashboard"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div class="row">
-			<div class="col-12 col-lg-8 col-xxl-9 d-flex">
-				<div class="card flex-fill">
-					<div class="card-header">
-
-						<h5 class="card-title mb-0">Latest Projects</h5>
-					</div>
-					<table class="table table-hover my-0">
-						<thead>
-							<tr>
-								<th>Name</th>
-								<th class="d-none d-xl-table-cell">Start Date</th>
-								<th class="d-none d-xl-table-cell">End Date</th>
-								<th>Status</th>
-								<th class="d-none d-md-table-cell">Assignee</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td>Project Apollo</td>
-								<td class="d-none d-xl-table-cell">01/01/2023</td>
-								<td class="d-none d-xl-table-cell">31/06/2023</td>
-								<td><span class="badge bg-success">Done</span></td>
-								<td class="d-none d-md-table-cell">Vanessa Tucker</td>
-							</tr>
-							<tr>
-								<td>Project Fireball</td>
-								<td class="d-none d-xl-table-cell">01/01/2023</td>
-								<td class="d-none d-xl-table-cell">31/06/2023</td>
-								<td><span class="badge bg-danger">Cancelled</span></td>
-								<td class="d-none d-md-table-cell">William Harris</td>
-							</tr>
-							<tr>
-								<td>Project Hades</td>
-								<td class="d-none d-xl-table-cell">01/01/2023</td>
-								<td class="d-none d-xl-table-cell">31/06/2023</td>
-								<td><span class="badge bg-success">Done</span></td>
-								<td class="d-none d-md-table-cell">Sharon Lessman</td>
-							</tr>
-							<tr>
-								<td>Project Nitro</td>
-								<td class="d-none d-xl-table-cell">01/01/2023</td>
-								<td class="d-none d-xl-table-cell">31/06/2023</td>
-								<td><span class="badge bg-warning">In progress</span></td>
-								<td class="d-none d-md-table-cell">Vanessa Tucker</td>
-							</tr>
-							<tr>
-								<td>Project Phoenix</td>
-								<td class="d-none d-xl-table-cell">01/01/2023</td>
-								<td class="d-none d-xl-table-cell">31/06/2023</td>
-								<td><span class="badge bg-success">Done</span></td>
-								<td class="d-none d-md-table-cell">William Harris</td>
-							</tr>
-							<tr>
-								<td>Project X</td>
-								<td class="d-none d-xl-table-cell">01/01/2023</td>
-								<td class="d-none d-xl-table-cell">31/06/2023</td>
-								<td><span class="badge bg-success">Done</span></td>
-								<td class="d-none d-md-table-cell">Sharon Lessman</td>
-							</tr>
-							<tr>
-								<td>Project Romeo</td>
-								<td class="d-none d-xl-table-cell">01/01/2023</td>
-								<td class="d-none d-xl-table-cell">31/06/2023</td>
-								<td><span class="badge bg-success">Done</span></td>
-								<td class="d-none d-md-table-cell">Christina Mason</td>
-							</tr>
-							<tr>
-								<td>Project Wombat</td>
-								<td class="d-none d-xl-table-cell">01/01/2023</td>
-								<td class="d-none d-xl-table-cell">31/06/2023</td>
-								<td><span class="badge bg-warning">In progress</span></td>
-								<td class="d-none d-md-table-cell">William Harris</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-			</div>
-			<div class="col-12 col-lg-4 col-xxl-3 d-flex">
-				<div class="card flex-fill w-100">
-					<div class="card-header">
-
-						<h5 class="card-title mb-0">Monthly Sales</h5>
-					</div>
-					<div class="card-body d-flex w-100">
-						<div class="align-self-center chart chart-lg">
-							<canvas id="chartjs-dashboard-bar"></canvas>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-	</div>
-</main>
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Dashboard</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Welcome to DashLite Pharmacy Dashboard Template.</p>
+                </div>
+            </div><!-- .nk-block-head-content -->
+            <div class="nk-block-head-content">
+                <div class="toggle-wrap nk-block-tools-toggle">
+                    <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu"><em class="icon ni ni-more-v"></em></a>
+                    <div class="toggle-expand-content" data-content="pageMenu">
+                        <ul class="nk-block-tools g-3">
+                            <li>
+                                <div class="drodown">
+                                    <a href="#" class="dropdown-toggle btn btn-white btn-dim btn-outline-light" data-bs-toggle="dropdown"><em class="d-none d-sm-inline icon ni ni-calender-date"></em><span><span class="d-none d-md-inline">Last</span> 30 Days</span><em class="dd-indc icon ni ni-chevron-right"></em></a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <ul class="link-list-opt no-bdr">
+                                            <li><a href="#"><span>Last 30 Days</span></a></li>
+                                            <li><a href="#"><span>Last 6 Months</span></a></li>
+                                            <li><a href="#"><span>Last 1 Years</span></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="nk-block-tools-opt"><a href="#" class="btn btn-primary"><em class="icon ni ni-reports"></em><span>Reports</span></a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div><!-- .nk-block-head-content -->
+        </div><!-- .nk-block-between -->
+    </div><!-- .nk-block-head -->
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-xxl-3 col-sm-6">
+                <div class="card card-bordered">
+                    <div class="nk-ecwg nk-ecwg6">
+                        <div class="card-inner">
+                            <div class="card-title-group">
+                                <div class="card-title">
+                                    <h6 class="title">Today's Sales</h6>
+                                </div>
+                            </div>
+                            <div class="data">
+                                <div class="data-group">
+                                    <div class="amount">$10,945</div>
+                                    <div class="nk-ecwg6-ck">
+                                        <canvas class="ecommerce-line-chart-s3" id="ipdIncome"></canvas>
+                                    </div>
+                                </div>
+                                <div class="info"><span class="change up text-danger"><em class="icon ni ni-arrow-long-up"></em>4.63%</span><span> vs. last week</span></div>
+                            </div>
+                        </div><!-- .card-inner -->
+                    </div><!-- .nk-ecwg -->
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-xxl-3 col-sm-6">
+                <div class="card card-bordered">
+                    <div class="nk-ecwg nk-ecwg6">
+                        <div class="card-inner">
+                            <div class="card-title-group">
+                                <div class="card-title">
+                                    <h6 class="title">Today's Revenue</h6>
+                                </div>
+                            </div>
+                            <div class="data">
+                                <div class="data-group">
+                                    <div class="amount">$12,338</div>
+                                    <div class="nk-ecwg6-ck">
+                                        <canvas class="ecommerce-line-chart-s3" id="opdIncome"></canvas>
+                                    </div>
+                                </div>
+                                <div class="info"><span class="change down text-danger"><em class="icon ni ni-arrow-long-down"></em>2.34%</span><span> vs. last week</span></div>
+                            </div>
+                        </div><!-- .card-inner -->
+                    </div><!-- .nk-ecwg -->
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-xxl-3 col-sm-6">
+                <div class="card card-bordered">
+                    <div class="nk-ecwg nk-ecwg6">
+                        <div class="card-inner">
+                            <div class="card-title-group">
+                                <div class="card-title ">
+                                    <h6 class="title">Today's Customer</h6>
+                                </div>
+                            </div>
+                            <div class="data">
+                                <div class="data-group">
+                                    <div class="amount">$20,847</div>
+                                    <div class="nk-ecwg6-ck">
+                                        <canvas class="ecommerce-line-chart-s3" id="labIncome"></canvas>
+                                    </div>
+                                </div>
+                                <div class="info"><span class="change up text-danger"><em class="icon ni ni-arrow-long-up"></em>4.63%</span><span> vs. last week</span></div>
+                            </div>
+                        </div><!-- .card-inner -->
+                    </div><!-- .nk-ecwg -->
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-xxl-3 col-sm-6">
+                <div class="card card-bordered">
+                    <div class="nk-ecwg nk-ecwg6">
+                        <div class="card-inner">
+                            <div class="card-title-group">
+                                <div class="card-title">
+                                    <h6 class="title">Today's Expense</h6>
+                                </div>
+                            </div>
+                            <div class="data">
+                                <div class="data-group">
+                                    <div class="amount">$23,485</div>
+                                    <div class="nk-ecwg6-ck">
+                                        <canvas class="ecommerce-line-chart-s3" id="todayExpense"></canvas>
+                                    </div>
+                                </div>
+                                <div class="info"><span class="change up text-primary"><em class="icon ni ni-arrow-long-down"></em>1.34%</span><span> vs. last week</span></div>
+                            </div>
+                        </div><!-- .card-inner -->
+                    </div><!-- .nk-ecwg -->
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-xxl-4 col-md-6">
+                <div class="card card-bordered is-dark h-100">
+                    <div class="nk-ecwg nk-ecwg1">
+                        <div class="card-inner">
+                            <div class="card-title-group">
+                                <div class="card-title">
+                                    <h6 class="title">Total Sales</h6>
+                                </div>
+                                <div class="card-tools">
+                                    <a href="#" class="link">View Report</a>
+                                </div>
+                            </div>
+                            <div class="data">
+                                <div class="amount">$74,958.49</div>
+                                <div class="info"><strong>$7,395.37</strong> in last month</div>
+                            </div>
+                            <div class="data">
+                                <h6 class="sub-title">This week so far</h6>
+                                <div class="data-group">
+                                    <div class="amount">$1,338.72</div>
+                                    <div class="info text-right"><span class="change up text-danger"><em class="icon ni ni-arrow-long-up"></em>4.63%</span><br><span>vs. last week</span></div>
+                                </div>
+                            </div>
+                        </div><!-- .card-inner -->
+                        <div class="nk-ecwg1-ck">
+                            <canvas class="ecommerce-line-chart-s1" id="totalSales"></canvas>
+                        </div>
+                    </div><!-- .nk-ecwg -->
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-xxl-5 col-md-6">
+                <div class="card card-bordered card-full">
+                    <div class="nk-ecwg nk-ecwg8 h-100">
+                        <div class="card-inner">
+                            <div class="card-title-group mb-3">
+                                <div class="card-title">
+                                    <h6 class="title">Store Visitors</h6>
+                                </div>
+                                <div class="card-tools">
+                                    <div class="dropdown">
+                                        <a href="#" class="dropdown-toggle link link-gray link-sm dropdown-indicator" data-bs-toggle="dropdown">Weekly</a>
+                                        <div class="dropdown-menu dropdown-menu-sm dropdown-menu-end">
+                                            <ul class="link-list-opt no-bdr">
+                                                <li><a href="#"><span>Daily</span></a></li>
+                                                <li><a href="#" class="active"><span>Weekly</span></a></li>
+                                                <li><a href="#"><span>Monthly</span></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <ul class="nk-ecwg8-legends">
+                                <li>
+                                    <div class="title">
+                                        <span class="dot dot-lg sq" data-bg="#0fac81"></span>
+                                        <span>Physically</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="title">
+                                        <span class="dot dot-lg sq" data-bg="#eb6459"></span>
+                                        <span>Online</span>
+                                    </div>
+                                </li>
+                            </ul>
+                            <div class="nk-ecwg8-ck">
+                                <canvas class="ecommerce-line-chart-s4" id="salesStatistics"></canvas>
+                            </div>
+                            <div class="chart-label-group ps-5">
+                                <div class="chart-label">01 Jul, 2020</div>
+                                <div class="chart-label">30 Jul, 2020</div>
+                            </div>
+                        </div><!-- .card-inner -->
+                    </div>
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-xxl-3 col-md-6">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group mb-2">
+                            <div class="card-title">
+                                <h6 class="title">Store Statistics</h6>
+                            </div>
+                        </div>
+                        <ul class="nk-store-statistics">
+                            <li class="item">
+                                <div class="info">
+                                    <div class="title">Sales</div>
+                                    <div class="count">1,795</div>
+                                </div>
+                                <em class="icon bg-primary-dim ni ni-bag"></em>
+                            </li>
+                            <li class="item">
+                                <div class="info">
+                                    <div class="title">Customers</div>
+                                    <div class="count">2,327</div>
+                                </div>
+                                <em class="icon bg-info-dim ni ni-users"></em>
+                            </li>
+                            <li class="item">
+                                <div class="info">
+                                    <div class="title">Products</div>
+                                    <div class="count">674</div>
+                                </div>
+                                <em class="icon bg-pink-dim ni ni-box"></em>
+                            </li>
+                            <li class="item">
+                                <div class="info">
+                                    <div class="title">Categories</div>
+                                    <div class="count">68</div>
+                                </div>
+                                <em class="icon bg-purple-dim ni ni-server"></em>
+                            </li>
+                        </ul>
+                    </div><!-- .card-inner -->
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-md-6 col-xxl-4">
+                <div class="card card-bordered card-full">
+                    <div class="card-inner-group">
+                        <div class="card-inner">
+                            <div class="card-title-group">
+                                <div class="card-title">
+                                    <h6 class="title">New Customers</h6>
+                                </div>
+                                <div class="card-tools">
+                                    <a href="#" class="link">View All</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner card-inner-md">
+                            <div class="user-card">
+                                <div class="user-avatar bg-primary-dim">
+                                    <span>AB</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="lead-text">Abu Bin Ishtiyak</span>
+                                    <span class="sub-text">info@softnio.com</span>
+                                </div>
+                                <div class="user-action">
+                                    <div class="drodown">
+                                        <a href="#" class="dropdown-toggle btn btn-icon btn-trigger me-n1" data-bs-toggle="dropdown" aria-expanded="false"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <ul class="link-list-opt no-bdr">
+                                                <li><a href="#"><em class="icon ni ni-setting"></em><span>Action Settings</span></a></li>
+                                                <li><a href="#"><em class="icon ni ni-notify"></em><span>Push Notification</span></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner card-inner-md">
+                            <div class="user-card">
+                                <div class="user-avatar bg-pink-dim">
+                                    <span>SW</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="lead-text">Sharon Walker</span>
+                                    <span class="sub-text">sharon-90@example.com</span>
+                                </div>
+                                <div class="user-action">
+                                    <div class="drodown">
+                                        <a href="#" class="dropdown-toggle btn btn-icon btn-trigger me-n1" data-bs-toggle="dropdown" aria-expanded="false"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <ul class="link-list-opt no-bdr">
+                                                <li><a href="#"><em class="icon ni ni-setting"></em><span>Action Settings</span></a></li>
+                                                <li><a href="#"><em class="icon ni ni-notify"></em><span>Push Notification</span></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner card-inner-md">
+                            <div class="user-card">
+                                <div class="user-avatar bg-warning-dim">
+                                    <span>GO</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="lead-text">Gloria Oliver</span>
+                                    <span class="sub-text">gloria_72@example.com</span>
+                                </div>
+                                <div class="user-action">
+                                    <div class="drodown">
+                                        <a href="#" class="dropdown-toggle btn btn-icon btn-trigger me-n1" data-bs-toggle="dropdown" aria-expanded="false"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <ul class="link-list-opt no-bdr">
+                                                <li><a href="#"><em class="icon ni ni-setting"></em><span>Action Settings</span></a></li>
+                                                <li><a href="#"><em class="icon ni ni-notify"></em><span>Push Notification</span></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner card-inner-md">
+                            <div class="user-card">
+                                <div class="user-avatar bg-success-dim">
+                                    <span>PS</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="lead-text">Phillip Sullivan</span>
+                                    <span class="sub-text">phillip-85@example.com</span>
+                                </div>
+                                <div class="user-action">
+                                    <div class="drodown">
+                                        <a href="#" class="dropdown-toggle btn btn-icon btn-trigger me-n1" data-bs-toggle="dropdown" aria-expanded="false"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <ul class="link-list-opt no-bdr">
+                                                <li><a href="#"><em class="icon ni ni-setting"></em><span>Action Settings</span></a></li>
+                                                <li><a href="#"><em class="icon ni ni-notify"></em><span>Push Notification</span></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-xxl-8">
+                <div class="card card-bordered card-full">
+                    <div class="card-inner">
+                        <div class="card-title-group">
+                            <div class="card-title">
+                                <h6 class="title"><span class="me-2">Transaction</span> <a href="#" class="link d-none d-sm-inline">See History</a></h6>
+                            </div>
+                            <div class="card-tools">
+                                <ul class="card-tools-nav">
+                                    <li><a href="#"><span>Paid</span></a></li>
+                                    <li><a href="#"><span>Pending</span></a></li>
+                                    <li class="active"><a href="#"><span>All</span></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-inner p-0 border-top">
+                        <div class="nk-tb-list nk-tb-orders">
+                            <div class="nk-tb-item nk-tb-head">
+                                <div class="nk-tb-col"><span>Invoice No</span></div>
+                                <div class="nk-tb-col tb-col-sm"><span>Customer</span></div>
+                                <div class="nk-tb-col tb-col-md"><span>Date</span></div>
+                                <div class="nk-tb-col tb-col-lg"><span>Ref</span></div>
+                                <div class="nk-tb-col"><span>Amount</span></div>
+                                <div class="nk-tb-col"><span class="d-none d-sm-inline">Status</span></div>
+                                <div class="nk-tb-col"><span>&nbsp;</span></div>
+                            </div>
+                            <div class="nk-tb-item">
+                                <div class="nk-tb-col">
+                                    <span class="tb-lead"><a href="#">#95954</a></span>
+                                </div>
+                                <div class="nk-tb-col tb-col-sm">
+                                    <div class="user-card">
+                                        <div class="user-avatar user-avatar-sm bg-purple">
+                                            <span>AB</span>
+                                        </div>
+                                        <div class="user-name">
+                                            <span class="tb-lead">Abu Bin Ishtiyak</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    <span class="tb-sub">02/11/2020</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-lg">
+                                    <span class="tb-sub text-primary">SUB-2309232</span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span class="tb-sub tb-amount">4,596.75 <span>USD</span></span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span class="badge badge-dot badge-dot-xs text-success">Paid</span>
+                                </div>
+                                <div class="nk-tb-col nk-tb-col-action">
+                                    <div class="dropdown">
+                                        <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
+                                            <ul class="link-list-plain">
+                                                <li><a href="#">View</a></li>
+                                                <li><a href="#">Invoice</a></li>
+                                                <li><a href="#">Print</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="nk-tb-item">
+                                <div class="nk-tb-col">
+                                    <span class="tb-lead"><a href="#">#95812</a></span>
+                                </div>
+                                <div class="nk-tb-col tb-col-sm">
+                                    <div class="user-card">
+                                        <div class="user-avatar user-avatar-sm bg-warning">
+                                            <img src="./images/avatar/b-sm.jpg" alt="">
+                                        </div>
+                                        <div class="user-name">
+                                            <span class="tb-lead">Blanca Schultz</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    <span class="tb-sub">02/01/2020</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-lg">
+                                    <span class="tb-sub text-primary">SUB-2309143</span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span class="tb-sub tb-amount">199.99 <span>USD</span></span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span class="badge badge-dot badge-dot-xs text-success">Paid</span>
+                                </div>
+                                <div class="nk-tb-col nk-tb-col-action">
+                                    <div class="dropdown">
+                                        <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
+                                            <ul class="link-list-plain">
+                                                <li><a href="#">View</a></li>
+                                                <li><a href="#">Invoice</a></li>
+                                                <li><a href="#">Print</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="nk-tb-item">
+                                <div class="nk-tb-col">
+                                    <span class="tb-lead"><a href="#">#95256</a></span>
+                                </div>
+                                <div class="nk-tb-col tb-col-sm">
+                                    <div class="user-card">
+                                        <div class="user-avatar user-avatar-sm bg-purple">
+                                            <span>NL</span>
+                                        </div>
+                                        <div class="user-name">
+                                            <span class="tb-lead">Naomi Lawrence</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    <span class="tb-sub">01/29/2020</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-lg">
+                                    <span class="tb-sub text-primary">SUB-2305684</span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span class="tb-sub tb-amount">1099.99 <span>USD</span></span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span class="badge badge-dot badge-dot-xs text-success">Paid</span>
+                                </div>
+                                <div class="nk-tb-col nk-tb-col-action">
+                                    <div class="dropdown">
+                                        <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
+                                            <ul class="link-list-plain">
+                                                <li><a href="#">View</a></li>
+                                                <li><a href="#">Invoice</a></li>
+                                                <li><a href="#">Print</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="nk-tb-item">
+                                <div class="nk-tb-col">
+                                    <span class="tb-lead"><a href="#">#95135</a></span>
+                                </div>
+                                <div class="nk-tb-col tb-col-sm">
+                                    <div class="user-card">
+                                        <div class="user-avatar user-avatar-sm bg-success">
+                                            <span>CH</span>
+                                        </div>
+                                        <div class="user-name">
+                                            <span class="tb-lead">Cassandra Hogan</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    <span class="tb-sub">01/29/2020</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-lg">
+                                    <span class="tb-sub text-primary">SUB-2305564</span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span class="tb-sub tb-amount">1099.99 <span>USD</span></span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span class="badge badge-dot badge-dot-xs text-warning">Due</span>
+                                </div>
+                                <div class="nk-tb-col nk-tb-col-action">
+                                    <div class="dropdown">
+                                        <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
+                                            <ul class="link-list-plain">
+                                                <li><a href="#">View</a></li>
+                                                <li><a href="#">Invoice</a></li>
+                                                <li><a href="#">Notify</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-inner-sm border-top text-center d-sm-none">
+                        <a href="#" class="btn btn-link btn-block">See History</a>
+                    </div>
+                </div><!-- .card -->
+            </div><!-- .col -->
+        </div><!-- .row -->
+    </div><!-- .nk-block -->
+</div>
 

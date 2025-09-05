@@ -199,3 +199,15 @@ C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\refint\Ranalo.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\Ranalo.pdb
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\Ranalo.genruntimeconfig.cache
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\ref\Ranalo.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Ranalo.Woocommece.Api.deps.json
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Ranalo.Woocommece.Api.runtimeconfig.json
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Ranalo.Woocommece.Api.staticwebassets.endpoints.json
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Ranalo.Woocommece.Api.exe
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Microsoft.OpenApi.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Newtonsoft.Json.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Ranalo.Woocommece.Api.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Ranalo.Woocommece.Api.pdb
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\Ranalo.MvcApplicationPartsAssemblyInfo.cs

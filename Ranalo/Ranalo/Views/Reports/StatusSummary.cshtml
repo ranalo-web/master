@@ -1,0 +1,273 @@
+﻿@using Ranalo.Models
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model MobileStatusReport
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+@functions{
+
+
+    private string SetStatusBadge(string status)
+    {
+        var statusClass = "";
+        switch (status)
+        {
+            case "checkin":
+                statusClass = "tb-status text-warning";
+                break;
+            case "un_registered":
+                statusClass = "tb-status text-danger";
+                break;
+            case "rejected":
+                statusClass = "tb-status text-danger";
+                break;
+            case "enrolled":
+                statusClass = "tb-status text-success";
+                break;
+            default:
+                statusClass = "";
+                break;
+        }
+
+        return statusClass;
+    }
+
+    private string SetLockStatusBadge(string status)
+    {
+        var statusClass = "";
+        switch (status)
+        {
+            case "unlocked":
+                statusClass = "tb-status text-warning";
+                break;
+            case "un_registered":
+                statusClass = "tb-status text-danger";
+                break;
+            case "rejected":
+                statusClass = "tb-status text-danger";
+                break;
+            case "complete":
+                statusClass = "tb-status text-success";
+                break;
+            default:
+                statusClass = "";
+                break;
+        }
+
+        return statusClass;
+    }
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head">
+        <div class="nk-block-head-sub"><span>Account @Model.AccountNo</span></div>
+        <div class="nk-block-between-md g-4">
+            <div class="nk-block-head-content">
+                <h2 class="nk-block-title  page-title">@Model.FirstName</h2>
+                <div class="nk-block-des">
+                    <p>At a glance summary of your account. Have fun!</p>
+                </div>
+            </div>
+            <div class="nk-block-head nk-block-head-sm nk-block-between">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><span>Loan List</span> <em class="icon ni ni-chevron-down"></em></button>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <ul class="link-list-opt no-bdr">
+                            <li><a href="#"><span>Home Loan (Pro)</span></a></li>
+                            <li><a href="#"><span>Personal Loan (Standard)</span></a></li>
+                            <li><a href="#"></em><span>SME Loan (Pro)</span></a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div><!-- .nk-block-head -->
+        </div>
+    </div><!-- .nk-block-head -->
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-aside-wrap">
+                <div class="card-content">
+                    <div class="card-inner">
+                        <div class="nk-block">
+                            <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                <h5 class="title">Finance Details</h5>
+                            </div><!-- .nk-block-head -->
+                            <div class="row gy-5">
+                                <div class="col-md-3 col-lg-2 col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Loan Balance</span>
+                                        <span> KES @Model.LoanBalance/- </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2 col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Deposit</span>
+                                        <span> KES @Model.Deposit/- </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2  col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Total Loan</span>
+                                        <span>@Model.TotalLoan</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2  col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Total Paid</span>
+                                        <span>@Model.TotalPaid</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2  col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Total Due</span>
+                                        <span>@Model.TotalDue</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2  col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Arrears</span>
+                                        <span>@Model.Arrears</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- .nk-block -->
+                        <div class="nk-divider divider md"></div>
+                        <div class="nk-block">
+                            <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                <h5 class="title">Payment History</h5>
+                            </div><!-- .nk-block-head -->
+                            <div class="row gy-5">
+                                <div class="col-md-2 col-sm-4 col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">First Paid</span>
+                                        <span class="amount text-primary">@Model.FirstPaidAmt</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-sm-4 col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Last Paid</span>
+                                        <span class="amount text-success">@Model.LastPaidAmt</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2  col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Daily</span>
+                                        <span class="amount text-info">@Model.Daily</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-sm-4 col-12">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Days Left</span>
+                                        <span>@Math.Round(Model.NumberDaysLifeTime)</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-sm-4 col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">First Date</span>
+                                        <span>@Model.FirstPaymentDate?.ToString("dd MMM yyyy")</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-sm-4 col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Last Date</span>
+                                        <span>@Model.LastPaymentDate?.ToString("dd MMM yyyy")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- .nk-block -->
+                        <div class="nk-block">
+                            <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                <h5 class="title">Device Details</h5>
+                            </div><!-- .nk-block-head -->
+                            <div class="row gy-5">
+                                <div class="col-md-3 col-lg-2 col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Make</span>
+                                        <span> KES @Model.Make </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2 col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Model</span>
+                                        <span> KES @Model.Model </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2  col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Lock Status</span>
+                                        <span class="@SetLockStatusBadge(Model.LockType)">@Model.LockType</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2  col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Next Lock</span>
+                                        <span>@Model.NextLockDate</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2  col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Enroll Status</span>
+                                        <span class="@SetStatusBadge(Model.Status)">@Model.Status</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-lg-2  col-6">
+                                    <div class="profile-stats">
+                                        <span class="profile-ud-label">Locked</span>
+                                        <span>@(Model.Locked ? "True" : "False") </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- .nk-block -->
+                        <div class="nk-divider divider md"></div>
+                        <div class="nk-block">
+                            <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                <h5 class="title">Loan Status</h5>
+                            </div><!-- .nk-block-head -->
+                            <div class="row gy-5">
+                                <div class="col-12 col-md-10 col-lg-8">
+                                    <div class="profile-stats">
+                                        <div class="progress progress-lg">
+                                            @{
+                                                int percentagePaid = 0;
+                                                DateTime today = DateTime.Today;
+
+                                                if (today <= Model.FirstPaymentDate)
+                                                {
+                                                    percentagePaid = 0;
+                                                }
+                                                else if (Model.NumberDaysLifeTime <= 0)
+                                                {
+                                                    percentagePaid = 100;
+                                                }
+                                                else
+                                                {
+                                                    double totalDays = Model.NumberDaysLifeTime;
+                                                    double elapsedDays = (today - Model?.FirstPaymentDate).Value.TotalDays;
+                                                    percentagePaid = (int)Math.Round((elapsedDays / totalDays) * 100);
+
+                                                }
+                                                <div class="progress-bar progress-bar-striped bg-success" data-progress="@percentagePaid" style="width: @percentagePaid %;">@percentagePaid %</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- .nk-block -->
+                        <div class="nk-divider divider md"></div>
+                        <div class="nk-block">
+                            <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                <h5 class="title"><code>Notice</code></h5>
+                            </div><!-- .nk-block-head -->
+                            <div class="row gy-5">
+                                <div class="col-12">
+                                    <dt>If you pay your EMI late, you may attract additional charges from your lender. If you make a payment towards your EMI which is after your due date but within your lender's grace period, there is usually an added 'late fee' that you will have to pay alongside your EMI amount.</dt>
+                                </div>
+                            </div>
+                        </div><!-- .nk-block -->
+                    </div><!-- .card-inner -->
+                </div><!-- .card-content -->
+            </div><!-- .card-aside-wrap -->
+        </div><!-- .card -->
+    </div><!-- .nk-block -->
+</div>

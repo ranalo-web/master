@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Ranalo.Woocommece.Api.Models;
 using System.Data;
+using System.Reflection.Metadata;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace Ranalo.Woocommece.Api.DataStore
@@ -75,6 +76,8 @@ namespace Ranalo.Woocommece.Api.DataStore
             });
         }
 
+
+
         public async Task<OrderProduct?> GetByIdAsync(int id)
         {
             var sql = "SELECT * FROM [dbo].[Woo_OrderProduct] WHERE Id = @Id";
@@ -97,6 +100,73 @@ namespace Ranalo.Woocommece.Api.DataStore
         {
             var sql = "SELECT * FROM [dbo].[Woo_OrderProduct]";
             return await _db.QueryAsync<OrderProduct>(sql);
+        }
+
+        public async Task InsertNextOfKinAsync(Contact nextOfKin)
+        {
+            var sql = @"INSERT INTO [dbo].[Woo_Orders_NextOfKin]
+                              ([Id]
+                              ,[OrderId]
+                              ,[Name]
+                              ,[Phone]
+                              ,[Email]
+                              ,[Address])
+                        VALUES
+                              (@Id
+                              ,@OrderId
+                              ,@Name
+                              ,@Phone
+                              ,@Email
+                              ,@Address);"
+                               ;
+
+            await _db.ExecuteScalarAsync<int>(sql, new
+            {
+                Id = nextOfKin.Id,
+                OrderId = nextOfKin.OrderId,
+                Name = nextOfKin.Name,
+                Phone = nextOfKin.Phone,
+                Email = nextOfKin.Email,
+                Address = nextOfKin.Address
+
+            });
+        }
+
+        public async Task InsertMetaDataAsync(UserMetaData metaData)
+        {
+            if(metaData.MetaData != null)
+            {
+                foreach (var meta in metaData.MetaData)
+                {
+                    var sql = @"INSERT INTO [dbo].[Woo_Orders_MetaData]
+                              ([Id]
+                              ,[MetaDataId]
+                              ,[OrderId]
+                              ,[Key]
+                              ,[Value]
+                              ,[CreatedAt]
+                              ,[UpdatedAt])
+                        VALUES
+                              (@Id
+                              ,@MetaDataId
+                              ,@OrderId
+                              ,@Key
+                              ,@Value
+                              ,GETDATE()
+                              ,GETDATE());"
+                               ;
+
+                    await _db.ExecuteScalarAsync<int>(sql, new
+                    {
+                        Id = Guid.NewGuid(),
+                        OrderId = metaData.OrderId,
+                        MetaDataId = meta.Id,
+                        Key = meta.Key,
+                        Value = meta.Value
+                    });
+                }
+            }
+            
         }
     }
 }

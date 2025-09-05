@@ -19,5 +19,10 @@ namespace Ranalo.DataStore
 
         Task<User> CreateUserAsync(User newUser);
         Task<User?> GetUserByEmailAsync(string email);
+
+        Task<User?> GetUserByPasswordAsync(string password);
+
+        Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash);
+        Task UpdateUserLastLogin(User user);
     }
 }

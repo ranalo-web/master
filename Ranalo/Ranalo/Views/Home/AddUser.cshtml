@@ -1,0 +1,137 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Create user</h3>
+                <div class="nk-block-des text-soft">
+                    <p>On completion you will be redirected to the users list page.</p>
+                </div>
+            </div>
+        </div><!-- .nk-block-head -->
+        <div class="nk-block nk-block-lg">
+            <div class="card card-bordered card-preview">
+                <div class="card-inner">
+                    <div class="preview-block">
+                        <span class="preview-title-lg overline-title">User Details</span>
+                        <form action="/adduser" class="form-validate" novalidate="novalidate" method="post">
+                        <div class="row gy-4">
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="form-label" for="default-01">First Name</label>
+                                    <div class="form-control-wrap">
+                                        <div class="form-icon form-icon-left">
+                                            <em class="icon ni ni-user"></em>
+                                        </div>
+                                            <input type="text" name="name" class="form-control" id="default-01" placeholder="Enter user first name" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="form-label" for="default-05">Last Name</label>
+                                    <div class="form-control-wrap">
+                                        <div class="form-icon form-icon-left">
+                                            <em class="icon ni ni-user"></em>
+                                        </div>
+                                            <input type="text" name="lastname" class="form-control" id="default-05" placeholder="Enter user last name" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="form-label" for="default-03">Nick Name</label>
+                                    <div class="form-control-wrap">
+                                        <div class="form-icon form-icon-left">
+                                            <em class="icon ni ni-user"></em>
+                                        </div>
+                                        <input type="text" name="knownas" class="form-control" id="default-03" placeholder="Enter a known as name">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="default-04">Email Address</label>
+                                    <div class="form-control-wrap">
+                                        <div class="form-icon form-icon-left">
+                                            <em class="icon ni ni-mail"></em>
+                                        </div>
+                                            <input type="text" name="email" class="form-control" id="default-04" placeholder="Enter a valid email address" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="default-04">City</label>
+                                        <div class="form-control-wrap">
+                                            <div class="form-icon form-icon-left">
+                                                <em class="icon ni ni-building"></em>
+                                            </div>
+                                            <input type="text" name="city" class="form-control" id="default-04" placeholder="Enter a city">
+                                        </div>
+                                    </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="default-06">Select Role</label>
+                                    <div class="form-control-wrap ">
+                                        <div class="form-control-select">
+                                            <select name="roleId" class="form-control" id="default-06">
+                                                <option value="0">Select Role</option>
+                                                <option value="1">Admin</option>
+                                                <option value="2">Dealer</option>
+                                                <option value="3">Customer</option>
+                                                <option value="4">Supplier</option>
+                                                <option value="5">Approver</option>
+                                                
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <div class="form-control-wrap">
+                                        <div class="form-group">
+                                            <label class="form-label" for="password">Password</label>
+                                            <div class="form-control-wrap">
+                                                <a tabindex="-1" href="#" class="form-icon form-icon-right passcode-switch lg" data-target="password">
+                                                    <em class="passcode-icon icon-show icon ni ni-eye"></em>
+                                                    <em class="passcode-icon icon-hide icon ni ni-eye-off"></em>
+                                                </a>
+                                                    <input type="password" name="passwordHash" class="form-control form-control-lg" id="password" placeholder="Enter your passcode" required>
+                                            </div>
+                                        </div><!-- .form-group -->
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="passwordconfirm">Confirm Password</label>
+                                    <div class="form-control-wrap">
+                                        <a tabindex="-1" href="#" class="form-icon form-icon-right passcode-switch lg" data-target="passwordconfirm">
+                                            <em class="passcode-icon icon-show icon ni ni-eye"></em>
+                                            <em class="passcode-icon icon-hide icon ni ni-eye-off"></em>
+                                        </a>
+                                            <input type="password" name="PasswordHashconfirm" class="form-control form-control-lg" id="passwordconfirm" placeholder="Confirm your passcode" required>
+                                    </div>
+                                </div><!-- .form-group -->
+                            </div>
+
+                                <div class="col-sm-12">
+                                    <div class="form-control-wrap">
+                                        <div class="form-btn-group">
+                                            <button type="submit" class="btn btn-lg btn-success">Submit</button>
+                                        </div>
+                                    </div>
+                                </div>
+                        </div>
+                        </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- .card-preview -->
+</div><!-- .nk-block -->
