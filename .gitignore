@@ -8,3 +8,14 @@
 .vs/
 **/bin/
 **/obj/
+/Ranalo/Ranalo/obj/Debug/net8.0/ref/Ranalo.dll
+/Ranalo/Ranalo/DataStore/ApplicationReportRepository.cs
+/Ranalo/Ranalo/obj/Debug/net8.0/refint/Ranalo.dll
+/Ranalo/Ranalo/Controllers/ReportsController.cs
+/Ranalo/Ranalo/obj/Debug/net8.0/staticwebassets/msbuild.Ranalo.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
+/Ranalo/Ranalo/obj/Release/net8.0/PubTmp/Out/Ranalo.dll
+/Ranalo/Ranalo/obj/Release/net8.0/PubTmp/Out/Ranalo.exe
+/Ranalo/Ranalo/obj/Release/net8.0/PubTmp/Out/Ranalo.pdb
+/Ranalo/Ranalo/obj/Release/net8.0/ref/Ranalo.dll
+/Ranalo/Ranalo/obj/Release/net8.0/refint/Ranalo.dll
+/Ranalo/Ranalo/Properties/PublishProfiles/test-ranalo-web - Web Deploy.pubxml.user
