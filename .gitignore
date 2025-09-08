@@ -8,3 +8,14 @@
 .vs/
 **/bin/
 **/obj/
+/Ranalo/Ranalo/obj/Debug/net8.0/Ranalo.assets.cache
+/Ranalo/Ranalo/obj/Debug/net8.0/Ranalo.csproj.AssemblyReference.cache
+/Ranalo/Ranalo/obj/Debug/net8.0/Ranalo.GeneratedMSBuildEditorConfig.editorconfig
+/Ranalo/Ranalo/obj/project.assets.json
+/Ranalo/Ranalo/obj/project.nuget.cache
+/Ranalo/Ranalo/obj/Ranalo.csproj.nuget.dgspec.json
+/Ranalo/Ranalo/obj/Ranalo.csproj.nuget.g.props
+/Ranalo/Ranalo.Woocommece.Api/obj/Debug/net8.0/Ranalo.Woocommece.Api.assets.cache
+/Ranalo/Ranalo.Woocommece.Api/obj/Debug/net8.0/Ranalo.Woocommece.Api.csproj.AssemblyReference.cache
+/Ranalo/Ranalo.Woocommece.Api/obj/Debug/net8.0/Ranalo.Woocommece.Api.GeneratedMSBuildEditorConfig.editorconfig
+/Ranalo/Ranalo.Woocommece.Api/obj/Ranalo.Woocommece.Api.csproj.nuget.g.props
