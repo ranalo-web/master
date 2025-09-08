@@ -338,7 +338,6 @@
                                             data-search="on"
                                             data-dropdown="xs center"
                                             onchange="location.href='/devices-with-no-orders?page=' + this.value">
-                                        >
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>

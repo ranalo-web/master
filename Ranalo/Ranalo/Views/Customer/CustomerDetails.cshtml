@@ -56,8 +56,12 @@
                     <div class="card-inner-group">
                         <div class="card-inner">
                             <div class="user-card user-card-s2">
+                                
                                 <div class="user-avatar lg bg-primary">
-                                    <img src="@Model.IdentityImages.FirstOrDefault(x=>x.Key == "photo_of_applicant").Url" alt="">
+                                    @if (Model.IdentityImages.Any())
+                                    {
+                                        <img src="@Model.IdentityImages.FirstOrDefault(x=>x.Key == "photo_of_applicant").Url" alt="">
+                                    }
                                 </div>
                                 <div class="user-info">
                                     <div class="badge bg-light rounded-pill ucap">Platinam</div>

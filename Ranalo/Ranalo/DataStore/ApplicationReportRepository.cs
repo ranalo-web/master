@@ -466,7 +466,7 @@ namespace Ranalo.DataStore
                                 ,woi.[Size]
                           FROM [dbo].[Woo_Orders] wo
                           INNER JOIN [dbo].[Woo_Orders_Images] woi
-                          ON wo.OrderID = woi.OrderId
+                          ON wo.Id = woi.OrderId
                           where wo.OrderID = @OrderId";
 
             return await _db.QueryAsync<Models.ImagesMetadata>(sql, new { OrderId = orderId });

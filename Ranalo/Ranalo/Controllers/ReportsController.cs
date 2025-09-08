@@ -70,6 +70,55 @@ namespace Ranalo.Controllers
         }
 
         [HttpGet]
+        [Route("arrearsreport/{page:int?}")]
+        public async Task<IActionResult> ArreasReport(int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "approver");
+
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null);
+                var paymentSummaries = allPaymentSummaries.Where(x=>x.Arrears < 0).ToList();
+                var pagedAllData = paymentSummaries.Paginate(page, pageSize);
+                var responseData = new StatusReportViewModel()
+                {
+                    CurrentPage = page,
+                    StatusReports = pagedAllData.ToList(),
+                    TotalPages = (int)Math.Ceiling((double)paymentSummaries.Count() / pageSize)
+                };
+
+                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
+                ViewData["OrdersStatus"] = "Waiting Approval";
+
+                return View(responseData);
+            }
+
+            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+
+            var dealerId = Convert.ToInt32(dealer.DealerReference);
+
+            var allDelaerStatusReport = await _applicationReportService.GetStatusReportByDealer(dealerId);
+            var delaerStatusReport = allDelaerStatusReport.Where(x => x.Arrears < 0).ToList();
+            var pagedData = delaerStatusReport.Paginate(page, pageSize);
+
+            var veiwDetails = new StatusReportViewModel()
+            {
+                CurrentPage = page,
+                StatusReports = pagedData.ToList(),
+                TotalPages = (int)Math.Ceiling((double)delaerStatusReport.Count() / pageSize)
+            };
+
+            return View(veiwDetails);
+
+        }
+
+        [HttpGet]
         [Route("missingmpesacode/{page:int?}")]
         public async Task<IActionResult> MissingMpesa(int page = 1, int pageSize = 10)
         {
