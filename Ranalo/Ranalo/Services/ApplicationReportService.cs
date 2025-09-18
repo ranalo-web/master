@@ -133,7 +133,20 @@ namespace Ranalo.Services
             {
                 customerDetails.Summary = await _applicationReportRepository.GetPaymentSummaryForAccountId(customerAccount);
             }
+
+            //Lets get payments
+            var payments = await _applicationReportRepository.GetPaymentsForAccount(customerAccount);
+            if(payments != null)
+            {
+                customerDetails.Payments = payments.Payments!;
+            }
+
             return customerDetails;
+        }
+
+        public async Task<AwaitingApprovalViewModel> GetAllNeverPaidOrdersAsync(string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            return await _applicationReportRepository.GetAllNeverPaidOrdersAsync(searchTerm, page, pageSize);
         }
 
         public async Task<int> RejectOrderAsync(long orderId)
@@ -162,20 +175,17 @@ namespace Ranalo.Services
             return await _applicationReportRepository.ApproveOrder(orderId);
         }
 
-        public async Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int? deviceGroupId)
+        public async Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int? deviceGroupId, int page, int pageSize, string searchTerm)
         {
 
             var mobileStatusReports = new List<MobileStatusReport>();
             //Get payment Summary
-            IEnumerable<PaymentSummary> paymentSummary;
-            if(deviceGroupId != null)
-            {
-                paymentSummary = await _applicationReportRepository.GetPaymentSummaryByDeviceGroupAsync((int)deviceGroupId);
-            }
-            else
-            {
-                paymentSummary = await _applicationReportRepository.GetPaymentSummaryAsync();
-            }
+            List<PaymentSummary> paymentSummary = new List<PaymentSummary>();
+
+            deviceGroupId ??= 0;
+            var result = await _applicationReportRepository.GetPaymentSummaryAsync(deviceGroupId.Value, page, pageSize, searchTerm);
+
+            paymentSummary = result.Payments;
 
             if (paymentSummary != null) 
             {
@@ -219,14 +229,34 @@ namespace Ranalo.Services
                         NextLockDate = payment.NextLockDate,
                         Status = payment.Status,
                         LockType = payment.LockType
+                        
                     };
-
+                    if(statusRow.Arrears < 0)
+                    {
+                        var daysLeft = _calculatorService.CalculateNoDaysUnit((DateTime)statusRow.FirstPaymentDate);
+                        statusRow.RestructuredAmnt = Math.Round(_calculatorService.CalculateRestructured(statusRow.TotalDue, (int)daysLeft), 2);
+                    }
+                    
                     mobileStatusReports.Add(statusRow);
                 }
             }
 
             return mobileStatusReports;
 
+        }
+
+        public async Task<AllAccountsViewModel> GetAllAccountsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var allAccounts = await _applicationReportRepository.GetAllAccountsByUserAsync(dealerId, searchTerm, page, pageSize);
+            if (allAccounts.Accounts != null) 
+            {
+                foreach (var account in allAccounts.Accounts)
+                {
+                    account.Arrears = _calculatorService.CalculateArears(account.TotalAmount, account.TotalPaid, (DateTime)DateHelper.ParseCustomDate(account.FirstPaidDate));
+                }
+            }
+
+            return allAccounts;
         }
 
         private async Task<string> GetFirstNameByMpesa(string? firstMPesaCode)
@@ -256,5 +286,42 @@ namespace Ranalo.Services
         {
             return await _applicationReportRepository.GetNotesByOrderId(orderId);
         }
+
+        #region Dashboard
+        public async Task<DashboardTotals> GetDashboardTotalsAsync(int dealer = 0)
+        {
+            return await _applicationReportRepository.GetDashboardTotals(dealer);
+        }
+
+        public async Task<List<CustomerDetails>> GetRecentCustomersAsync(int dealerId = 0)
+        {
+            return await _applicationReportRepository.GetRecentCustomers(dealerId);
+        }
+
+        public async Task<List<TransactionHistory>> GetTransactionHistoryAsync(int dealerId = 0)
+        {
+            return await _applicationReportRepository.GetTransactionHistory(dealerId);
+        }
+        #endregion
+
+        #region Restructured
+
+        public async Task CreateRestructuredAsync(RestructuredRecord record)
+        {
+            await _applicationReportRepository.InsertRestructured(record);
+        }
+
+        public async Task<List<RestructuredRecord>> GetAllRestructured()
+        {
+            return await _applicationReportRepository.GetAllRestructured();
+        }
+
+        public async Task<List<RestructuredRecord>> GetAllRestructuredForAccount(long accountId)
+        {
+            return await _applicationReportRepository.GetAllRestructuredForAccount(accountId);
+        }
+
+        #endregion
+
     }
 }

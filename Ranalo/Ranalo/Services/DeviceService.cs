@@ -38,10 +38,10 @@ namespace Ranalo.Services
             long metadataId = await _devicesRepository.GetMetaDataByKeyForOrderNumber(orderNumber, "mpesa_deposit_reference");
             //Update at Woo Commerce first then locally
 
-            await SendMpesaUpdate(orderNumber, newMpesa);
+            await SendMpesaUpdate(orderNumber, newMpesa, metadataId);
         }
 
-        public async Task<int> SendMpesaUpdate(long orderId, string newMpesa)
+        public async Task<int> SendMpesaUpdate(long orderId, string newMpesa, long metadataId)
         {
             var client = new WooCommerceClient(
                 "https://ranalocredit.com/wp-json/wc/v3",
@@ -49,9 +49,14 @@ namespace Ranalo.Services
                 "cs_b2d5d61f3eae5093d85b7319905eb5942c614f99"
             );
 
-            string result = await client.UpdateOrderMpesaAsync(orderId, newMpesa);
+            string result = await client.UpdateOrderMpesaAsync(orderId, newMpesa, metadataId);
 
             return await _devicesRepository.UpdateMpesaForOrder(orderId, newMpesa);
+        }
+
+        public async Task<bool> MpesaCodeIsLinkedAsync(string newMpesa)
+        {
+            return await _devicesRepository.MpesaCodeIsAlreadyLinked(newMpesa);
         }
     }
 }

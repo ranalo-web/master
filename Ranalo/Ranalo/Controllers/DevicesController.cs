@@ -15,14 +15,16 @@ namespace Ranalo.Controllers
     {
         private readonly IDeviceService _devicesService;
         private readonly IUserService _userService;
+        private readonly IApplicationReportService _applicationReportService;
 
-        public DevicesController(IDeviceService devicesService, IUserService userService)
+        public DevicesController(IDeviceService devicesService, IUserService userService, IApplicationReportService applicationReportService)
         {
             _devicesService = devicesService;
             _userService = userService;
+            _applicationReportService = applicationReportService;
         }
 
-        [Route("devices-with-no-orders/{page:int?}")]
+        [Route("devices-with-no-orders/{page:int?}/{pageSize:int?}")]
         public async Task<IActionResult> DevicesWithNoOrders(int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
@@ -101,10 +103,21 @@ namespace Ranalo.Controllers
             {
                 errors.Add("Mpesa Code is invalid.");
             }
+            //Check if we have already seen this Mpesa
+            if (await _devicesService.MpesaCodeIsLinkedAsync(newMpesa))
+            {
+                errors.Add("Mpesa already linked to an order.");
+            }
+
             //Validate Order Id
             if (!await _devicesService.OrderNumberIsValidAsync(orderNumber))
             {
                 errors.Add("Order number is invalid.");
+            }
+
+            if(errors.Any())
+            {
+                return await GetAndRenderView(settings, errors, page, pageSize);
             }
 
             //Only if no errors do we need to assign new MPESA
@@ -123,6 +136,34 @@ namespace Ranalo.Controllers
             
         }
 
+        [HttpGet]
+        [Route("alldevices/{page:int?}")]
+        public async Task<IActionResult> AllDevices(int page = 1, int pageSize = 10, string searchTerm = "")
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            await SetViewBags(settings, "index");
+            //await SetViewBags(settings, "index");
+            var accounts = new AllAccountsViewModel();
+
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                accounts = await _applicationReportService.GetAllAccountsAsync(null, searchTerm: searchTerm, page: page, pageSize: pageSize);
+
+                return View(accounts);
+            }
+
+            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+
+            var dealerId = Convert.ToInt32(dealer.DealerReference);
+
+            accounts = await _applicationReportService.GetAllAccountsAsync(dealerId, searchTerm: searchTerm, page: page, pageSize: pageSize);
+
+            return View(accounts);
+        }
         private async Task SetViewBags(User settings, string backLink)
         {
             ViewBag.BackLink = backLink;

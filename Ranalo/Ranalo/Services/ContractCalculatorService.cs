@@ -174,7 +174,10 @@
 
         }
 
-
+        public decimal CalculateRestructured(decimal arrears, int remainingDays)
+        {
+            return arrears / remainingDays;
+        }
         public double CalculateNoDaysUnit(DateTime firstPaymentDate)
         {
             DateTime now = DateTime.Now;

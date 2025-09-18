@@ -17,7 +17,7 @@ namespace Ranalo.Services
 
         Task<List<Device>> GetAllDevicesAsync();
 
-
+        Task<AllAccountsViewModel> GetAllAccountsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10);
         Task<List<AwaitingApprovalDto>> GetAllOrdersAsync();
         Task<List<Dealer>> GetAllDealersAsync();
         Task<CustomerDetails> GetCustomerDetailsByOrderIdAsync(long orderId);
@@ -26,11 +26,23 @@ namespace Ranalo.Services
 
         Task<int> RejectOrderAsync(long orderId);
 
-        Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int? deviceGroupId);
+        Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int? deviceGroupId, int page = 1, int pageSize = 10, string searchTerm = "");
         Task AddCustomerNoteAsync(int userId, long orderId, string customerNote);
 
         Task<List<CustomerNote>> GetNotesByOrderIdAsync(long orderId);
 
         Task<AwaitingApprovalViewModel> GetMissingMpesaOrders(string searchTerm = "", int page = 1, int pageSize = 10);
+
+        Task<AwaitingApprovalViewModel> GetAllNeverPaidOrdersAsync(string searchTerm = "", int page = 1, int pageSize = 10);
+
+        Task<DashboardTotals> GetDashboardTotalsAsync(int dealer = 0);
+
+        Task<List<CustomerDetails>> GetRecentCustomersAsync(int dealerId = 0);
+
+        Task<List<TransactionHistory>> GetTransactionHistoryAsync(int dealerId = 0);
+
+        Task CreateRestructuredAsync(RestructuredRecord record);
+        Task<List<RestructuredRecord>> GetAllRestructured();
+        Task<List<RestructuredRecord>> GetAllRestructuredForAccount(long accountId);
     }
 }

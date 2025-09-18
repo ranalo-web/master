@@ -36,11 +36,14 @@ builder.Services.AddScoped<IApplicationReportRepository, ApplicationReportReposi
 builder.Services.AddScoped<IContractCalculatorService, ContractCalculatorService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IDevicesRepository, DevicesRepository>();
+builder.Services.AddScoped<IStatementService, StatementService>();
+builder.Services.AddScoped<IStatementsRepository, StatementsRepository>();
 //Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int deviceGroupId)
 //IUserService
 builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
 builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
 builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+
 
 builder.Services.AddDistributedMemoryCache(); // or use Redis, etc.
 builder.Services.AddSession(options =>

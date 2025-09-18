@@ -55,7 +55,7 @@ namespace Ranalo.Controllers
 
             var isApproved = await _applicationReportService.RejectOrderAsync(orderId);
             //var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, "searchTerm");
-            return Redirect($"/customer-details/{orderId}");
+            return Redirect($"/order-details/{orderId}");
         }
 
         [HttpPost]
@@ -72,7 +72,7 @@ namespace Ranalo.Controllers
 
             var isApproved = await _applicationReportService.ApproveOrderAsync(orderId);
 
-            return Redirect($"/customer-details/{orderId}");
+            return Redirect($"/order-details/{orderId}");
         }
 
         [HttpPost]
@@ -89,7 +89,7 @@ namespace Ranalo.Controllers
 
             await _applicationReportService.AddCustomerNoteAsync(settings.UserId, orderId, customerNote);
 
-            return Redirect($"/customer-details/{orderId}");
+            return Redirect($"/order-details/{orderId}");
         }
 
         private async Task SetViewBags(User settings, string backLink)

@@ -13,14 +13,16 @@ namespace Ranalo.Controllers
     {
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
-        public HomeController(IApplicationReportService applicationReportService, IUserService userService)
+        private readonly IStatementService _statementService;
+        public HomeController(IApplicationReportService applicationReportService, IUserService userService, IStatementService statementService)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
+            _statementService = statementService;
         }
 
         [HttpGet]
-        [Route("dashboard/{page:int?}")]
+        [Route("orders/{page:int?}")]
         public async Task<IActionResult> Index(int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
@@ -48,6 +50,60 @@ namespace Ranalo.Controllers
             ViewData["OrdersStatus"] = "All Orders";
             return View(waitingApprovalByUser);
 
+        }
+
+        [HttpGet]
+        [Route("never-paid/{page:int?}")]
+        public async Task<IActionResult> NeverPaid(int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            await SetViewBags(settings, "index");
+
+            if (settings.RoleId == UserRole.Admin)
+            {
+                var neverPaid = await _applicationReportService.GetAllNeverPaidOrdersAsync(page: page, pageSize: pageSize);
+                ViewData["OrdersStatus"] = "Waiting Approval";
+
+                return View("~/Views/Reports/NeverPaid.cshtml", neverPaid);
+            }
+
+            if (settings.RoleId == UserRole.Approver)
+            {
+                return RedirectToAction("Index", "Approver");
+            }
+
+            return RedirectToAction("Index", "Login");
+        }
+
+        [HttpPost]
+        [Route("never-paid")]
+        public async Task<IActionResult> NeverPaid(string searchTerm)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            await SetViewBags(settings, "index");
+
+            if (settings.RoleId == UserRole.Admin)
+            {
+                var neverPaid = await _applicationReportService.GetAllNeverPaidOrdersAsync(searchTerm: searchTerm);
+                ViewData["OrdersStatus"] = "Waiting Approval";
+
+                return View("~/Views/Reports/NeverPaid.cshtml", neverPaid);
+            }
+
+            if (settings.RoleId == UserRole.Approver)
+            {
+                return RedirectToAction("Index", "Approver");
+            }
+
+            return RedirectToAction("Index", "Login");
         }
 
         [Route("orphanedpayments/{page:int?}")]
@@ -86,6 +142,47 @@ namespace Ranalo.Controllers
             var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, page: page, pageSize: pageSize);
 
             return View(allPaymentsByUser);
+        }
+
+        [Route("statements/{page:int?}")]
+        public async Task<IActionResult> Statements(int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "index");
+
+            var statement = await _statementService.GetStatementForDealerWithTransactionsAsync(settings.DealerId, settings.DealerId);
+
+            return View(statement);
+        }
+
+        [HttpPost("upload")]
+        public async Task<IActionResult> Statements(IFormFile file, CancellationToken cancellationToken)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "index");
+
+            using (var stream = file.OpenReadStream()) // IFormFile from upload
+            {
+                var mapper = new BankStatementMapper();
+                var statement = mapper.MapFromExcel(stream, settings.DealerId, file.FileName);
+
+                // Now you can save with your Dapper insert methods
+                await _statementService.CreateNewStatementAsync(statement);
+            }
+
+            //Now get the latest staements
+
+            return RedirectToAction("Statements", "Home");
         }
 
 
@@ -129,7 +226,7 @@ namespace Ranalo.Controllers
         }
 
         [HttpPost]
-        [Route("dashboard")]
+        [Route("orders")]
         public async Task<IActionResult> SearchDashBoard(string searchTerm)
         {
             var settings = HttpContext.Items["UserSettings"] as User;

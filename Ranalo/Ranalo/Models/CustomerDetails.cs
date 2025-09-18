@@ -30,5 +30,7 @@ namespace Ranalo.Models
         public List<CustomerNote>? Notes { get; set; }
         public WooOrderProduct? Product { get; set; }
         public Contact? NextOfKin { get; set; }
+
+        public List<KosePayments> Payments { get; set; } = new List<KosePayments>();
     }
 }

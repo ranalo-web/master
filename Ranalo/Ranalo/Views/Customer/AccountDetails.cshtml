@@ -1,0 +1,425 @@
+﻿@using Ranalo.Models
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model CustomerDetails
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+@functions {
+    private string SetStatusBadge(string status)
+    {
+        var statusClass = "";
+        switch (status)
+        {
+            case "approval-waiting":
+                statusClass = "lead-text text-warning";
+                break;
+            case "cancelled":
+                statusClass = "lead-text text-danger";
+                break;
+            case "rejected":
+                statusClass = "lead-text text-danger";
+                break;
+            case "approved":
+                statusClass = "lead-text text-success";
+                break;
+            default:
+                statusClass = "";
+                break;
+        }
+
+        return statusClass;
+    }
+
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between g-3">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Customer Details</h3>
+                <div class="nk-block-des text-soft">
+                    <p>An example page for customer details</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="html/customer-list.html" class="btn btn-outline-light bg-white d-none d-sm-inline-flex"><em class="icon ni ni-arrow-left"></em><span>Back</span></a>
+                <a href="html/customer-list.html" class="btn btn-icon btn-outline-light bg-white d-inline-flex d-sm-none"><em class="icon ni ni-arrow-left"></em></a>
+            </div>
+        </div>
+    </div><!-- .nk-block-head -->
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-xl-4">
+                <div class="card">
+                    <div class="card-inner-group">
+                        <div class="card-inner">
+                            <div class="user-card user-card-s2">
+                                <div class="user-avatar lg bg-primary">
+                                    @if (Model.IdentityImages.Any())
+                                    {
+                                        <img src="@Model.IdentityImages.FirstOrDefault(x=>x.Key == "photo_of_applicant").Url" alt="">
+                                    }
+                                </div>
+                                <div class="user-info">
+                                    <div class="badge bg-light rounded-pill ucap">Platinam</div>
+                                    <h5>@Model.FirstName @Model.LastName</h5>
+                                    <span class="sub-text">@Model.Email</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner card-inner-sm">
+                            <ul class="btn-toolbar justify-center gx-1">
+                                <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-shield-off"></em></a></li>
+                                <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-mail"></em></a></li>
+                                <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-bookmark"></em></a></li>
+                                <li><a href="#" class="btn btn-trigger btn-icon text-danger"><em class="icon ni ni-na"></em></a></li>
+                            </ul>
+                        </div>
+                        <div class="card-inner">
+                            <div class="row gy-3 justify-content-center text-center">
+                                <div class="col">
+                                    <div class="profile-stats">
+                                        <span class="amount">23</span>
+                                        <span class="sub-text">Orders</span>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="profile-stats">
+                                        <span class="amount">20</span>
+                                        <span class="sub-text">Completed</span>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="profile-stats">
+                                        <span class="amount">3</span>
+                                        <span class="sub-text">Progress</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- .card-inner -->
+                        <div class="card-inner">
+                            <h6 class="overline-title mb-2">Short Details</h6>
+                            <div class="row g-3">
+                                <div class="col-sm-6 col-md-4 col-xl-12">
+                                    <span class="sub-text">User ID:</span>
+                                    <span>@Model.CustomerId</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-xl-12">
+                                    <span class="sub-text">Billing Email:</span>
+                                    <span>@Model.Email</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-xl-12">
+                                    <span class="sub-text">Billing Address:</span>
+                                    <span>@Model.Address1</span>
+                                </div>
+                                @*  <div class="col-sm-6 col-md-4 col-xl-12">
+                                    <span class="sub-text">Language:</span>
+                                    <span>English, France</span>
+                                </div> *@
+                                <div class="col-sm-6 col-md-4 col-xl-12">
+                                    <span class="sub-text">Order Modified:</span>
+                                    <span>@Model.DateModified</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Status:</span>
+                                    <span class="@SetStatusBadge(Model.Status)">@Model.Status</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Ordered At:</span>
+                                    <span>@Model.DateCreated</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Dealer Ref:</span>
+                                    <span>@Model.DealerRef</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">IMEI:</span>
+                                    <span>@Model.IMEI</span>
+                                </div>
+                                <div class="col-sm-6 col-md-4 col-lg-12">
+                                    <span class="sub-text">Mpesa Code:</span>
+                                    <span>@Model.MpesaDepositRef</span>
+                                </div>
+                            </div>
+                        </div><!-- .card-inner -->
+                    </div>
+                </div>
+            </div><!-- .col -->
+            <div class="col-xl-8">
+                <div class="card">
+                    <div class="card-inner">
+                        <div class="nk-block">
+                            <div class="overline-title-alt mb-2 mt-2">In Account</div>
+                            <div class="profile-balance">
+                                <div class="profile-balance-group gx-4">
+                                    <div class="profile-balance-sub">
+                                        <div class="profile-balance-amount">
+                                            <div class="number">@Model.TotalAmount <small class="currency currency-usd">KES</small></div>
+                                        </div>
+                                        <div class="profile-balance-subtitle">Wallet Balance</div>
+                                    </div>
+                                    <div class="profile-balance-sub">
+                                        <span class="profile-balance-plus text-soft"><em class="icon ni ni-plus"></em></span>
+                                        <div class="profile-balance-amount">
+                                            <div class="number">1,643</div>
+                                        </div>
+                                        <div class="profile-balance-subtitle">Credit Points</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="nk-block">
+                            <div class="card card-bordered">
+                                <div class="card-aside-wrap">
+                                    <div class="card-content">
+                                        <div class="card-inner">
+                                            @if (Model.Summary != null)
+                                            {
+                                                <div class="nk-block">
+                                                    <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                                        <h5 class="title">Loan Details</h5>
+                                                    </div>
+
+                                                    <div class="row gy-5">
+                                                        <div class="col-md-3 col-lg-2 col-6">
+                                                            <div class="profile-stats"><span class="profile-ud-label">Loan Amount</span><span> KES @Model.Summary.LoanBalance.ToString("F2") </span></div>
+                                                        </div>
+                                                        <div class="col-md-3 col-lg-2 col-6">
+                                                            <div class="profile-stats"><span class="profile-ud-label">Deposit</span><span>KES @Model.Summary.Deposit.ToString("F2") </span></div>
+                                                        </div>
+                                                        <div class="col-md-3 col-lg-2  col-6">
+                                                            <div class="profile-stats"><span class="profile-ud-label">Frequency</span><span>Daily</span></div>
+                                                        </div>
+                                                        <div class="col-md-3 col-lg-2  col-6">
+                                                            <div class="profile-stats"><span class="profile-ud-label">Duration</span><span>1 year</span></div>
+                                                        </div>
+                                                        <div class="col-md-3 col-lg-2  col-6">
+                                                            <div class="profile-stats"><span class="profile-ud-label">Start Date</span><span>@Model.Summary.FirstPaymentDate.ToString("dd MMM yyyy")</span></div>
+                                                        </div>
+                                                        <div class="col-md-3 col-lg-2  col-6">
+                                                            <div class="profile-stats"><span class="profile-ud-label">End Date</span><span>@Model.Summary.ContractEndDate.ToString("dd MMM yyyy")</span></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="nk-divider divider md"></div>
+                                                <div class="nk-block">
+                                                    <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                                        <h5 class="title">Schedule</h5>
+                                                    </div>
+                                                    <div class="row gy-5">
+                                                        <div class="col-md-2 col-sm-4 col-6">
+                                                            <div class="profile-stats"><span class="profile-ud-label">Daily</span><span class="amount text-primary">@Model.Summary.Daily.ToString("F2")</span></div>
+                                                        </div>
+                                                        <div class="col-md-2 col-sm-4 col-6">
+                                                            <div class="profile-stats"><span class="profile-ud-label">Weekely</span><span class="amount text-success">@Model.Summary.Weekly.ToString("F2")</span></div>
+                                                        </div>
+                                                        <div class="col-md-2 col-sm-4 col-12">
+                                                            <div class="profile-stats"><span class="profile-ud-label">Monthly</span><span class="amount text-warning">@Model.Summary.Monthly.ToString("F2")</span></div>
+                                                        </div>
+                                                        <div class="col-md-3 col-sm-4 col-6">
+                                                            <div class="profile-stats"><span class="profile-ud-label">First Payment</span><span>@Model.Summary.FirstPaymentDate.ToString("dd MMM yyyy")</span></div>
+                                                        </div>
+                                                        <div class="col-md-3 col-sm-4 col-6">
+                                                            <div class="profile-stats"><span class="profile-ud-label">Last Payment</span><span>@Model.Summary.LastPaymentDate.ToString("dd MMM yyyy")</span></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="nk-divider divider md"></div>
+                                                <div class="nk-block">
+                                                    <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                                        <h5 class="title">Loan Status</h5>
+                                                    </div>
+                                                    <div class="row gy-5">
+                                                        <div class="col-12 col-md-10 col-lg-8">
+                                                            <div class="profile-stats">
+                                                                <div class="progress progress-lg">
+                                                                    @{
+                                                                        int percentagePaid = 0;
+                                                                        DateTime today = DateTime.Today;
+
+                                                                        if (today <= Model.Summary.FirstPaymentDate)
+                                                                        {
+                                                                            percentagePaid = 0;
+                                                                        }
+                                                                        else if (today >= Model.Summary.ContractEndDate)
+                                                                        {
+                                                                            percentagePaid = 100;
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            double totalDays = (Model.Summary.ContractEndDate - Model.Summary.FirstPaymentDate).TotalDays;
+                                                                            double elapsedDays = (today - Model.Summary.FirstPaymentDate).TotalDays;
+                                                                            percentagePaid = (int)Math.Round((elapsedDays / totalDays) * 100);
+
+                                                                        }
+                                                                        <div class="progress-bar progress-bar-striped bg-success" data-progress="@percentagePaid" style="width: @percentagePaid %;">@percentagePaid %</div>
+                                                                    }
+
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="nk-divider divider md"></div>
+                                            }
+
+                                            @*   <div class="nk-block">
+                                                    <div class="nk-block-head nk-block-head-sm nk-block-between">
+                                                        <h5 class="title"><code>Notice</code></h5>
+                                                    </div>
+                                                    <div class="row gy-5">
+                                                        <div class="col-12">
+                                                            <dt>If you pay your EMI late, you may attract additional charges from your lender. If you make a payment towards your EMI which is after your due date but within your lender's grace period, there is usually an added 'late fee' that you will have to pay alongside your EMI amount.</dt>
+                                                        </div>
+                                                    </div>
+                                                </div> *@
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="nk-block">
+                            <h6 class="lead-text mb-3">Recent Payments</h6>
+                            <div class="nk-tb-list nk-tb-ulist is-compact card">
+                                <div class="nk-tb-item nk-tb-head">
+                                    <div class="nk-tb-col">
+                                        <span class="sub-text">Account Number</span>
+                                    </div>
+                                    <div class="nk-tb-col tb-col-sm">
+                                        <span class="sub-text">Mpesa Code</span>
+                                    </div>
+                                    <div class="nk-tb-col tb-col-xxl">
+                                        <span class="sub-text">Payment Date</span>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        <span class="sub-text">Amount</span>
+                                    </div>
+                                </div>
+
+                                @if(Model.Payments != null && Model.Payments.Any())
+                                {
+                                    foreach (var payment in Model.Payments)
+                                    {
+                                        <div class="nk-tb-item">
+                                            <div class="nk-tb-col">
+                                                <a href="#"><span class="fw-bold">#@payment.AccountNo</span></a>
+                                            </div>
+                                            <div class="nk-tb-col tb-col-sm">
+                                                <span class="tb-product">
+                                                    <span class="title">@payment.MpesaCode</span>
+                                                </span>
+                                            </div>
+                                            <div class="nk-tb-col tb-col-xxl">
+                                                <span class="sub-text">@payment.PaymentDateValue</span>
+                                            </div>
+                                            <div class="nk-tb-col">
+                                                <span class="sub-text">@payment.AmountValue</span>
+                                            </div>
+                                        </div>
+                                    }
+                                    
+                                }
+                            </div><!-- .nk-tb-list -->
+                        </div>
+
+                        @if (Model.Product != null)
+                        {
+                            <div class="nk-block">
+                                <div class="nk-block-head">
+                                    <h5 class="title">Device Information</h5>
+                                    <p>Phone Info Card</p>
+                                </div><!-- .nk-block-head -->
+                                <div class="profile-ud-list">
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Name</span>
+                                            <span class="profile-ud-value">@Model.Product.ProductName</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Storage</span>
+                                            <span class="profile-ud-value">@Model.Product.ProductStorage</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">SKU</span>
+                                            <span class="profile-ud-value">@Model.Product.Sku</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">RAM</span>
+                                            <span class="profile-ud-value">@Model.Product.ProductRam</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Product Id</span>
+                                            <span class="profile-ud-value">@Model.Product.ProductId</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Color</span>
+                                            <span class="profile-ud-value">@Model.Product.ProductColor</span>
+                                        </div>
+                                    </div>
+                                </div><!-- .profile-ud-list -->
+                            </div>
+
+                            <!-- .nk-block -->
+                        }
+
+
+                        @if (Model.NextOfKin != null)
+                        {
+                            <div class="nk-block">
+                                <div class="nk-block-head nk-block-head-line">
+                                    <h6 class="title overline-title text-base">Next of kin details</h6>
+                                </div><!-- .nk-block-head -->
+                                <div class="profile-ud-list">
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Name</span>
+                                            <span class="profile-ud-value">@Model.NextOfKin?.Name</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Email</span>
+                                            <span class="profile-ud-value">@Model.NextOfKin?.Email</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Phone</span>
+                                            <span class="profile-ud-value">@Model.NextOfKin?.Phone</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Address</span>
+                                            <span class="profile-ud-value">@Model.NextOfKin?.Address</span>
+                                        </div>
+                                    </div>
+                                </div><!-- .profile-ud-list -->
+                            </div>
+
+                            <!-- .nk-block -->
+                        }
+
+
+                    </div><!-- .card-inner -->
+                </div><!-- .card -->
+            </div><!-- .col -->
+        </div><!-- .row -->
+    </div><!-- .nk-block -->
+</div>

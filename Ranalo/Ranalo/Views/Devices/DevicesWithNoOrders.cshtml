@@ -144,9 +144,10 @@
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
                                                             <ul class="link-check">
                                                                 <li><span>Show</span></li>
-                                                                <li class="active"><a href="#">10</a></li>
-                                                                <li><a href="#">20</a></li>
-                                                                <li><a href="#">50</a></li>
+                                                               <li class="@(Model.PageSize == 10 ? "active" : "")"><a href="/devices-with-no-orders?page=1&pageSize=10">10</a></li>
+                                                                <li class="@(Model.PageSize == 20 ? "active" : "")"><a href="/devices-with-no-orders?page=1&pageSize=20">20</a></li>
+                                                                <li class="@(Model.PageSize == 40 ? "active" : "")"><a href="/devices-with-no-orders?page=1&pageSize=40">40</a></li>
+                                                                <li class="@(Model.PageSize == 80 ? "active" : "")"><a href="/devices-with-no-orders?page=1&pageSize=80">80</a></li>
                                                             </ul>
                                                             <ul class="link-check">
                                                                 <li><span>Order</span></li>
@@ -281,7 +282,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-orders?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="/devices-with-no-orders?page=@(Model.CurrentPage - 1)&pageSize=@(Model.PageSize)">Prev</a>
                                     </li>
                                 }
 
@@ -298,7 +299,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-orders?page=1">1</a>
+                                            <a class="page-link" href="/devices-with-no-orders?page=1&pageSize=@(Model.PageSize)">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -308,7 +309,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/devices-with-no-orders?page=@i">@i</a>
+                                            <a class="page-link" href="/devices-with-no-orders?page=@i&pageSize=@(Model.PageSize)">@i</a>
                                     </li>
                                 }
 
@@ -325,7 +326,7 @@
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-orders?page=@(Model.CurrentPage + 1)">Next</a>
+                                            <a class="page-link" href="/devices-with-no-orders?page=@(Model.CurrentPage + 1)&pageSize=@(Model.PageSize)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -337,7 +338,7 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/devices-with-no-orders?page=' + this.value">
+                                            onchange="location.href='/devices-with-no-orders?page=' + this.value + '&pageSize=@(Model.PageSize)'">
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>

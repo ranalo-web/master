@@ -34,6 +34,7 @@ namespace Ranalo.DataStore
                                  AND (
                                      @DealerId = 0 OR dealer.DealerReference = @DealerId
                                  )
+                                AND d.[Status] = 'enrolled'
                                  AND (
                                 @SearchTerm IS NULL
                                 OR d.Id LIKE '%' + @SearchTerm + '%'
@@ -67,6 +68,7 @@ namespace Ranalo.DataStore
                             AND (
                                 @DealerId = 0 OR dealer.DealerReference = @DealerId
                             )
+                            AND d.[Status] = 'enrolled'
                         AND (
                                 @SearchTerm IS NULL
                                 OR d.Id LIKE '%' + @SearchTerm + '%'
@@ -75,7 +77,7 @@ namespace Ranalo.DataStore
                                 OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
                             )
                             
-                            order by d.Id
+                          order by d.Id
                           OFFSET @Offset ROWS 
                           FETCH NEXT @pageSize ROWS ONLY";
             var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerReference, offset, pageSize, searchTerm });
@@ -86,7 +88,8 @@ namespace Ranalo.DataStore
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
                 TotalRecords = totalRecords,
-                SearchTerm = searchTerm
+                SearchTerm = searchTerm,
+                PageSize = pageSize
             };
         }
 
@@ -102,7 +105,8 @@ namespace Ranalo.DataStore
                     ON wo.MpesaDepositRef = kp.MpesaCode
                 LEFT JOIN Devices d 
                     ON TRY_CAST(kp.AccountNo AS BIGINT) = d.Id
-                WHERE wo.OrderID = @OrderId;";
+                WHERE wo.OrderID = @OrderId
+                AND d.[Status] = 'enrolled';";
 
             return await _db.QueryFirstOrDefaultAsync<(string, long?)>(sql, new { OrderId = orderId });
         }
@@ -168,5 +172,253 @@ namespace Ranalo.DataStore
             var metaDataId = await _db.QueryFirstOrDefaultAsync<long>(sql, new { OrderId = orderNumber, Key = metadataKey });
             return metaDataId;
         }
+
+        public async Task<bool> MpesaCodeIsAlreadyLinked(string newMpesa)
+        {
+            var sql = @"
+                SELECT TOP 1 [MpesaDepositRef] 
+                FROM Woo_Orders
+                WHERE [MpesaDepositRef] = @Mpesa;";
+
+            var existingMpesa = await _db.ExecuteScalarAsync<string>(sql, new { Mpesa = newMpesa });
+            return existingMpesa != null;
+        }
+
+        public async Task<AllAccountsViewModel> GetAllAccountsByUserAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var offset = (page - 1) * pageSize;
+
+            var countSql = @"WITH 
+                        ValidPayments AS (
+                            SELECT *
+                            FROM KosePayments
+                            WHERE TRY_CAST(AccountNo AS BIGINT) IS NOT NULL
+                        ),
+                        PTable1 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, 
+                                SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
+                            FROM ValidPayments
+                            GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                        ),
+                        PTable4 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                p.Amount AS Last_Paid_Amount,
+                                p.PaymentDate AS LastPaidDate,
+                                p.MpesaCode AS Last_MPesaCode
+                            FROM ValidPayments p
+                            INNER JOIN (
+                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MAX(PaymentDate) AS Last_Payment_Date
+                                FROM ValidPayments
+                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                            ) t3 
+                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t3.AccountNo 
+                             AND p.PaymentDate = t3.Last_Payment_Date	
+                        ),
+                        PTable5 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
+                                p.PaymentDate AS FirstPaidDate,
+                                p.MpesaCode AS First_MPesaCode
+                            FROM ValidPayments p
+                            INNER JOIN (
+                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
+                                FROM ValidPayments
+                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                            ) t2 
+                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t2.AccountNo 
+                             AND p.PaymentDate = t2.First_Payment_Date
+                        ),
+                        ContractInf0 AS (
+                        	select d.Id, 
+							wo.TotalAmount ,
+							wo.FirstName,
+							wo.CustEmail as Email
+                        	from Devices d
+                        	LEFT join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
+                        	left join Woo_Orders wo on wo.MpesaDepositRef = p.MpesaCode
+                        	--where  wo.MpesaDepositRef is not null
+                            where d.[Status] = 'enrolled'
+                        )                
+					  
+                        SELECT 
+                            COUNT(*)
+                        FROM PTable1 t1
+                        left JOIN Devices d 
+                          ON t1.AccountNo = d.Id
+                        left JOIN PTable5 t5 
+                          ON t1.AccountNo = t5.AccountNo
+                        left JOIN PTable4 t4 
+                          ON t1.AccountNo = t4.AccountNo
+                        left JOIN ContractInf0 t6
+                        	ON t1.AccountNo = t6.Id
+                        WHERE d.[Status] = 'enrolled'
+                          AND t6.TotalAmount is not null
+						    AND (
+							@SearchTerm IS NULL
+							OR t6.FirstName LIKE '%' + @SearchTerm + '%'
+							OR t1.AccountNo LIKE '%' + @SearchTerm + '%'
+							OR t6.Email LIKE '%' + @SearchTerm + '%'
+							OR t5.First_MPesaCode LIKE '%' + @SearchTerm + '%'
+							)
+							AND (@DealerId IS NULL
+							OR d.DeviceGroupId = @DealerId
+							)
+							GROUP BY t1.AccountNo,
+                            t1.Total_Paid,
+                            t5.FirstPaidDate,
+                            t6.CustomerName,
+                            t5.First_Paid_Amount, 
+                            t4.LastPaidDate,
+                            t5.First_MPesaCode,
+                            t4.Last_Paid_Amount,
+                            d.Make,
+                            d.Model,
+                            d.LastConnectedAt,
+                            d.Locked,
+                            d.EnrolledOn,
+                            d.DeviceGroupId,
+                            d.[Name],
+                            d.ImeiNo,
+                            d.NextLockDate,
+                            d.Status,
+                            d.LockType
+							ORDER BY t5.FirstPaidDate DESC
+							OFFSET @Offset ROWS 
+							FETCH NEXT @pageSize ROWS ONLY";
+            var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchParam, dealerId });
+
+            var sql = @"WITH 
+                        ValidPayments AS (
+                            SELECT *
+                            FROM KosePayments
+                            WHERE TRY_CAST(AccountNo AS BIGINT) IS NOT NULL
+                        ),
+                        PTable1 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, 
+                                SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
+                            FROM ValidPayments
+                            GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                        ),
+                        PTable4 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                p.Amount AS Last_Paid_Amount,
+                                p.PaymentDate AS LastPaidDate,
+                                p.MpesaCode AS Last_MPesaCode
+                            FROM ValidPayments p
+                            INNER JOIN (
+                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MAX(PaymentDate) AS Last_Payment_Date
+                                FROM ValidPayments
+                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                            ) t3 
+                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t3.AccountNo 
+                             AND p.PaymentDate = t3.Last_Payment_Date	
+                        ),
+                        PTable5 AS (
+                            SELECT 
+                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
+                                p.PaymentDate AS FirstPaidDate,
+                                p.MpesaCode AS First_MPesaCode
+                            FROM ValidPayments p
+                            INNER JOIN (
+                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
+                                FROM ValidPayments
+                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                            ) t2 
+                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t2.AccountNo 
+                             AND p.PaymentDate = t2.First_Payment_Date
+                        ),
+                        ContractInf0 AS (
+                        	select d.Id, 
+							wo.TotalAmount ,
+							wo.FirstName + ' ' + wo.LastName as CustomerName,
+							wo.CustEmail as Email
+                        	from Devices d
+                        	LEFT join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
+                        	left join Woo_Orders wo on wo.MpesaDepositRef = p.MpesaCode
+                        	--where  wo.MpesaDepositRef is not null
+                            where d.[Status] = 'enrolled'
+                        )                
+					  
+                        SELECT 
+                            t1.AccountNo,
+							t5.First_MPesaCode,
+                            t6.CustomerName,
+                            t1.Total_Paid AS TotalPaid,
+                            t5.FirstPaidDate,
+                            t5.First_Paid_Amount As FirstPaymentAmount,
+                            t4.LastPaidDate,
+                            t4.Last_Paid_Amount AS LastPaymentAmount,
+                            d.Make,
+                            d.Model,
+                            d.LastConnectedAt,
+                            d.Locked,
+                            d.EnrolledOn,
+                            d.DeviceGroupId,
+                            d.[Name],
+                            d.ImeiNo,
+                            d.NextLockDate,
+                            d.Status,
+                            d.LockType
+                        FROM PTable1 t1
+                        left JOIN Devices d 
+                          ON t1.AccountNo = d.Id
+                        left JOIN PTable5 t5 
+                          ON t1.AccountNo = t5.AccountNo
+                        left JOIN PTable4 t4 
+                          ON t1.AccountNo = t4.AccountNo
+                        left JOIN ContractInf0 t6
+                        	ON t1.AccountNo = t6.Id
+                        WHERE d.[Status] = 'enrolled'
+                          AND t6.TotalAmount is not null
+						    AND (
+							@SearchTerm IS NULL
+							OR t6.FirstName LIKE '%' + @SearchTerm + '%'
+							OR t1.AccountNo LIKE '%' + @SearchTerm + '%'
+							OR t6.Email LIKE '%' + @SearchTerm + '%'
+							OR t5.First_MPesaCode LIKE '%' + @SearchTerm + '%'
+							)
+							AND (@DealerId IS NULL
+							OR d.DeviceGroupId = @DealerId
+							)
+							GROUP BY t1.AccountNo,
+                            t1.Total_Paid,
+                            t5.FirstPaidDate,
+                            t5.First_MPesaCode,
+                            t5.First_Paid_Amount,
+                            t6.CustomerName,
+                            t4.LastPaidDate,
+                            t4.Last_Paid_Amount,
+                            d.Make,
+                            d.Model,
+                            d.LastConnectedAt,
+                            d.Locked,
+                            d.EnrolledOn,
+                            d.DeviceGroupId,
+                            d.[Name],
+                            d.ImeiNo,
+                            d.NextLockDate,
+                            d.Status,
+                            d.LockType
+							ORDER BY t5.FirstPaidDate DESC
+							OFFSET @Offset ROWS 
+							FETCH NEXT @pageSize ROWS ONLY";
+
+            var records = await _db.QueryAsync<AllAccounts>(sql, new { SearchTerm = searchParam, dealerId, offset, pageSize });
+
+            return new AllAccountsViewModel()
+            {
+                Accounts = records.ToList(),
+                CurrentPage = page,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+            };
+        }
+
     }
 }

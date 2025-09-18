@@ -12,5 +12,6 @@ namespace Ranalo.Services
 
         Task<bool> OrderNumberIsValidAsync(long orderId);
         Task AssignMpesaToOrderAsync(int orderNumber, string newMpesa);
+        Task<bool> MpesaCodeIsLinkedAsync(string newMpesa);
     }
 }

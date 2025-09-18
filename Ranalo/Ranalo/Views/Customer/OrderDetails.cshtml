@@ -38,7 +38,7 @@
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between g-3">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">Customer Details</h3>
+                <h3 class="nk-block-title page-title">Order Details</h3>
                 <div class="nk-block-des text-soft">
                     <p>Customer infomation when the order was made</p>
                 </div>
@@ -175,8 +175,8 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="nk-block">
-                            <div class="nk-block">
                                 <div class="card card-bordered">
                                     <div class="card-aside-wrap">
                                         <div class="card-content">
@@ -224,10 +224,10 @@
                                                             <div class="col-md-2 col-sm-4 col-12">
                                                                 <div class="profile-stats"><span class="profile-ud-label">Monthly</span><span class="amount text-warning">@Model.Summary.Monthly.ToString("F2")</span></div>
                                                             </div>
-                                                            <div class="col-md-3 col-sm-4 col-6">
+                                                            <div class="col-md-2 col-sm-4 col-6">
                                                                 <div class="profile-stats"><span class="profile-ud-label">First Payment</span><span>@Model.Summary.FirstPaymentDate.ToString("dd MMM yyyy")</span></div>
                                                             </div>
-                                                            <div class="col-md-3 col-sm-4 col-6">
+                                                            <div class="col-md-2 col-sm-4 col-6">
                                                                 <div class="profile-stats"><span class="profile-ud-label">Last Payment</span><span>@Model.Summary.LastPaymentDate.ToString("dd MMM yyyy")</span></div>
                                                             </div>
                                                         </div>
@@ -286,7 +286,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+
                         <div class="nk-block">
                             <h6 class="lead-text mb-3">Identity Verification</h6>
                             <div class="row">
@@ -365,6 +365,7 @@
 
                             </div><!-- .row -->
                         </div>
+
                         <div class="nk-block">
                             @if (ViewBag.IsDealer == false)
                             {
@@ -379,7 +380,7 @@
                                                         <em class="icon icon-circle icon-circle-lg ni ni-user-check-fill"></em>
                                                     </div>
                                                     <div class="media-content">
-                                                        <p>After checking and verifying customer details, please approve the order.</p>
+                                                        <p>After checking and verifying order details, please approve the order.</p>
                                                     </div>
                                                 </div>
                                                 <form action="/approve-order" method="post">

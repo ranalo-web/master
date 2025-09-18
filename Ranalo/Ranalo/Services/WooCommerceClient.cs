@@ -46,7 +46,7 @@ namespace Ranalo.Services
             }
         }
 
-        public async Task<string> UpdateOrderMpesaAsync(long orderId, string newmpesaCode)
+        public async Task<string> UpdateOrderMpesaAsync(long orderId, string newmpesaCode, long metadataId)
         {
             var url = $"{_baseUrl}/orders/{orderId}" +
                       $"?consumer_key={_consumerKey}&consumer_secret={_consumerSecret}";
@@ -56,7 +56,7 @@ namespace Ranalo.Services
                 meta_data = new[]
                 {
                     new {
-                        id = 332387, // existing meta ID if updating
+                        id = metadataId, // existing meta ID if updating
                         key = "mpesa_deposit_reference",
                         value = newmpesaCode
                     }

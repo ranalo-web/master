@@ -258,7 +258,7 @@
                                         </div>
                                     </div>
                                     <div class="nk-tb-col">
-                                        <a href="html/customer-details.html">
+                                        <a href="/account-details/@order.OrderId">
                                             <div class="user-card">
                                                 <div class="user-avatar xs bg-primary">
                                                     <span>@GetInitials(order.FirstName + " " + order.LastName)</span>
@@ -293,7 +293,7 @@
                                     <div class="nk-tb-col nk-tb-col-tools">
                                         <ul class="nk-tb-actions gx-1">
                                             @* <li class="nk-tb-action-hidden">
-                                                <a href="/customer-details/@order.OrderId" class="btn btn-trigger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Details">
+                                                <a href="/order-details/@order.OrderId" class="btn btn-trigger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Details">
                                                     <em class="icon ni ni-eye-fill"></em>
                                                 </a>
                                             </li>
@@ -312,7 +312,7 @@
                                                     <a href="#" class="dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
                                                     <div class="dropdown-menu dropdown-menu-end">
                                                         <ul class="link-list-opt no-bdr">
-                                                            <li><a href="/customer-details/@order.OrderId"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
+                                                            <li><a href="/order-details/@order.OrderId"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
                                                              @* <li><a href="#"><em class="icon ni ni-mail"></em><span>Send Mail</span></a></li>
                                                             // <li><a href="#"><em class="icon ni ni-cart"></em><span>Orders</span></a></li>
                                                             // <li><a href="#"><em class="icon ni ni-na"></em><span>Suspend</span></a></li> *@
@@ -338,7 +338,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                            <a class="page-link" href="/dashboard?page=@(Model.CurrentPage - 1)">Prev</a>
+                                                <a class="page-link" href="/orders?page=@(Model.CurrentPage - 1)">Prev</a>
                                     </li>
                                 }
 
@@ -355,7 +355,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                            <a class="page-link" href="/dashboard?page=1">1</a>
+                                        <a class="page-link" href="/orders?page=1">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -365,7 +365,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                            <a class="page-link" href="/dashboard?page=@i">@i</a>
+                                        <a class="page-link" href="/orders?page=@i">@i</a>
                                     </li>
                                 }
 
@@ -375,14 +375,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                            <a class="page-link" href="/dashboard?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/orders?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                            <a class="page-link" href="/dashboard?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/orders?page=@(Model.CurrentPage + 1)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -394,7 +394,8 @@
                                     <select class="form-select js-select2" 
                                             data-search="on" 
                                             data-dropdown="xs center"
-                                            onchange="location.href='/dashboard?page=' + this.value">>
+                                            onchange="location.href='/orders?page=' + this.value">
+                                        >
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>

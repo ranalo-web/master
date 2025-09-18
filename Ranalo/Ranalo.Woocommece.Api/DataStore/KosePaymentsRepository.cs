@@ -60,15 +60,25 @@ namespace Ranalo.Woocommece.Api.DataStore
 
                 foreach (var record in records)
                 {
-                   await _db.ExecuteAsync(insertQuery, new
+                    //Check if already exist
+                    var existingSql = @"SELECT * 
+                                          FROM [dbo].[KosePayments]
+                                        WHERE [AccountNo] = @AccountNo
+                                          AND [MpesaCode] = @MpesaCode";
+                    var existing = await _db.QueryFirstOrDefaultAsync<MpesaRecord>(existingSql, new { AccountNo = groupKey , MpesaCode = record.MpesaCode });
+
+                    if(existing == null)
                     {
-                        AccountNo = groupKey,
-                        record.MpesaCode,
-                        record.Amount,
-                        record.PaymentDate,
-                        record.AmountValue,
-                        record.PaymentDateValue
-                    });
+                        await _db.ExecuteAsync(insertQuery, new
+                        {
+                            AccountNo = groupKey,
+                            record.MpesaCode,
+                            record.Amount,
+                            record.PaymentDate,
+                            record.AmountValue,
+                            record.PaymentDateValue
+                        });
+                    }
                 }
             }
         }
@@ -219,5 +229,7 @@ namespace Ranalo.Woocommece.Api.DataStore
                 await _db.ExecuteAsync(updateQuery, record);
             }
         }
+
+       
     }
 }

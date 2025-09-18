@@ -10,9 +10,14 @@ C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Ranalo.runtimeco
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Ranalo.pdb
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Azure.Core.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Azure.Identity.dll
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\ClosedXML.dll
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\ClosedXML.Parser.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Dapper.dll
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\DocumentFormat.OpenXml.dll
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\DocumentFormat.OpenXml.Framework.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\EntityFramework.SqlServer.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\EntityFramework.dll
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\ExcelNumberFormat.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Microsoft.Bcl.AsyncInterfaces.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Microsoft.Data.SqlClient.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Microsoft.EntityFrameworkCore.dll
@@ -40,6 +45,8 @@ C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Microsoft.OpenAp
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Microsoft.SqlServer.Server.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Microsoft.Win32.SystemEvents.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Newtonsoft.Json.dll
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\RBush.dll
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\SixLabors.Fonts.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Swashbuckle.AspNetCore.Swagger.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Swashbuckle.AspNetCore.SwaggerGen.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Swashbuckle.AspNetCore.SwaggerUI.dll
@@ -51,6 +58,7 @@ C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\System.Diagnosti
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\System.Drawing.Common.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\System.Formats.Asn1.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\System.IdentityModel.Tokens.Jwt.dll
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\System.IO.Packaging.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\System.IO.Pipelines.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\System.Memory.Data.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\System.Runtime.Caching.dll

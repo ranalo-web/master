@@ -38,6 +38,8 @@
         public string? NextLockDate { get; set; }
         public string? Status { get; set; }
         public string? LockType { get; set; }
+        public decimal RestructuredAmnt { get; set; }
+        public List<RestructuredRecord> RestructuredRecords { get; set; } = new List<RestructuredRecord>();
     }
 
     public class PaymentSummary

@@ -15,5 +15,6 @@
         public string? MpesaDepositRef { get; set; }
         public string? MpesaCode { get; set; }
         public DateTime DateCreated { get; set; }
+        public int DaysUnpaid { get; set; } = 0;
     }
 }

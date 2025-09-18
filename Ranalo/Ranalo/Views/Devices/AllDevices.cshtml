@@ -2,7 +2,7 @@
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
-@model StatusReportViewModel
+@model AllAccountsViewModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
@@ -48,6 +48,23 @@
 
         return new string(initials);
     }
+
+    private string SetArrearsStatusBadge(decimal arrears)
+    {
+        var statusClass = "";
+
+        if (arrears < 0)
+        {
+            return "badge badge-dim bg-danger";
+        }
+
+        if (arrears > 0)
+        {
+            return "badge badge-dim bg-success";
+        }
+
+        return statusClass;
+    }
 }
 
 <div class="nk-content-body">
@@ -55,7 +72,7 @@
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">Restructured Report Summary</h3>
+                <h3 class="nk-block-title page-title">All Device Accounts</h3>
                 <div class="nk-block-des text-soft">
                     <p>Status reports for each account</p>
                 </div>
@@ -214,8 +231,10 @@
                         <div class="card-body">
                             <div class="search-content">
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <input type="text" class="form-control border-transparent form-focus-none" placeholder="Search by borrower or category">
-                                <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                <form action="/alldevices" method="get">
+                                    <input type="text" name="searchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by borrower or category">
+                                <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                </form>
                             </div>
                         </div>
                     </div><!-- .card-search -->
@@ -230,14 +249,13 @@
                                 </div>
                             </div>
                             <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Daily Rate</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Total Paid</span></div>
-                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Arrears</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Due</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Balance</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Status</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Last Paid</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Rstrd Amount</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Make</span></div>
+                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Last Paid</span></div>
+                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Last Connected</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Last Payment</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Paid</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Arrears</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Locked</span></div>
                             <div class="nk-tb-col nk-tb-col-tools text-end">
                                 <div class="dropdown">
                                     <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-offset="0,5"><em class="icon ni ni-plus"></em></a>
@@ -266,7 +284,7 @@
                                 </div>
                             </div>
                         </div><!-- .nk-tb-item -->
-                        @foreach (var report in Model.StatusReports)
+                        @foreach (var account in Model.Accounts)
                         {
                             <div class="nk-tb-item">
                                 <div class="nk-tb-col nk-tb-col-check">
@@ -281,39 +299,37 @@
                                             <span>AB</span>
                                         </div>
                                         <div class="user-info">
-                                            <span class="tb-lead">@report.FirstName</span>
-                                            <span>AC: @report.AccountNo</span>
+                                            <span class="tb-lead">@account.CustomerName</span>
+                                            <span>@GetInitials(account.CustomerName): @account.AccountNo</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="nk-tb-col tb-col-md">
-                                    <span>@report.Daily</span>
+                                    <span>@account.Make</span>
+                                </div>
+                                
+                                <div class="nk-tb-col tb-col-lg">
+                                    <span>@account.LastPaidDate</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-xxl">
+                                    <span>@account.LastConnectedAt</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-xxl">
+                                    <span>@account.LastPaymentAmount</span>
                                 </div>
                                 <div class="nk-tb-col tb-col">
-                                    <span>@report.TotalPaid</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-lg">
-                                    <span>@report.Arrears</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-xxl">
-                                    <span>@report.TotalDue</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-xxl">
-                                    <span>@report.LoanBalance</span>
+                                    <span>@account.TotalPaid</span>
                                 </div>
                                 <div class="nk-tb-col tb-col-md">
-                                    <span class="@SetStatusBadge(report.NotPaying7D)">Arrears</span>
+                                    <span class="@SetArrearsStatusBadge(account.Arrears.Value)">@account.Arrears?.ToString("N2")</span>
                                 </div>
                                 <div class="nk-tb-col tb-col-xxl">
-                                    <span>@report.LastPaymentDate?.ToString("dd MMM yyyy")</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.RestructuredAmnt </span>
+                                    <span>@(account.Locked ? "TRUE" : "FALSE")</span>
                                 </div>
                                 <div class="nk-tb-col nk-tb-col-tools">
                                     <ul class="nk-tb-actions gx-2">
                                         <li class="nk-tb-action-hidden">
-                                            <a href="/statussummary/@report.AccountNo" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Disbursed Loan">
+                                            <a href="/statussummary/@account.AccountNo" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Disbursed Loan">
                                                 <em class="icon ni ni-user-check-fill"></em>
                                             </a>
                                         </li>
@@ -322,7 +338,7 @@
                                                 <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
                                                 <div class="dropdown-menu dropdown-menu-end">
                                                     <ul class="link-list-opt no-bdr">
-                                                        <li><a href="/statussummary/@report.AccountNo"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
+                                                        <li><a href="/statussummary/@account.AccountNo"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
                                                         <li><a href="#edit-loan" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>View Account</span></a></li>
                                                         @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
                                                     </ul>
@@ -347,7 +363,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="/alldevices?page=@(Model.CurrentPage - 1)">Prev</a>
                                     </li>
                                 }
 
@@ -364,7 +380,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=1">1</a>
+                                        <a class="page-link" href="/alldevices?page=1">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -374,7 +390,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/statusreport?page=@i">@i</a>
+                                        <a class="page-link" href="/alldevices?page=@i">@i</a>
                                     </li>
                                 }
 
@@ -384,14 +400,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/alldevices?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/alldevices?page=@(Model.CurrentPage + 1)">Next</a>
                                     </li>
                                 }
                             </ul>

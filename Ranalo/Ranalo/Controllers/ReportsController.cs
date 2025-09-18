@@ -23,7 +23,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("statusreport/{page:int?}")]
-        public async Task<IActionResult> Index(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(int page = 1, int pageSize = 10, string searchTerm = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -35,7 +35,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null);
+                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null, page, pageSize, searchTerm);
                 var pagedAllData = paymentSummaries.Paginate(page, pageSize);
                 var responseData = new StatusReportViewModel()
                 {
@@ -54,7 +54,7 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference); 
 
-            var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(dealerId);
+            var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(dealerId, page, pageSize);
 
             var pagedData = delaerStatusReport.Paginate(page, pageSize);
 
@@ -160,8 +160,6 @@ namespace Ranalo.Controllers
                 var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null);
 
                 viewDetails = paymentSummaries.FirstOrDefault(x=>x.AccountNo == accountId);
-
-                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
                 ViewData["OrdersStatus"] = "Waiting Approval";
             }
             else
@@ -175,7 +173,117 @@ namespace Ranalo.Controllers
 
             }
 
+            viewDetails.RestructuredRecords = await _applicationReportService.GetAllRestructuredForAccount(accountId);
+
             return View(viewDetails);
+        }
+
+        [HttpPost]
+        [Route("restructure-payment")]
+        public async Task<IActionResult> StatusSummary(int accountNo, decimal newRate, DateTime dateFrom)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            DateTime date24HoursFromNow = DateTime.UtcNow.AddHours(24);
+
+            var restructureToSave = new RestructuredRecord()
+            {
+                AccountNo = accountNo,
+                AmountRes = newRate,
+                DateAgreed = dateFrom,
+                DaysRestructured = 0, // dateFrom to today 
+                ArrearsR = 0, //TotalDueR - TotalPaidR
+                TotalDueR = 0,  //AmountRes * SystemDate - DateAgreed
+                TotalPaidR = 0, //Payments after agreedDate
+                AutoLockDatePmtR = date24HoursFromNow //(ArrearsR / AmountRes) + SystemDate + 27hrs
+            };
+
+            try
+            {
+                await _applicationReportService.CreateRestructuredAsync(restructureToSave);
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+
+            var viewDetails = new MobileStatusReport();
+
+            await SetViewBags(settings, "approver");
+
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null);
+
+                viewDetails = paymentSummaries.FirstOrDefault(x => x.AccountNo == accountNo);
+                ViewData["OrdersStatus"] = "Waiting Approval";
+            }
+            else
+            {
+                var dealer = await _userService.GetDealerByUserId(settings.UserId);
+
+                var dealerId = Convert.ToInt32(dealer.DealerReference);
+                var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(dealerId);
+
+                viewDetails = delaerStatusReport.FirstOrDefault(x => x.AccountNo == accountNo);
+
+            }
+
+            return View(viewDetails);
+        }
+
+        [HttpGet]
+        [Route("restructured/{page:int?}")]
+        public async Task<IActionResult> RestructuredReport(int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "approver");
+
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null);
+
+                var restructured = paymentSummaries.Where(x => x.Arrears < 0);
+                var pagedAllData = restructured.Paginate(page, pageSize);
+                var responseData = new StatusReportViewModel()
+                {
+                    CurrentPage = page,
+                    StatusReports = pagedAllData.ToList(),
+                    TotalPages = (int)Math.Ceiling((double)paymentSummaries.Count() / pageSize)
+                };
+
+                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
+                ViewData["OrdersStatus"] = "Waiting Approval";
+
+                return View(responseData);
+            }
+
+            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+
+            var dealerId = Convert.ToInt32(dealer.DealerReference);
+
+            var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(dealerId);
+
+            var pagedData = delaerStatusReport.Paginate(page, pageSize);
+
+            var veiwDetails = new StatusReportViewModel()
+            {
+                CurrentPage = page,
+                StatusReports = pagedData.ToList(),
+                TotalPages = (int)Math.Ceiling((double)delaerStatusReport.Count() / pageSize)
+            };
+
+            return View(veiwDetails);
         }
 
         private async Task SetViewBags(User settings, string backLink)

@@ -16,8 +16,8 @@ namespace Ranalo.Controllers
             _userService = userService;
         }
 
-        [Route("customer-details/{orderId:int}")]
-        public async Task<IActionResult> CustomerDetails(long orderId)
+        [Route("order-details/{orderId:int}")]
+        public async Task<IActionResult> OrderDetails(long orderId)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -47,6 +47,44 @@ namespace Ranalo.Controllers
                         note.UserName = userDetails.Name;
                     }
                     
+                }
+                customerDetails.Notes = notes;
+            }
+
+            return View(customerDetails);
+        }
+
+        [Route("account-details/{orderId:int}")]
+        public async Task<IActionResult> AccountDetails(long orderId)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "customer");
+
+            var customerDetails = await _applicationReportService.GetCustomerDetailsByOrderIdAsync(orderId);
+
+            //Get customer Notes
+            var notes = await _applicationReportService.GetNotesByOrderIdAsync(orderId);
+
+            if (notes != null)
+            {
+                foreach (var note in notes)
+                {
+                    var userDetails = await _userService.GetUserByCustomerIdAsync(note.UserId);
+                    if (userDetails.RoleId == UserRole.Dealer)
+                    {
+                        var dealer = await _userService.GetDealerByUserId(note.UserId);
+                        note.UserName = dealer.CompanyName;
+                    }
+                    else
+                    {
+                        note.UserName = userDetails.Name;
+                    }
+
                 }
                 customerDetails.Notes = notes;
             }

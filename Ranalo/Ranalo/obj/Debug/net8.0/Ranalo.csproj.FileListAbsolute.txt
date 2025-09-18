@@ -211,3 +211,11 @@ C:\work\ranalo\work\Ranalo\Ranalo\obj\Debug\net8.0\Ranalo.pdb
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Debug\net8.0\Ranalo.genruntimeconfig.cache
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Debug\net8.0\ref\Ranalo.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Debug\net8.0\ClosedXML.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Debug\net8.0\ClosedXML.Parser.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Debug\net8.0\DocumentFormat.OpenXml.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Debug\net8.0\DocumentFormat.OpenXml.Framework.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Debug\net8.0\ExcelNumberFormat.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Debug\net8.0\RBush.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Debug\net8.0\SixLabors.Fonts.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Debug\net8.0\System.IO.Packaging.dll

@@ -29,13 +29,32 @@ namespace Ranalo.DataStore
         Task<AccountSummary?> GetPaymentSummaryForAccountId(string accountNo);
         Task<string?> GetCustomerAccountByMpesa(string mpesaDepositRef);
         Task<AccountSummary?> GetAccountSummary(string customerAccount);
-        Task<IEnumerable<PaymentSummary>> GetPaymentSummaryByDeviceGroupAsync(int deviceGroupId);
-        Task<IEnumerable<PaymentSummary>> GetPaymentSummaryAsync();
+        Task<PaymentsViewModel> GetPaymentSummaryAsync(int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "");
         Task CreateCustomerNote(CustomerNote newNote);
         Task<List<CustomerNote>> GetNotesByOrderId(long orderId);
         Task<WooOrderProduct?> GetProductDetailsForOrder(long orderId);
         Task<Contact?> GetNextOfKinForOrder(long orderId);
 
         Task<AwaitingApprovalViewModel> GetAllMissingMpesaAsync(string searchTerm = "", int page = 1, int pageSize = 10);
+        Task<KosePaymentsViewModel> GetPaymentsForAccount(string? customerAccount, int page = 1, int pageSize = 10);
+
+        Task<AwaitingApprovalViewModel> GetAllNeverPaidOrdersAsync(string searchTerm = "", int page = 1, int pageSize = 10);
+
+        //Dashboard
+        Task<DashboardTotals> GetDashboardTotals(int dealerId = 0);
+
+        Task<List<CustomerDetails>> GetRecentCustomers(int dealerId = 0);
+
+        Task<List<TransactionHistory>> GetTransactionHistory(int dealerId = 0);
+
+        Task<AllAccountsViewModel> GetAllAccountsByUserAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10);
+
+        #region Restructured
+        Task InsertRestructured(RestructuredRecord restructuringRecord);
+
+        Task<List<RestructuredRecord>> GetAllRestructured();
+
+        Task<List<RestructuredRecord>> GetAllRestructuredForAccount(long accountId);
+        #endregion
     }
 }

@@ -211,3 +211,11 @@ C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Swashbuckle.AspNetCore.Swag
 C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Ranalo.Woocommece.Api.dll
 C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Ranalo.Woocommece.Api.pdb
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\Ranalo.MvcApplicationPartsAssemblyInfo.cs
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\ClosedXML.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\ClosedXML.Parser.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\DocumentFormat.OpenXml.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\DocumentFormat.OpenXml.Framework.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\ExcelNumberFormat.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\RBush.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\SixLabors.Fonts.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\System.IO.Packaging.dll

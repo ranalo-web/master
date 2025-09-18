@@ -7,6 +7,7 @@
         public int TotalPages { get; set; }
         public string? SearchTerm { get; set; }
         public int TotalRecords { get; set; }
+        public int PageSize { get; set; } = 10;
 
         public List<string>? Errors { get; set; } = new List<string>();
     }

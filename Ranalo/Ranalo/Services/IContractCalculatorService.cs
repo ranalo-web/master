@@ -18,5 +18,9 @@ namespace Ranalo.Services
 
         decimal CalculateOutstandingAmount(decimal totalAmount, decimal totalPaid);
         double CalculateDaysContractEnd(DateTime firstPaymentDate);
+
+        decimal CalculateRestructured(decimal arrears, int remainingDays);
+
+        double CalculateNoDaysUnit(DateTime firstPaymentDate);
     }
 }
