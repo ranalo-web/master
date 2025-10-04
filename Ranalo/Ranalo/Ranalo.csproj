@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Ranalo.Calculator.Logic\Ranalo.Calculator.Logic.csproj" />
     <ProjectReference Include="..\Ranalo.Woocommece.Api\Ranalo.Woocommece.Api.csproj" />
   </ItemGroup>
 

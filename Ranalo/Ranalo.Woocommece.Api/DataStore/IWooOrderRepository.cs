@@ -10,5 +10,7 @@ namespace Ranalo.Woocommece.Api.DataStore
         Task<int> InsertAsync(WooOrder order);
         Task<WooOrder?> GetLastSyncedOrderAsync();
         Task UpdateAsync(WooOrder order);
+
+        Task<MpesaRecord?> GetAccountDetailsByMpesa(string mpesaCode);
     }
 }

@@ -85,5 +85,7 @@ C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\runtimes\win\lib
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Ranalo.Calculator.Logic.dll
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Ranalo.Woocommece.Api.dll
+C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Ranalo.Calculator.Logic.pdb
 C:\work\ranalo\work\Ranalo\Ranalo\obj\Release\net8.0\PubTmp\Out\Ranalo.Woocommece.Api.pdb

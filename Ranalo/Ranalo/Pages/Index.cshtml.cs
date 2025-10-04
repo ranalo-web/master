@@ -32,6 +32,7 @@ namespace Ranalo.Pages
                 ViewData["BackLink"] = "dashboard";
                 ViewData["IsAdmin"] = settings.RoleId == UserRole.Admin;
                 ViewData["IsApprover"] = settings.RoleId == UserRole.Approver;
+                ViewData["IsDealer"] = settings.RoleId == UserRole.Dealer;
                 ViewData["UserName"] = settings.KnownAs; //settings.RoleId == 5;
 
                 if (settings.RoleId == UserRole.Dealer)

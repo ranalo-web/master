@@ -85,6 +85,110 @@
         </div>
     </div><!-- .nk-block-head -->
     <div class="nk-block">
+        <div class="row g-gs">
+        <div class="col-lg-4 col-xl-4 col-xxl-3">
+            <div class="card card-bordered">
+                <div class="card-inner-group">
+                    <div class="card-inner">
+                        <div class="user-card user-card-s2">
+
+                            <div class="user-avatar lg bg-primary">
+                                @if (Model.CustomerDetails.Url != null)
+                                {
+                                        <img src="@Model.CustomerDetails.Url" alt="">
+                                }
+                            </div>
+                            <div class="user-info">
+                                <div class="badge bg-light rounded-pill ucap">Platinam</div>
+                                <h5>@Model.FirstName @Model?.CustomerDetails?.LastName</h5>
+                                <span class="sub-text">@Model?.CustomerDetails?.Email </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-inner card-inner-sm">
+                        <ul class="btn-toolbar justify-center gx-1">
+                            <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-shield-off"></em></a></li>
+                            <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-mail"></em></a></li>
+                            <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-bookmark"></em></a></li>
+                            <li><a href="#" class="btn btn-trigger btn-icon text-danger"><em class="icon ni ni-na"></em></a></li>
+                        </ul>
+                    </div>
+                    <div class="card-inner">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="profile-stats">
+                                    <span class="amount">23</span>
+                                    <span class="sub-text">Total Order</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="profile-stats">
+                                    <span class="amount">20</span>
+                                    <span class="sub-text">Complete</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="profile-stats">
+                                    <span class="amount">3</span>
+                                    <span class="sub-text">Progress</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- .card-inner -->
+                    <div class="card-inner">
+                        <h6 class="overline-title mb-2">Short Details</h6>
+                        <div class="row g-3">
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">User ID:</span>
+                                <span>@Model?.CustomerDetails?.CustomerId</span>
+                            </div>
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">Billing Email:</span>
+                                <span>@Model?.CustomerDetails?.Email</span>
+                            </div>
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">Billing Address:</span>
+                                <span>@Model?.CustomerDetails?.Address1</span>
+                            </div>
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">Phone:</span>
+                                <span>@Model?.CustomerDetails?.Phone</span>
+                            </div>
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">National ID:</span>
+                                <span>@Model?.CustomerDetails?.NationalId</span>
+                            </div>
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">Order Modified:</span>
+                                <span>@Model?.CustomerDetails?.DateModified</span>
+                            </div>
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">Status:</span>
+                                <span class="@SetStatusBadge(Model.Status)">@Model.Status</span>
+                            </div>
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">Ordered At:</span>
+                                <span>@Model?.CustomerDetails?.DateCreated</span>
+                            </div>
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">Dealer Ref:</span>
+                                <span>@Model?.CustomerDetails?.DealerRef</span>
+                            </div>
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">IMEI:</span>
+                                <span>@Model?.CustomerDetails?.IMEI</span>
+                            </div>
+                            <div class="col-sm-6 col-md-4 col-lg-12">
+                                <span class="sub-text">Mpesa Code:</span>
+                                <span>@Model?.CustomerDetails?.MpesaDepositRef</span>
+                            </div>
+                        </div>
+                    </div><!-- .card-inner -->
+                </div>
+            </div>
+        </div><!-- .col -->
+        <div class="col-lg-8 col-xl-8 col-xxl-9">
+
         <div class="card card-bordered">
             <div class="card-aside-wrap">
                 <div class="card-content">
@@ -184,13 +288,13 @@
                                 <div class="col-md-3 col-lg-2 col-6">
                                     <div class="profile-stats">
                                         <span class="profile-ud-label">Make</span>
-                                        <span> KES @Model.Make </span>
+                                        <span>@Model.Make </span>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-lg-2 col-6">
                                     <div class="profile-stats">
                                         <span class="profile-ud-label">Model</span>
-                                        <span> KES @Model.Model </span>
+                                        <span>@Model.Model </span>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-lg-2  col-6">
@@ -376,6 +480,8 @@
                 </div><!-- .card-content -->
             </div><!-- .card-aside-wrap -->
         </div><!-- .card -->
+            </div>
+        </div>
     </div><!-- .nk-block -->
 </div>
 

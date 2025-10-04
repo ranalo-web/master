@@ -1,4 +1,5 @@
-﻿using Ranalo.Woocommece.Api.Models;
+﻿using Ranalo.Calculator.Logic.Models;
+using Ranalo.Woocommece.Api.Models;
 
 namespace Ranalo.Woocommece.Api.DataStore
 {
@@ -12,5 +13,7 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         Task SaveDevicesToDatabaseAsync(List<Device> groupedRecords);
         Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords);
+
+        Task<int> AddContractAsync(ContractInfo contract);
     }
 }

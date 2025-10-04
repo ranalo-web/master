@@ -29,7 +29,7 @@ namespace Ranalo.DataStore
         Task<AccountSummary?> GetPaymentSummaryForAccountId(string accountNo);
         Task<string?> GetCustomerAccountByMpesa(string mpesaDepositRef);
         Task<AccountSummary?> GetAccountSummary(string customerAccount);
-        Task<PaymentsViewModel> GetPaymentSummaryAsync(int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "");
+        Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "");
         Task CreateCustomerNote(CustomerNote newNote);
         Task<List<CustomerNote>> GetNotesByOrderId(long orderId);
         Task<WooOrderProduct?> GetProductDetailsForOrder(long orderId);
@@ -48,6 +48,8 @@ namespace Ranalo.DataStore
         Task<List<TransactionHistory>> GetTransactionHistory(int dealerId = 0);
 
         Task<AllAccountsViewModel> GetAllAccountsByUserAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10);
+
+        Task<CustomerDetails?> GetCustomerDetailsByAccountId(int accountId);
 
         #region Restructured
         Task InsertRestructured(RestructuredRecord restructuringRecord);

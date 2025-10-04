@@ -88,5 +88,11 @@ namespace Ranalo.Woocommece.Api.DataStore
 
             await _db.ExecuteAsync(query, parameters);
         }
+
+        public async Task<MpesaRecord?> GetAccountDetailsByMpesa(string mpesaCode)
+        {
+            var sql = "SELECT * FROM [dbo].[KosePayments] WHERE MpesaCode = @MpesaCode";
+            return await _db.QueryFirstOrDefaultAsync<MpesaRecord>(sql, new { MpesaCode = mpesaCode });
+        }
     }
 }

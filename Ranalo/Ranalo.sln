@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{02EA681E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ranolo.Web.Tests", "Ranolo.Web.Tests\Ranolo.Web.Tests.csproj", "{EBE4C63C-4871-4799-9E35-784F77F88780}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ranalo.Calculator.Logic", "Ranalo.Calculator.Logic\Ranalo.Calculator.Logic.csproj", "{95DA6C40-7148-4C21-B3E1-3F52438E2A9E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,10 @@ Global
 		{EBE4C63C-4871-4799-9E35-784F77F88780}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EBE4C63C-4871-4799-9E35-784F77F88780}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EBE4C63C-4871-4799-9E35-784F77F88780}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95DA6C40-7148-4C21-B3E1-3F52438E2A9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95DA6C40-7148-4C21-B3E1-3F52438E2A9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95DA6C40-7148-4C21-B3E1-3F52438E2A9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95DA6C40-7148-4C21-B3E1-3F52438E2A9E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

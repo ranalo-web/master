@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.AspNetCore.Mvc;
 using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
@@ -35,37 +36,20 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null, page, pageSize, searchTerm);
-                var pagedAllData = paymentSummaries.Paginate(page, pageSize);
-                var responseData = new StatusReportViewModel()
-                {
-                    CurrentPage = page,
-                    StatusReports = pagedAllData.ToList(),
-                    TotalPages = (int)Math.Ceiling((double)paymentSummaries.Count() / pageSize)
-                };
+                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null, null, page, pageSize, searchTerm);
 
-                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
-                return View(responseData);
+                return View(paymentSummaries);
             }
 
             var dealer = await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference); 
 
-            var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(dealerId, page, pageSize);
+            var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(null, dealerId, page, pageSize, searchTerm);
 
-            var pagedData = delaerStatusReport.Paginate(page, pageSize);
-
-            var veiwDetails = new StatusReportViewModel()
-            {
-                CurrentPage = page,
-                StatusReports = pagedData.ToList(),
-                TotalPages = (int)Math.Ceiling((double)delaerStatusReport.Count() / pageSize)
-            };
-
-            return View(veiwDetails);
+            return View(delaerStatusReport);
 
         }
 
@@ -83,38 +67,23 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null);
-                var paymentSummaries = allPaymentSummaries.Where(x=>x.Arrears < 0).ToList();
-                var pagedAllData = paymentSummaries.Paginate(page, pageSize);
-                var responseData = new StatusReportViewModel()
-                {
-                    CurrentPage = page,
-                    StatusReports = pagedAllData.ToList(),
-                    TotalPages = (int)Math.Ceiling((double)paymentSummaries.Count() / pageSize)
-                };
+                //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
 
-                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(null, null, page, pageSize, "");
+
+
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
-                return View(responseData);
+                return View(allPaymentSummaries);
             }
 
             var dealer = await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.GetStatusReportByDealer(dealerId);
-            var delaerStatusReport = allDelaerStatusReport.Where(x => x.Arrears < 0).ToList();
-            var pagedData = delaerStatusReport.Paginate(page, pageSize);
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(null, dealerId, page, pageSize, "");
 
-            var veiwDetails = new StatusReportViewModel()
-            {
-                CurrentPage = page,
-                StatusReports = pagedData.ToList(),
-                TotalPages = (int)Math.Ceiling((double)delaerStatusReport.Count() / pageSize)
-            };
-
-            return View(veiwDetails);
+            return View(allDelaerStatusReport);
 
         }
 
@@ -157,9 +126,9 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null);
+                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(accountId, null);
 
-                viewDetails = paymentSummaries.FirstOrDefault(x=>x.AccountNo == accountId);
+                viewDetails = paymentSummaries?.StatusReports?.First();
                 ViewData["OrdersStatus"] = "Waiting Approval";
             }
             else
@@ -167,13 +136,20 @@ namespace Ranalo.Controllers
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
 
                 var dealerId = Convert.ToInt32(dealer.DealerReference);
-                var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(dealerId);
+                var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(accountId, dealerId);
 
-                viewDetails = delaerStatusReport.FirstOrDefault(x => x.AccountNo == accountId);
+                viewDetails = delaerStatusReport?.StatusReports?.First();
 
             }
 
-            viewDetails.RestructuredRecords = await _applicationReportService.GetAllRestructuredForAccount(accountId);
+            var restructured = await _applicationReportService.GetAllRestructuredForAccount(accountId);
+            if(restructured != null)
+            {
+                viewDetails.RestructuredRecords.AddRange(restructured);
+            }
+
+            viewDetails.CustomerDetails = await _applicationReportService.GetCustomerDetailsByAccountIdAsync(accountId);
+
 
             return View(viewDetails);
         }
@@ -218,9 +194,9 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null);
+                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(accountNo, null);
 
-                viewDetails = paymentSummaries.FirstOrDefault(x => x.AccountNo == accountNo);
+                viewDetails = paymentSummaries?.StatusReports?.FirstOrDefault(x => x.AccountNo == accountNo);
                 ViewData["OrdersStatus"] = "Waiting Approval";
             }
             else
@@ -228,9 +204,9 @@ namespace Ranalo.Controllers
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
 
                 var dealerId = Convert.ToInt32(dealer.DealerReference);
-                var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(dealerId);
+                var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(accountNo, dealerId);
 
-                viewDetails = delaerStatusReport.FirstOrDefault(x => x.AccountNo == accountNo);
+                viewDetails = delaerStatusReport?.StatusReports?.FirstOrDefault(x => x.AccountNo == accountNo);
 
             }
 
@@ -251,39 +227,20 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null);
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(null, null, page, pageSize, "");
 
-                var restructured = paymentSummaries.Where(x => x.Arrears < 0);
-                var pagedAllData = restructured.Paginate(page, pageSize);
-                var responseData = new StatusReportViewModel()
-                {
-                    CurrentPage = page,
-                    StatusReports = pagedAllData.ToList(),
-                    TotalPages = (int)Math.Ceiling((double)paymentSummaries.Count() / pageSize)
-                };
-
-                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
-                return View(responseData);
+                return View(allPaymentSummaries);
             }
 
             var dealer = await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(dealerId);
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(null, dealerId, page, pageSize, "");
 
-            var pagedData = delaerStatusReport.Paginate(page, pageSize);
-
-            var veiwDetails = new StatusReportViewModel()
-            {
-                CurrentPage = page,
-                StatusReports = pagedData.ToList(),
-                TotalPages = (int)Math.Ceiling((double)delaerStatusReport.Count() / pageSize)
-            };
-
-            return View(veiwDetails);
+            return View(allDelaerStatusReport);
         }
 
         private async Task SetViewBags(User settings, string backLink)
@@ -291,6 +248,8 @@ namespace Ranalo.Controllers
             ViewBag.BackLink = backLink;
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
+            ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+
             ViewBag.UserName = settings.KnownAs;
             if (settings.RoleId == UserRole.Dealer)
             {

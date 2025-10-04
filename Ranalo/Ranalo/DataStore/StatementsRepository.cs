@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Drawing;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Ranalo.Models;
 using System.Data;
+using System.Drawing.Printing;
 
 namespace Ranalo.DataStore
 {
@@ -50,12 +51,12 @@ namespace Ranalo.DataStore
             await _db.ExecuteAsync(sql, transactions, transaction);
         }
 
-        public async Task<BankAccountStatement> GetStatementWithTransactionsAsync(int dealerId)
+        public async Task<BankAccountStatement> GetStatementWithTransactionsAsync(int statementId)
         {
             var statementSql = "SELECT TOP 1 * FROM BankAccountStatement WHERE DealerId = @Id";
             var transactionSql = "SELECT * FROM BankTransaction WHERE StatementId = @Id ORDER BY PostingDate";
 
-            var statement = await _db.QueryFirstOrDefaultAsync<BankAccountStatement>(statementSql, new { Id = dealerId });
+            var statement = await _db.QueryFirstOrDefaultAsync<BankAccountStatement>(statementSql, new { Id = statementId });
 
             if (statement != null)
             {
@@ -74,6 +75,47 @@ namespace Ranalo.DataStore
             var statement = await _db.QueryFirstOrDefaultAsync<BankAccountStatement>(statementSql, new { FileName = fileName });
 
             return statement;
+        }
+
+        public async Task<IEnumerable<BankTransaction>> GetTransactionsByDealer(string dealerReference)
+        {
+            var query = @";WITH SplitValues AS (
+                                SELECT 
+                                    t.TransactionId,
+                                    s.value,
+                                    ROW_NUMBER() OVER (PARTITION BY t.TransactionId ORDER BY (SELECT NULL)) AS rn
+                                FROM [BankTransaction] t
+                                CROSS APPLY STRING_SPLIT(t.TransactionDetails, ' ') s
+                            )
+                            SELECT t.TransactionId,
+                            		t.BankReference,
+                            		t.TransactionType,
+                            		t.PostingDate,
+                            		t.ChannelReference,
+                            		t.DebitAmount,
+                            		t.CreditAmount,
+                            	    d.CompanyName,
+                            		sv.value
+                            FROM SplitValues sv
+                            JOIN [BankTransaction] t ON t.TransactionId = sv.TransactionId
+                            JOIN [DealerStatementAccount] o ON o.BankStatementRef = sv.value
+                            JOIN [Dealers] d on d.DealerReference = o.DealerRefence
+                            WHERE sv.rn = 4 -- 4th token = the numeric JoinId
+                            AND d.DealerReference = @DealerRef
+                            GROUP BY t.BankReference,
+                            		t.TransactionType,
+                            		t.PostingDate,
+                            		t.ChannelReference,
+                            		t.DebitAmount,
+                            		t.CreditAmount,
+                            	    d.CompanyName,
+                            		sv.value,
+                            		t.TransactionId"
+            ;
+
+            var records = await _db.QueryAsync<BankTransaction>(query, new { DealerRef = dealerReference});
+
+            return records;
         }
     }
 }

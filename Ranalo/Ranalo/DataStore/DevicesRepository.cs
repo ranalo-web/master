@@ -1,4 +1,6 @@
 ﻿using Dapper;
+using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Ranalo.Models;
 using System.Data;
 
@@ -420,5 +422,14 @@ namespace Ranalo.DataStore
             };
         }
 
+        public async Task<Device?> GetDeviceByAccountId(long accountId)
+        {
+            var sql = @"SELECT * FROM Devices
+                         WHERE [Id] = @AccountId"
+            ;
+            var device = await _db.QueryFirstOrDefaultAsync<Device>(sql, new { AccountId = accountId });
+
+            return device;
+        }
     }
 }

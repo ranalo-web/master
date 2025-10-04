@@ -1,5 +1,10 @@
-﻿
-namespace Ranalo.Services
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Ranalo.Calculator.Logic.Contract
 {
     public interface IContractCalculatorService
     {
@@ -16,11 +21,14 @@ namespace Ranalo.Services
 
         bool HasNotPaidInLast7Days(DateTime? lastPaymentDate);
 
+        decimal CalculateTotalCost(decimal dailyRate, decimal deposit);
+
         decimal CalculateOutstandingAmount(decimal totalAmount, decimal totalPaid);
         double CalculateDaysContractEnd(DateTime firstPaymentDate);
 
         decimal CalculateRestructured(decimal arrears, int remainingDays);
 
         double CalculateNoDaysUnit(DateTime firstPaymentDate);
+        decimal CalculateTotalLoan(decimal dailyRate);
     }
 }

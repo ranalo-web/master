@@ -58,6 +58,41 @@
                                             <span class="nk-menu-text">Approver</span>
                                         </a>
                                     </li>
+                                }
+                                    @if (ViewBag.IsAdmin)
+                                {
+                                    <li class="nk-menu-item ">
+                                        <a class="nk-menu-link " href="/statements">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
+                                            <span class="nk-menu-text">Statements</span>
+                                        </a>
+                                    </li>
+                                        <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/contracts">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-file-text-fill"></em></span>
+                                                <span class="nk-menu-text">Contracts</span>
+                                            </a>
+                                        </li>
+                                            <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="users">
+                                            <span class="nk-menu-icon">
+                                                <em class="icon ni ni-user-list"></em>
+                                            </span>
+                                            <span class="nk-menu-text">Users</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/users">
+                                                    <span class="nk-menu-text">Users</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                }
+
+                                 @if (ViewBag.IsDealer)
+                                {
                                     <li class="nk-menu-item ">
                                         <a class="nk-menu-link " href="/statements">
                                             <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
@@ -65,24 +100,7 @@
                                         </a>
                                     </li>
                                 }
-
-
-                                <li class="nk-menu-item has-sub">
-                                    <a class="nk-menu-link nk-menu-toggle" href="users">
-                                        <span class="nk-menu-icon">
-                                            <em class="icon ni ni-user-list"></em>
-                                        </span>
-                                        <span class="nk-menu-text">Users</span>
-                                    </a>
-                                    <ul class="nk-menu-sub">
-
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/users">
-                                                <span class="nk-menu-text">Users</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
+                                
 
                                 <li class="nk-menu-item has-sub">
                                     <a class="nk-menu-link nk-menu-toggle" href="payments">

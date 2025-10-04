@@ -13,6 +13,7 @@
           "EntityFramework": "6.5.1",
           "Microsoft.EntityFrameworkCore": "9.0.5",
           "Microsoft.EntityFrameworkCore.SqlServer": "9.0.5",
+          "Ranalo.Calculator.Logic": "1.0.0",
           "Ranalo.Woocommece.Api": "1.0.0"
         },
         "runtime": {
@@ -854,10 +855,19 @@
           }
         }
       },
+      "Ranalo.Calculator.Logic/1.0.0": {
+        "runtime": {
+          "Ranalo.Calculator.Logic.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
       "Ranalo.Woocommece.Api/1.0.0": {
         "dependencies": {
           "Dapper": "2.1.66",
           "Newtonsoft.Json": "13.0.3",
+          "Ranalo.Calculator.Logic": "1.0.0",
           "Swashbuckle.AspNetCore": "6.6.2",
           "System.Data.SqlClient": "4.8.6"
         },
@@ -1442,6 +1452,11 @@
       "sha512": "sha512-IXoJOXIqc39AIe+CIR7koBtRGMiCt/LPM3lI+PELtDIy9XdyeSrwXFdWV9dzJ2Awl0paLWUaknLxFQ5HpHZUog==",
       "path": "system.windows.extensions/6.0.0",
       "hashPath": "system.windows.extensions.6.0.0.nupkg.sha512"
+    },
+    "Ranalo.Calculator.Logic/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
     },
     "Ranalo.Woocommece.Api/1.0.0": {
       "type": "project",

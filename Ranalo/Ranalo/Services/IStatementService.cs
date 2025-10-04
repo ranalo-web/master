@@ -7,5 +7,7 @@ namespace Ranalo.Services
         Task<int> CreateNewStatementAsync(BankAccountStatement statement);
         Task CreateNewTransactionsForStatementAsync(IEnumerable<BankTransaction> transactions);
         Task<BankAccountStatement> GetStatementForDealerWithTransactionsAsync(int statementId, long dealerId);
+
+        Task<IEnumerable<BankTransaction>> GetTransactionsByDealerAsync(string dealerReference);
     }
 }

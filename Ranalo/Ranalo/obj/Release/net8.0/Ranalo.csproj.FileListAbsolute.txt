@@ -219,3 +219,5 @@ C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\ExcelNumberFormat.dll
 C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\RBush.dll
 C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\SixLabors.Fonts.dll
 C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\System.IO.Packaging.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Ranalo.Calculator.Logic.dll
+C:\work\ranalo\work\Ranalo\Ranalo\bin\Release\net8.0\Ranalo.Calculator.Logic.pdb

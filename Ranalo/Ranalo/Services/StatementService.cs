@@ -40,5 +40,10 @@ namespace Ranalo.Services
         {
             return await _statementRepo.GetStatementWithTransactionsAsync(statementId);
         }
+
+        public async Task<IEnumerable<BankTransaction>> GetTransactionsByDealerAsync(string dealerReference)
+        {
+            return await _statementRepo.GetTransactionsByDealer(dealerReference);
+        }
     }
 }

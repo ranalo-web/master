@@ -155,9 +155,27 @@ namespace Ranalo.Controllers
 
             await SetViewBags(settings, "index");
 
-            var statement = await _statementService.GetStatementForDealerWithTransactionsAsync(settings.DealerId, settings.DealerId);
+            if (settings.RoleId == UserRole.Admin)
+            {
+                var statement = await _statementService.GetStatementForDealerWithTransactionsAsync(settings.DealerId, settings.DealerId);
 
-            return View(statement);
+                return View(statement);
+            }
+
+            if (settings.RoleId == UserRole.Dealer)
+            {
+                var dealer = await _userService.GetDealerByUserId(settings.UserId);
+                var transactions = await _statementService.GetTransactionsByDealerAsync(dealer.DealerReference);
+
+                var bankStatement = new BankAccountStatement() 
+                { 
+                   Transactions = transactions.ToList(),
+                };
+
+                return View(bankStatement);
+            }
+
+            return RedirectToAction("Index", "Login");
         }
 
         [HttpPost("upload")]
@@ -328,6 +346,7 @@ namespace Ranalo.Controllers
             ViewBag.BackLink = backLink;
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
+            ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
             ViewBag.UserName = settings.KnownAs;
             if (settings.RoleId == UserRole.Dealer)
             {

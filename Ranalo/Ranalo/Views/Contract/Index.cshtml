@@ -2,20 +2,23 @@
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
-@model StatusReportViewModel
+@model ContractViewModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
+
+
 @functions
 {
     private string SetStatusBadge(int notPaid)
     {
         var statusClass = "";
 
-        if(notPaid == 1)
+        if (notPaid == 1)
         {
             return "badge badge-dim bg-danger";
-        }else
+        }
+        else
         {
             return "badge badge-dim bg-success";
         }
@@ -27,10 +30,11 @@
     {
         var statusClass = "";
 
-        if(status)
+        if (status)
         {
             return "badge badge-dim bg-danger";
-        }else
+        }
+        else
         {
             return "badge badge-dim bg-success";
         }
@@ -105,7 +109,7 @@
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">Status Report Summary</h3>
+                <h3 class="nk-block-title page-title">Contract Info Management</h3>
                 <div class="nk-block-des text-soft">
                     <p>Status reports for each account</p>
                 </div>
@@ -121,8 +125,8 @@
                                     <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
                                     <div class="dropdown-menu dropdown-menu-end">
                                         <ul class="link-list-opt no-bdr">
-                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#add-loan"><span>Add Loan</span></a></li>
-                                            <li><a href="#"><span>Import Loan</span></a></li>
+                                            <li><a href="#add-contract" data-bs-toggle="modal" data-bs-target="#add-loan"><span>Add Contract</span></a></li>
+                                           
                                         </ul>
                                     </div>
                                 </div>
@@ -266,7 +270,7 @@
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
                                 <form action="/statusreport" method="get">
                                     <input type="text" name="searchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by borrower or category">
-                                <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                    <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
                                 </form>
                             </div>
                         </div>
@@ -281,16 +285,15 @@
                                     <label class="custom-control-label" for="uid"></label>
                                 </div>
                             </div>
-                            <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Connected</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Next Lock</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Daily Rate</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Total Paid</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Due</span></div>
-                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Arrears</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Balance</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Status</span></div>
-                            
+                            <div class="nk-tb-col"><span class="sub-text">Account</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Deposit</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Daily</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Weekly</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Monthly</span></div>
+                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Interval</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Loan</span></div>
+                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Total Costs</span></div>
+
                             <div class="nk-tb-col nk-tb-col-tools text-end">
                                 <div class="dropdown">
                                     <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-offset="0,5"><em class="icon ni ni-plus"></em></a>
@@ -319,7 +322,7 @@
                                 </div>
                             </div>
                         </div><!-- .nk-tb-item -->
-                        @foreach (var report in Model.StatusReports)
+                        @foreach (var report in Model.Contracts)
                         {
                             <div class="nk-tb-item">
                                 <div class="nk-tb-col nk-tb-col-check">
@@ -329,50 +332,45 @@
                                     </div>
                                 </div>
                                 <div class="nk-tb-col">
-                                    <a href="/account-details/@report.AccountNo">
-                                    <div class="user-card">
-                                        <div class="user-avatar bg-primary">
-                                            <span>AB</span>
+                                    <a href="/account-details/@report.ID">
+                                        <div class="user-card">
+                                            <div class="user-avatar bg-primary">
+                                                <span>AB</span>
+                                            </div>
+                                            <div class="user-info">
+                                                <span class="tb-lead">@report.FirstName</span>
+                                                <span>AC: @report.ID</span>
+                                            </div>
                                         </div>
-                                        <div class="user-info">
-                                            <span class="tb-lead">@report.FirstName</span>
-                                            <span>AC: @report.AccountNo</span>
-                                        </div>
-                                    </div>
                                     </a>
                                 </div>
+
                                 <div class="nk-tb-col tb-col-md">
-                                    <span>@ConvertUTCDate(report.LastConnectedAt)</span>
-                                </div>
-                                     <div class="nk-tb-col tb-col-xxl">
-                                        <span>@ConvertIsoDate(report.NextLockDate)</span>
-                                    </div>
-                                    <div class="nk-tb-col tb-col-xxl">
-                                        <span>@report.Daily</span>
-                                    </div>
-                                         <div class="nk-tb-col tb-col">
-                                        <span>@report.TotalPaid</span>
-                                    </div>
-                                   <div class="nk-tb-col tb-col-xxl">
-                                        <span>@report.TotalDue</span>
-                                    </div>
-                               
-                                <div class="nk-tb-col tb-col-lg">
-                                    <span>@report.Arrears</span>
+                                    <span>@report.Deposit</span>
                                 </div>
                                 <div class="nk-tb-col tb-col-xxl">
-                                    <span>@report.LoanBalance</span>
+                                    <span>@report.Daily</span>
                                 </div>
-                                <div class="nk-tb-col tb-col-md">
-                                    <span class="@SetLockStatusBadge(report.Locked)">
-                                        @SetLockStatusTextBadge(report.Locked)
-                                    </span>
+                                <div class="nk-tb-col tb-col">
+                                    <span>@report.Weekly</span>
                                 </div>
-                               
+                                <div class="nk-tb-col tb-col-xxl">
+                                    <span>@report.Monthly</span>
+                                </div>
+                                 <div class="nk-tb-col tb-col-lg">
+                                    <span>@report.RePaymentIntervals</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-lg">
+                                    <span>@report.TotalLoan</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-xxl">
+                                    <span>@report.TotalCost</span>
+                                </div>
+
                                 <div class="nk-tb-col nk-tb-col-tools">
                                     <ul class="nk-tb-actions gx-2">
                                         <li class="nk-tb-action-hidden">
-                                            <a href="/account-details/@report.AccountNo" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Disbursed Loan">
+                                            <a href="/account-details/@report.ID" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Disbursed Loan">
                                                 <em class="icon ni ni-user-check-fill"></em>
                                             </a>
                                         </li>
@@ -381,9 +379,20 @@
                                                 <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
                                                 <div class="dropdown-menu dropdown-menu-end">
                                                     <ul class="link-list-opt no-bdr">
-                                                        <li><a href="/account-details/@report.AccountNo"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
-                                                        <li><a href="#edit-loan" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>View Account</span></a></li>
-                                                       @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
+                                                            <li><a href="#edit-contract"
+                                                                    data-bs-toggle="modal"
+                                                                    data-id="@report.ID"
+                                                                    data-name="@report.FirstName"
+                                                               data-deposit="@report.Deposit"
+                                                               data-interval="@report.RePaymentIntervals"
+                                                               data-daily="@report.Daily"
+                                                               data-weekly="@report.Weekly"
+                                                               data-monthly="@report.Monthly"
+                                                               data-loan="@report.TotalLoan"
+                                                               data-cost="@report.TotalCost">
+                                                            <em class="icon ni ni-eye"></em><span>Edit Contract</span></a></li>
+                                                        <li><a href="#add-contract" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Add Contract</span></a></li>
+                                                        @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
                                                     </ul>
                                                 </div>
                                             </div>
@@ -394,9 +403,7 @@
 
                             <!-- .nk-tb-item -->
                         }
-                        
 
-                        
                     </div><!-- .nk-tb-list -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
@@ -406,7 +413,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="/contracts?page=@(Model.CurrentPage - 1)">Prev</a>
                                     </li>
                                 }
 
@@ -423,7 +430,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=1">1</a>
+                                        <a class="page-link" href="/contracts?page=1">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -433,7 +440,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/statusreport?page=@i">@i</a>
+                                        <a class="page-link" href="/contracts?page=@i">@i</a>
                                     </li>
                                 }
 
@@ -443,14 +450,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/contracts?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/contracts?page=@(Model.CurrentPage + 1)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -462,8 +469,7 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/statusreport?page=' + this.value">
-                                        >
+                                            onchange="location.href='/contracts?page=' + this.value">
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>
@@ -482,99 +488,93 @@
     </div><!-- .nk-block -->
 </div>
 
-<div class="modal fade" tabindex="-1" id="edit-loan">
+<div class="modal fade" tabindex="-1" id="edit-contract">
     <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
             <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <em class="icon ni ni-cross-sm"></em>
             </a>
             <div class="modal-body modal-body-md">
-                <h5 class="modal-title">Update Loan</h5>
-                <form action="#" class="mt-2">
+                <h5 class="modal-title">Update Contract</h5>
+                <form action="/update-contract" method="post" class="mt-2">
+                    <input type="hidden" class="form-control" name="deviceId" id="hiddenDeviceId">
                     <div class="row g-gs">
                         <div class="col-12">
                             <div class="form-group">
-                                <label class="form-label" for="edit-name">Borrower Name</label>
+                                <label class="form-label" for="modalFirstName">Customer Name</label>
                                 <div class="form-control-wrap">
-                                    <input type="text" class="form-control" id="edit-name" value="Abu Bin Ishtiyak" required>
+                                    <input type="text" class="form-control" disabled id="modalFirstName" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-12">
                             <div class="form-group">
-                                <label class="form-label" for="edit-acc">Account No.</label>
+                                <label class="form-label" for="modalDeviceId">Account No.</label>
                                 <div class="form-control-wrap">
-                                    <input type="text" class="form-control" id="edit-acc" value="100567" required>
+                                    <input type="text" class="form-control" name="displayDeviceId" disabled id="modalDeviceId" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label">Category</label>
+                                <label class="form-label" for="edit-deposit">Deposit</label>
                                 <div class="form-control-wrap">
-                                    <select class="form-select js-select2">
-                                        <option value="education">Education</option>
-                                        <option value="emergency">Emergency</option>
-                                        <option value="daily">Daily</option>
-                                        <option value="kibaba">Kibaba</option>
-                                        <option value="bilashi">Bilashi</option>
-                                    </select>
+                                    <input type="number" step="0.01" class="form-control" name="deposit" id="edit-deposit" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="edit-amount">Amount</label>
+                                <label class="form-label" for="edit-daily">Daily</label>
                                 <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-amount" value="20000" required>
+                                    <input type="number" name="daily" step="0.01" class="form-control" id="edit-daily" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="edit-interest">Interest(%)</label>
+                                <label class="form-label" for="edit-weekly">Weekly</label>
                                 <div class="form-control-wrap">
-                                    <select class="form-select js-select2">
-                                        <option value="5">5%</option>
-                                        <option value="7">7%</option>
-                                        <option value="10">10%</option>
-                                        <option value="15">15%</option>
-                                        <option value="20">20%</option>
-                                    </select>
+                                    <input type="number" name="weekly" step="0.01" class="form-control" id="edit-weekly" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="edit-month">Month</label>
+                                <label class="form-label" for="edit-monthly">Monthly</label>
                                 <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-month" value="6" required>
+                                    <input type="number" name="monthly" step="0.01" class="form-control" id="edit-monthly" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="edit-income">Borrower Income</label>
+                                <label class="form-label" for="edit-interval">Interval</label>
                                 <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-income" value="10000" required>
+                                    <input type="text" name="interval" class="form-control" id="edit-interval" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="edit-date">Date</label>
+                                <label class="form-label" for="edit-loan">Total Loan</label>
                                 <div class="form-control-wrap">
-                                    <div class="form-icon form-icon-left">
-                                        <em class="icon ni ni-calendar"></em>
-                                    </div>
-                                    <input type="text" id="edit-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
+                                    <input type="number" name="loan" step="0.01" class="form-control" id="edit-loan" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-cost">Total Cost</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" step="0.01" name="cost" class="form-control" id="edit-cost" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-12">
                             <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
                                 <li>
-                                    <a href="#" data-bs-dismiss="modal" class="btn btn-lg btn-primary">Update Loan</a>
+                                    <button type="submit" class="btn btn-lg btn-primary">Update Contract</button>
                                 </li>
                                 <li>
                                     <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
@@ -587,3 +587,137 @@
         </div>
     </div>
 </div><!-- .Edit Modal-Content -->
+
+<div class="modal fade" tabindex="-1" id="add-contract">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Add Contract</h5>
+                <form action="/add-contract" method="post" class="mt-2">
+                    <div class="row g-gs">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="addFirstName">Customer Name</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="firstName" class="form-control" id="addFirstName" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="addDeviceId">Account No.</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" class="form-control" name="deviceId" id="addDeviceId" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="add-deposit">Deposit</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" step="0.01" class="form-control" name="deposit" id="add-deposit" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="add-daily">Daily</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" name="daily" step="0.01" class="form-control" id="add-daily" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="add-weekly">Weekly</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" name="weekly" step="0.01" class="form-control" id="add-weekly" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="add-monthly">Monthly</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" name="monthly" step="0.01" class="form-control" id="add-monthly" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="add-interval">Interval</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="interval" class="form-control" id="add-interval" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="add-loan">Total Loan</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" name="loan" step="0.01" class="form-control" id="add-loan" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="add-cost">Total Cost</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" step="0.01" name="cost" class="form-control" id="add-cost" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                                <li>
+                                    <button type="submit" class="btn btn-lg btn-primary">Create Contract</button>
+                                </li>
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div><!-- .Add Modal-Content -->
+
+@section Scripts
+{
+        <script>
+    document.addEventListener("DOMContentLoaded", function () {
+            var modal = document.getElementById('edit-contract');
+        modal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget; // Button that triggered the modal
+            var deviceId = button.getAttribute('data-id');
+                var name = button.getAttribute('data-name');
+                var deposit = button.getAttribute('data-deposit');
+                var daily = button.getAttribute('data-daily');
+                var monthly = button.getAttribute('data-monthly');
+                var weekly = button.getAttribute('data-weekly');
+                var interval = button.getAttribute('data-interval');
+                var loan = button.getAttribute('data-loan');
+                var cost = button.getAttribute('data-cost');
+
+                    document.getElementById('modalDeviceId').value = deviceId;
+                    document.getElementById('hiddenDeviceId').value = deviceId;
+                    
+                document.getElementById('modalFirstName').value = name;
+                document.getElementById('edit-deposit').value = deposit;
+                document.getElementById('edit-daily').value = daily;
+                document.getElementById('edit-monthly').value = monthly;
+                document.getElementById('edit-weekly').value = weekly;
+                document.getElementById('edit-interval').value = interval;
+                document.getElementById('edit-loan').value = loan;
+                document.getElementById('edit-cost').value = cost;
+
+        });
+    });
+    </script>
+}
+

@@ -12,6 +12,7 @@ namespace Ranalo.DataStore
 
         Task<bool> OrderNumberIsValidAsync(long orderId);
         Task<int> UpdateMpesaForOrder(long orderId, string newMpesa);
+        Task<Device?> GetDeviceByAccountId(long accountId);
 
     }
 }

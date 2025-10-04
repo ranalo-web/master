@@ -541,8 +541,14 @@ namespace Ranalo.DataStore
             var offset = (page - 1) * pageSize;
 
             var countsql = @" SELECT COUNT(*) 
-                        FROM KosePayments
-                        WHERE (
+                        FROM KosePayments kp
+                        WHERE kp.AccountNo IN (
+                            SELECT kp2.AccountNo
+                            FROM KosePayments kp2
+                            INNER JOIN Woo_Orders wo
+                                ON wo.MpesaDepositRef = kp2.MpesaCode
+                        )
+                        AND (
                         @SearchTerm IS NULL
                         OR AccountNo LIKE '%' + @SearchTerm + '%'
                         OR AmountValue LIKE '%' + @SearchTerm + '%'
@@ -554,8 +560,14 @@ namespace Ranalo.DataStore
             var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { SearchTerm = searchParam });
 
             var sql = @" SELECT MpesaCode, AccountNo, AmountValue, PaymentDateValue 
-                        FROM KosePayments
-                        WHERE (
+                        FROM KosePayments kp
+                        WHERE kp.AccountNo IN (
+                            SELECT kp2.AccountNo
+                            FROM KosePayments kp2
+                            INNER JOIN Woo_Orders wo
+                                ON wo.MpesaDepositRef = kp2.MpesaCode
+                        )
+                        AND (
                         @SearchTerm IS NULL
                         OR AccountNo LIKE '%' + @SearchTerm + '%'
                         OR AmountValue LIKE '%' + @SearchTerm + '%'
@@ -695,6 +707,34 @@ namespace Ranalo.DataStore
                           where wo.MpesaDepositRef = @FirstMpesaCode";
 
             return await _db.QueryFirstOrDefaultAsync<CustomerDetails>(sql, new { FirstMpesaCode = firstMpesaCode });
+        }
+
+        public async Task<CustomerDetails?> GetCustomerDetailsByAccountId(int accountId)
+        {
+            var sql = @" SELECT wo.OrderID,
+                           wo.[Status],
+                           wo.DateCreated,
+                           wo.DateModified,
+                           wo.TotalAmount,
+                           wo.CustomerId,
+                           wo.FirstName,
+                           wo.LastName,
+                           wo.Address1,
+                           wo.Email,
+                           wo.Phone,
+                           wo.IMEI,
+                           wo.NationalId,
+                           wo.DealerRef,
+                           wo.MpesaDepositRef,
+                           woi.[Url]
+                    FROM [dbo].[Woo_Orders] wo
+                    INNER JOIN KosePayments KP 
+                    ON KP.MpesaCode = wo.MpesaDepositRef
+                    LEFT JOIN [dbo].[Woo_Orders_Images] woi
+                    ON wo.Id = woi.OrderId
+                    WHERE TRY_CAST(kp.AccountNo AS BIGINT) = @AccountId";
+
+            return await _db.QueryFirstOrDefaultAsync<CustomerDetails>(sql, new { AccountId = accountId });
         }
 
 
@@ -994,12 +1034,12 @@ namespace Ranalo.DataStore
             throw new NotImplementedException();
         }
 
-        public async Task<PaymentsViewModel> GetPaymentSummaryAsync(int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "")
+        public async Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "")
         {
             var offset = (page - 1) * pageSize;
 
             var countQuery = SetPaymentSummaryQuery();
-            var totalRecords = await _db.QuerySingleAsync<int>(countQuery, new { DealerId = deviceGroupId, searchParam = searchTerm });
+            var totalRecords = await _db.QuerySingleAsync<int>(countQuery, new { DealerId = deviceGroupId, searchParam = searchTerm, AccountId = accountId });
 
             var sql = @"WITH 
                         ValidPayments AS (
@@ -1070,7 +1110,7 @@ namespace Ranalo.DataStore
                             d.DeviceGroupId,
                             d.[Name],
                             d.ImeiNo,
-                            d.NextLockDate,
+                            d.NextLockDateIsoFormat as NextLockDate,
                         	t6.TotalAmount,
                             d.Status,
                             d.LockType
@@ -1087,6 +1127,9 @@ namespace Ranalo.DataStore
                         AND (@DealerId = 0
                             OR d.DeviceGroupId = @DealerId
                             )
+                        AND (@AccountId IS NULL
+                            OR t1.AccountNo = @AccountId
+                            )
                         AND (@searchParam IS NULL
                             OR t1.AccountNo LIKE '%' + @searchParam + '%'
                             OR t5.First_MPesaCode LIKE '%' + @searchParam + '%'
@@ -1096,7 +1139,7 @@ namespace Ranalo.DataStore
                         FETCH NEXT @pageSize ROWS ONLY;";
 
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
-            var payments = await _db.QueryAsync<PaymentSummary>(sql, new { DealerId = deviceGroupId, offset, pageSize, searchParam });
+            var payments = await _db.QueryAsync<PaymentSummary>(sql, new { DealerId = deviceGroupId, offset, pageSize, searchParam, AccountId = accountId });
 
             return new PaymentsViewModel() 
             { 
@@ -1176,6 +1219,9 @@ namespace Ranalo.DataStore
                         WHERE d.[Status] = 'enrolled'
                         AND (@DealerId = 0
                             OR d.DeviceGroupId = @DealerId
+                            )
+                        AND (@AccountId IS NULL
+                            OR t1.AccountNo = @AccountId
                             )
                         AND (@searchParam IS NULL
                             OR t1.AccountNo LIKE '%' + @searchParam + '%'

@@ -1,3 +1,4 @@
+using Ranalo.Calculator.Logic.Contract;
 using Ranalo.Woocommece.Api.DataStore;
 using Ranalo.Woocommece.Api.Services;
 using System.Data;
@@ -21,6 +22,7 @@ builder.Services.AddScoped<ISyncLogsRepository, SyncLogsRepository>();
 builder.Services.AddScoped<IWooOrderProductRepository, WooOrderProductRepository>();
 builder.Services.AddScoped<ISyncService, SyncService>();
 builder.Services.AddScoped<IKosePaymentsRepository, KosePaymentsRepository>();
+builder.Services.AddScoped<IContractCalculatorService, ContractCalculatorService>();
 //
 var app = builder.Build();
 

@@ -1,4 +1,5 @@
-﻿using Ranalo.DataStore;
+﻿using Ranalo.Calculator.Logic.Contract;
+using Ranalo.DataStore;
 using Ranalo.Models;
 using System.Drawing.Printing;
 using System.Linq;
@@ -10,11 +11,16 @@ namespace Ranalo.Services
         private readonly IApplicationReportRepository _applicationReportRepository;
         private readonly IRepository _repository;
         private readonly IContractCalculatorService _calculatorService;
-        public ApplicationReportService(IApplicationReportRepository applicationReportRepository, IRepository repository, IContractCalculatorService calculatorService  )
+        private readonly IDevicesRepository _devicesRepository;
+        public ApplicationReportService(IApplicationReportRepository applicationReportRepository, 
+                                        IRepository repository, 
+                                        IContractCalculatorService calculatorService,
+                                        IDevicesRepository devicesRepository)
         {
             _applicationReportRepository = applicationReportRepository;
             _repository = repository;
             _calculatorService = calculatorService;
+            _devicesRepository = devicesRepository;
         }
 
         public async Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrders(string searchTerm = "", int page = 1, int pageSize = 10)
@@ -117,16 +123,22 @@ namespace Ranalo.Services
             
         public async Task<CustomerDetails> GetCustomerDetailsByOrderIdAsync(long orderId)
         {
-            var customerDetails = await _applicationReportRepository.GetCustomerDetails(orderId);
+            CustomerDetails? customerDetails = null;
 
-            var identityImages = await _applicationReportRepository.GetIdentityImagesForOrder(orderId);
+            customerDetails = await _applicationReportRepository.GetCustomerDetails(orderId);
+            if(customerDetails == null)
+            {
+                customerDetails = await _applicationReportRepository.GetCustomerDetailsByAccountId((int)orderId);
+            }
+
+            var identityImages = await _applicationReportRepository.GetIdentityImagesForOrder(customerDetails.OrderID);
 
             customerDetails?.IdentityImages?.AddRange(identityImages.ToList());
 
             //Populate Order device details
             customerDetails.Product = await _applicationReportRepository.GetProductDetailsForOrder(customerDetails.Id);
 
-            customerDetails.NextOfKin = await _applicationReportRepository.GetNextOfKinForOrder(orderId);
+            customerDetails.NextOfKin = await _applicationReportRepository.GetNextOfKinForOrder(customerDetails.OrderID);
             //Now lets get AccountId by Mpesa
             var customerAccount = await _applicationReportRepository.GetCustomerAccountByMpesa(customerDetails.MpesaDepositRef);
             if(!string.IsNullOrEmpty(customerAccount))
@@ -139,6 +151,12 @@ namespace Ranalo.Services
             if(payments != null)
             {
                 customerDetails.Payments = payments.Payments!;
+            }
+
+            var device = await _devicesRepository.GetDeviceByAccountId(Convert.ToInt64(customerDetails?.Payments?.FirstOrDefault()?.AccountNo));
+            if (device != null)
+            {
+                customerDetails.DeviceDetails = device;
             }
 
             return customerDetails;
@@ -175,19 +193,33 @@ namespace Ranalo.Services
             return await _applicationReportRepository.ApproveOrder(orderId);
         }
 
-        public async Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int? deviceGroupId, int page, int pageSize, string searchTerm)
+        public async Task<StatusReportViewModel> GetStatusReportByDealer(int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm)
         {
+            deviceGroupId ??= 0;
+            var result = await _applicationReportRepository.GetPaymentSummaryAsync(accountId, deviceGroupId.Value, page, pageSize, searchTerm);
 
+            List<MobileStatusReport> mobileStatusReports = await SetMobileStatusRecords(accountId, deviceGroupId, page, pageSize, searchTerm, result);
+
+            return new StatusReportViewModel()
+            {
+                CurrentPage = result.CurrentPage,
+                SearchTerm = searchTerm,
+                StatusReports = mobileStatusReports,
+                TotalPages = result.TotalPages,
+                TotalRecords = result.TotalRecords
+            };
+
+        }
+
+        private async Task<List<MobileStatusReport>> SetMobileStatusRecords(int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, PaymentsViewModel result)
+        {
             var mobileStatusReports = new List<MobileStatusReport>();
             //Get payment Summary
             List<PaymentSummary> paymentSummary = new List<PaymentSummary>();
 
-            deviceGroupId ??= 0;
-            var result = await _applicationReportRepository.GetPaymentSummaryAsync(deviceGroupId.Value, page, pageSize, searchTerm);
-
             paymentSummary = result.Payments;
 
-            if (paymentSummary != null) 
+            if (paymentSummary != null)
             {
                 foreach (var payment in paymentSummary)
                 {
@@ -229,22 +261,96 @@ namespace Ranalo.Services
                         NextLockDate = payment.NextLockDate,
                         Status = payment.Status,
                         LockType = payment.LockType
-                        
+
                     };
-                    if(statusRow.Arrears < 0)
+                    if (statusRow.Arrears < 0)
                     {
                         var daysLeft = _calculatorService.CalculateNoDaysUnit((DateTime)statusRow.FirstPaymentDate);
                         statusRow.RestructuredAmnt = Math.Round(_calculatorService.CalculateRestructured(statusRow.TotalDue, (int)daysLeft), 2);
                     }
-                    
+
                     mobileStatusReports.Add(statusRow);
                 }
             }
 
             return mobileStatusReports;
-
         }
 
+        public async Task<StatusReportViewModel> CallQualifyingFunc(int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm)
+        {
+            deviceGroupId ??= 0;
+
+            var result = await GetQualifyingPageAsync(
+                pageNumber: page,
+                pageSize: pageSize,
+                fetchPageAsync: async (pageNumber, pageSize) =>
+                {
+                    // Fetch *this page* directly from repo
+                    var result = await _applicationReportRepository.GetPaymentSummaryAsync(
+                        accountId,
+                        deviceGroupId.Value,
+                        pageNumber,
+                        pageSize,
+                        searchTerm
+                    );
+
+                    // Apply your business transformation (IsInArrears calc)
+                    return await SetMobileStatusRecords(accountId, deviceGroupId, pageNumber, pageSize, searchTerm, result);
+                }
+            );
+            return new StatusReportViewModel()
+            {
+                CurrentPage = page,
+                SearchTerm = searchTerm,
+                StatusReports = result.page,
+                TotalPages = (result.total / pageSize),
+                TotalRecords = result.total
+            };
+        }
+
+        public async Task<(int total, List<MobileStatusReport> page)> GetQualifyingPageAsync(
+            int pageNumber, int pageSize,
+            Func<int, int, Task<List<MobileStatusReport>>> fetchPageAsync)
+        {
+            var qualifying = new List<MobileStatusReport>();
+            int total = 0;
+
+            await foreach (var record in GetAllQualifyingRecordsAsync(fetchPageAsync))
+            {
+                total++;
+                qualifying.Add(record);
+            }
+
+            var page = qualifying
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return (total, page);
+        }
+
+
+        public async IAsyncEnumerable<MobileStatusReport> GetAllQualifyingRecordsAsync(
+        Func<int, int, Task<List<MobileStatusReport>>> fetchPageAsync,
+        int dbPageSize = 100)
+        {
+            int pageNumber = 1;
+
+            while (true)
+            {
+                var page = await fetchPageAsync(pageNumber, dbPageSize);
+                if (page == null || page.Count == 0)
+                    yield break;
+
+                foreach (var record in page)
+                {
+                    if (record.Arrears < 0) // arrears logic in C#
+                        yield return record;
+                }
+
+                pageNumber++;
+            }
+        }
         public async Task<AllAccountsViewModel> GetAllAccountsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var allAccounts = await _applicationReportRepository.GetAllAccountsByUserAsync(dealerId, searchTerm, page, pageSize);
@@ -267,6 +373,20 @@ namespace Ranalo.Services
 
             if (customerDetails == null) return "";
             return customerDetails.FirstName;
+        }
+
+        public async Task<CustomerDetails?> GetCustomerDetailsByFirstMpesaCodeAsync(string? firstMPesaCode)
+        {
+            if (string.IsNullOrEmpty(firstMPesaCode)) return null;
+
+            var customerDetails = await _applicationReportRepository.GetCustomerDetailsByFirstMpesaCode(firstMPesaCode);
+
+            return customerDetails;
+        }
+
+        public async Task<CustomerDetails?> GetCustomerDetailsByAccountIdAsync(int accountId)
+        {
+            return await _applicationReportRepository.GetCustomerDetailsByAccountId(accountId);
         }
 
         public async Task AddCustomerNoteAsync(int userId, long orderId, string customerNote)
@@ -319,6 +439,11 @@ namespace Ranalo.Services
         public async Task<List<RestructuredRecord>> GetAllRestructuredForAccount(long accountId)
         {
             return await _applicationReportRepository.GetAllRestructuredForAccount(accountId);
+        }
+
+        Task<CustomerDetails?> IApplicationReportService.GetCustomerDetailsByFirstMpesaCodeAsync(string? firstMPesaCode)
+        {
+            return GetCustomerDetailsByFirstMpesaCodeAsync(firstMPesaCode);
         }
 
         #endregion

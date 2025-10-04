@@ -1,4 +1,7 @@
-﻿using Ranalo.Woocommece.Api.Models;
+﻿
+using Ranalo.DataStore;
+using Ranalo.Woocommece.Api.Models;
+using Device = Ranalo.DataStore.Device;
 
 namespace Ranalo.Models
 {
@@ -30,6 +33,7 @@ namespace Ranalo.Models
         public List<CustomerNote>? Notes { get; set; }
         public WooOrderProduct? Product { get; set; }
         public Contact? NextOfKin { get; set; }
+        public Device? DeviceDetails { get; set; }
 
         public List<KosePayments> Payments { get; set; } = new List<KosePayments>();
     }

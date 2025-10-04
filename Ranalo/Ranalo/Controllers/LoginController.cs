@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DocumentFormat.OpenXml.Wordprocessing;
+using Microsoft.AspNetCore.Mvc;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Services;
 using System.Text.Json;
@@ -63,6 +64,7 @@ namespace Ranalo.Controllers
                     ViewBag.BackLink = "dashboard";
                     ViewBag.IsAdmin = user.RoleId == UserRole.Admin;
                     ViewBag.IsApprover = user.RoleId == UserRole.Approver;
+                    ViewBag.IsDealer = user.RoleId == UserRole.Dealer;
 
 
                     switch (user.RoleId)
@@ -115,6 +117,8 @@ namespace Ranalo.Controllers
                     ViewBag.BackLink = "Index";
                     ViewBag.IsAdmin = user.RoleId == UserRole.Admin;
                     ViewBag.IsApprover = user.RoleId == UserRole.Approver;
+                    ViewBag.IsDealer = user.RoleId == UserRole.Dealer;
+
 
                     return View("ResetSuccess");
                 }

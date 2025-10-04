@@ -1,4 +1,11 @@
-﻿namespace Ranalo.Services
+﻿using Ranalo.Calculator.Logic.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Ranalo.Calculator.Logic.Contract
 {
     public class ContractCalculatorService : IContractCalculatorService
     {
@@ -117,7 +124,7 @@
         public int CalculateLagDays(DateTime firstPaymentDate, string enrolleOnDate)
         {
             var parsedDate = DateHelper.ParseCustomDate(enrolleOnDate);
-            if(parsedDate == null)
+            if (parsedDate == null)
             {
                 return 0;
             }
@@ -137,7 +144,7 @@
         {
             if (daysContractEnd == null) return (int)noDaysUnits;
 
-            if(daysContractEnd < noDaysUnits) return (int)daysContractEnd;
+            if (daysContractEnd < noDaysUnits) return (int)daysContractEnd;
 
             return (int)noDaysUnits;
         }
@@ -174,8 +181,24 @@
 
         }
 
+        public decimal CalculateTotalCost(decimal dailyRate, decimal deposit)
+        {
+            if (dailyRate <= 0)
+                return 0;
+            return (dailyRate * 30 * termInMonths) + deposit;
+        }
+
+        public decimal CalculateTotalLoan(decimal dailyRate)
+        {
+            if (dailyRate <= 0)
+                return 0;
+            return (dailyRate * 30 * termInMonths);
+        }
+
         public decimal CalculateRestructured(decimal arrears, int remainingDays)
         {
+            if (remainingDays <= 0)
+                return 0;
             return arrears / remainingDays;
         }
         public double CalculateNoDaysUnit(DateTime firstPaymentDate)
@@ -190,7 +213,6 @@
         {
             return firstPaymentDate.AddDays(termInMonths * 30);
         }
-
     }
 
     public class ContractFinancialInfo

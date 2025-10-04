@@ -97,6 +97,7 @@ namespace Ranalo.Controllers
             ViewBag.BackLink = backLink;
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
+            ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
             ViewBag.UserName = settings.KnownAs;
             if (settings.RoleId == UserRole.Dealer)
             {

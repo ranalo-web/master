@@ -26,7 +26,7 @@ namespace Ranalo.Services
 
         Task<int> RejectOrderAsync(long orderId);
 
-        Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int? deviceGroupId, int page = 1, int pageSize = 10, string searchTerm = "");
+        Task<StatusReportViewModel> GetStatusReportByDealer(int? accountId, int? deviceGroupId, int page = 1, int pageSize = 10, string searchTerm = "");
         Task AddCustomerNoteAsync(int userId, long orderId, string customerNote);
 
         Task<List<CustomerNote>> GetNotesByOrderIdAsync(long orderId);
@@ -44,5 +44,11 @@ namespace Ranalo.Services
         Task CreateRestructuredAsync(RestructuredRecord record);
         Task<List<RestructuredRecord>> GetAllRestructured();
         Task<List<RestructuredRecord>> GetAllRestructuredForAccount(long accountId);
+
+        Task<CustomerDetails?> GetCustomerDetailsByFirstMpesaCodeAsync(string? firstMPesaCode);
+
+        Task<CustomerDetails?> GetCustomerDetailsByAccountIdAsync(int accountId);
+
+        Task<StatusReportViewModel> CallQualifyingFunc(int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm);
     }
 }

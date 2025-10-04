@@ -1,5 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Ranalo.Calculator.Logic.Contract;
+using Ranalo.Calculator.Logic.Models;
 using Ranalo.Woocommece.Api.DataStore;
 using Ranalo.Woocommece.Api.Models;
 using System.Diagnostics;
@@ -15,15 +18,18 @@ namespace Ranalo.Woocommece.Api.Services
         private readonly IWooOrderRepository _wooOrderRepository;
         private readonly IWooOrderProductRepository _wooOrderProductRepository;
         private readonly IKosePaymentsRepository _kosePaymentsRepository;
+        private readonly IContractCalculatorService _calculatorService;
         public SyncService(ISyncLogsRepository syncLogsRepository, 
             IWooOrderProductRepository wooOrderProductRepository, 
             IWooOrderRepository wooOrderRepository,
-            IKosePaymentsRepository kosePaymentsRepository)
+            IKosePaymentsRepository kosePaymentsRepository,
+            IContractCalculatorService calculatorService)
         {
             _syncLogsRepository = syncLogsRepository;
             _wooOrderProductRepository = wooOrderProductRepository;
             _wooOrderRepository = wooOrderRepository;
             _kosePaymentsRepository = kosePaymentsRepository;
+            _calculatorService = calculatorService;
         }
         public async Task<DataSyncLog?> GetLastSycnLogDetails()
         {
@@ -57,6 +63,18 @@ namespace Ranalo.Woocommece.Api.Services
 
                     var orderId = await _wooOrderRepository.InsertAsync(order);
 
+                    //We need to create contract using the orders and hope the Mpesa provided is valid
+                    if (!string.IsNullOrEmpty(order.MpesaDepositRef))
+                    {
+                        var account = await _wooOrderRepository.GetAccountDetailsByMpesa(order.MpesaDepositRef);
+                        if(account != null)
+                        {
+                            await DoCreateContractInfo(order, account);
+                        }
+
+                        continue;
+                    }
+                    
                     
                     foreach (var product in order.Products)
                     {
@@ -87,6 +105,25 @@ namespace Ranalo.Woocommece.Api.Services
             }
 
             return 1;
+        }
+
+        private async Task DoCreateContractInfo(WooOrder order, MpesaRecord account)
+        {
+            var dailyRate = _calculatorService.CalculateDailyRate(order.TotalAmount);
+            var deposit = _calculatorService.CalculateDeposit(order.TotalAmount);
+            var contract = new ContractInfo()
+            {
+                ID = int.Parse(account.AccountNo),
+                Deposit = deposit,
+                Daily = dailyRate,
+                Weekly = _calculatorService.CalculateWeekleyRate(dailyRate),
+                Monthly = _calculatorService.CalculateMonthlyRate(dailyRate),
+                RePaymentIntervals = "Daily",
+                TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit),
+                TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate)
+            };
+
+            await _kosePaymentsRepository.AddContractAsync(contract);
         }
 
         public async Task<List<int>> UpdateImagesAsync(long orderId, List<ImagesMetadata> imagesForUpdate)

@@ -68,7 +68,7 @@ namespace Ranalo.Controllers
             var customerDetails = await _applicationReportService.GetCustomerDetailsByOrderIdAsync(orderId);
 
             //Get customer Notes
-            var notes = await _applicationReportService.GetNotesByOrderIdAsync(orderId);
+            var notes = await _applicationReportService.GetNotesByOrderIdAsync(customerDetails.OrderID);
 
             if (notes != null)
             {
