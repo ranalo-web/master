@@ -9,5 +9,7 @@ namespace Ranalo.Services
         Task<BankAccountStatement> GetStatementForDealerWithTransactionsAsync(int statementId, long dealerId);
 
         Task<IEnumerable<BankTransaction>> GetTransactionsByDealerAsync(string dealerReference);
+
+        Task<List<Models.Dealer>?> GetStatementsDealersAsync();
     }
 }

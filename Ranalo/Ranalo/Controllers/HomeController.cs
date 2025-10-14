@@ -1,10 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas.Parser;
+using Microsoft.AspNetCore.Mvc;
+using Org.BouncyCastle.Asn1.X509.Qualified;
 using Ranalo.Configuration;
 using Ranalo.DataStore;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.Services;
 using System.Drawing.Printing;
+using System.IO;
+using System.Reflection.PortableExecutable;
 
 namespace Ranalo.Controllers
 {
@@ -30,6 +35,7 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
+
             await SetViewBags(settings, "index");
 
             if (settings.RoleId == UserRole.Admin)
@@ -122,7 +128,7 @@ namespace Ranalo.Controllers
         }
 
         [Route("allpayments/{page:int?}")]
-        public async Task<IActionResult> AllPayments(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> AllPayments(string searchTerm, int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -130,11 +136,11 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            await SetViewBags(settings, "index");
+            await SetViewBags(settings, "index", searchTerm);
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPayments = await _applicationReportService.GetAllPaymentsAsync(page:page, pageSize:pageSize);
+                var allPayments = await _applicationReportService.GetAllPaymentsAsync(searchTerm, page: page, pageSize:pageSize);
 
                 return View(allPayments);
             }
@@ -178,6 +184,38 @@ namespace Ranalo.Controllers
             return RedirectToAction("Index", "Login");
         }
 
+        [Route("statements-dealer/{page:int?}")]
+        public async Task<IActionResult> Statements(string dealerReference, int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "index");
+
+            ViewBag.Selected = dealerReference;
+            if (dealerReference == "all" || dealerReference == "select")
+            {
+                var statement = await _statementService.GetStatementForDealerWithTransactionsAsync(settings.DealerId, settings.DealerId);
+
+                return View(statement);
+            } else
+            {
+                var dealer = await _userService.GetDealerByUserId(settings.UserId);
+                var transactions = await _statementService.GetTransactionsByDealerAsync(dealerReference);
+
+                var bankStatement = new BankAccountStatement()
+                {
+                    Transactions = transactions.ToList(),
+                    Dealers = await _statementService.GetStatementsDealersAsync()
+                };
+
+                return View(bankStatement);
+            }
+        }
+
         [HttpPost("upload")]
         public async Task<IActionResult> Statements(IFormFile file, CancellationToken cancellationToken)
         {
@@ -189,17 +227,66 @@ namespace Ranalo.Controllers
 
             await SetViewBags(settings, "index");
 
-            using (var stream = file.OpenReadStream()) // IFormFile from upload
-            {
-                var mapper = new BankStatementMapper();
-                var statement = mapper.MapFromExcel(stream, settings.DealerId, file.FileName);
+            var mapper = new BankStatementMapper();
 
-                // Now you can save with your Dapper insert methods
-                await _statementService.CreateNewStatementAsync(statement);
+            var isPdf = file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+
+            if(isPdf)
+            {
+                using (var stream = file.OpenReadStream())
+                using (var pdfReader = new PdfReader(stream))
+                using (var pdfDoc = new PdfDocument(pdfReader))
+                {
+                    var numberOfPages = pdfDoc.GetNumberOfPages();
+
+                    //Lets get first page fror account details
+                    var bankStatement = new BankAccountStatement();
+                    var statementDetails = PdfTextExtractor.GetTextFromPage(pdfDoc.GetFirstPage());
+
+                    if (statementDetails != null)
+                    {
+                        bankStatement = BankStatementMapper.Parse(statementDetails);
+                    }
+
+                    bankStatement.AccountType = "EQUITY";
+                    bankStatement.GeneratedBy = "Edward Guda Osewe";
+                    bankStatement.FileName = file.FileName;
+
+                    for (int i = 1; i <= numberOfPages; i++)
+                    {
+                        string text = PdfTextExtractor.GetTextFromPage(pdfDoc.GetPage(i));
+                        var statementTransactions = BankStatementMapper.ExtractTransactions(text);
+
+                        bankStatement.Transactions.AddRange(statementTransactions);
+                    }
+
+                    // Now you can save with your Dapper insert methods
+                    await _statementService.CreateNewStatementAsync(bankStatement);
+                }
+            }
+            else
+            {
+                using (var stream = file.OpenReadStream()) // IFormFile from upload
+                {
+
+
+                    var statement = mapper.MapFromExcel(stream, settings.DealerId, file.FileName);
+
+                    // Now you can save with your Dapper insert methods
+                    await _statementService.CreateNewStatementAsync(statement);
+                }
+
+
+                using (var stream = file.OpenReadStream()) // IFormFile from upload
+                {
+                    var statement = mapper.MapFromExcel(stream, settings.DealerId, file.FileName);
+
+                    // Now you can save with your Dapper insert methods
+                    await _statementService.CreateNewStatementAsync(statement);
+                }
             }
 
             //Now get the latest staements
-
             return RedirectToAction("Statements", "Home");
         }
 
@@ -229,7 +316,7 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            await SetViewBags(settings, "index");
+            await SetViewBags(settings, "index", searchTerm);
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
@@ -252,7 +339,7 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
-            await SetViewBags(settings, "index");
+            await SetViewBags(settings, "index", searchTerm);
 
             if (settings.RoleId == UserRole.Admin)
             {
@@ -341,13 +428,14 @@ namespace Ranalo.Controllers
             return RedirectToAction("Users");
         }
 
-        private async Task SetViewBags(User settings, string backLink)
+        private async Task SetViewBags(User settings, string backLink, string searchTerm = "")
         {
             ViewBag.BackLink = backLink;
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
             ViewBag.UserName = settings.KnownAs;
+            ViewBag.SearchTerm = searchTerm;
             if (settings.RoleId == UserRole.Dealer)
             {
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);

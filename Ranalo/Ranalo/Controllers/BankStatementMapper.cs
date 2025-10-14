@@ -1,5 +1,7 @@
 ﻿using ClosedXML.Excel;
 using Ranalo.Models;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Ranalo.Controllers
 {
@@ -62,6 +64,133 @@ namespace Ranalo.Controllers
             statement.Transactions = transactions;
 
             return statement;
+        }
+
+        public static BankAccountStatement Parse(string rawText)
+        {
+            var statement = new BankAccountStatement();
+            rawText = Regex.Replace(rawText, @"(\r\n|\r|\n)+", "\n").Trim(); // normalize newlines
+            rawText = Regex.Replace(rawText, @"(.)\1{2,}", "$1"); // remove double letters like "AAccccoouunntt"
+            rawText = Regex.Replace(rawText, @"\s+", " "); // normalize spaces
+
+            // Extract header fields
+            statement.AccountNumber = Regex.Match(rawText, @"Account Number\s+(\d+)").Groups[1].Value;
+            statement.Currency = Regex.Match(rawText, @"Currency\s+([A-Z]+)").Groups[1].Value;
+            statement.AccountName = Regex.Match(rawText, @"RANALO CREDIT LIMITED", RegexOptions.IgnoreCase).Success ? "RANALO CREDIT LIMITED" : null;
+            statement.GenerationDateTime = TryParseDate(Regex.Match(rawText, @"Statement Date\s+(\d{2}/\d{2}/\d{4})").Groups[1].Value);
+
+            // Period (e.g. 05/10/2023 - 05/10/2025)
+            var periodMatch = Regex.Match(rawText, @"Statement\s+(\d{2}/\d{2}/\d{4})\s*-\s*(\d{2}/\d{2}/\d{4})");
+            if (periodMatch.Success)
+            {
+                statement.PeriodStart = TryParseDate(periodMatch.Groups[1].Value);
+                statement.PeriodEnd = TryParseDate(periodMatch.Groups[2].Value);
+            }
+
+            return statement;
+        }
+        private static DateTime? TryParseDate(string date)
+        {
+            if (DateTime.TryParseExact(date, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
+                return result;
+            return null;
+        }
+
+        public static BankAccountStatement MapFromPdf(string rawText)
+        {
+            var statement = new BankAccountStatement
+            {
+                AccountNumber = ExtractAccountNumber(rawText),
+                Currency = ExtractCurrency(rawText),
+            };
+
+            (statement.PeriodStart, statement.PeriodEnd) = ExtractPeriod(rawText);
+            statement.Transactions = ExtractTransactions(rawText);
+
+            return statement;
+        }
+
+        private static string ExtractAccountNumber(string text)
+        {
+            var match = Regex.Match(text, @"Account\s*Number\s*(\d+)", RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value : string.Empty;
+        }
+
+        private static string ExtractCurrency(string text)
+        {
+            var match = Regex.Match(text, @"Currency\s+([A-Z]{3})", RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value : string.Empty;
+        }
+
+        private static (DateTime?, DateTime?) ExtractPeriod(string text)
+        {
+            var match = Regex.Match(text, @"Statement\s+(\d{2}/\d{2}/\d{4})\s*-\s*(\d{2}/\d{2}/\d{4})", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                DateTime.TryParse(match.Groups[1].Value, out var start);
+                DateTime.TryParse(match.Groups[2].Value, out var end);
+                return (start, end);
+            }
+            return (null, null);
+        }
+
+        public static List<BankTransaction> ExtractTransactions(string raw)
+        {
+            // 🧹 Clean and normalize text
+            raw = Regex.Replace(raw, @"(\w)\1{2,}", "$1");       // fix OCR duplicated letters
+            raw = Regex.Replace(raw, @"[^\w\s/.,]", " ");        // remove stray non-word symbols
+            raw = Regex.Replace(raw, @"\s+", " ");               // normalize spacing
+
+            // 🧩 Match both S-codes and numeric references:
+            // Example matches:
+            //   S8040806 29/09/2024 57,513.0 8,639.84
+            //   54300795 11/09/2024 100.00 1,900.00
+            var pattern = @"(?:(S\d{3,})|(\d{6,}))\s+\d{1,2}/\d{1,2}/\d{4}\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)";
+
+            var matches = Regex.Matches(raw, pattern);
+            var txns = new List<BankTransaction>();
+
+            foreach (Match m in matches)
+            {
+                string refValue = !string.IsNullOrWhiteSpace(m.Groups[1].Value)
+                    ? m.Groups[1].Value
+                    : m.Groups[2].Value;
+
+                var dateMatch = Regex.Match(m.Value, @"\d{1,2}/\d{1,2}/\d{4}");
+
+                if (!dateMatch.Success)
+                    continue;
+
+                var txn = new BankTransaction
+                {
+                    BankReference = refValue,
+                    ValueDate = DateTime.TryParse(dateMatch.Value, out var d) ? d : null,
+                    CreditAmount = ParseDecimal(m.Groups[3].Value),
+                    DebitAmount = ParseDecimal(m.Groups[4].Value),
+                };
+
+                // 🧾 Try to find a running balance just after this match
+                var balanceMatch = Regex.Match(raw.Substring(m.Index + m.Length), @"([\d,]+\.?\d*)");
+                if (balanceMatch.Success)
+                    txn.RunningBalance = ParseDecimal(balanceMatch.Groups[1].Value);
+
+                // 🔍 Capture transaction description (text right before reference)
+                var start = Math.Max(0, m.Index - 80);
+                var prefix = raw.Substring(start, m.Index - start);
+                var detailMatch = Regex.Match(prefix, @"([A-Z0-9/ +]{4,})$", RegexOptions.IgnoreCase);
+                txn.TransactionDetails = detailMatch.Success ? detailMatch.Groups[1].Value.Trim() : "";
+
+                txns.Add(txn);
+            }
+
+            return txns;
+        }
+
+        private static decimal? ParseDecimal(string s)
+        {
+            if (decimal.TryParse(s.Replace(",", ""), out var d))
+                return d;
+            return null;
         }
     }
 }

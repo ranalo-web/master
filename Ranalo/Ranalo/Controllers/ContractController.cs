@@ -19,7 +19,7 @@ namespace Ranalo.Controllers
         }
         [HttpGet]
         [Route("contracts/{page:int?}")]
-        public async Task<IActionResult> Index(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(string searchTerm, int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -30,7 +30,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var contracts = await _contractService.GetAllContractsAsync(page: page, pageSize: pageSize);
+                var contracts = await _contractService.GetAllContractsAsync(page: page, pageSize: pageSize, searchTerm);
                 
 
                 ViewData["OrdersStatus"] = "Waiting Approval";

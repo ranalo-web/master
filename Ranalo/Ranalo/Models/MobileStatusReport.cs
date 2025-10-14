@@ -66,6 +66,11 @@
         public string NextLockDate { get; set; }
         public string? Status { get; set; }
         public string? LockType { get; set; }
+        public string? CustomerName { get; set; }
+        public decimal Daily { get; set; }
+        public decimal Weekly { get; set; }
+        public decimal Monthly { get; set; }
+        public decimal Deposit { get; set; }
     }
 
 }

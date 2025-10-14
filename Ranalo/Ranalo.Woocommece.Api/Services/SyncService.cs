@@ -7,6 +7,7 @@ using Ranalo.Woocommece.Api.DataStore;
 using Ranalo.Woocommece.Api.Models;
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 
@@ -71,8 +72,6 @@ namespace Ranalo.Woocommece.Api.Services
                         {
                             await DoCreateContractInfo(order, account);
                         }
-
-                        continue;
                     }
                     
                     
@@ -125,6 +124,45 @@ namespace Ranalo.Woocommece.Api.Services
 
             await _kosePaymentsRepository.AddContractAsync(contract);
         }
+        public async Task<List<string>> CreateContractsForEligibleOrders()
+        {
+            var accountsNos = new List<string>();
+            //Get All eligible orders
+            var eligible = await _wooOrderProductRepository.GetContractEligibleOrders();
+
+            foreach (var order in eligible)
+            {
+                if(string.IsNullOrEmpty(order.FirstName))
+                {
+                    continue;
+                }
+                var dailyRate = _calculatorService.CalculateDailyRate(order.TotalAmount);
+                var deposit = _calculatorService.CalculateDeposit(order.TotalAmount);
+                var contract = new ContractInfo()
+                {
+                    ID = int.Parse(order.AccountNo),
+                    Deposit = deposit,
+                    Daily = dailyRate,
+                    Weekly = _calculatorService.CalculateWeekleyRate(dailyRate),
+                    Monthly = _calculatorService.CalculateMonthlyRate(dailyRate),
+                    RePaymentIntervals = "Daily",
+                    TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit),
+                    TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate),
+                    FirstName = order.FirstName,
+                    TotalAmount = order.TotalAmount
+                };
+
+                var contractId = await _kosePaymentsRepository.AddContractAsync(contract);
+
+                //Update the Orders with Contract Id 
+
+                await _kosePaymentsRepository.UpdateOrderContract(order.OrderId, contractId);
+
+                accountsNos.Add(order.AccountNo);
+            }
+
+            return accountsNos;
+        }
 
         public async Task<List<int>> UpdateImagesAsync(long orderId, List<ImagesMetadata> imagesForUpdate)
         {
@@ -137,6 +175,14 @@ namespace Ranalo.Woocommece.Api.Services
             }
 
             return resultIds;
+        }
+
+        public async Task UpdateNextOfKeen(long orderId, Contact nextOfKin)
+        {
+            if (nextOfKin != null)
+            {
+                await _wooOrderProductRepository.InsertNextOfKinAsync(nextOfKin);
+            }
         }
 
         public async Task LogLastSyncDetails(DataSyncLog log)
@@ -369,7 +415,7 @@ namespace Ranalo.Woocommece.Api.Services
         {
             var updatedOrders = new List<int>();
             // Start from last sync date or fallback to 3 days ago
-            var iso8601UtcDate = DateTime.UtcNow.AddDays(-4).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var iso8601UtcDate = DateTime.UtcNow.AddDays(-7).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
             var mappedOrders = new List<WooOrder>();
             int page = 1;
@@ -404,6 +450,49 @@ namespace Ranalo.Woocommece.Api.Services
                     var orderId = await UpdateImagesAsync(mappedOrder.OrderID, mappedOrder.ImagesMetadata);
 
                     updatedOrders.AddRange(orderId);
+                }
+            }
+
+            return updatedOrders;
+        }
+
+        public async Task<List<int>> SyncUpdateNextOfKinWooOrders()
+        {
+            var updatedOrders = new List<int>();
+            // Start from last sync date or fallback to 3 days ago
+            var iso8601UtcDate = DateTime.UtcNow.AddDays(-7).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+            var mappedOrders = new List<WooOrder>();
+            int page = 1;
+            string recordsToSync;
+
+            do
+            {
+                // Fetch paginated data
+                recordsToSync = await SecuredApiGetRequestStringResponse(iso8601UtcDate, page);
+
+                if (!string.IsNullOrWhiteSpace(recordsToSync) && recordsToSync.Trim() != "[]")
+                {
+                    var values = JArray.Parse(recordsToSync);
+                    if (values.Count > 0)
+                    {
+                        foreach (var value in values)
+                        {
+                            var mappedFromJson = MapOrderFromWoo(value);
+                            mappedOrders.Add(mappedFromJson);
+                        }
+                    }
+                }
+
+                page++;
+
+            } while (!string.IsNullOrWhiteSpace(recordsToSync) && recordsToSync.Trim() != "[]");
+
+            if (mappedOrders.Any())
+            {
+                foreach (var mappedOrder in mappedOrders)
+                {
+                    await UpdateNextOfKeen(mappedOrder.OrderID, mappedOrder.NextOfKin);
                 }
             }
 
@@ -697,5 +786,55 @@ namespace Ranalo.Woocommece.Api.Services
             return products;
         }
 
+        public async Task<List<int>> SyncUpdateMetaDataWooOrders()
+        {
+            var updatedOrders = new List<int>();
+            // Start from last sync date or fallback to 3 days ago
+            var iso8601UtcDate = DateTime.UtcNow.AddDays(-7).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+            var mappedOrders = new List<WooOrder>();
+            int page = 1;
+            string recordsToSync;
+
+            do
+            {
+                // Fetch paginated data
+                recordsToSync = await SecuredApiGetRequestStringResponse(iso8601UtcDate, page);
+
+                if (!string.IsNullOrWhiteSpace(recordsToSync) && recordsToSync.Trim() != "[]")
+                {
+                    var values = JArray.Parse(recordsToSync);
+                    if (values.Count > 0)
+                    {
+                        foreach (var value in values)
+                        {
+                            var mappedFromJson = MapOrderFromWoo(value);
+                            mappedOrders.Add(mappedFromJson);
+                        }
+                    }
+                }
+
+                page++;
+
+            } while (!string.IsNullOrWhiteSpace(recordsToSync) && recordsToSync.Trim() != "[]");
+
+            if (mappedOrders.Any())
+            {
+                foreach (var mappedOrder in mappedOrders)
+                {
+                    await UpdateMatadata(mappedOrder.OrderID, mappedOrder.MetaData);
+                }
+            }
+
+            return updatedOrders;
+        }
+
+        private async Task UpdateMatadata(long orderID, UserMetaData? metaData)
+        {
+            if (metaData != null)
+            {
+                await _wooOrderProductRepository.InsertMetaDataAsync(metaData);
+            }
+        }
     }
 }

@@ -89,7 +89,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("missingmpesacode/{page:int?}")]
-        public async Task<IActionResult> MissingMpesa(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> MissingMpesa(string searchTerm, int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -100,7 +100,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allAwaitngApproval = await _applicationReportService.GetMissingMpesaOrders(page: page, pageSize: pageSize);
+                var allAwaitngApproval = await _applicationReportService.GetMissingMpesaOrders(searchTerm, page: page, pageSize: pageSize);
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
                 return View("~/Views/Reports/MissingMpesa.cshtml", allAwaitngApproval);
@@ -215,7 +215,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("restructured/{page:int?}")]
-        public async Task<IActionResult> RestructuredReport(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> RestructuredReport(string searchTerm, int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -227,7 +227,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(null, null, page, pageSize, "");
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(null, null, page, pageSize, searchTerm);
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
@@ -238,17 +238,18 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(null, dealerId, page, pageSize, "");
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(null, dealerId, page, pageSize, searchTerm);
 
             return View(allDelaerStatusReport);
         }
 
-        private async Task SetViewBags(User settings, string backLink)
+        private async Task SetViewBags(User settings, string backLink, string searchTerm = "")
         {
             ViewBag.BackLink = backLink;
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+            ViewBag.SearchTerm = searchTerm;
 
             ViewBag.UserName = settings.KnownAs;
             if (settings.RoleId == UserRole.Dealer)

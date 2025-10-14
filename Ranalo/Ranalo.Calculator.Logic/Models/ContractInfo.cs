@@ -15,9 +15,10 @@ namespace Ranalo.Calculator.Logic.Models
         public decimal Weekly { get; set; }
         public decimal Monthly { get; set; }
         public string RePaymentIntervals { get; set; }
-        public decimal TermInMonths { get; set; }
+        public decimal TermInMonths { get; set; } = 12.00000m;
         public decimal TotalLoan { get; set; }
         public decimal TotalCost { get; set; }
         public string FirstName { get; set; }
+        public decimal TotalAmount { get; set; }
     }
 }

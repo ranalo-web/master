@@ -95,7 +95,8 @@ namespace Ranalo.DataStore
                             		t.DebitAmount,
                             		t.CreditAmount,
                             	    d.CompanyName,
-                            		sv.value
+                            		sv.value,
+		                            t.TransactionDetails
                             FROM SplitValues sv
                             JOIN [BankTransaction] t ON t.TransactionId = sv.TransactionId
                             JOIN [DealerStatementAccount] o ON o.BankStatementRef = sv.value
@@ -110,12 +111,39 @@ namespace Ranalo.DataStore
                             		t.CreditAmount,
                             	    d.CompanyName,
                             		sv.value,
-                            		t.TransactionId"
+                            		t.TransactionId,
+		                            t.TransactionDetails"
             ;
 
             var records = await _db.QueryAsync<BankTransaction>(query, new { DealerRef = dealerReference});
 
             return records;
         }
+
+        public async Task<List<Models.Dealer>?> GetAllAvailableDealers()
+        {
+            var query = @"  ;WITH SplitValues AS (
+                            SELECT 
+                                t.TransactionId,
+                                s.value,
+                                ROW_NUMBER() OVER (PARTITION BY t.TransactionId ORDER BY (SELECT NULL)) AS rn
+                            FROM [BankTransaction] t
+                            CROSS APPLY STRING_SPLIT(t.TransactionDetails, ' ') s
+                            )
+                            SELECT d.DealerReference,
+                            	    d.CompanyName
+                            FROM SplitValues sv
+                            JOIN [BankTransaction] t ON t.TransactionId = sv.TransactionId
+                            JOIN [DealerStatementAccount] o ON o.BankStatementRef = sv.value
+                            JOIN [Dealers] d on d.DealerReference = o.DealerRefence
+                            WHERE sv.rn = 4 -- 4th token = the numeric JoinId
+                            GROUP BY d.DealerReference,
+                            	    d.CompanyName"
+            ;   
+                
+            var records = await _db.QueryAsync<Models.Dealer>(query);
+                
+            return records.ToList();
+        }   
     }
 }

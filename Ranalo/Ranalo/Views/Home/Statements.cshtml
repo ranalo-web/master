@@ -48,12 +48,23 @@
                         <div class="card-tools">
                             <div class="form-inline flex-nowrap gx-3">
                                 <div class="form-wrap w-150px">
-                                    <select class="form-select js-select2" data-search="off" data-placeholder="Bulk Action">
-                                        <option value="">Bulk Action</option>
-                                        <option value="email">Send Email</option>
-                                        <option value="suspend">Suspend</option>
-                                        <option value="delete">Delete</option>
-                                    </select>
+                                    <form action="/statements-dealer" method="get">
+                                        <select name="dealerReference" 
+                                        class="form-select js-select2" 
+                                        data-search="off" 
+                                        data-placeholder="Dealer Filter" 
+                                        onchange="this.form.submit()">
+                                            <option value="select">Select Dealer</option>
+                                            @if (Model.Dealers != null && Model.Dealers.Any())
+                                            {
+                                                <option value="all">All</option>
+                                                foreach (var dealer in Model?.Dealers)
+                                                {
+                                                    <option @(ViewBag.Selected == dealer.DealerReference ? "selected" : "") value="@dealer.DealerReference">@dealer.CompanyName</option>
+                                                }
+                                            }
+                                        </select>
+                                    </form>
                                 </div>
                                 <div class="btn-wrap">
                                     <span class="d-none d-md-block"><button class="btn btn-dim btn-outline-light disabled">Apply</button></span>
@@ -183,19 +194,28 @@
                                     <span class="tb-tnx-desc d-none d-sm-inline-block">
                                         <span>Transaction Type</span>
                                     </span>
-                                    </th>
-                                <th class="tb-tnx-info">
-                                        <span>Posting date</span>
-                                    </th>
-                                <th class="tb-tnx-info">
-                                    <span>Channel Reference</span>
-                                    </th>
-                                <th class="tb-tnx-info">
-                                    <span class="tb-tnx-total">Debit</span>
                                 </th>
                                 <th class="tb-tnx-info">
-                                    <span class="tb-tnx-total">Credit</span>
+                                    <span>Posting date</span>
+                                </th>
+                                <th class="tb-tnx-info">
+                                    <span>Channel Reference</span>
+                                </th>
+                                @if(ViewBag.IsAdmin)
+                                {
+                                    <th class="tb-tnx-info">
+                                        <span class="tb-tnx-total">Debit</span>
                                     </th>
+                                    <th class="tb-tnx-info">
+                                        <span class="tb-tnx-total">Credit</span>
+                                    </th>
+                                }else 
+                                {
+                                    <th class="tb-tnx-info">
+                                        <span class="tb-tnx-total">Credit</span>
+                                    </th>
+                                }
+
                                 <th class="tb-tnx-action">
                                     <span>&nbsp;</span>
                                 </th>
@@ -213,30 +233,45 @@
                                         <div class="tb-tnx-desc">
                                             <span class="title">@transaction.TransactionType</span>
                                         </div>
-                                        </td>
+                                    </td>
                                     <td class="tb-tnx-info">
                                         <div class="tb-tnx-date">
                                             <span>@transaction.PostingDate?.ToString("dd/MM/yy")</span>
                                         </div>
-                                        </td>
+                                    </td>
                                     <td class="tb-tnx-info">
                                         <span class="title">@transaction.ChannelReference</span>
-                                        </td>
-                                    <td class="tb-tnx-info">
+                                    </td>
+                                    @if (ViewBag.IsAdmin)
+                                    {
+                                        <td class="tb-tnx-info">
                                             <span class="amount">@transaction.DebitAmount</span>
                                         </td>
-                                    <td class="tb-tnx-info">
+                                        <td class="tb-tnx-info">
                                             <span class="amount">@transaction.CreditAmount</span>
-                                    </td>
+                                        </td>
+                                    }else{
+
+                                        <td class="tb-tnx-info">
+                                            <span class="amount">@transaction.DebitAmount</span>
+                                        </td>
+                                    }
                                     
                                     <td class="tb-tnx-action">
                                         <div class="dropdown">
                                             <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
                                             <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
                                                 <ul class="link-list-plain">
-                                                    <li><a href="#">View</a></li>
-                                                    <li><a href="#">Edit</a></li>
-                                                    <li><a href="#">Remove</a></li>
+                                                    <li>
+                                                        <a href="#view-statement" data-bs-toggle="modal"
+                                                           data-bankreference="@transaction.BankReference"
+                                                           data-transtype="@transaction.TransactionType"
+                                                           data-postingdate="@transaction.PostingDate"
+                                                           data-channelreference="@transaction.ChannelReference"
+                                                           data-debit="@transaction.DebitAmount"
+                                                           data-credit="@transaction.CreditAmount"
+                                                           data-details="@transaction.TransactionDetails">View</a>
+                                                    </li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -370,3 +405,102 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" tabindex="-1" id="view-statement">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Statement Details</h5>
+                    <div class="row g-gs">
+                        <div class="col-12">
+                            <div class="form-group">
+                            <label class="form-label" for="view-bankreference">Bank Reference</label>
+                                <div class="form-control-wrap">
+                                <input type="text" class="form-control" disabled id="view-bankreference">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                            <label class="form-label" for="view-transtype">Transaction Type</label>
+                                <div class="form-control-wrap">
+                                <input type="text" class="form-control" disabled id="view-transtype">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                            <label class="form-label" for="view-postingdate">Posting Date</label>
+                                <div class="form-control-wrap">
+                                <input type="text" disabled class="form-control" id="view-postingdate">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                            <label class="form-label" for="view-channelreference">Channel Reference</label>
+                                <div class="form-control-wrap">
+                                <input type="text" disabled class="form-control" id="view-channelreference">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                            <label class="form-label" for="view-debit">Debit</label>
+                                <div class="form-control-wrap">
+                                <input type="text" disabled class="form-control" id="view-debit">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                            <label class="form-label" for="view-credit">Credit</label>
+                                <div class="form-control-wrap">
+                                <input type="text" disabled class="form-control" id="view-credit">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                            <label class="form-label" for="view-details">Details</label>
+                                <div class="form-control-wrap">
+                                <textarea disabled class="form-control no-resize" id="view-details"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div><!-- .Edit Modal-Content -->
+@section Scripts
+                                    {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+                var modal = document.getElementById('view-statement');
+            modal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget; // Button that triggered the modal
+                var bankreference = button.getAttribute('data-bankreference');
+                    var transtype = button.getAttribute('data-transtype');
+                    var postingdate = button.getAttribute('data-postingdate');
+                    var channelreference = button.getAttribute('data-channelreference');
+                    var debit = button.getAttribute('data-debit');
+                    var credit = button.getAttribute('data-credit');
+                    var details = button.getAttribute('data-details');
+
+                    document.getElementById('view-bankreference').value = bankreference;
+                    document.getElementById('view-transtype').value = transtype;
+
+                    document.getElementById('view-postingdate').value = postingdate;
+                    document.getElementById('view-channelreference').value = channelreference;
+                    document.getElementById('view-debit').value = debit;
+                    document.getElementById('view-credit').value = credit;
+                    document.getElementById('view-details').value = details;
+
+            });
+        });
+    </script>
+}

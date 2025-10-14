@@ -35,9 +35,9 @@
 
     private string SetSearchTerm()
     {
-        if (!string.IsNullOrEmpty(Model.SearchTerm))
+        if (!string.IsNullOrEmpty(ViewBag.SearchTerm))
         {
-            return Model.SearchTerm;
+            return ViewBag.SearchTerm;
         }
 
         return "Search...";
@@ -63,7 +63,7 @@
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">All Orders</h3>
+                <h3 class="nk-block-title page-title">Missing Mpesa Code</h3>
                 <div class="nk-block-des text-soft">
                     <p>You have total @Model?.AwaitingApprovals?.Count() orders.</p>
                 </div>
@@ -217,9 +217,9 @@
                     <div class="card-search search-wrap" data-search="search">
                         <div class="card-body">
                             <div class="search-content">
-                                <form asp-action="SearchDashBoard" asp-controller="Home" method="post">
+                                <form action="/missingmpesacode" method="get">
                                     <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                    <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" placeholder="@SetSearchTerm()">
+                                    <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" placeholder="Search...">
                                     <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
                                 </form>
 
@@ -241,7 +241,7 @@
                             <div class="nk-tb-col tb-col-sm"><span class="sub-text">Email</span></div>
                             <div class="nk-tb-col tb-col-md"><span class="sub-text">Phone</span></div>
                             <div class="nk-tb-col tb-col-lg"><span class="sub-text">Dealer Name</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Mpesa Code</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Order No</span></div>
                             <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Joined</span></div>
                             <div class="nk-tb-col tb-col-lg"><span class="sub-text">Status</span></div>
                             <div class="nk-tb-col text-end"><span class="sub-text">Actions</span></div>
@@ -280,8 +280,7 @@
                                     </div>
                                     <div class="nk-tb-col tb-col-md">
                                         <div class="icon-text">
-                                            <em class="text-blue icon ni ni-visa"></em>
-                                            <span class="sub-text">@order.MpesaDepositRef</span>
+                                            <span class="sub-text">@order.OrderId</span>
                                         </div>
                                     </div>
                                     <div class="nk-tb-col tb-col-xxl">

@@ -29,6 +29,11 @@ namespace Ranalo.Controllers
 
             var customerDetails = await _applicationReportService.GetCustomerDetailsByOrderIdAsync(orderId);
 
+            if(customerDetails == null)
+            {
+                return View(customerDetails);
+            }
+
             //Get customer Notes
             var notes = await _applicationReportService.GetNotesByOrderIdAsync(orderId);
 
@@ -67,6 +72,10 @@ namespace Ranalo.Controllers
 
             var customerDetails = await _applicationReportService.GetCustomerDetailsByOrderIdAsync(orderId);
 
+            if(customerDetails == null)
+            {
+                return View(customerDetails);
+            }
             //Get customer Notes
             var notes = await _applicationReportService.GetNotesByOrderIdAsync(customerDetails.OrderID);
 

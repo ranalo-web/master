@@ -14,7 +14,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IDbConnection>(sp =>
-    new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+    new SqlConnection("Server=tcp:randit-az-db.database.windows.net,1433;Initial Catalog=RanDitDB;Persist Security Info=False;User ID=uidbuser;Password=!Iyana2320;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"));
 
 // Register your repository
 builder.Services.AddScoped<IWooOrderRepository, WooOrderRepository>();

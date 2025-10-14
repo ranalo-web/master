@@ -235,14 +235,14 @@ namespace Ranalo.DataStore
                         ),
                         ContractInf0 AS (
                         	select d.Id, 
-							wo.TotalAmount ,
-							wo.FirstName,
-							wo.CustEmail as Email
+							ci.Total_Cost as TotalAmount  ,
+							ci.First_Name as CustomerName,
                         	from Devices d
-                        	LEFT join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
-                        	left join Woo_Orders wo on wo.MpesaDepositRef = p.MpesaCode
+                        	INNER join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
+                        	INNER join Contract_Info ci on ci.ID = TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT)
                         	--where  wo.MpesaDepositRef is not null
                             where d.[Status] = 'enrolled'
+                            GROUP BY d.Id, ci.Total_Cost, ci.First_Name
                         )                
 					  
                         SELECT 
@@ -262,7 +262,6 @@ namespace Ranalo.DataStore
 							@SearchTerm IS NULL
 							OR t6.FirstName LIKE '%' + @SearchTerm + '%'
 							OR t1.AccountNo LIKE '%' + @SearchTerm + '%'
-							OR t6.Email LIKE '%' + @SearchTerm + '%'
 							OR t5.First_MPesaCode LIKE '%' + @SearchTerm + '%'
 							)
 							AND (@DealerId IS NULL
@@ -338,14 +337,14 @@ namespace Ranalo.DataStore
                         ),
                         ContractInf0 AS (
                         	select d.Id, 
-							wo.TotalAmount ,
-							wo.FirstName + ' ' + wo.LastName as CustomerName,
-							wo.CustEmail as Email
+							ci.Total_Cost as TotalAmount,
+							ci.First_Name as CustomerName
                         	from Devices d
-                        	LEFT join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
-                        	left join Woo_Orders wo on wo.MpesaDepositRef = p.MpesaCode
+                        	INNER join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
+                        	INNER join Contract_Info ci on ci.ID = TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT)
                         	--where  wo.MpesaDepositRef is not null
                             where d.[Status] = 'enrolled'
+                            GROUP BY d.Id, ci.Total_Cost, ci.First_Name
                         )                
 					  
                         SELECT 
@@ -383,7 +382,6 @@ namespace Ranalo.DataStore
 							@SearchTerm IS NULL
 							OR t6.FirstName LIKE '%' + @SearchTerm + '%'
 							OR t1.AccountNo LIKE '%' + @SearchTerm + '%'
-							OR t6.Email LIKE '%' + @SearchTerm + '%'
 							OR t5.First_MPesaCode LIKE '%' + @SearchTerm + '%'
 							)
 							AND (@DealerId IS NULL

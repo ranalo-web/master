@@ -23,7 +23,7 @@ namespace Ranalo.DataStore
                 FROM [dbo].[Woo_Orders] WO
                 LEFT JOIN KosePayments KP
                 ON WO.MpesaDepositRef = KP.MpesaCode
-                WHERE [Status] = 'approval-waiting'
+                WHERE [Status] IN ('approval-waiting', 'approved')
                 AND (
                         @SearchTerm IS NULL
                         OR WO.FirstName LIKE '%' + @SearchTerm + '%'
@@ -51,7 +51,7 @@ namespace Ranalo.DataStore
                 FROM [dbo].[Woo_Orders] WO
                 LEFT JOIN KosePayments KP
                 ON WO.MpesaDepositRef = KP.MpesaCode
-                WHERE [Status] = 'approval-waiting'
+                WHERE [Status] IN ('approval-waiting', 'approved')
                 AND (
                         @SearchTerm IS NULL
                         OR WO.FirstName LIKE '%' + @SearchTerm + '%'
@@ -235,14 +235,22 @@ namespace Ranalo.DataStore
                         ),
                         ContractInf0 AS (
                         	select d.Id, 
-							wo.TotalAmount ,
-							wo.FirstName + ' ' + wo.LastName as CustomerName,
-							wo.CustEmail as Email
+							ci.TotalAmount,
+							ci.First_Name as CustomerName,
+                            ci.Daily,
+                            ci.Deposit,
+                            ci.Weekly,
+                            ci.Monthly
                         	from Devices d
-                        	LEFT join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
-                        	left join Woo_Orders wo on wo.MpesaDepositRef = p.MpesaCode
+                        	INNER join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
+                        	INNER join Contract_Info ci on ci.ID = TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT)
                         	--where  wo.MpesaDepositRef is not null
                             where d.[Status] = 'enrolled'
+                            GROUP BY d.Id, ci.TotalAmount, ci.First_Name,
+                            ci.Daily,
+                            ci.Deposit,
+                            ci.Weekly,
+                            ci.Monthly
                         )                
 					  
                         SELECT 
@@ -262,7 +270,6 @@ namespace Ranalo.DataStore
 							@SearchTerm IS NULL
 							OR t6.CustomerName LIKE '%' + @SearchTerm + '%'
 							OR t1.AccountNo LIKE '%' + @SearchTerm + '%'
-							OR t6.Email LIKE '%' + @SearchTerm + '%'
 							OR t5.First_MPesaCode LIKE '%' + @SearchTerm + '%'
 							)
 							AND (@DealerId IS NULL
@@ -286,7 +293,11 @@ namespace Ranalo.DataStore
                             d.ImeiNo,
                             d.NextLockDate,
                             d.Status,
-                            d.LockType
+                            d.LockType,
+                            t6.Deposit,
+                            t6.Weekly,
+                            t6.Monthly,
+                            t6.Daily
 							ORDER BY t5.FirstPaidDate DESC
 							";
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
@@ -337,14 +348,21 @@ namespace Ranalo.DataStore
                         ),
                         ContractInf0 AS (
                         	select d.Id, 
-							wo.TotalAmount ,
-							wo.FirstName + ' ' + wo.LastName as CustomerName,
-							wo.CustEmail as Email
+							ci.TotalAmount ,
+							ci.First_Name as CustomerName,
+                            ci.Deposit,
+                            ci.Daily,
+                            ci.Weekly,
+                            ci.Monthly
                         	from Devices d
-                        	LEFT join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
-                        	left join Woo_Orders wo on wo.MpesaDepositRef = p.MpesaCode
+                        	INNER join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
+                        	INNER join Contract_Info ci on ci.ID = TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT)
                         	--where  wo.MpesaDepositRef is not null
                             where d.[Status] = 'enrolled'
+                            GROUP BY d.Id, ci.TotalAmount, ci.First_Name,
+                            ci.Daily,
+                            ci.Weekly,
+                            ci.Monthly
                         )                
 					  
                         SELECT 
@@ -367,7 +385,11 @@ namespace Ranalo.DataStore
                             d.ImeiNo,
                             d.NextLockDate,
                             d.Status,
-                            d.LockType
+                            d.LockType,
+                            t6.Daily,
+                            t6.Deposit,
+                            t6.Weekly,
+                            t6.Monthly
                         FROM PTable1 t1
                         left JOIN Devices d 
                           ON t1.AccountNo = d.Id
@@ -383,7 +405,6 @@ namespace Ranalo.DataStore
 							@SearchTerm IS NULL
 							OR t6.CustomerName LIKE '%' + @SearchTerm + '%'
 							OR t1.AccountNo LIKE '%' + @SearchTerm + '%'
-							OR t6.Email LIKE '%' + @SearchTerm + '%'
 							OR t5.First_MPesaCode LIKE '%' + @SearchTerm + '%'
 							)
 							AND (@DealerId IS NULL
@@ -408,7 +429,11 @@ namespace Ranalo.DataStore
                             d.ImeiNo,
                             d.NextLockDate,
                             d.Status,
-                            d.LockType
+                            d.LockType,
+                            t6.Daily,
+                            t6.Deposit,
+                            t6.Weekly,
+                            t6.Monthly
 							ORDER BY t5.FirstPaidDate DESC
 							OFFSET @Offset ROWS 
 							FETCH NEXT @pageSize ROWS ONLY";
@@ -542,13 +567,7 @@ namespace Ranalo.DataStore
 
             var countsql = @" SELECT COUNT(*) 
                         FROM KosePayments kp
-                        WHERE kp.AccountNo IN (
-                            SELECT kp2.AccountNo
-                            FROM KosePayments kp2
-                            INNER JOIN Woo_Orders wo
-                                ON wo.MpesaDepositRef = kp2.MpesaCode
-                        )
-                        AND (
+                        WHERE (
                         @SearchTerm IS NULL
                         OR AccountNo LIKE '%' + @SearchTerm + '%'
                         OR AmountValue LIKE '%' + @SearchTerm + '%'
@@ -561,13 +580,7 @@ namespace Ranalo.DataStore
 
             var sql = @" SELECT MpesaCode, AccountNo, AmountValue, PaymentDateValue 
                         FROM KosePayments kp
-                        WHERE kp.AccountNo IN (
-                            SELECT kp2.AccountNo
-                            FROM KosePayments kp2
-                            INNER JOIN Woo_Orders wo
-                                ON wo.MpesaDepositRef = kp2.MpesaCode
-                        )
-                        AND (
+                        WHERE (
                         @SearchTerm IS NULL
                         OR AccountNo LIKE '%' + @SearchTerm + '%'
                         OR AmountValue LIKE '%' + @SearchTerm + '%'
@@ -903,12 +916,31 @@ namespace Ranalo.DataStore
                         	--where [Status] in ('approved', 'approval-waiting')
                         ),
                         Computed AS (
-                            SELECT 
-                                *,
-                                b_price_numeric + 5000 AS dealer_payment,
-                                (b_price_numeric + 5000) * 0.235 AS deposit,
-                                0.0066733 * b_price_numeric + 8.1015 AS daily_rate
-                            FROM Base
+                            SELECT b.id,
+                                b.[Status],
+                                b.Model,
+                                b.Make,
+                                b.Locked,
+                                b.LockType,
+                                b.Last_Payment_Date,
+                                b.First_Paid_Amount,
+                                b.First_Lock_Date,
+                                b.Next_Lock_Date,
+                                b.LastConnectedAt,
+                                b.Total_Paid,
+                                b.First_Payment_Date,
+                                b.FirstPaidDate,
+                                b.First_MPesaCode,
+                                b.Last_Paid_Amount,
+                                b.LastPaidDate,
+                                b.Last_MPesaCode,
+                                b.ImeiNo,
+								Total_Cost AS dealer_payment,
+								ci.Deposit  AS deposit,
+								ci.Daily AS daily_rate,
+                                ci.First_Name AS FirstName
+								FROM Base b
+								INNER JOIN Contract_Info ci on b.Id = ci.ID
                         ),
                         Final AS (
                             SELECT 
@@ -926,7 +958,8 @@ namespace Ranalo.DataStore
                         		d.deposit,
                         		d.daily_rate as Daily,
                         		d.weekly_rate as Weekly,
-                        		d.monthly_rate as Monthly
+                        		d.monthly_rate as Monthly,
+								d.FirstName
                             FROM FilteredSTable s
                             LEFT JOIN Final d ON s.Id = d.Id
                         ),
@@ -1004,6 +1037,7 @@ namespace Ranalo.DataStore
                         		,deposit As Deposit
                         		,Total_Paid AS TotalPaid
                                 ,Contract_End_Date AS ContractEndDate
+                                ,FirstName
                         FROM WithTotalDue
                         --where WooOrderID = 1894076
                         GROUP BY WooOrderID
@@ -1015,7 +1049,8 @@ namespace Ranalo.DataStore
                         , Total_Paid
                         ,LastPaidDate
                         ,FirstPaidDate
-                        ,Contract_End_Date";
+                        ,Contract_End_Date
+                        ,FirstName";
 
             return await _db.QueryFirstOrDefaultAsync<AccountSummary>(sql, new { AccountId = customerId });
         }
@@ -1085,12 +1120,22 @@ namespace Ranalo.DataStore
                              AND p.PaymentDate = t2.First_Payment_Date
                         ),
                         ContractInf0 AS (
-                        	select d.Id, wo.TotalAmount 
+                        	select d.Id, 
+                            ci.TotalAmount,
+                            ci.First_Name as CustomerName,
+                            ci.Daily,
+                            ci.Deposit,
+                            ci.Weekly,
+                            ci.Monthly
                         	from Devices d
                         	inner join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
-                        	left join Woo_Orders wo on wo.MpesaDepositRef = p.MpesaCode
-                        	where  wo.MpesaDepositRef is not null
-                            and d.[Status] = 'enrolled'
+                        	inner join Contract_Info ci on ci.ID = TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT)
+                            WHERE d.[Status] = 'enrolled'
+                            GROUP BY d.Id, ci.TotalAmount, ci.First_Name,
+                            ci.Daily,
+                            ci.Deposit,
+                            ci.Weekly,
+                            ci.Monthly
                         )
                         
                         SELECT 
@@ -1113,7 +1158,12 @@ namespace Ranalo.DataStore
                             d.NextLockDateIsoFormat as NextLockDate,
                         	t6.TotalAmount,
                             d.Status,
-                            d.LockType
+                            d.LockType,
+                            t6.CustomerName,
+                            t6.Daily,
+                            t6.Deposit,
+                            t6.Weekly,
+                            t6.Monthly
                         FROM PTable1 t1
                         JOIN Devices d 
                           ON t1.AccountNo = d.Id
@@ -1197,12 +1247,20 @@ namespace Ranalo.DataStore
                              AND p.PaymentDate = t2.First_Payment_Date
                         ),
                         ContractInf0 AS (
-                        	select d.Id, wo.TotalAmount 
+                        	select d.Id, ci.TotalAmount,
+                            ci.Daily,
+                            ci.Weekly,
+                            ci.Monthly,
+                            ci.Deposit
                         	from Devices d
                         	inner join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
-                        	left join Woo_Orders wo on wo.MpesaDepositRef = p.MpesaCode
-                        	where  wo.MpesaDepositRef is not null
-                            and d.[Status] = 'enrolled'
+                        	inner join Contract_Info ci on ci.ID = TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT)
+                            WHERE d.[Status] = 'enrolled'
+                            GROUP BY d.Id, ci.TotalAmount,
+                            ci.Daily,
+                            ci.Deposit,
+                            ci.Weekly,
+                            ci.Monthly
                         )
                         
                         SELECT 

@@ -11,6 +11,7 @@
         public decimal Monthly { get; set; }
         public decimal Deposit { get; set; }
         public decimal TotalPaid { get; set; }
+        public string FirstName { get; set; }
         public DateTime ContractEndDate { get; set; }
     }
 }

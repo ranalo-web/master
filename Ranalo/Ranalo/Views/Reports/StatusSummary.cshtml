@@ -93,7 +93,7 @@
                         <div class="user-card user-card-s2">
 
                             <div class="user-avatar lg bg-primary">
-                                @if (Model.CustomerDetails.Url != null)
+                                @if (Model.CustomerDetails != null && Model.CustomerDetails.Url != null)
                                 {
                                         <img src="@Model.CustomerDetails.Url" alt="">
                                 }

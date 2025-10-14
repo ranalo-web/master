@@ -11,5 +11,6 @@ namespace Ranalo.DataStore
         Task<BankAccountStatement> GetStatementByFileNameAsync(string fileName);
 
         Task<IEnumerable<BankTransaction>> GetTransactionsByDealer(string dealerReference);
+        Task<List<Models.Dealer>?> GetAllAvailableDealers();
     }
 }

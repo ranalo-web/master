@@ -1,5 +1,6 @@
 ﻿using Ranalo.DataStore;
 using Ranalo.Models;
+using Dealer = Ranalo.DataStore.Dealer;
 
 namespace Ranalo.Services
 {

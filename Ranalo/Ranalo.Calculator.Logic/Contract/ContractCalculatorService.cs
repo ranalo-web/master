@@ -78,13 +78,8 @@ namespace Ranalo.Calculator.Logic.Contract
             return dailyRate * 7;
         }
 
-        public decimal CalculateOutstandingAmount(decimal totalAmount, decimal totalPaid)
+        public decimal CalculateOutstandingAmount(decimal deposit, decimal daily, decimal weekly, decimal monthly, decimal totalPaid)
         {
-            decimal deposit = CalculateDeposit(totalAmount);
-            decimal daily = CalculateDailyRate(totalAmount);
-            decimal weekly = CalculateWeekleyRate(0);
-            decimal monthly = CalculateMonthlyRate(0);
-
             // Daily * 30 days * term in months
             decimal dailyTotal = daily * 30 * termInMonths;
 
@@ -134,9 +129,8 @@ namespace Ranalo.Calculator.Logic.Contract
             return Math.Abs(difference.Days);
         }
 
-        public decimal CalculateArears(decimal totalAmount, decimal totalPaid, DateTime firstPaymentDate)
+        public decimal CalculateArears(decimal totalPaid, decimal totalDue)
         {
-            var totalDue = CalculateTotalDue(totalAmount, firstPaymentDate);
             return totalPaid - totalDue;
         }
 
@@ -158,27 +152,102 @@ namespace Ranalo.Calculator.Logic.Contract
             return (contractEndDate - DateTime.UtcNow).TotalDays; // could be negative if already expired
         }
 
-        public decimal CalculateTotalDue(decimal totalAmount, DateTime firstPaymentDate)
+        public decimal CalculateTotalDue(decimal dailyAmount, decimal deposit, DateTime firstPaymentDate)
         {
 
-            var deposit = CalculateDeposit(totalAmount);
-            var dailyAmount = CalculateDailyRate(totalAmount);
+            var now = DateTime.UtcNow;
+
+            // Step 1: Base conversions
+            DateTime? firstPayDate = firstPaymentDate;
+            DateTime? firstPaidDate = firstPaymentDate;
+
+            double? noDaysLifetime = firstPayDate.HasValue
+                ? (now - firstPayDate.Value).TotalMinutes / (60 * 24) // convert minutes to fractional days
+                : null;
+
+            double? noDaysUnits = noDaysLifetime;
+
+            // Step 2: Contract End Date
+            DateTime? contractEndDate = firstPaidDate.HasValue
+                ? firstPaidDate.Value.AddDays(termInMonths * 30)
+                : null;
+
+            // Step 3: Days until contract end
+            double? daysContractEnd = (firstPayDate.HasValue && contractEndDate.HasValue)
+                ? (contractEndDate.Value - firstPayDate.Value).TotalDays
+                : null;
+
+            // Step 4: Minimum days (handles nulls gracefully)
+            double? minimumDays = daysContractEnd switch
+            {
+                null => noDaysUnits,
+                _ when noDaysUnits is null => daysContractEnd,
+                _ => Math.Min(daysContractEnd.Value, noDaysUnits.Value)
+            };
+
+            // Step 5: Totals
             var weeklyAmount = CalculateWeekleyRate(0);
             var monthlyAmount = CalculateMonthlyRate(0);
-            var contractEndDays = CalculateDaysContractEnd(firstPaymentDate);
-            var numberOfDaysUnits = CalculateNoDaysUnit(firstPaymentDate);
-            var minimumDays = CalculateMinimumDays(contractEndDays, numberOfDaysUnits);
 
-            decimal totalDue =
-               deposit
-               + (dailyAmount * minimumDays)
-               + (weeklyAmount * (minimumDays / 7.0m))
-               + (monthlyAmount * (minimumDays / 30.0m));
+            decimal? totalDue =
+                deposit
+                + (dailyAmount * (decimal)(minimumDays ?? 0))
+                + (weeklyAmount * (decimal)((minimumDays ?? 0) / 7.0))
+                + (monthlyAmount * (decimal)((minimumDays ?? 0) / 30.0));
 
-            totalDue = Math.Round(totalDue, 2);
+            decimal? dailyPaymentAll =
+                dailyAmount + (weeklyAmount / 7.0m) + (monthlyAmount / 30.0m);
 
-            return totalDue;
+            // Step 6: Return rounded total
+            return Math.Round(totalDue ?? 0m, 2);
 
+            //var weeklyAmount = CalculateWeekleyRate(0);
+            //var monthlyAmount = CalculateMonthlyRate(0);
+            //var contractEndDays = CalculateDaysContractEnd(firstPaymentDate);
+            //var numberOfDaysUnits = CalculateNoDaysUnit(firstPaymentDate);
+            //var minimumDays = CalculateMinimumDays(contractEndDays, numberOfDaysUnits);
+
+            //var computedMinimumDays = (int)ComputeMinimumDays(firstPaymentDate, contractEndDays);
+            //decimal totalDue =
+            //   deposit
+            //   + (dailyAmount * computedMinimumDays)
+            //   + (weeklyAmount * (computedMinimumDays / 7.0m))
+            //   + (monthlyAmount * (computedMinimumDays / 30.0m));
+
+            //totalDue = Math.Round(totalDue, 2);
+
+            //return totalDue;
+
+        }
+
+        private double ComputeMinimumDays(DateTime? firstPaymentDate, double? daysContractEnd)
+        {
+            var today = DateTime.Now;
+
+            // Step 1: Calculate No_Days_Units (equivalent to DATEDIFF * 1.0)
+            double? noDaysUnits = null;
+            if (firstPaymentDate.HasValue)
+            {
+                noDaysUnits = (today - firstPaymentDate.Value).TotalDays;
+            }
+
+            // Step 2: Compute Minimum_Days using the same CASE logic
+            double? minimumDays;
+
+            if (daysContractEnd == null)
+            {
+                minimumDays = noDaysUnits;
+            }
+            else if (noDaysUnits == null)
+            {
+                minimumDays = daysContractEnd;
+            }
+            else
+            {
+                minimumDays = Math.Min(daysContractEnd.Value, noDaysUnits.Value);
+            }
+
+            return (double)minimumDays;
         }
 
         public decimal CalculateTotalCost(decimal dailyRate, decimal deposit)
@@ -203,7 +272,7 @@ namespace Ranalo.Calculator.Logic.Contract
         }
         public double CalculateNoDaysUnit(DateTime firstPaymentDate)
         {
-            DateTime now = DateTime.Now;
+            DateTime now = DateTime.UtcNow;
             double noDaysUnits = (now - firstPaymentDate).TotalDays;
 
             return noDaysUnits;
@@ -212,6 +281,14 @@ namespace Ranalo.Calculator.Logic.Contract
         public DateTime ContractEndDate(DateTime firstPaymentDate)
         {
             return firstPaymentDate.AddDays(termInMonths * 30);
+        }
+
+        public double CalculateNoDaysLeft(DateTime firstPaymentDate)
+        {
+            DateTime contractEndDate = firstPaymentDate.AddDays(termInMonths * 30);
+            double daysContractEnd = (contractEndDate - firstPaymentDate).Days;
+
+            return daysContractEnd;
         }
     }
 

@@ -22,6 +22,7 @@
         public string? FileName { get; set; }
 
         public List<BankTransaction> Transactions { get; set; } = new();
+        public List<Dealer>? Dealers { get; set; }
     }
 
     public class BankTransaction

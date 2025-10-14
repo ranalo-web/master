@@ -30,5 +30,9 @@ namespace Ranalo.Woocommece.Api.Services
         Task<WooOrder> OrderById(int orderId);
 
         Task<List<int>> SyncUpdateImagesWooOrders();
+        Task<List<string>> CreateContractsForEligibleOrders();
+
+        Task<List<int>> SyncUpdateNextOfKinWooOrders();
+        Task<List<int>> SyncUpdateMetaDataWooOrders();
     }
 }

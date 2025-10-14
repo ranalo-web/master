@@ -38,7 +38,17 @@ namespace Ranalo.Services
 
         public async Task<BankAccountStatement> GetStatementForDealerWithTransactionsAsync(int statementId, long dealerId)
         {
-            return await _statementRepo.GetStatementWithTransactionsAsync(statementId);
+            var bankStatement = await _statementRepo.GetStatementWithTransactionsAsync(statementId);
+
+            bankStatement.Dealers = await _statementRepo.GetAllAvailableDealers();
+
+            return bankStatement;
+        }
+
+        public async Task<List<Models.Dealer>?> GetStatementsDealersAsync()
+        {
+            return await _statementRepo.GetAllAvailableDealers();
+
         }
 
         public async Task<IEnumerable<BankTransaction>> GetTransactionsByDealerAsync(string dealerReference)

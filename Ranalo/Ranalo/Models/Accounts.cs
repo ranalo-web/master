@@ -31,5 +31,10 @@
         public decimal TotalAmount { get; set; }
 
         public decimal? Arrears { get; set; }
+
+        public decimal Daily { get; set; }
+        public decimal Weekly { get; set; }
+        public decimal Monthly { get; set; }
+        public decimal Deposit { get; set; }
     }
 }

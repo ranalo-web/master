@@ -3,6 +3,7 @@ using Ranalo.DataStore;
 using Ranalo.Models;
 using System.Drawing.Printing;
 using System.Linq;
+using Dealer = Ranalo.DataStore.Dealer;
 
 namespace Ranalo.Services
 {
@@ -131,6 +132,31 @@ namespace Ranalo.Services
                 customerDetails = await _applicationReportRepository.GetCustomerDetailsByAccountId((int)orderId);
             }
 
+            //These are accounts with no orders
+            if (customerDetails == null)
+            {
+                customerDetails = new CustomerDetails();
+                
+                customerDetails.Summary = await _applicationReportRepository.GetPaymentSummaryForAccountId(orderId.ToString());
+
+                customerDetails.FirstName = customerDetails?.Summary?.FirstName ?? "";
+
+                var accountPayments = await _applicationReportRepository.GetPaymentsForAccount(orderId.ToString());
+                if (accountPayments != null)
+                {
+                    customerDetails.Payments = accountPayments.Payments!;
+                }
+
+                var accountDevice = await _devicesRepository.GetDeviceByAccountId(Convert.ToInt64(customerDetails?.Payments?.FirstOrDefault()?.AccountNo));
+                if (accountDevice != null)
+                {
+                    customerDetails.DeviceDetails = accountDevice;
+                }
+
+                return customerDetails;
+            }
+                
+
             var identityImages = await _applicationReportRepository.GetIdentityImagesForOrder(customerDetails.OrderID);
 
             customerDetails?.IdentityImages?.AddRange(identityImages.ToList());
@@ -223,20 +249,21 @@ namespace Ranalo.Services
             {
                 foreach (var payment in paymentSummary)
                 {
-                    var dailyRate = _calculatorService.CalculateDailyRate(payment.TotalAmount);
+                    //var dailyRate = _calculatorService.CalculateDailyRate(payment.TotalAmount);
+                    var totalDue = _calculatorService.CalculateTotalDue(payment.Daily, payment.Deposit, payment.FirstPaidDate);
                     var statusRow = new MobileStatusReport()
                     {
                         TotalPaid = payment.TotalPaid,
-                        Deposit = _calculatorService.CalculateDeposit(payment.TotalAmount),
-                        TotalDue = _calculatorService.CalculateTotalDue(payment.TotalAmount, payment.FirstPaidDate),
+                        Deposit = payment.Deposit,
+                        TotalDue = _calculatorService.CalculateTotalDue(payment.Daily, payment.Deposit, payment.FirstPaidDate),
                         AccountNo = payment.AccountNo,
                         DeviceGroupId = payment.DeviceGroupId,
-                        FirstName = await GetFirstNameByMpesa(payment.FirstMPesaCode),
+                        FirstName = payment.CustomerName ?? "",
                         ImeiNo = payment.ImeiNo,
-                        Arrears = _calculatorService.CalculateArears(payment.TotalAmount, payment.TotalPaid, payment.FirstPaidDate),
+                        Arrears = _calculatorService.CalculateArears(payment.TotalPaid, totalDue),
                         ArrearsAmt = 0, //Ask Eddie 
                         Comms = 0, //Ask Eddie for Calculation
-                        Daily = dailyRate,
+                        Daily = payment.Daily,
                         DateEnrolled = payment.DateEnrolled,
                         DeviceGroup = "",  //Work this out
                         EnrolledOn = DateHelper.ParseCustomDate(payment.EnrolledOn),
@@ -250,13 +277,13 @@ namespace Ranalo.Services
                         Locked = payment.Locked,
                         Make = payment.Make,
                         Model = payment.Model,
-                        Monthly = _calculatorService.CalculateMonthlyRate(dailyRate),
+                        Monthly = _calculatorService.CalculateMonthlyRate(payment.Daily),
                         NotPaying7D = _calculatorService.HasNotPaidInLast7Days(payment.LastPaidDate) ? 1 : 0,
                         RePaymentIntervals = "Daily",
                         SaleWeek = DateTime.Now, //Ask Eddie Whats this????
-                        Weekly = _calculatorService.CalculateWeekleyRate(dailyRate),
-                        LoanBalance = _calculatorService.CalculateOutstandingAmount(payment.TotalAmount, payment.TotalPaid),
-                        TotalLoan = dailyRate * 30 * 12,
+                        Weekly = _calculatorService.CalculateWeekleyRate(payment.Daily),
+                        LoanBalance = _calculatorService.CalculateOutstandingAmount(payment.Deposit, payment.Daily, payment.Weekly, payment.Monthly, payment.TotalPaid),
+                        TotalLoan = payment.Daily * 30 * 12,
                         NumberDaysLifeTime = _calculatorService.CalculateDaysContractEnd(payment.FirstPaidDate),
                         NextLockDate = payment.NextLockDate,
                         Status = payment.Status,
@@ -265,8 +292,12 @@ namespace Ranalo.Services
                     };
                     if (statusRow.Arrears < 0)
                     {
-                        var daysLeft = _calculatorService.CalculateNoDaysUnit((DateTime)statusRow.FirstPaymentDate);
-                        statusRow.RestructuredAmnt = Math.Round(_calculatorService.CalculateRestructured(statusRow.TotalDue, (int)daysLeft), 2);
+                        
+                        var daysLeft = _calculatorService.CalculateNoDaysLeft((DateTime)statusRow.FirstPaymentDate);
+                        var restructuredAmount = ((statusRow.Arrears * -1m) / (int)daysLeft) * 1.1m;
+
+                        var newRateToPay = restructuredAmount + payment.Daily;
+                        statusRow.RestructuredAmnt = Math.Round(newRateToPay, 2);
                     }
 
                     mobileStatusReports.Add(statusRow);
@@ -358,7 +389,8 @@ namespace Ranalo.Services
             {
                 foreach (var account in allAccounts.Accounts)
                 {
-                    account.Arrears = _calculatorService.CalculateArears(account.TotalAmount, account.TotalPaid, (DateTime)DateHelper.ParseCustomDate(account.FirstPaidDate));
+                    var totalDue = _calculatorService.CalculateTotalDue(account.Daily, account.Deposit, (DateTime)DateHelper.ParseCustomDate(account.FirstPaidDate));
+                    account.Arrears = _calculatorService.CalculateArears(account.TotalPaid, totalDue);
                 }
             }
 

@@ -57,6 +57,24 @@ namespace Ranalo.Woocommece.Api.Controllers
             return Ok(updatedOrders);
         }
 
+        [HttpGet]
+        [Route("SyncUpdateNextOfKinWooOrders")]
+        [ProducesResponseType(typeof(List<int>), 200)]  // Success
+        public async Task<IActionResult> UpdateNextOfKin()
+        {
+            var updatedOrders = await _syncService.SyncUpdateNextOfKinWooOrders();
+            return Ok(updatedOrders);
+        }
+
+        [HttpGet]
+        [Route("SyncUpdateMetaDataWooOrders")]
+        [ProducesResponseType(typeof(List<int>), 200)]  // Success
+        public async Task<IActionResult> UpdateMetaData()
+        {
+            var updatedOrders = await _syncService.SyncUpdateMetaDataWooOrders();
+            return Ok(updatedOrders);
+        }
+
 
         [HttpGet]
         [Route("SyncPayments")]

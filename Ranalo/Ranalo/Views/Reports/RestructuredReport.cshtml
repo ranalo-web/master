@@ -213,10 +213,12 @@
                     <div class="card-search search-wrap" data-search="search">
                         <div class="card-body">
                             <div class="search-content">
+                                <form action="/restructured" method="get">
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <input type="text" class="form-control border-transparent form-focus-none" placeholder="Search by borrower or category">
+                                <input type="text" name="searchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by customer details">
                                 <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
-                            </div>
+                                </form>
+                            </div>  
                         </div>
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
@@ -349,7 +351,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="/restructured?page=@(Model.CurrentPage - 1)">Prev</a>
                                     </li>
                                 }
 
@@ -366,7 +368,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=1">1</a>
+                                        <a class="page-link" href="/restructured?page=1">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -376,7 +378,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/statusreport?page=@i">@i</a>
+                                        <a class="page-link" href="/restructured?page=@i">@i</a>
                                     </li>
                                 }
 
@@ -386,14 +388,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/restructured?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/restructured?page=@(Model.CurrentPage + 1)">Next</a>
                                     </li>
                                 }
                             </ul>

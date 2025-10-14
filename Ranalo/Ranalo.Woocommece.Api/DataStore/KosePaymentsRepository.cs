@@ -2,6 +2,7 @@
 using Ranalo.Calculator.Logic.Models;
 using Ranalo.Woocommece.Api.Models;
 using System.Data;
+using System.Diagnostics.Contracts;
 
 namespace Ranalo.Woocommece.Api.DataStore
 {
@@ -233,18 +234,31 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         public async Task<int> AddContractAsync(ContractInfo contract)
         {
+            var existingSql = "SELECT ID FROM Contract_Info WHERE ID = @Id";
+            int? existingContractId = await _db.QueryFirstOrDefaultAsync<int?>(existingSql, new { Id = contract.ID });
+
+            if (existingContractId.HasValue)
+            {
+                return existingContractId.Value;
+            }
+
             var sql = @"
             INSERT INTO Contract_Info
-            (ContractID, ID, Deposit, Daily, Weekly, Monthly, 
+            (ID, Deposit, Daily, Weekly, Monthly, 
              rePayment_Intervals, Term_in_Months, Total_Loan, Total_Cost, First_Name)
             VALUES
-            (@ContractID, @ID, @Deposit, @Daily, @Weekly, @Monthly, 
+            (@ID, @Deposit, @Daily, @Weekly, @Monthly, 
              @RePaymentIntervals, @TermInMonths, @TotalLoan, @TotalCost, @FirstName);
             SELECT CAST(SCOPE_IDENTITY() as int);";
 
             return await _db.ExecuteScalarAsync<int>(sql, contract);
         }
 
+        public async Task UpdateOrderContract(long orderId, int contractId)
+        {
+            var sql = @"UPDATE Woo_Orders SET [ContractId] = @ContractId WHERE [OrderID] = @OrderId";
 
+            await _db.ExecuteAsync(sql, new { ContractId = contractId, OrderId = orderId });
+        }
     }
 }

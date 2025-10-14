@@ -41,14 +41,19 @@ builder.Services.AddScoped<IStatementService, StatementService>();
 builder.Services.AddScoped<IStatementsRepository, StatementsRepository>();
 builder.Services.AddScoped<IContractService, ContractService>();
 builder.Services.AddScoped<IContractRepository, ContractRepository>();
+builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
+
+//IPaymentsRepository
 
 //Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int deviceGroupId)
 //IUserService
 //if (!builder.Environment.IsDevelopment())
 //{
-    builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
-    builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
-    builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
+builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
+builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+builder.Services.AddHostedService<ScheduledTaskCreateContractOrders>();
+builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
 //}
 
 builder.Services.AddDistributedMemoryCache(); // or use Redis, etc.
