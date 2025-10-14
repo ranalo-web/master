@@ -2,31 +2,7 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-*.bin
-*.vsidx
-# Ignore Visual Studio files
 .vs/
 **/bin/
 **/obj/
-/Ranalo/Ranalo/obj/Debug/net8.0/Ranalo.assets.cache
-/Ranalo/Ranalo/obj/Debug/net8.0/Ranalo.csproj.AssemblyReference.cache
-/Ranalo/Ranalo/obj/Debug/net8.0/Ranalo.GeneratedMSBuildEditorConfig.editorconfig
-/Ranalo/Ranalo/obj/project.assets.json
-/Ranalo/Ranalo/obj/project.nuget.cache
-/Ranalo/Ranalo/obj/Ranalo.csproj.nuget.dgspec.json
-/Ranalo/Ranalo/obj/Ranalo.csproj.nuget.g.props
-/Ranalo/Ranalo.Woocommece.Api/obj/Debug/net8.0/Ranalo.Woocommece.Api.assets.cache
-/Ranalo/Ranalo.Woocommece.Api/obj/Debug/net8.0/Ranalo.Woocommece.Api.csproj.AssemblyReference.cache
-/Ranalo/Ranalo.Woocommece.Api/obj/Debug/net8.0/Ranalo.Woocommece.Api.GeneratedMSBuildEditorConfig.editorconfig
-/Ranalo/Ranalo.Woocommece.Api/obj/Ranalo.Woocommece.Api.csproj.nuget.g.props
-/Ranalo/Ranalo/obj/Debug/net8.0/ref/Ranalo.dll
-/Ranalo/Ranalo/DataStore/ApplicationReportRepository.cs
-/Ranalo/Ranalo/obj/Debug/net8.0/refint/Ranalo.dll
-/Ranalo/Ranalo/Controllers/ReportsController.cs
-/Ranalo/Ranalo/obj/Debug/net8.0/staticwebassets/msbuild.Ranalo.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
-/Ranalo/Ranalo/obj/Release/net8.0/PubTmp/Out/Ranalo.dll
-/Ranalo/Ranalo/obj/Release/net8.0/PubTmp/Out/Ranalo.exe
-/Ranalo/Ranalo/obj/Release/net8.0/PubTmp/Out/Ranalo.pdb
-/Ranalo/Ranalo/obj/Release/net8.0/ref/Ranalo.dll
-/Ranalo/Ranalo/obj/Release/net8.0/refint/Ranalo.dll
-/Ranalo/Ranalo/Properties/PublishProfiles/test-ranalo-web - Web Deploy.pubxml.user
+*.user
