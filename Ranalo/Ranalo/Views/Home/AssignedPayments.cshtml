@@ -2,70 +2,18 @@
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
-@model AwaitingApprovalViewModel
+@model KosePaymentsViewModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
-}
-@functions
-{
-    private string SetStatusBadge(string status)
-    {
-        var statusClass = "";
-        switch (status)
-        {
-            case "approval-waiting":
-                statusClass = "tb-status text-warning";
-                break;
-            case "cancelled":
-                statusClass = "tb-status text-danger";
-                break;
-            case "rejected":
-                statusClass = "tb-status text-danger";
-                break;
-            case "approved":
-                statusClass = "tb-status text-success";
-                break;
-            default:
-                statusClass = "";
-                break;
-        }
-
-        return statusClass;
-    }
-
-    private string SetSearchTerm()
-    {
-        if (!string.IsNullOrEmpty(Model.SearchTerm))
-        {
-            return Model.SearchTerm;
-        }
-
-        return "Search...";
-    }
-
-    private string GetInitials(string fullName)
-    {
-        if (string.IsNullOrWhiteSpace(fullName))
-            return "string.Empty";
-
-        // Split by spaces and take first character of each word
-        var initials = fullName
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Select(word => char.ToUpper(word[0]))
-            .Take(2) // only take first 2 initials
-            .ToArray();
-
-        return new string(initials);
-    }
 }
 
 <div class="nk-content-body">
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">All Orders</h3>
+                <h3 class="nk-block-title page-title">Assigned Payments</h3>
                 <div class="nk-block-des text-soft">
-                    <p>You have total @Model?.AwaitingApprovals?.Count() orders.</p>
+                    <p>You have total @Model?.Payments?.Count() payments.</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -79,8 +27,7 @@
                                     <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
                                     <div class="dropdown-menu dropdown-menu-end">
                                         <ul class="link-list-opt no-bdr">
-                                            <li><a href="#"><span>Add Customer</span></a></li>
-                                            <li><a href="#"><span>Import Customer</span></a></li>
+                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#modalRestructure"><span>Assign Payment</span></a></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -91,6 +38,7 @@
             </div><!-- .nk-block-head-content -->
         </div><!-- .nk-block-between -->
     </div><!-- .nk-block-head -->
+
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -218,118 +166,75 @@
                         <div class="card-body">
                             <div class="search-content">
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <input type="text" class="form-control border-transparent form-focus-none" placeholder="Search by name">
-                                <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                <form action="/assignedpayments" method="get">
+                                    <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" placeholder="Search by name">
+                                    <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                </form>
                             </div>
                         </div>
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
 
                 <div class="card-inner p-0">
-                    <div class="table-responsive">
-                    <div class="nk-tb-list nk-tb-ulist">
-                        <div class="nk-tb-item nk-tb-head">
-                            <div class="nk-tb-col nk-tb-col-check">
-                                <div class="custom-control custom-control-sm custom-checkbox notext">
-                                    <input type="checkbox" class="custom-control-input" id="cid">
-                                    <label class="custom-control-label" for="cid"></label>
-                                </div>
-                            </div>
-
-                            <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Email</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Phone</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Dealer Name</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Mpesa Code</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Joined</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Status</span></div>
-                            <div class="nk-tb-col text-end"><span class="sub-text">Actions</span></div>
-                        </div><!-- .nk-tb-item -->
-                        @{
-                            foreach (var order in Model.AwaitingApprovals)
+                    <table class="table table-tranx">
+                        <thead>
+                            <tr class="tb-tnx-head">
+                                <th class="tb-tnx-id"><span class="">Account No</span></th>
+                                <th class="tb-tnx-id"><span class="">Orphaned Account No</span></th>
+                                <th class="tb-tnx-info">
+                                    <span class="tb-tnx-desc d-none d-sm-inline-block">
+                                        <span>Mpesa Code</span>
+                                    </span>
+                                    <span class="tb-tnx-date d-md-inline-block d-none">
+                                        <span class="d-md-none">Date</span>
+                                        <span class="d-none d-md-block">
+                                            <span>Created Date</span>
+                                        </span>
+                                    </span>
+                                </th>
+                                <th class="tb-tnx-action">
+                                    <span>&nbsp;</span>
+                                </th>
+                            </tr><!-- tb-tnx-item -->
+                        </thead>
+                        @if (Model?.Payments != null)
+                        {
+                            foreach (var payment in Model.Payments)
                             {
-
-                                <div class="nk-tb-item">
-                                    <div class="nk-tb-col nk-tb-col-check">
-                                        <div class="custom-control custom-control-sm custom-checkbox notext">
-                                            <input type="checkbox" class="custom-control-input" id="cid1">
-                                            <label class="custom-control-label" for="cid1"></label>
+                                <tr class="tb-tnx-item">
+                                    <td class="tb-tnx-id">
+                                        <a href="#"><span>@payment.AccountNo</span></a>
+                                    </td>
+                                    <td class="tb-tnx-id">
+                                        <a href="#"><span>@payment.OrphanedAccountNo</span></a>
+                                    </td>
+                                    <td class="tb-tnx-info">
+                                        <div class="tb-tnx-desc">
+                                            <span class="title">@payment.MpesaCode</span>
                                         </div>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <a href="/order-details/@order.OrderId">
-                                            <div class="user-card">
-                                                <div class="user-avatar xs bg-primary">
-                                                    <span>@GetInitials(order.FirstName + " " + order.LastName)</span>
-                                                </div>
-                                                <div class="user-name">
-                                                    <span class="tb-lead">@order.FirstName @order.LastName  <span class="dot dot-success d-lg-none ms-1"></span></span>
-                                                </div>
+                                        <div class="tb-tnx-date">
+                                            <span class="date">@payment.PaymentDateValue.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                                        </div>
+                                    </td>
+                                    <td class="tb-tnx-action">
+                                        <div class="dropdown">
+                                            <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
+                                                <ul class="link-list-plain">
+                                                    <li><a href="#">View</a></li>
+                                                    <li><a href="#">Edit</a></li>
+                                                    <li><a href="#">Remove</a></li>
+                                                </ul>
                                             </div>
-                                        </a>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="sub-text">@order.Email</span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="sub-text">@order.Phone</span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="sub-text">@order.DealerRef</span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <div class="icon-text">
-                                            <em class="text-blue icon ni ni-visa"></em>
-                                            <span class="sub-text">@order.MpesaDepositRef</span>
                                         </div>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="sub-text">@order.DateCreated</span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="@SetStatusBadge(order.Status)">@order.Status</span>
-                                    </div>
-                                    <div class="nk-tb-col nk-tb-col-tools">
-                                        <ul class="nk-tb-actions gx-1">
-                                            <li class="nk-tb-action-hidden">
-                                                <a href="/order-details/@order.OrderId" class="btn btn-trigger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Details">
-                                                    <em class="icon ni ni-eye-fill"></em>
-                                                </a>
-                                            </li>
-                                            <li class="nk-tb-action-hidden">
-                                                <a href="#" class="btn btn-trigger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Send Email">
-                                                    <em class="icon ni ni-mail-fill"></em>
-                                                </a>
-                                            </li>
-                                            <li class="nk-tb-action-hidden">
-                                                <a href="#" class="btn btn-trigger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Suspend">
-                                                    <em class="icon ni ni-cross-fill-c"></em>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <div class="drodown">
-                                                    <a href="#" class="dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
-                                                    <div class="dropdown-menu dropdown-menu-end">
-                                                        <ul class="link-list-opt no-bdr">
-                                                            <li><a href="/order-details/@order.OrderId"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
-                                                            <li><a href="#"><em class="icon ni ni-mail"></em><span>Send Mail</span></a></li>
-                                                            <li><a href="#"><em class="icon ni ni-cart"></em><span>Orders</span></a></li>
-                                                            <li><a href="#"><em class="icon ni ni-na"></em><span>Suspend</span></a></li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
+                                    </td>
+                                </tr>
+
+                                <!-- tb-tnx-item -->
                             }
                         }
-
-
-                        </div><!-- .nk-tb-list -->
-                    </div><!-- responsive -->
+                    </table>
                 </div><!-- .card-inner -->
-
                 <div class="card-inner">
                     <div class="nk-block-between-md g-3">
                         <div class="g">
@@ -337,7 +242,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/approver?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="/assignedpayments?page=@(Model.CurrentPage - 1)">Prev</a>
                                     </li>
                                 }
 
@@ -354,7 +259,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/approver?page=1">1</a>
+                                        <a class="page-link" href="/assignedpayments?page=1">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -364,7 +269,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/approver?page=@i">@i</a>
+                                        <a class="page-link" href="/assignedpayments?page=@i">@i</a>
                                     </li>
                                 }
 
@@ -374,14 +279,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/approver?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/assignedpayments?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/approver?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/assignedpayments?page=@(Model.CurrentPage + 1)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -393,7 +298,7 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/approver?page=' + this.value">
+                                            onchange="location.href='/assignedpayments?page=' + this.value">
                                         >
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
@@ -409,7 +314,59 @@
                     </div><!-- .nk-block-between -->
                 </div><!-- .card-inner -->
 
-            </div><!-- .card-inner-group -->
-        </div><!-- .card -->
-    </div><!-- .nk-block -->
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal fade" tabindex="-1" id="modalRestructure">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Assign Payment</h5>
+                <form action="/assign-payments" method="post" class="mt-2">
+                    <div class="row g-gs">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-income">Orphaned Account No</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="orphanedNo" class="form-control" id="edit-income" required />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-income">Mpesa Code</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="mpesaCode" class="form-control" id="edit-income" required />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-account">Account No</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="accountNo" class="form-control" id="edit-account" required />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                                <li>
+                                    <button type="submit" class="btn btn-lg btn-primary">Submit</button>
+                                </li>
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>

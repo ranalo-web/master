@@ -234,7 +234,7 @@ namespace Ranalo.Woocommece.Api.DataStore
                         INNER JOIN KosePayments kp
                             ON kp.MpesaCode = wo.MpesaDepositRef
                         LEFT JOIN Contract_Info ci
-                            ON ci.ID = kp.AccountNo
+                            ON ci.ID = kp.AccountNoBigint
                         WHERE wo.[Status] IN ('approved', 'approval-waiting')
                           AND wo.ContractId IS NULL;";
 

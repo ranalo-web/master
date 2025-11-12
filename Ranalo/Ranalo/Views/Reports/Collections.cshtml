@@ -72,9 +72,9 @@
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">Arrears Report Summary</h3>
+                <h3 class="nk-block-title page-title">Collection Report</h3>
                 <div class="nk-block-des text-soft">
-                    <p>Status reports for each account</p>
+                    <p>You have @Model.TotalRecords Collections in this report</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -231,16 +231,15 @@
                         <div class="card-body">
                             <div class="search-content">
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <form action="/arrearsreport" method="get">
-                                    <input type="text" name="searchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by borrower or category">
-                                    <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                <form action="/collections" method="get">
+                                <input type="text" name="searchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by borrower or category">
+                                <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
                                 </form>
                             </div>
                         </div>
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
                 <div class="card-inner p-0">
-                    <div class="table-responsive">
                     <div class="nk-tb-list nk-tb-ulist">
                         <div class="nk-tb-item nk-tb-head">
                             <div class="nk-tb-col nk-tb-col-check">
@@ -250,14 +249,15 @@
                                 </div>
                             </div>
                             <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Daily Rate</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Daily Rate</span></div>
                             <div class="nk-tb-col"><span class="sub-text">Deposit</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Total Paid</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Arrears</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Total Due</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Balance</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Status</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Enrolled On</span></div>
+                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Total Paid</span></div>
+                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Arrears</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Due</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Balance</span></div>
+
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Status</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Enrolled On</span></div>
                             <div class="nk-tb-col nk-tb-col-tools text-end">
                                 <div class="dropdown">
                                     <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-offset="0,5"><em class="icon ni ni-plus"></em></a>
@@ -297,39 +297,39 @@
                                 </div>
                                 <div class="nk-tb-col">
                                     <a href="/account-details/@report.AccountNo">
-                                    <div class="user-card">
-                                        <div class="user-avatar bg-primary">
-                                            <span>AB</span>
+                                        <div class="user-card">
+                                            <div class="user-avatar bg-primary">
+                                                <span>AB</span>
+                                            </div>
+                                            <div class="user-info">
+                                                <span class="tb-lead">@report.FirstName</span>
+                                                <span>AC: @report.AccountNo</span>
+                                            </div>
                                         </div>
-                                        <div class="user-info">
-                                            <span class="tb-lead">@report.FirstName</span>
-                                            <span>AC: @report.AccountNo</span>
-                                        </div>
-                                    </div>
                                     </a>
                                 </div>
-                                <div class="nk-tb-col">
+                                <div class="nk-tb-col tb-col-md">
                                     <span>@report.Daily</span>
                                 </div>
                                 <div class="nk-tb-col">
                                     <span>@report.Deposit </span>
                                 </div>
-                                <div class="nk-tb-col">
+                                <div class="nk-tb-col tb-col">
                                     <span>@report.TotalPaid</span>
                                 </div>
-                                <div class="nk-tb-col">
+                                <div class="nk-tb-col tb-col-lg">
                                     <span class="@SetArrearsStatusBadge(report.Arrears)">@report.Arrears</span>
                                 </div>
-                                <div class="nk-tb-col">
+                                <div class="nk-tb-col tb-col-xxl">
                                     <span>@report.TotalDue</span>
                                 </div>
-                                <div class="nk-tb-col">
+                                <div class="nk-tb-col tb-col-xxl">
                                     <span>@report.LoanBalance</span>
                                 </div>
-                                <div class="nk-tb-col">
+                                <div class="nk-tb-col tb-col-md">
                                     <span class="@SetStatusBadge(report.NotPaying7D)">Arrears</span>
                                 </div>
-                                <div class="nk-tb-col">
+                                <div class="nk-tb-col tb-col-xxl">
                                     <span>@report.EnrolledOn?.ToString("dd MMM yyyy")</span>
                                 </div>
                                 <div class="nk-tb-col nk-tb-col-tools">
@@ -354,9 +354,12 @@
                                     </ul>
                                 </div>
                             </div>
+
+                            <!-- .nk-tb-item -->
                         }
 
-                        </div><!-- .nk-tb-list -->
+
+
                     </div><!-- .nk-tb-list -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
@@ -366,7 +369,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/arrearsreport?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="/collections?page=@(Model.CurrentPage - 1)">Prev</a>
                                     </li>
                                 }
 
@@ -383,7 +386,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/arrearsreport?page=1">1</a>
+                                        <a class="page-link" href="/collections?page=1">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -393,7 +396,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/arrearsreport?page=@i">@i</a>
+                                        <a class="page-link" href="/collections?page=@i">@i</a>
                                     </li>
                                 }
 
@@ -403,14 +406,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/arrearsreport?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/collections?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/arrearsreport?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/collections?page=@(Model.CurrentPage + 1)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -422,7 +425,7 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/arrearsreport?page=' + this.value">
+                                            onchange="location.href='/collections?page=' + this.value">
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>

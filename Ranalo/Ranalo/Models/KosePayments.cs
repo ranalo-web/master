@@ -6,5 +6,6 @@
         public string? AccountNo { get; set; }
         public decimal AmountValue { get; set; }
         public DateTime PaymentDateValue { get; set; }
+        public string? OrphanedAccountNo { get; set; }
     }
 }

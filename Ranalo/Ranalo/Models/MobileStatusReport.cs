@@ -31,6 +31,7 @@
         public string LiveFlag { get; set; }
         public int DeviceGroupId { get; set; }
         public int NotPaying7D { get; set; }
+        public bool NotPaying90D { get; set; }
         public int LagDays { get; set; }
         public double NumberDaysLifeTime { get; set; }
         public decimal LoanBalance { get; set; }
@@ -39,6 +40,11 @@
         public string? Status { get; set; }
         public string? LockType { get; set; }
         public decimal RestructuredAmnt { get; set; }
+        public double DaysRestructured { get; set; }
+        public decimal NewDaily { get; set; }
+
+        public decimal TotalLast24 { get; set; }
+        public string? NextLockDateIsoFormat { get; set; }
         public List<RestructuredRecord> RestructuredRecords { get; set; } = new List<RestructuredRecord>();
         public CustomerDetails? CustomerDetails { get; set; }
     }
@@ -71,6 +77,8 @@
         public decimal Weekly { get; set; }
         public decimal Monthly { get; set; }
         public decimal Deposit { get; set; }
+        public decimal TermsInMonths { get; set; }
+        public string? NextLockDateIsoFormat { get; set; }
     }
 
 }

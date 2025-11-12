@@ -77,7 +77,8 @@ namespace Ranalo.Controllers
                 return View(customerDetails);
             }
             //Get customer Notes
-            var notes = await _applicationReportService.GetNotesByOrderIdAsync(customerDetails.OrderID);
+            var customerId = customerDetails.OrderID == 0 ? long.Parse(customerDetails.Payments.FirstOrDefault().AccountNo) : customerDetails.OrderID;
+            var notes = await _applicationReportService.GetNotesByOrderIdAsync(customerId);
 
             if (notes != null)
             {
@@ -101,6 +102,22 @@ namespace Ranalo.Controllers
             return View(customerDetails);
         }
 
+        [HttpPost]
+        [Route("addcustomernote")]
+        public async Task<IActionResult> AddNote(string orderId, string customerNote)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "approver"); await SetViewBags(settings, "approver");
+
+            await _applicationReportService.AddCustomerNoteAsync(settings.UserId, long.Parse(orderId), customerNote);
+
+            return Redirect($"/account-details/{orderId}");
+        }
 
         private async Task SetViewBags(User settings, string backLink)
         {

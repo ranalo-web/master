@@ -20,30 +20,31 @@ namespace Ranalo.DataStore
             var offset = (page - 1) * pageSize;
 
             var countSql = @"SELECT COUNT(DISTINCT D.Id)
-                               FROM Devices d
-                                 INNER JOIN KosePayments kp 
-                                     ON TRY_CAST(kp.AccountNo AS BIGINT) = d.Id
-                                 LEFT JOIN Dealers dealer
-                                     ON dealer.DealerReference = d.DeviceGroupId
-                                 WHERE NOT EXISTS (
-                                     SELECT 1
-                                     FROM Woo_Orders wo
-                                     INNER JOIN KosePayments kp2 
-                                         ON wo.MpesaDepositRef = kp2.MpesaCode
-                                     WHERE TRY_CAST(kp2.AccountNo AS BIGINT) = d.Id
-                                       AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending' )
-                                 )
-                                 AND (
-                                     @DealerId = 0 OR dealer.DealerReference = @DealerId
-                                 )
-                                AND d.[Status] = 'enrolled'
-                                 AND (
-                                @SearchTerm IS NULL
-                                OR d.Id LIKE '%' + @SearchTerm + '%'
-                                OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
-                                OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
-                                OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
-                            )";
+            FROM Devices d
+              INNER JOIN KosePayments kp 
+                  ON kp.AccountNoBigint = d.Id
+              LEFT JOIN Dealers dealer
+                  ON dealer.DealerReference = d.DeviceGroupId
+              WHERE NOT EXISTS (
+                  SELECT 1
+                  FROM Woo_Orders wo
+                  INNER JOIN KosePayments kp2 
+                      ON wo.MpesaDepositRef = kp2.MpesaCode
+                  WHERE kp2.AccountNoBigint = d.Id
+                    AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending' )
+            		AND d.[Status] = 'enrolled'
+            		)
+              AND (
+                  @DealerId = 0 OR dealer.DealerReference = @DealerId
+              )
+            
+              AND (
+                @SearchTerm IS NULL
+                OR d.Id LIKE '%' + @SearchTerm + '%'
+                OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+                OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
+                OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
+            )";
 
             var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerReference, searchTerm });
 
@@ -56,7 +57,7 @@ namespace Ranalo.DataStore
                                 d.ImeiNo
                             FROM Devices d
                             INNER JOIN KosePayments kp 
-                                ON TRY_CAST(kp.AccountNo AS BIGINT) = d.Id
+                                ON kp.AccountNoBigint = d.Id
                             LEFT JOIN Dealers dealer
                                 ON dealer.DealerReference = d.DeviceGroupId
                             WHERE NOT EXISTS (
@@ -64,8 +65,9 @@ namespace Ranalo.DataStore
                                 FROM Woo_Orders wo
                                 INNER JOIN KosePayments kp2 
                                     ON wo.MpesaDepositRef = kp2.MpesaCode
-                                WHERE TRY_CAST(kp2.AccountNo AS BIGINT) = d.Id
+                                WHERE kp2.AccountNoBigint = d.Id
                                   AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending')
+                                  AND d.[Status] = 'enrolled'
                             )
                             AND (
                                 @DealerId = 0 OR dealer.DealerReference = @DealerId
@@ -106,7 +108,7 @@ namespace Ranalo.DataStore
                 LEFT JOIN KosePayments kp 
                     ON wo.MpesaDepositRef = kp.MpesaCode
                 LEFT JOIN Devices d 
-                    ON TRY_CAST(kp.AccountNo AS BIGINT) = d.Id
+                    ON kp.AccountNoBigint = d.Id
                 WHERE wo.OrderID = @OrderId
                 AND d.[Status] = 'enrolled';";
 
@@ -194,43 +196,43 @@ namespace Ranalo.DataStore
                         ValidPayments AS (
                             SELECT *
                             FROM KosePayments
-                            WHERE TRY_CAST(AccountNo AS BIGINT) IS NOT NULL
+                            WHERE AccountNoBigint IS NOT NULL
                         ),
                         PTable1 AS (
                             SELECT 
-                                TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, 
+                                AccountNoBigint AS AccountNo, 
                                 SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
                             FROM ValidPayments
-                            GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                            GROUP BY AccountNoBigint
                         ),
                         PTable4 AS (
                             SELECT 
-                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                p.AccountNoBigint AS AccountNo,
                                 p.Amount AS Last_Paid_Amount,
                                 p.PaymentDate AS LastPaidDate,
                                 p.MpesaCode AS Last_MPesaCode
                             FROM ValidPayments p
                             INNER JOIN (
-                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MAX(PaymentDate) AS Last_Payment_Date
+                                SELECT AccountNoBigint AS AccountNo, MAX(PaymentDate) AS Last_Payment_Date
                                 FROM ValidPayments
-                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                                GROUP BY AccountNo
                             ) t3 
-                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t3.AccountNo 
+                              ON p.AccountNoBigint = t3.AccountNo 
                              AND p.PaymentDate = t3.Last_Payment_Date	
                         ),
                         PTable5 AS (
                             SELECT 
-                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                p.AccountNoBigint AS AccountNo,
                                 TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
                                 p.PaymentDate AS FirstPaidDate,
                                 p.MpesaCode AS First_MPesaCode
                             FROM ValidPayments p
                             INNER JOIN (
-                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
+                                SELECT AccountNoBigint AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
                                 FROM ValidPayments
-                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                                GROUP AccountNoBigint
                             ) t2 
-                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t2.AccountNo 
+                              ON p.AccountNoBigint = t2.AccountNo 
                              AND p.PaymentDate = t2.First_Payment_Date
                         ),
                         ContractInf0 AS (
@@ -238,8 +240,8 @@ namespace Ranalo.DataStore
 							ci.Total_Cost as TotalAmount  ,
 							ci.First_Name as CustomerName,
                         	from Devices d
-                        	INNER join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
-                        	INNER join Contract_Info ci on ci.ID = TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT)
+                        	INNER join KosePayments p on p.AccountNoBigint = d.Id
+                        	INNER join Contract_Info ci on ci.ID = p.AccountNoBigint
                         	--where  wo.MpesaDepositRef is not null
                             where d.[Status] = 'enrolled'
                             GROUP BY d.Id, ci.Total_Cost, ci.First_Name
@@ -296,43 +298,43 @@ namespace Ranalo.DataStore
                         ValidPayments AS (
                             SELECT *
                             FROM KosePayments
-                            WHERE TRY_CAST(AccountNo AS BIGINT) IS NOT NULL
+                            WHERE AccountNoBigint IS NOT NULL
                         ),
                         PTable1 AS (
                             SELECT 
-                                TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, 
+                                AccountNoBigint AS AccountNo, 
                                 SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
                             FROM ValidPayments
-                            GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                            GROUP BY AccountNoBigint
                         ),
                         PTable4 AS (
                             SELECT 
-                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                p.AccountNoBigint AS AccountNo,
                                 p.Amount AS Last_Paid_Amount,
                                 p.PaymentDate AS LastPaidDate,
                                 p.MpesaCode AS Last_MPesaCode
                             FROM ValidPayments p
                             INNER JOIN (
-                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MAX(PaymentDate) AS Last_Payment_Date
+                                SELECT AccountNoBigint AS AccountNo, MAX(PaymentDate) AS Last_Payment_Date
                                 FROM ValidPayments
-                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                                GROUP BY AccountNoBigint
                             ) t3 
-                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t3.AccountNo 
+                              ON p.AccountNoBigint = t3.AccountNo 
                              AND p.PaymentDate = t3.Last_Payment_Date	
                         ),
                         PTable5 AS (
                             SELECT 
-                                TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) AS AccountNo,
+                                p.AccountNoBigint AS AccountNo,
                                 TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
                                 p.PaymentDate AS FirstPaidDate,
                                 p.MpesaCode AS First_MPesaCode
                             FROM ValidPayments p
                             INNER JOIN (
-                                SELECT TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT) AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
+                                SELECT AccountNoBigint AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
                                 FROM ValidPayments
-                                GROUP BY TRY_CAST(LTRIM(RTRIM(AccountNo)) AS BIGINT)
+                                GROUP BY AccountNoBigint
                             ) t2 
-                              ON TRY_CAST(LTRIM(RTRIM(p.AccountNo)) AS BIGINT) = t2.AccountNo 
+                              ON p.AccountNoBigint = t2.AccountNo 
                              AND p.PaymentDate = t2.First_Payment_Date
                         ),
                         ContractInf0 AS (
@@ -340,8 +342,8 @@ namespace Ranalo.DataStore
 							ci.Total_Cost as TotalAmount,
 							ci.First_Name as CustomerName
                         	from Devices d
-                        	INNER join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
-                        	INNER join Contract_Info ci on ci.ID = TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT)
+                        	INNER join KosePayments p on p.AccountNoBigint = d.Id
+                        	INNER join Contract_Info ci on ci.ID = p.AccountNoBigint
                         	--where  wo.MpesaDepositRef is not null
                             where d.[Status] = 'enrolled'
                             GROUP BY d.Id, ci.Total_Cost, ci.First_Name

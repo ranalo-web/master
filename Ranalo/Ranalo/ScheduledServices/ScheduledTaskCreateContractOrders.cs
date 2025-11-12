@@ -7,7 +7,7 @@ namespace Ranalo.ScheduledServices
 
         private readonly ILogger<ScheduledTaskCreateContractOrders> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly TimeSpan _interval = TimeSpan.FromMinutes(30); // Run every 30 min
+        private readonly TimeSpan _interval = TimeSpan.FromMinutes(120); // Run every 30 min
 
         public ScheduledTaskCreateContractOrders(
             ILogger<ScheduledTaskCreateContractOrders> logger,

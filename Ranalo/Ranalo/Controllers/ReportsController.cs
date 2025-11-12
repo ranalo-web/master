@@ -16,7 +16,8 @@ namespace Ranalo.Controllers
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
 
-        public ReportsController(IApplicationReportService applicationReportService, IUserService userService)
+        public ReportsController(IApplicationReportService applicationReportService, 
+            IUserService userService)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
@@ -55,7 +56,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("arrearsreport/{page:int?}")]
-        public async Task<IActionResult> ArreasReport(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> ArreasReport(string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -69,7 +70,7 @@ namespace Ranalo.Controllers
             {
                 //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
 
-                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(null, null, page, pageSize, "");
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, null, null, page, pageSize, searchTerm);
 
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
@@ -81,7 +82,41 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(null, dealerId, page, pageSize, "");
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(true, false, null, dealerId, page, pageSize, "");
+
+            return View(allDelaerStatusReport);
+
+        }
+
+        [HttpGet]
+        [Route("collections/{page:int?}")]
+        public async Task<IActionResult> Collections(string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "approver");
+
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
+
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(false, true, null, null, page, pageSize, searchTerm);
+
+
+                ViewData["OrdersStatus"] = "Waiting Approval";
+
+                return View(allPaymentSummaries);
+            }
+
+            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+
+            var dealerId = Convert.ToInt32(dealer.DealerReference);
+
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, null, dealerId, page, pageSize, searchTerm);
 
             return View(allDelaerStatusReport);
 
@@ -164,13 +199,15 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
+            //We need to get the current contract info and do the checks
+
             DateTime date24HoursFromNow = DateTime.UtcNow.AddHours(24);
 
             var restructureToSave = new RestructuredRecord()
             {
                 AccountNo = accountNo,
                 AmountRes = newRate,
-                DateAgreed = dateFrom,
+                DateAgreed = dateFrom.ToUniversalTime().Date,
                 DaysRestructured = 0, // dateFrom to today 
                 ArrearsR = 0, //TotalDueR - TotalPaidR
                 TotalDueR = 0,  //AmountRes * SystemDate - DateAgreed
@@ -188,29 +225,7 @@ namespace Ranalo.Controllers
                 throw;
             }
 
-            var viewDetails = new MobileStatusReport();
-
-            await SetViewBags(settings, "approver");
-
-            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
-            {
-                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(accountNo, null);
-
-                viewDetails = paymentSummaries?.StatusReports?.FirstOrDefault(x => x.AccountNo == accountNo);
-                ViewData["OrdersStatus"] = "Waiting Approval";
-            }
-            else
-            {
-                var dealer = await _userService.GetDealerByUserId(settings.UserId);
-
-                var dealerId = Convert.ToInt32(dealer.DealerReference);
-                var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(accountNo, dealerId);
-
-                viewDetails = delaerStatusReport?.StatusReports?.FirstOrDefault(x => x.AccountNo == accountNo);
-
-            }
-
-            return View(viewDetails);
+            return RedirectToAction("RestructuredReport", "Reports");
         }
 
         [HttpGet]
@@ -227,7 +242,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(null, null, page, pageSize, searchTerm);
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, null, null, page, pageSize, searchTerm);
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
@@ -238,7 +253,37 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(null, dealerId, page, pageSize, searchTerm);
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, false, null, dealerId, page, pageSize, searchTerm);
+
+            return View(allDelaerStatusReport);
+        }
+
+        [HttpGet]
+        [Route("manual-restructured/{page:int?}")]
+        public async Task<IActionResult> ManualRestructuredReport(string searchTerm, int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "approver");
+
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                var allPaymentSummaries = await _applicationReportService.GetAllRestructured(searchTerm, page, pageSize);
+
+                ViewData["OrdersStatus"] = "Waiting Approval";
+
+                return View(allPaymentSummaries);
+            }
+
+            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+
+            var dealerId = Convert.ToInt32(dealer.DealerReference);
+
+            var allDelaerStatusReport = await _applicationReportService.GetAllRestructured(searchTerm, page, pageSize);
 
             return View(allDelaerStatusReport);
         }

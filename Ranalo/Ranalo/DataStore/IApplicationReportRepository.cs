@@ -54,9 +54,19 @@ namespace Ranalo.DataStore
         #region Restructured
         Task InsertRestructured(RestructuredRecord restructuringRecord);
 
-        Task<List<RestructuredRecord>> GetAllRestructured();
+        Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10);
 
         Task<List<RestructuredRecord>> GetAllRestructuredForAccount(long accountId);
+        Task<decimal> GetPaymentTotalAfterDate(DateTime agreedDate, long accountId);
+
+        Task<(decimal?, DateTime)> GetPaymentTotalAfterDateAndFirstPaymentDate(DateTime agreedDate, long accountId);
+        #endregion
+
+        #region ReminderMessages
+        Task<IEnumerable<AccountSummary>?> GetCustomersForReminderLockFullyPaid();
+        Task<KosePaymentsViewModel> GetAssignedPaymentsAsync(string searchTerm, int page, int pageSize);
+        Task CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo);
+        Task<List<RestructuredRecord>> GetAllRestructuredFlat();
         #endregion
     }
 }

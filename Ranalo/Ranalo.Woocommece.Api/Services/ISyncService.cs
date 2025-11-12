@@ -13,7 +13,7 @@ namespace Ranalo.Woocommece.Api.Services
         Task LogLastPaymentSyncDetails(SyncPaymentsLog log);
         Task<int> CreateKosePaymentAsync(MpesaRecord record);
 
-        Task CreateKoseBatchPaymentAsync(Dictionary<string, List<MpesaRecord>> records);
+        Task<List<string>> CreateKoseBatchPaymentAsync(Dictionary<string, List<MpesaRecord>> records);
 
         Task CreateDevicesToDatabaseAsync(List<Device> groupedRecords);
         Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords);
@@ -23,7 +23,7 @@ namespace Ranalo.Woocommece.Api.Services
 
         Task<List<WooOrder>> SyncWooOrders();
 
-        Task<Dictionary<string, List<MpesaRecord>>> SyncPayments();
+        Task<List<string>> SyncPayments();
 
         Task<List<Device>> DeviceUnlockPull();
 

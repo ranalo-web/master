@@ -6,7 +6,7 @@ namespace Ranalo.ScheduledServices
     {
         private readonly ILogger<ScheduledTaskPaymentsService> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly TimeSpan _interval = TimeSpan.FromMinutes(30); // Run every 30 min
+        private readonly TimeSpan _interval = TimeSpan.FromMinutes(10); // Run every 30 min
 
         public ScheduledTaskPaymentsService(
             ILogger<ScheduledTaskPaymentsService> logger,
@@ -26,16 +26,24 @@ namespace Ranalo.ScheduledServices
                 {
 
                     // Example: perform a database operation
-                    _logger.LogInformation("Running scheduled task at: {time}", DateTime.UtcNow);
+                    _logger.LogInformation("Running scheduled Kose payments task at: {time}", DateTime.UtcNow);
                     using (var scope = _scopeFactory.CreateScope())
                     {
                         var syncService = scope.ServiceProvider.GetRequiredService<ISyncService>();
                         var inactiveUsers = await syncService.SyncPayments();
-                        foreach (var order in inactiveUsers)
+                        if(inactiveUsers != null)
                         {
-                            _logger.LogInformation("Synced payment: {order}", order.Key);
-                            // Possibly send email reminders, clean up data, etc.
+                            foreach (var order in inactiveUsers)
+                            {
+                                _logger.LogInformation("Synced payment: {order}", order);
+                                // Possibly send email reminders, clean up data, etc.
+                            }
                         }
+                        else
+                        {
+                            _logger.LogInformation("Synced payment has no records to sync");
+                        }
+                        
                     }
 
                     // Wait until next run

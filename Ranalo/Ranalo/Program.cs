@@ -9,6 +9,7 @@ using Ranalo.ScheduledServices;
 using Ranalo.Woocommece.Api.DataStore;
 using Ranalo.Woocommece.Api.Services;
 using Ranalo.Calculator.Logic.Contract;
+using Ranalo.DataStore.MySql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +43,10 @@ builder.Services.AddScoped<IStatementsRepository, StatementsRepository>();
 builder.Services.AddScoped<IContractService, ContractService>();
 builder.Services.AddScoped<IContractRepository, ContractRepository>();
 builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
+builder.Services.AddScoped<IPaymentReminderService, PaymentReminderService>();
+builder.Services.AddScoped<IDeviceProcessor, DeviceProcessor>();
+//MySql Db connection
+builder.Services.AddScoped<IMySqlPaymentsRepository, MySqlPaymentsRepository>();
 
 //IPaymentsRepository
 
@@ -50,10 +55,15 @@ builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
 //if (!builder.Environment.IsDevelopment())
 //{
 builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
-builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
-builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
-builder.Services.AddHostedService<ScheduledTaskCreateContractOrders>();
-builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
+////builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
+//builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+//builder.Services.AddHostedService<ScheduledTaskCreateContractOrders>();
+//builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
+//builder.Services.AddHostedService<ScheduledActiveLockReminderMessages>();
+//builder.Services.AddHostedService<ScheduledRestructuredReminderMessages>();
+//builder.Services.AddHostedService<ScheduledLockRestructured>();
+builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
+//builder.Services.AddHostedService<ScheduledLockPaying>();
 //}
 
 builder.Services.AddDistributedMemoryCache(); // or use Redis, etc.

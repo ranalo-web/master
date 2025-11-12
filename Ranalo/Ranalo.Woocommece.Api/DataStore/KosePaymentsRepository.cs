@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Ranalo.Calculator.Logic.Models;
 using Ranalo.Woocommece.Api.Models;
+using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.Contracts;
 
@@ -49,8 +50,10 @@ namespace Ranalo.Woocommece.Api.DataStore
             return await _db.QueryAsync<MpesaRecord>(sql);
         }
 
-        public async Task SaveToDatabaseAsync(Dictionary<string, List<MpesaRecord>> groupedRecords)
+        public async Task<List<string>> SaveToDatabaseAsync(Dictionary<string, List<MpesaRecord>> groupedRecords)
         {
+            var response = new List<string>();
+
             const string insertQuery = @"
         INSERT INTO [dbo].[KosePayments] ([AccountNo], [MpesaCode], [Amount], [PaymentDate], [AmountValue], [PaymentDateValue], [Created])
         VALUES (@AccountNo, @MpesaCode, @Amount, @PaymentDate, @AmountValue, @PaymentDateValue, GETDATE())";
@@ -71,6 +74,7 @@ namespace Ranalo.Woocommece.Api.DataStore
 
                     if(existing == null)
                     {
+                        response.Add(groupKey);
                         await _db.ExecuteAsync(insertQuery, new
                         {
                             AccountNo = groupKey,
@@ -83,6 +87,8 @@ namespace Ranalo.Woocommece.Api.DataStore
                     }
                 }
             }
+
+            return response;
         }
 
         public async Task SaveDevicesToDatabaseAsync(List<Device> groupedRecords)

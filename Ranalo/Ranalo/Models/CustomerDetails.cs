@@ -27,6 +27,10 @@ namespace Ranalo.Models
         public string MpesaDepositRef { get; set; }
         public string Url { get; set; }
 
+        public decimal? Arrears { get; set; }
+        public decimal? TotalDue { get; set; }
+        public double DaysLeft { get; set; }
+
         public List<ImagesMetadata> IdentityImages { get; set; } = new List<ImagesMetadata>();
         public AccountSummary? Summary { get; set; }
 

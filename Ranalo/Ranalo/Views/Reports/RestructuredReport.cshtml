@@ -8,11 +8,11 @@
 }
 @functions
 {
-    private string SetStatusBadge(int notPaid)
+    private string SetStatusBadge(decimal notPaid)
     {
         var statusClass = "";
 
-        if (notPaid == 1)
+        if (notPaid < 0)
         {
             return "badge badge-dim bg-danger";
         }
@@ -47,6 +47,20 @@
             .ToArray();
 
         return new string(initials);
+    }
+
+    private string FormartUtcDate(string date)
+    {
+        // Parse using exact format and culture
+        DateTime parsedDate = DateTime.ParseExact(
+            date.Replace(" UTC", ""),   // remove UTC label before parsing
+        "dd-MM-yy HH:mm:ss",
+        System.Globalization.CultureInfo.InvariantCulture,
+        System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal
+    );
+
+        // Format to desired output
+        return parsedDate.ToString("dd/MM/yyyy HH:mm:ss");
     }
 }
 
@@ -223,6 +237,7 @@
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
                 <div class="card-inner p-0">
+                    <div class="table-responsive">
                     <div class="nk-tb-list nk-tb-ulist">
                         <div class="nk-tb-item nk-tb-head">
                             <div class="nk-tb-col nk-tb-col-check">
@@ -233,13 +248,16 @@
                             </div>
                             <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
                             <div class="nk-tb-col tb-col-md"><span class="sub-text">Daily Rate</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Total Paid</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Rstrd Amount</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Rstrd Days</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">New Daily</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Total 24hrs</span></div>
                             <div class="nk-tb-col tb-col-lg"><span class="sub-text">Arrears</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Due</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Balance</span></div>
                             <div class="nk-tb-col tb-col-md"><span class="sub-text">Status</span></div>
                             <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Last Paid</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Rstrd Amount</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Last Conn</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Auto Lock</span></div>
+                            
                             <div class="nk-tb-col nk-tb-col-tools text-end">
                                 <div class="dropdown">
                                     <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-offset="0,5"><em class="icon ni ni-plus"></em></a>
@@ -293,27 +311,34 @@
                                 <div class="nk-tb-col tb-col-md">
                                     <span>@report.Daily</span>
                                 </div>
-                                <div class="nk-tb-col tb-col">
-                                    <span>@report.TotalPaid</span>
-                                </div>
+                                    <div class="nk-tb-col">
+                                        <span>@report.RestructuredAmnt </span>
+                                    </div>
+                                        <div class="nk-tb-col">
+                                            <span>@report.DaysRestructured </span>
+                                        </div>
+                                            <div class="nk-tb-col">
+                                                <span>@report.NewDaily </span>
+                                            </div>
+                                        <div class="nk-tb-col">
+                                                <span>@report.LastPaidAmt </span>
+                                        </div>
                                 <div class="nk-tb-col tb-col-lg">
-                                    <span>@report.Arrears</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-xxl">
-                                    <span>@report.TotalDue</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-xxl">
-                                    <span>@report.LoanBalance</span>
+                                        <span class="@SetStatusBadge(report.Arrears)">@report.Arrears</span>
                                 </div>
                                 <div class="nk-tb-col tb-col-md">
-                                    <span class="@SetStatusBadge(report.NotPaying7D)">Arrears</span>
+                                    <span>@report.Status</span>
                                 </div>
                                 <div class="nk-tb-col tb-col-xxl">
                                     <span>@report.LastPaymentDate?.ToString("dd MMM yyyy")</span>
                                 </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.RestructuredAmnt </span>
-                                </div>
+                                    <div class="nk-tb-col tb-col-xxl">
+                                        <span>@FormartUtcDate(report.LastConnectedAt)</span>
+                                    </div>
+                                         <div class="nk-tb-col tb-col-xxl">
+                                                <span>@report.NextLockDateIsoFormat</span>
+                                        </div>
+                                
                                 <div class="nk-tb-col nk-tb-col-tools">
                                     <ul class="nk-tb-actions gx-2">
                                         <li class="nk-tb-action-hidden">
@@ -336,13 +361,10 @@
                                     </ul>
                                 </div>
                             </div>
-
-                            <!-- .nk-tb-item -->
                         }
 
-
-
                     </div><!-- .nk-tb-list -->
+                </div><!-- responsive -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
                     <div class="nk-block-between-md g-3">

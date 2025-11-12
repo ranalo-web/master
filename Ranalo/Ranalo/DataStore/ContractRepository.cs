@@ -75,7 +75,7 @@ namespace Ranalo.DataStore
                             OR First_Name LIKE '%' + @SearchTerm + '%'
                             OR ID LIKE '%' + @SearchTerm + '%'
                         )
-                        ORDER BY First_Name
+                        ORDER BY [ContractID] DESC
                         OFFSET @Offset ROWS 
                         FETCH NEXT @pageSize ROWS ONLY";
 

@@ -5,7 +5,9 @@ using Ranalo.Calculator.Logic.Contract;
 using Ranalo.Calculator.Logic.Models;
 using Ranalo.Woocommece.Api.DataStore;
 using Ranalo.Woocommece.Api.Models;
+using System;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Principal;
 using System.Text;
@@ -70,7 +72,7 @@ namespace Ranalo.Woocommece.Api.Services
                         var account = await _wooOrderRepository.GetAccountDetailsByMpesa(order.MpesaDepositRef);
                         if(account != null)
                         {
-                            await DoCreateContractInfo(order, account);
+                            await DoCreateContractInfo(order, account, 12);
                         }
                     }
                     
@@ -106,7 +108,7 @@ namespace Ranalo.Woocommece.Api.Services
             return 1;
         }
 
-        private async Task DoCreateContractInfo(WooOrder order, MpesaRecord account)
+        private async Task DoCreateContractInfo(WooOrder order, MpesaRecord account, decimal termsInMonths)
         {
             var dailyRate = _calculatorService.CalculateDailyRate(order.TotalAmount);
             var deposit = _calculatorService.CalculateDeposit(order.TotalAmount);
@@ -118,8 +120,8 @@ namespace Ranalo.Woocommece.Api.Services
                 Weekly = _calculatorService.CalculateWeekleyRate(dailyRate),
                 Monthly = _calculatorService.CalculateMonthlyRate(dailyRate),
                 RePaymentIntervals = "Daily",
-                TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit),
-                TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate)
+                TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, termsInMonths),
+                TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, termsInMonths)
             };
 
             await _kosePaymentsRepository.AddContractAsync(contract);
@@ -143,11 +145,11 @@ namespace Ranalo.Woocommece.Api.Services
                     ID = int.Parse(order.AccountNo),
                     Deposit = deposit,
                     Daily = dailyRate,
-                    Weekly = _calculatorService.CalculateWeekleyRate(dailyRate),
-                    Monthly = _calculatorService.CalculateMonthlyRate(dailyRate),
+                    Weekly = 0,
+                    Monthly = 0,
                     RePaymentIntervals = "Daily",
-                    TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit),
-                    TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate),
+                    TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, 12),
+                    TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, 12),
                     FirstName = order.FirstName,
                     TotalAmount = order.TotalAmount
                 };
@@ -205,9 +207,9 @@ namespace Ranalo.Woocommece.Api.Services
             return await _kosePaymentsRepository.InsertAsync(record);
         }
 
-        public async Task CreateKoseBatchPaymentAsync(Dictionary<string, List<MpesaRecord>> records)
+        public async Task<List<string>> CreateKoseBatchPaymentAsync(Dictionary<string, List<MpesaRecord>> records)
         {
-            await _kosePaymentsRepository.SaveToDatabaseAsync(records);
+            return await _kosePaymentsRepository.SaveToDatabaseAsync(records);
         }
 
         public async Task CreateDevicesToDatabaseAsync(List<Device> groupedRecords)
@@ -298,7 +300,7 @@ namespace Ranalo.Woocommece.Api.Services
             return mappedOrders;
         }
 
-        public async Task<Dictionary<string, List<MpesaRecord>>> SyncPayments()
+        public async Task<List<string>> SyncPayments()
         {
             var allPayments = await SecuredApiGetRequestStringResponse();
 
@@ -338,7 +340,7 @@ namespace Ranalo.Woocommece.Api.Services
             }
 
             //Write the lot to db
-            await CreateKoseBatchPaymentAsync(grouped);
+            var addedRecords = await CreateKoseBatchPaymentAsync(grouped);
 
             var lastRecord = records.LastOrDefault();
 
@@ -350,7 +352,7 @@ namespace Ranalo.Woocommece.Api.Services
             };
             await LogLastPaymentSyncDetails(logRecord);
 
-            return grouped;
+            return addedRecords;
         }
 
         public async Task<List<Device>> DeviceUnlockPull()
@@ -374,11 +376,13 @@ namespace Ranalo.Woocommece.Api.Services
                 }
             }
 
+
+            var devicesToCreate = new List<Device>();
             var latestDeviceId = await GetLatestDeviceId();
 
             if (latestDeviceId != null)
             {
-                var devicesToCreate = currentDevices.Where(x => x.Id > latestDeviceId.Id).ToList();
+                devicesToCreate = currentDevices.Where(x => x.Id > latestDeviceId.Id).ToList();
                 if (devicesToCreate.Any())
                 {
                     await CreateDevicesToDatabaseAsync(devicesToCreate);
@@ -388,7 +392,7 @@ namespace Ranalo.Woocommece.Api.Services
             //Lets update them all
             await UpdateDevicesToDatabaseAsync(currentDevices);
 
-            return currentDevices;
+            return devicesToCreate;
         }
 
         public async Task<WooOrder> OrderById(int orderId)
@@ -506,13 +510,18 @@ namespace Ranalo.Woocommece.Api.Services
             var consumerSecret = "cs_b2d5d61f3eae5093d85b7319905eb5942c614f99";
             var baseUrl = "https://ranalocredit.com/wp-json/wc/v3";
             var client = new HttpClient();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            var authToken = Encoding.ASCII.GetBytes($"{consumerKey}:{consumerSecret}");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authToken));
+            var retries = 0;
+            const int maxRetries = 5;
 
-            // var iso8601UtcDate = DateTime.UtcNow.AddDays(-3).ToString("yyyy-MM-ddTHH:mm:ssZ"); ;
+            while (retries < maxRetries)
+            {
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                var authToken = Encoding.ASCII.GetBytes($"{consumerKey}:{consumerSecret}");
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authToken));
 
-            var queryParams = new Dictionary<string, string>
+                // var iso8601UtcDate = DateTime.UtcNow.AddDays(-3).ToString("yyyy-MM-ddTHH:mm:ssZ"); ;
+
+                var queryParams = new Dictionary<string, string>
             {
                 { "per_page", "10" },
                 { "page", page.ToString() },
@@ -523,20 +532,36 @@ namespace Ranalo.Woocommece.Api.Services
                 { "order", "asc" }
             };
 
-            var queryString = await new FormUrlEncodedContent(queryParams).ReadAsStringAsync();
-            var urlWithParams = $"{baseUrl}/orders?{queryString}";
+                var queryString = await new FormUrlEncodedContent(queryParams).ReadAsStringAsync();
+                var urlWithParams = $"{baseUrl}/orders?{queryString}";
 
 
-            var response = await client.GetAsync(urlWithParams);
+                var response = await client.GetAsync(urlWithParams);
 
-            response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadAsStringAsync();
-            if (content.Trim() == "[]")
-            {
-                // Empty result set
-                return "";
+                if (response.IsSuccessStatusCode)
+                {
+                    
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (content.Trim() == "[]")
+                    {
+                        // Empty result set
+                        return "";
+                    }
+                    return content;
+                }
+
+                if (response.StatusCode == (HttpStatusCode)429)
+                {
+                    var retryAfter = response.Headers.RetryAfter?.Delta?.TotalSeconds ?? Math.Pow(2, retries);
+                    await Task.Delay(TimeSpan.FromSeconds(retryAfter));
+                    retries++;
+                    continue;
+                }
+                response.EnsureSuccessStatusCode();
             }
-            return content;
+
+            return "";
+
         }
 
         private async Task<string> SecuredApiGetSingleOrderRequestStringResponse(int orderId)
@@ -600,13 +625,29 @@ namespace Ranalo.Woocommece.Api.Services
         private async Task<string> SecuredApiGetRequestStringResponse()
         {
             var baseUrl = "https://kosewefarms.com/malipo/Payment_Verification_API.php";
+            var retries = 0;
+            const int maxRetries = 5;
             var client = new HttpClient();
-            var response = await client.GetAsync(baseUrl);
+            var error = "";
+            while (retries < maxRetries)
+            {
+                var response = await client.GetAsync(baseUrl);
 
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                    return await response.Content.ReadAsStringAsync();
+
+                if (response.StatusCode == (HttpStatusCode)429)
+                {
+                    var retryAfter = response.Headers.RetryAfter?.Delta?.TotalSeconds ?? Math.Pow(2, retries);
+                    await Task.Delay(TimeSpan.FromSeconds(retryAfter));
+                    retries++;
+                    continue;
+                }
+
+                response.EnsureSuccessStatusCode(); // throws for non-2xx
+            }
+            return "";
         }
-
 
         public static string GetMpesaGroup(List<MpesaRecord> records, string mpesaCode)
         {

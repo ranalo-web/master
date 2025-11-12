@@ -273,6 +273,7 @@
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
                 <div class="card-inner p-0">
+                    <div class="table-responsive">
                     <div class="nk-tb-list nk-tb-ulist">
                         <div class="nk-tb-item nk-tb-head">
                             <div class="nk-tb-col nk-tb-col-check">
@@ -283,13 +284,13 @@
                             </div>
                             <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
                             <div class="nk-tb-col"><span class="sub-text">Connected</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Next Lock</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Daily Rate</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Total Paid</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Due</span></div>
-                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Arrears</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Balance</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Status</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Next Lock</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Daily Rate</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Total Paid</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Total Due</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Arrears</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Balance</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Status</span></div>
                             
                             <div class="nk-tb-col nk-tb-col-tools text-end">
                                 <div class="dropdown">
@@ -341,29 +342,29 @@
                                     </div>
                                     </a>
                                 </div>
-                                <div class="nk-tb-col tb-col-md">
+                                <div class="nk-tb-col">
                                     <span>@ConvertUTCDate(report.LastConnectedAt)</span>
                                 </div>
-                                     <div class="nk-tb-col tb-col-xxl">
-                                        <span>@ConvertIsoDate(report.NextLockDate)</span>
+                                     <div class="nk-tb-col">
+                                    <span>@ConvertIsoDate(report.NextLockDate)</span>
                                     </div>
-                                    <div class="nk-tb-col tb-col-xxl">
+                                    <div class="nk-tb-col">
                                         <span>@report.Daily</span>
                                     </div>
                                          <div class="nk-tb-col tb-col">
                                         <span>@report.TotalPaid</span>
                                     </div>
-                                   <div class="nk-tb-col tb-col-xxl">
+                                   <div class="nk-tb-col">
                                         <span>@report.TotalDue</span>
                                     </div>
                                
-                                <div class="nk-tb-col tb-col-lg">
+                                <div class="nk-tb-col">
                                     <span>@report.Arrears</span>
                                 </div>
-                                <div class="nk-tb-col tb-col-xxl">
+                                <div class="nk-tb-col">
                                     <span>@report.LoanBalance</span>
                                 </div>
-                                <div class="nk-tb-col tb-col-md">
+                                <div class="nk-tb-col">
                                     <span class="@SetLockStatusBadge(report.Locked)">
                                         @SetLockStatusTextBadge(report.Locked)
                                     </span>
@@ -391,13 +392,12 @@
                                     </ul>
                                 </div>
                             </div>
-
-                            <!-- .nk-tb-item -->
                         }
                         
 
                         
                     </div><!-- .nk-tb-list -->
+                </div><!-- responsive table -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
                     <div class="nk-block-between-md g-3">

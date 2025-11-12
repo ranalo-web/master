@@ -12,6 +12,17 @@
         public decimal Deposit { get; set; }
         public decimal TotalPaid { get; set; }
         public string FirstName { get; set; }
+        public decimal FirstAmount { get; set; }
+        public decimal LastPaidAmount { get; set; }
+        //LastPaidAmount
+        public decimal Arrears { get; set; }
         public DateTime ContractEndDate { get; set; }
+        public decimal DailyPaymentALL { get; set; }
+        public decimal UnitsLeft { get; set; }
+        public decimal TermsInMonths { get; set; }
+        public DateTime AutoLockDatePmtR { get; set; }
+
+        public string? LastConnectedAt { get; set; }
+
     }
 }

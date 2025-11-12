@@ -2,38 +2,32 @@
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
-@model StatusReportViewModel
+@model RestructuredViewModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 @functions
 {
-    private string SetStatusBadge(int notPaid)
+    private string ConvertUTCDate(string dateString)
+    {
+        DateTime dt = DateTime.ParseExact(
+            dateString,
+            "dd-MM-yy HH:mm:ss 'UTC'",
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal
+        );
+
+        return dt.ToString("dd/MM/yy HH:mm");
+    }
+    private string SetStatusBadge(decimal notPaid)
     {
         var statusClass = "";
 
-        if (notPaid == 1)
+        if (notPaid < 0)
         {
             return "badge badge-dim bg-danger";
         }
         else
-        {
-            return "badge badge-dim bg-success";
-        }
-
-        return statusClass;
-    }
-
-    private string SetArrearsStatusBadge(decimal arrears)
-    {
-        var statusClass = "";
-
-        if (arrears < 0)
-        {
-            return "badge badge-dim bg-danger";
-        }
-
-        if (arrears > 0)
         {
             return "badge badge-dim bg-success";
         }
@@ -65,6 +59,8 @@
 
         return new string(initials);
     }
+
+
 }
 
 <div class="nk-content-body">
@@ -72,7 +68,7 @@
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">Arrears Report Summary</h3>
+                <h3 class="nk-block-title page-title">Manual Restructured Report</h3>
                 <div class="nk-block-des text-soft">
                     <p>Status reports for each account</p>
                 </div>
@@ -88,7 +84,7 @@
                                     <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
                                     <div class="dropdown-menu dropdown-menu-end">
                                         <ul class="link-list-opt no-bdr">
-                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#add-loan"><span>Add Loan</span></a></li>
+                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#modalRestructure"><span>Add Restructure</span></a></li>
                                             <li><a href="#"><span>Import Loan</span></a></li>
                                         </ul>
                                     </div>
@@ -230,10 +226,10 @@
                     <div class="card-search search-wrap" data-search="search">
                         <div class="card-body">
                             <div class="search-content">
-                                <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <form action="/arrearsreport" method="get">
-                                    <input type="text" name="searchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by borrower or category">
-                                    <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                <form action="/manual-restructured" method="get">
+                                    <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
+                                    <input type="text" name="searchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by customer details">
+                                    <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
                                 </form>
                             </div>
                         </div>
@@ -249,44 +245,20 @@
                                     <label class="custom-control-label" for="uid"></label>
                                 </div>
                             </div>
-                            <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Daily Rate</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Deposit</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Total Paid</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Arrears</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Total Due</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Balance</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Status</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Enrolled On</span></div>
-                            <div class="nk-tb-col nk-tb-col-tools text-end">
-                                <div class="dropdown">
-                                    <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-offset="0,5"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
-                                        <ul class="link-tidy sm no-bdr">
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" checked="" id="bl">
-                                                    <label class="custom-control-label" for="bl">Category</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" checked="" id="ph">
-                                                    <label class="custom-control-label" for="ph">Amount</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" id="vri">
-                                                    <label class="custom-control-label" for="vri">Interest</label>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="nk-tb-col"><span class="sub-text">Account No</span></div>
+                                <div class="nk-tb-col"><span class="sub-text">Daily</span></div>
+                                <div class="nk-tb-col"><span class="sub-text">Date Agreed</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Amount R</span></div>
+                                <div class="nk-tb-col"><span class="sub-text">Auto Lock</span></div>
+                                <div class="nk-tb-col"><span class="sub-text">Last Conn</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Days R</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Total Due R</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Total Paid R</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Arrears R</span></div>
+                                <div class="nk-tb-col"><span class="sub-text">Last Paid Date</span></div>
+                                <div class="nk-tb-col"><span class="sub-text">Last Paid Amnt</span></div>
                         </div><!-- .nk-tb-item -->
-                        @foreach (var report in Model.StatusReports)
+                        @foreach (var report in Model.Records)
                         {
                             <div class="nk-tb-item">
                                 <div class="nk-tb-col nk-tb-col-check">
@@ -297,67 +269,54 @@
                                 </div>
                                 <div class="nk-tb-col">
                                     <a href="/account-details/@report.AccountNo">
-                                    <div class="user-card">
-                                        <div class="user-avatar bg-primary">
-                                            <span>AB</span>
+                                        <div class="user-card">
+                                            <div class="user-avatar bg-primary">
+                                                <span>AB</span>
+                                            </div>
+                                            <div class="user-info">
+                                                <span class="tb-lead">@report.AccountNo</span>
+                                                <span>#: @report.AccountNo</span>
+                                            </div>
                                         </div>
-                                        <div class="user-info">
-                                            <span class="tb-lead">@report.FirstName</span>
-                                            <span>AC: @report.AccountNo</span>
-                                        </div>
-                                    </div>
                                     </a>
                                 </div>
+                                    <div class="nk-tb-col">
+                                        <span>@report.Daily</span>
+                                    </div>
                                 <div class="nk-tb-col">
-                                    <span>@report.Daily</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.Deposit </span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.TotalPaid</span>
+                                    <span>@report.DateAgreed.ToString("dd/MM/yy HH:mm")</span>
                                 </div>
                                 <div class="nk-tb-col">
-                                    <span class="@SetArrearsStatusBadge(report.Arrears)">@report.Arrears</span>
+                                    <span>@report.AmountRes</span>
+                                </div>
+                                    <div class="nk-tb-col">
+                                        <span>@report.AutoLockDatePmtR.ToString("dd/MM/yy HH:mm")</span>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        <span>@ConvertUTCDate(report.LastConnectedAt)</span>
+                                    </div>
+                                <div class="nk-tb-col">
+                                    <span>@report.DaysRestructured</span>
                                 </div>
                                 <div class="nk-tb-col">
-                                    <span>@report.TotalDue</span>
+                                    <span>@report.TotalDueR</span>
                                 </div>
                                 <div class="nk-tb-col">
-                                    <span>@report.LoanBalance</span>
+                                    <span>@report.TotalPaidR</span>
                                 </div>
                                 <div class="nk-tb-col">
-                                    <span class="@SetStatusBadge(report.NotPaying7D)">Arrears</span>
+                                        <span class="@SetStatusBadge(report.ArrearsR)">@report.ArrearsR</span>
                                 </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.EnrolledOn?.ToString("dd MMM yyyy")</span>
-                                </div>
-                                <div class="nk-tb-col nk-tb-col-tools">
-                                    <ul class="nk-tb-actions gx-2">
-                                        <li class="nk-tb-action-hidden">
-                                            <a href="/account-details/@report.AccountNo" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Disbursed Loan">
-                                                <em class="icon ni ni-user-check-fill"></em>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <div class="drodown">
-                                                <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
-                                                <div class="dropdown-menu dropdown-menu-end">
-                                                    <ul class="link-list-opt no-bdr">
-                                                        <li><a href="/account-details/@report.AccountNo"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
-                                                        <li><a href="#edit-loan" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>View Account</span></a></li>
-                                                        @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </div>
+                                    <div class="nk-tb-col">
+                                        <span>@report.LastResPaymentDate</span>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        <span>@report.LastPaidAmount</span>
+                                    </div>
                             </div>
                         }
-
-                        </div><!-- .nk-tb-list -->
-                    </div><!-- .nk-tb-list -->
+                        </div>
+                    </div>
                 </div><!-- .card-inner -->
                 <div class="card-inner">
                     <div class="nk-block-between-md g-3">
@@ -366,7 +325,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/arrearsreport?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="/manual-restructured?page=@(Model.CurrentPage - 1)">Prev</a>
                                     </li>
                                 }
 
@@ -383,7 +342,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/arrearsreport?page=1">1</a>
+                                        <a class="page-link" href="/manual-restructured?page=1">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -393,7 +352,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/arrearsreport?page=@i">@i</a>
+                                        <a class="page-link" href="/manual-restructured?page=@i">@i</a>
                                     </li>
                                 }
 
@@ -403,14 +362,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/arrearsreport?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/manual-restructured?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/arrearsreport?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/manual-restructured?page=@(Model.CurrentPage + 1)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -419,19 +378,29 @@
                             <div class="pagination-goto d-flex justify-content-center justify-content-md-start gx-3">
                                 <div>Page</div>
                                 <div>
-                                    <select class="form-select js-select2"
-                                            data-search="on"
-                                            data-dropdown="xs center"
-                                            onchange="location.href='/arrearsreport?page=' + this.value">
-                                        @for (int i = 1; i <= Model.TotalPages; i++)
-                                        {
-                                            <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>
-                                                @i
-                                            </option>
-                                        }
+                                    <select class="form-select js-select2" data-search="on" data-dropdown="xs center">
+                                        <option value="page-1">1</option>
+                                        <option value="page-2">2</option>
+                                        <option value="page-4">4</option>
+                                        <option value="page-5">5</option>
+                                        <option value="page-6">6</option>
+                                        <option value="page-7">7</option>
+                                        <option value="page-8">8</option>
+                                        <option value="page-9">9</option>
+                                        <option value="page-10">10</option>
+                                        <option value="page-11">11</option>
+                                        <option value="page-12">12</option>
+                                        <option value="page-13">13</option>
+                                        <option value="page-14">14</option>
+                                        <option value="page-15">15</option>
+                                        <option value="page-16">16</option>
+                                        <option value="page-17">17</option>
+                                        <option value="page-18">18</option>
+                                        <option value="page-19">19</option>
+                                        <option value="page-20">20</option>
                                     </select>
                                 </div>
-                                <div>OF @Model.TotalPages</div>
+                                <div>OF 102</div>
                             </div>
                         </div><!-- .pagination-goto -->
                     </div><!-- .nk-block-between --><!-- .pagination -->
@@ -441,99 +410,49 @@
     </div><!-- .nk-block -->
 </div>
 
-<div class="modal fade" tabindex="-1" id="edit-loan">
+<div class="modal fade" tabindex="-1" id="modalRestructure">
     <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
             <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <em class="icon ni ni-cross-sm"></em>
             </a>
             <div class="modal-body modal-body-md">
-                <h5 class="modal-title">Update Loan</h5>
-                <form action="#" class="mt-2">
+                <h5 class="modal-title">Restructure Payments</h5>
+                <form action="/restructure-payment" method="post" class="mt-2">
                     <div class="row g-gs">
-                        <div class="col-12">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-name">Borrower Name</label>
-                                <div class="form-control-wrap">
-                                    <input type="text" class="form-control" id="edit-name" value="Abu Bin Ishtiyak" required>
-                                </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label" for="edit-income">Account Number</label>
+                            <div class="form-control-wrap">
+                                    <input type="number" name="accountNo" class="form-control" id="edit-income" required />
+                            </div>
                             </div>
                         </div>
-                        <div class="col-12">
+                    </div>
+                    <div class="row g-gs">
+                        <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="edit-acc">Account No.</label>
+                                <label class="form-label" for="edit-income">New Rate</label>
                                 <div class="form-control-wrap">
-                                    <input type="text" class="form-control" id="edit-acc" value="100567" required>
+                                    <input type="number" name="newRate" class="form-control" id="edit-income" required />
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label">Category</label>
-                                <div class="form-control-wrap">
-                                    <select class="form-select js-select2">
-                                        <option value="education">Education</option>
-                                        <option value="emergency">Emergency</option>
-                                        <option value="daily">Daily</option>
-                                        <option value="kibaba">Kibaba</option>
-                                        <option value="bilashi">Bilashi</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-amount">Amount</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-amount" value="20000" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-interest">Interest(%)</label>
-                                <div class="form-control-wrap">
-                                    <select class="form-select js-select2">
-                                        <option value="5">5%</option>
-                                        <option value="7">7%</option>
-                                        <option value="10">10%</option>
-                                        <option value="15">15%</option>
-                                        <option value="20">20%</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-month">Month</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-month" value="6" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-income">Borrower Income</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-income" value="10000" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-date">Date</label>
+                                <label class="form-label" for="edit-date">Date From</label>
                                 <div class="form-control-wrap">
                                     <div class="form-icon form-icon-left">
                                         <em class="icon ni ni-calendar"></em>
                                     </div>
-                                    <input type="text" id="edit-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
+                                    <input type="text" name="dateFrom" id="edit-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-12">
                             <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
                                 <li>
-                                    <a href="#" data-bs-dismiss="modal" class="btn btn-lg btn-primary">Update Loan</a>
+                                    <button type="submit" class="btn btn-lg btn-primary">Submit</button>
                                 </li>
                                 <li>
                                     <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
@@ -545,4 +464,4 @@
             </div>
         </div>
     </div>
-</div><!-- .Edit Modal-Content -->
+</div>

@@ -36,5 +36,6 @@
         public decimal Weekly { get; set; }
         public decimal Monthly { get; set; }
         public decimal Deposit { get; set; }
+        public decimal TermsInMonths { get; set; }
     }
 }

@@ -125,7 +125,7 @@
                                     <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
                                     <div class="dropdown-menu dropdown-menu-end">
                                         <ul class="link-list-opt no-bdr">
-                                            <li><a href="#add-contract" data-bs-toggle="modal" data-bs-target="#add-loan"><span>Add Contract</span></a></li>
+                                            <li><button type="button" data-bs-toggle="modal" data-bs-target="#add-contract"><span>Add Contract</span></button></li>
                                            
                                         </ul>
                                     </div>
@@ -288,11 +288,11 @@
                             <div class="nk-tb-col"><span class="sub-text">Account</span></div>
                             <div class="nk-tb-col"><span class="sub-text">Deposit</span></div>
                             <div class="nk-tb-col"><span class="sub-text">Daily</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Weekly</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Monthly</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Interval</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Loan</span></div>
-                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Total Costs</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Weekly</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Monthly</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Interval</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Total Loan</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Total Costs</span></div>
 
                             <div class="nk-tb-col nk-tb-col-tools text-end">
                                 <div class="dropdown">
@@ -345,25 +345,25 @@
                                     </a>
                                 </div>
 
-                                <div class="nk-tb-col tb-col-md">
+                                <div class="nk-tb-col">
                                     <span>@report.Deposit</span>
                                 </div>
-                                <div class="nk-tb-col tb-col-xxl">
+                                <div class="nk-tb-col">
                                     <span>@report.Daily</span>
                                 </div>
-                                <div class="nk-tb-col tb-col">
+                                <div class="nk-tb-col">
                                     <span>@report.Weekly</span>
                                 </div>
-                                <div class="nk-tb-col tb-col-xxl">
+                                <div class="nk-tb-col">
                                     <span>@report.Monthly</span>
                                 </div>
-                                 <div class="nk-tb-col tb-col-lg">
+                                 <div class="nk-tb-col">
                                     <span>@report.RePaymentIntervals</span>
                                 </div>
-                                <div class="nk-tb-col tb-col-lg">
+                                <div class="nk-tb-col">
                                     <span>@report.TotalLoan</span>
                                 </div>
-                                <div class="nk-tb-col tb-col-xxl">
+                                <div class="nk-tb-col">
                                     <span>@report.TotalCost</span>
                                 </div>
 
@@ -391,7 +391,7 @@
                                                                data-loan="@report.TotalLoan"
                                                                data-cost="@report.TotalCost">
                                                             <em class="icon ni ni-eye"></em><span>Edit Contract</span></a></li>
-                                                        <li><a href="#add-contract" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Add Contract</span></a></li>
+                                                        <li><button type="button" data-bs-target="#add-contract" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Add Contract</span></button></li>
                                                         @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
                                                     </ul>
                                                 </div>

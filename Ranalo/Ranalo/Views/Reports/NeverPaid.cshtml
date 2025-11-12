@@ -238,12 +238,12 @@
                             </div>
 
                             <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Email</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Phone</span></div>
-                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Dealer Name</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Mpesa Code</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Joined</span></div>
-                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Status</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Email</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Phone</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Dealer Name</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Mpesa Code</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Joined</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Status</span></div>
                             <div class="nk-tb-col text-end"><span class="sub-text">Days</span></div>
                         </div><!-- .nk-tb-item -->
                         @{
@@ -269,28 +269,28 @@
                                                     </div>
                                                 </a>
                                             </div>
-                                            <div class="nk-tb-col tb-col-sm">
+                                            <div class="nk-tb-col">
                                                 <span class="sub-text">@order.Email</span>
                                             </div>
-                                            <div class="nk-tb-col tb-col-md">
+                                            <div class="nk-tb-col">
                                                 <span class="sub-text">@order.Phone</span>
                                             </div>
-                                            <div class="nk-tb-col tb-col-lg">
+                                            <div class="nk-tb-col">
                                                 <span class="sub-text">@order.DealerRef</span>
                                             </div>
-                                            <div class="nk-tb-col tb-col-md">
+                                            <div class="nk-tb-col">
                                                 <div class="icon-text">
                                                     <em class="text-blue icon ni ni-visa"></em>
                                                     <span class="sub-text">@order.MpesaDepositRef</span>
                                                 </div>
                                             </div>
-                                            <div class="nk-tb-col tb-col-xxl">
+                                            <div class="nk-tb-col">
                                                 <span class="sub-text">@order.DateCreated</span>
                                             </div>
-                                            <div class="nk-tb-col tb-col-lg">
+                                            <div class="nk-tb-col">
                                                 <span class="@SetStatusBadge(order.Status)">@order.Status</span>
                                             </div>
-                                    <div class="nk-tb-col tb-col-xxl">
+                                    <div class="nk-tb-col">
                                         <span class="sub-text">@order.DaysUnpaid</span>
                                     </div>
                                         </div>

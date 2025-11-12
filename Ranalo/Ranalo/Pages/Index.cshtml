@@ -29,7 +29,10 @@
             return 100;                    // from 0 to something = 100% increase
         }
 
-        return ((newValue - oldValue) / oldValue) * 100.0;
+        double percentageChange = ((newValue - oldValue) / oldValue) * 100.0;
+        percentageChange = Math.Round(percentageChange, 2);
+
+        return percentageChange;
     }
 }
 

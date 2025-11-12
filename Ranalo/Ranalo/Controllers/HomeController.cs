@@ -5,6 +5,7 @@ using Org.BouncyCastle.Asn1.X509.Qualified;
 using Ranalo.Configuration;
 using Ranalo.DataStore;
 using Ranalo.DataStore.DataModels;
+using Ranalo.DataStore.MySql;
 using Ranalo.Models;
 using Ranalo.Services;
 using System.Drawing.Printing;
@@ -19,8 +20,13 @@ namespace Ranalo.Controllers
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
         private readonly IStatementService _statementService;
-        public HomeController(IApplicationReportService applicationReportService, IUserService userService, IStatementService statementService)
+        private readonly IMySqlPaymentsRepository _mysqlRepository;
+        public HomeController(IApplicationReportService applicationReportService, 
+            IUserService userService, 
+            IStatementService statementService,
+            IMySqlPaymentsRepository mysqlRepository)
         {
+            _mysqlRepository = mysqlRepository;
             _applicationReportService = applicationReportService;
             _userService = userService;
             _statementService = statementService;
@@ -126,6 +132,38 @@ namespace Ranalo.Controllers
 
             return View(orphanedPayments);
         }
+
+        [Route("assignedpayments/{page:int?}")]
+        public async Task<IActionResult> AssignedPayments(string searchTerm, int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            await SetViewBags(settings, "index");
+
+            var assignedPayments = await _applicationReportService.GetAssignedPaymentsAsync(searchTerm, page, pageSize);
+
+            return View(assignedPayments);
+        }
+
+        [HttpPost]
+        [Route("assign-payments")]
+        public async Task<IActionResult> CreateAssignedPayments(string orphanedNo, string mpesaCode, string accountNo)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            await SetViewBags(settings, "index");
+
+            await _applicationReportService.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo);
+
+            return RedirectToAction("AssignedPayments", "Home");
+        }
+
 
         [Route("allpayments/{page:int?}")]
         public async Task<IActionResult> AllPayments(string searchTerm, int page = 1, int pageSize = 10)

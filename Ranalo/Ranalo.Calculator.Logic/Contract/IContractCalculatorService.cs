@@ -11,7 +11,7 @@ namespace Ranalo.Calculator.Logic.Contract
         ContractFinancialInfo Calculate(decimal basePrice, decimal dailyAmount, decimal weeklyAmount, decimal monthlyAmount, int minimumDays, DateTime firstPaymentDate, int termInMonths = 12, DateTime? currentDate = null);
 
         decimal CalculateDeposit(decimal totalAmount);
-        decimal CalculateTotalDue(decimal dailyRate, decimal deposit, DateTime firstPaymentDate);
+        decimal CalculateTotalDue(decimal dailyRate, decimal weekly, decimal monthly, decimal deposit, DateTime firstPaymentDate, decimal termInMonths);
         decimal CalculateDailyRate(decimal totalAmount);
         decimal CalculateMonthlyRate(decimal dailyRate);
         decimal CalculateWeekleyRate(decimal dailyRate);
@@ -21,15 +21,17 @@ namespace Ranalo.Calculator.Logic.Contract
 
         bool HasNotPaidInLast7Days(DateTime? lastPaymentDate);
 
-        decimal CalculateTotalCost(decimal dailyRate, decimal deposit);
+        bool HasNotPaidInLast90Days(DateTime? lastPaymentDate);
 
-        decimal CalculateOutstandingAmount(decimal deposit, decimal daily, decimal weekly, decimal monthly, decimal totalPaid);
-        double CalculateDaysContractEnd(DateTime firstPaymentDate);
+        decimal CalculateTotalCost(decimal dailyRate, decimal deposit, decimal termInMonths);
+
+        decimal CalculateOutstandingAmount(decimal deposit, decimal daily, decimal weekly, decimal monthly, decimal totalPaid, decimal termInMonths);
+        double CalculateDaysContractEnd(DateTime firstPaymentDate, double termInMonths);
 
         decimal CalculateRestructured(decimal arrears, int remainingDays);
 
         double CalculateNoDaysUnit(DateTime firstPaymentDate);
-        decimal CalculateTotalLoan(decimal dailyRate);
-        double CalculateNoDaysLeft(DateTime firstPaymentDate);
+        decimal CalculateTotalLoan(decimal dailyRate, decimal termInMonths);
+        double CalculateNoDaysLeft(DateTime firstPaymentDate, double termInMonths);
     }
 }

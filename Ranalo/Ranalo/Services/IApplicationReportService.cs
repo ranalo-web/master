@@ -43,13 +43,17 @@ namespace Ranalo.Services
         Task<List<TransactionHistory>> GetTransactionHistoryAsync(int dealerId = 0);
 
         Task CreateRestructuredAsync(RestructuredRecord record);
-        Task<List<RestructuredRecord>> GetAllRestructured();
+        Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10);
         Task<List<RestructuredRecord>> GetAllRestructuredForAccount(long accountId);
 
         Task<CustomerDetails?> GetCustomerDetailsByFirstMpesaCodeAsync(string? firstMPesaCode);
 
         Task<CustomerDetails?> GetCustomerDetailsByAccountIdAsync(int accountId);
 
-        Task<StatusReportViewModel> CallQualifyingFunc(int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm);
+        Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm);
+        Task<KosePaymentsViewModel> GetAssignedPaymentsAsync(string searchTerm, int page, int pageSize);
+        Task CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo);
+
+        Task<List<RestructuredRecord>> GetAllRestructuredNoCalculation();
     }
 }

@@ -153,9 +153,16 @@ namespace Ranalo.Services
                     customerDetails.DeviceDetails = accountDevice;
                 }
 
+                customerDetails.Summary = await _applicationReportRepository.GetPaymentSummaryForAccountId(orderId.ToString());
+
+                var totalDueAll = _calculatorService.CalculateTotalDue(customerDetails.Summary.Daily, customerDetails.Summary.Weekly, customerDetails.Summary.Monthly, customerDetails.Summary.Deposit, customerDetails.Summary.FirstPaymentDate, customerDetails.Summary.TermsInMonths);
+
+                customerDetails.Arrears = _calculatorService.CalculateArears(customerDetails.Summary.TotalPaid, totalDueAll);
+                customerDetails.DaysLeft = _calculatorService.CalculateDaysContractEnd(customerDetails.Summary.FirstPaymentDate, (double)customerDetails.Summary.TermsInMonths);
+                customerDetails.TotalDue = totalDueAll;
+
                 return customerDetails;
             }
-                
 
             var identityImages = await _applicationReportRepository.GetIdentityImagesForOrder(customerDetails.OrderID);
 
@@ -183,6 +190,15 @@ namespace Ranalo.Services
             if (device != null)
             {
                 customerDetails.DeviceDetails = device;
+            }
+
+            if(customerDetails.Summary != null)
+            {
+                var totalDue = _calculatorService.CalculateTotalDue(customerDetails.Summary.Daily, customerDetails.Summary.Weekly, customerDetails.Summary.Monthly, customerDetails.Summary.Deposit, customerDetails.Summary.FirstPaymentDate, customerDetails.Summary.TermsInMonths);
+
+                customerDetails.Arrears = _calculatorService.CalculateArears(customerDetails.Summary.TotalPaid, totalDue);
+                customerDetails.DaysLeft = _calculatorService.CalculateDaysContractEnd(customerDetails.Summary.FirstPaymentDate, (double)customerDetails.Summary.TermsInMonths);
+                customerDetails.TotalDue = totalDue;
             }
 
             return customerDetails;
@@ -224,7 +240,7 @@ namespace Ranalo.Services
             deviceGroupId ??= 0;
             var result = await _applicationReportRepository.GetPaymentSummaryAsync(accountId, deviceGroupId.Value, page, pageSize, searchTerm);
 
-            List<MobileStatusReport> mobileStatusReports = await SetMobileStatusRecords(accountId, deviceGroupId, page, pageSize, searchTerm, result);
+            List<MobileStatusReport> mobileStatusReports = await SetMobileStatusRecords(false, false, accountId, deviceGroupId, page, pageSize, searchTerm, result);
 
             return new StatusReportViewModel()
             {
@@ -237,7 +253,7 @@ namespace Ranalo.Services
 
         }
 
-        private async Task<List<MobileStatusReport>> SetMobileStatusRecords(int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, PaymentsViewModel result)
+        private async Task<List<MobileStatusReport>> SetMobileStatusRecords(bool isInArrears, bool notPaidIn90, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, PaymentsViewModel result)
         {
             var mobileStatusReports = new List<MobileStatusReport>();
             //Get payment Summary
@@ -250,12 +266,12 @@ namespace Ranalo.Services
                 foreach (var payment in paymentSummary)
                 {
                     //var dailyRate = _calculatorService.CalculateDailyRate(payment.TotalAmount);
-                    var totalDue = _calculatorService.CalculateTotalDue(payment.Daily, payment.Deposit, payment.FirstPaidDate);
+                    var totalDue = _calculatorService.CalculateTotalDue(payment.Daily, payment.Weekly, payment.Monthly, payment.Deposit, payment.FirstPaidDate, payment.TermsInMonths);
                     var statusRow = new MobileStatusReport()
                     {
                         TotalPaid = payment.TotalPaid,
                         Deposit = payment.Deposit,
-                        TotalDue = _calculatorService.CalculateTotalDue(payment.Daily, payment.Deposit, payment.FirstPaidDate),
+                        TotalDue = totalDue,
                         AccountNo = payment.AccountNo,
                         DeviceGroupId = payment.DeviceGroupId,
                         FirstName = payment.CustomerName ?? "",
@@ -277,43 +293,61 @@ namespace Ranalo.Services
                         Locked = payment.Locked,
                         Make = payment.Make,
                         Model = payment.Model,
-                        Monthly = _calculatorService.CalculateMonthlyRate(payment.Daily),
+                        Monthly = payment.Monthly,
                         NotPaying7D = _calculatorService.HasNotPaidInLast7Days(payment.LastPaidDate) ? 1 : 0,
                         RePaymentIntervals = "Daily",
                         SaleWeek = DateTime.Now, //Ask Eddie Whats this????
-                        Weekly = _calculatorService.CalculateWeekleyRate(payment.Daily),
-                        LoanBalance = _calculatorService.CalculateOutstandingAmount(payment.Deposit, payment.Daily, payment.Weekly, payment.Monthly, payment.TotalPaid),
+                        Weekly = payment.Weekly,
+                        LoanBalance = _calculatorService.CalculateOutstandingAmount(payment.Deposit, payment.Daily, payment.Weekly, payment.Monthly, payment.TotalPaid, payment.TermsInMonths),
                         TotalLoan = payment.Daily * 30 * 12,
-                        NumberDaysLifeTime = _calculatorService.CalculateDaysContractEnd(payment.FirstPaidDate),
+                        NumberDaysLifeTime = _calculatorService.CalculateNoDaysUnit(payment.FirstPaidDate),
                         NextLockDate = payment.NextLockDate,
                         Status = payment.Status,
-                        LockType = payment.LockType
+                        LockType = payment.LockType,
+                        NextLockDateIsoFormat = payment.NextLockDateIsoFormat,
+                        NotPaying90D = _calculatorService.HasNotPaidInLast90Days(DateHelper.ParseCustomDate(payment.NextLockDateIsoFormat)),
 
                     };
                     if (statusRow.Arrears < 0)
                     {
                         
-                        var daysLeft = _calculatorService.CalculateNoDaysLeft((DateTime)statusRow.FirstPaymentDate);
-                        var restructuredAmount = ((statusRow.Arrears * -1m) / (int)daysLeft) * 1.1m;
+                        var daysLeft = _calculatorService.CalculateNoDaysUnit((DateTime)statusRow.FirstPaymentDate);
+                        var effectiveDays = (decimal)daysLeft / 1m;
+                        var restructuredAmount = ((statusRow.Arrears * -1m) / effectiveDays) * 1.1m;
+                        var newRateToPay = restructuredAmount + payment.Daily + payment.Weekly + payment.Monthly;
 
-                        var newRateToPay = restructuredAmount + payment.Daily;
-                        statusRow.RestructuredAmnt = Math.Round(newRateToPay, 2);
+                        //Here we have silly units calculation
+                        var oldUints = (statusRow.Arrears / (payment.Daily + payment.Weekly + payment.Monthly));
+                        var unitsLeft = (statusRow.Arrears / newRateToPay);
+                        var now = DateTime.UtcNow; // Or DateTime.Now depending on your context
+                        var autoLockDatePmt = now.AddSeconds(Convert.ToDouble(oldUints * 60 * 60 * 30));
+
+                        statusRow.NextLockDateIsoFormat = autoLockDatePmt.ToString("dd/MM/yyyy HH:mm:ss");
+                        statusRow.DaysRestructured = (int)daysLeft;
+                        statusRow.NewDaily = Math.Round(newRateToPay, 2); ;
+                        statusRow.RestructuredAmnt = Math.Round(restructuredAmount, 2);
                     }
 
+                    statusRow.NextLockDate = payment.NextLockDateIsoFormat;
                     mobileStatusReports.Add(statusRow);
                 }
             }
 
+            //Remove fully paid
+            //mobileStatusReports.RemoveAll(x => x.Arrears > 0 && x.LoanBalance < 0);
+            //mobileStatusReports.RemoveAll(x => x.Arrears > 0);
             return mobileStatusReports;
         }
 
-        public async Task<StatusReportViewModel> CallQualifyingFunc(int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm)
+        public async Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm)
         {
             deviceGroupId ??= 0;
 
             var result = await GetQualifyingPageAsync(
                 pageNumber: page,
                 pageSize: pageSize,
+                isInArrears,
+                notPaid90,
                 fetchPageAsync: async (pageNumber, pageSize) =>
                 {
                     // Fetch *this page* directly from repo
@@ -326,14 +360,14 @@ namespace Ranalo.Services
                     );
 
                     // Apply your business transformation (IsInArrears calc)
-                    return await SetMobileStatusRecords(accountId, deviceGroupId, pageNumber, pageSize, searchTerm, result);
+                    return await SetMobileStatusRecords(isInArrears, notPaid90, accountId, deviceGroupId, pageNumber, pageSize, searchTerm, result);
                 }
             );
             return new StatusReportViewModel()
             {
                 CurrentPage = page,
                 SearchTerm = searchTerm,
-                StatusReports = result.page,
+                StatusReports = result.page.DistinctBy(x => x.AccountNo).ToList(),
                 TotalPages = (result.total / pageSize),
                 TotalRecords = result.total
             };
@@ -341,12 +375,12 @@ namespace Ranalo.Services
 
         public async Task<(int total, List<MobileStatusReport> page)> GetQualifyingPageAsync(
             int pageNumber, int pageSize,
-            Func<int, int, Task<List<MobileStatusReport>>> fetchPageAsync)
+            bool isInArrears, bool notPaid90,Func<int, int, Task<List<MobileStatusReport>>> fetchPageAsync)
         {
             var qualifying = new List<MobileStatusReport>();
             int total = 0;
 
-            await foreach (var record in GetAllQualifyingRecordsAsync(fetchPageAsync))
+            await foreach (var record in GetAllQualifyingRecordsAsync(fetchPageAsync, isInArrears, notPaid90))
             {
                 total++;
                 qualifying.Add(record);
@@ -363,7 +397,9 @@ namespace Ranalo.Services
 
         public async IAsyncEnumerable<MobileStatusReport> GetAllQualifyingRecordsAsync(
         Func<int, int, Task<List<MobileStatusReport>>> fetchPageAsync,
-        int dbPageSize = 100)
+        bool isInArrears,
+        bool notPaidIn90,
+        int dbPageSize = 1000)
         {
             int pageNumber = 1;
 
@@ -373,10 +409,26 @@ namespace Ranalo.Services
                 if (page == null || page.Count == 0)
                     yield break;
 
+                if (isInArrears)
+                {
+                    foreach (var record in page)
+                    {
+                        if (record.Arrears < 0) // arrears logic in C#
+                            yield return record;
+                    }
+                }
+                if (notPaidIn90)
+                {
+                    foreach (var record in page)
+                    {
+                        if (record.NotPaying90D && record.Arrears < 0) // arrears logic in C#
+                            yield return record;
+                    }
+                }
+
                 foreach (var record in page)
                 {
-                    if (record.Arrears < 0) // arrears logic in C#
-                        yield return record;
+                    yield return record;
                 }
 
                 pageNumber++;
@@ -389,7 +441,7 @@ namespace Ranalo.Services
             {
                 foreach (var account in allAccounts.Accounts)
                 {
-                    var totalDue = _calculatorService.CalculateTotalDue(account.Daily, account.Deposit, (DateTime)DateHelper.ParseCustomDate(account.FirstPaidDate));
+                    var totalDue = _calculatorService.CalculateTotalDue(account.Daily, account.Weekly, account.Monthly, account.Deposit, (DateTime)DateHelper.ParseCustomDate(account.FirstPaidDate), account.TermsInMonths);
                     account.Arrears = _calculatorService.CalculateArears(account.TotalPaid, totalDue);
                 }
             }
@@ -463,11 +515,53 @@ namespace Ranalo.Services
             await _applicationReportRepository.InsertRestructured(record);
         }
 
-        public async Task<List<RestructuredRecord>> GetAllRestructured()
+        public async Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10)
         {
-            return await _applicationReportRepository.GetAllRestructured();
+            pageSize = 1000; // We nned to use qualifying records logic here
+            var allRestructuredRecords = await _applicationReportRepository.GetAllRestructured(searchTerm, page, pageSize);
+
+            foreach (var record in allRestructuredRecords.Records)
+            {
+                var paymentSummary = await _applicationReportRepository.GetPaymentSummaryForAccountId(record.AccountNo.ToString());
+
+                var daysRestructured = (DateTime.UtcNow.Date - (DateTime)record.DateAgreed.Date).TotalDays;
+
+                var due = _calculatorService.CalculateTotalDue(record.AmountRes, 0, 0, 0, record.DateAgreed, paymentSummary.TermsInMonths);
+                var arrears = (record.TotalPaidR - due);
+                record.Arrears = paymentSummary.Arrears;
+                record.Daily = paymentSummary.Daily;
+                record.LastConnectedAt = paymentSummary.LastConnectedAt;
+                record.LastResPaymentDate = paymentSummary.LastPaymentDate;
+                record.LastPaidAmount = paymentSummary.LastPaidAmount;
+
+                if (due <= 0)
+                {
+                    record.AutoLockDatePmtR = DateTime.UtcNow;
+                    record.TotalDueR = (decimal)due;
+                    record.ArrearsR = (decimal)arrears;
+                    record.DaysRestructured = (int)daysRestructured;
+                }
+                else
+                {
+                    var unitsLeft = (arrears / record.AmountRes);
+                    var now = DateTime.UtcNow; // Or DateTime.Now depending on your context
+                    var autoLockDatePmt = now.AddSeconds(Convert.ToDouble(unitsLeft * 60 * 60 * 24)); // adds 4.5 days (4 days + 12 hours)
+
+                    record.AutoLockDatePmtR = autoLockDatePmt;
+                    record.TotalDueR = (decimal)due;
+                    record.ArrearsR = arrears;
+                    record.DaysRestructured = (int)daysRestructured;
+                }
+            }
+
+            return allRestructuredRecords;
         }
 
+
+        public async Task<List<RestructuredRecord>> GetAllRestructuredNoCalculation()
+        {
+            return await _applicationReportRepository.GetAllRestructuredFlat();
+        }
         public async Task<List<RestructuredRecord>> GetAllRestructuredForAccount(long accountId)
         {
             return await _applicationReportRepository.GetAllRestructuredForAccount(accountId);
@@ -478,6 +572,24 @@ namespace Ranalo.Services
             return GetCustomerDetailsByFirstMpesaCodeAsync(firstMPesaCode);
         }
 
+        #endregion
+
+        #region Payments Reminders
+        public async Task SendMessagesToUpToDate()
+        {
+            var allQualifying = await _applicationReportRepository.GetCustomersForReminderLockFullyPaid();
+        }
+
+        public async Task<KosePaymentsViewModel> GetAssignedPaymentsAsync(string searchTerm, int page, int pageSize)
+        {
+            var result = await _applicationReportRepository.GetAssignedPaymentsAsync(searchTerm, page, pageSize);
+            return result;
+        }
+
+        public async Task CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo)
+        {
+            await _applicationReportRepository.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo);
+        }
         #endregion
 
     }

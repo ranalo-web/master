@@ -23,7 +23,7 @@ namespace Ranalo.ScheduledServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Create contracts from orders started at: {time}", DateTime.UtcNow);
+            _logger.LogInformation("Send Payment messages started: {time}", DateTime.UtcNow);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -65,7 +65,7 @@ namespace Ranalo.ScheduledServices
         {
 
             var df = new List<MessageLog>();
-            var kosePayments = await paymentRepository.GetAllPaymentsAsync();
+            var kosePayments = await paymentRepository.GetAllPaymentsAsync(1, 100);
             var dtPayments = kosePayments?.Payments?.ToList();
 
             var accountIds = dtPayments

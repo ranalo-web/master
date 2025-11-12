@@ -6,7 +6,7 @@ namespace Ranalo.ScheduledServices
     {
         private readonly ILogger<ScheduledTaskDeviceUnlockService> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly TimeSpan _interval = TimeSpan.FromMinutes(30); // Run every 30 min
+        private readonly TimeSpan _interval = TimeSpan.FromMinutes(10); // Run every 30 min
 
         public ScheduledTaskDeviceUnlockService(
             ILogger<ScheduledTaskDeviceUnlockService> logger,
@@ -25,7 +25,7 @@ namespace Ranalo.ScheduledServices
                 try
                 {
                     // Example: perform a database operation
-                    _logger.LogInformation("Running scheduled task at: {time}", DateTime.UtcNow);
+                    _logger.LogInformation("Running scheduled Devices pull task at: {time}", DateTime.UtcNow);
 
                     using (var scope = _scopeFactory.CreateScope())
                     {
@@ -33,7 +33,7 @@ namespace Ranalo.ScheduledServices
                         var inactiveUsers = await syncService.DeviceUnlockPull();
                         foreach (var device in inactiveUsers)
                         {
-                            _logger.LogInformation("Synced payment: {order}", device.Id);
+                            _logger.LogInformation("New Device Added: {order}", device.Id);
                             // Possibly send email reminders, clean up data, etc.
                         }
                     }
@@ -47,11 +47,11 @@ namespace Ranalo.ScheduledServices
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error while running scheduled task.");
+                    _logger.LogError(ex, "Error while running scheduled ScheduledTaskDeviceUnlockService.");
                 }
             }
 
-            _logger.LogInformation("ScheduledTaskService stopped at: {time}", DateTime.UtcNow);
+            _logger.LogInformation("ScheduledTaskDeviceUnlockService stopped at: {time}", DateTime.UtcNow);
         }
     }
 }
