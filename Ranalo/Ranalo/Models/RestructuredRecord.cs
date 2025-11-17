@@ -27,7 +27,7 @@
         public decimal Monthly { get; set; }
         public string? LastConnectedAt { get; set; }
         public decimal LastPaidAmount { get; set; }
-
+        public string? NextLockDate { get; set; }
         public DateTime AutoLockDatePmtR { get; set; }
     }
 }

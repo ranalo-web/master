@@ -1,6 +1,7 @@
 ﻿using Ranalo.DataStore;
 using Ranalo.Models;
 using Ranalo.Services;
+using System.Globalization;
 
 namespace Ranalo.ScheduledServices
 {
@@ -77,13 +78,17 @@ namespace Ranalo.ScheduledServices
             // Remove positive arrears
             autoLockRecords?.RemoveAll(x => x.Arrears < 0);
 
+            var qualifying = autoLockRecords?
+            .Where(r => NeedsUpdate(r.NextLockDate))
+            .ToList();
+
             var devicesToLock = new List<LockTransaction>();
             //Not sure why this removes negative arrears
             //records.Records.RemoveAll(a => a.ArrearsR > 0);
 
-            if (autoLockRecords != null)
+            if (qualifying != null && qualifying.Any())
             {
-                foreach (var account in autoLockRecords)
+                foreach (var account in qualifying)
                 {
                     var dailyAll = ((account.Daily) + (account.Weekly / 7) + (account.Monthly / 30));
                     var unitsLeft = SafeDivide(account.Arrears, dailyAll);
@@ -112,6 +117,29 @@ namespace Ranalo.ScheduledServices
         private static decimal SafeDivide(decimal numerator, decimal denominator)
         {
             return denominator == 0 ? 0 : numerator / denominator;
+        }
+
+        bool NeedsUpdate(string? kenyanTimestamp)
+        {
+            if (string.IsNullOrEmpty(kenyanTimestamp)) return true;
+
+            var tz = TimeZoneInfo.FindSystemTimeZoneById("E. Africa Standard Time");
+
+            if (!DateTime.TryParseExact(
+                    kenyanTimestamp,
+                    "dd/MM/yyyy'T'HH:mm:ss",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out DateTime kenyaTime))
+            {
+                return false; // invalid date → skip
+            }
+
+            DateTime eventUtc = TimeZoneInfo.ConvertTimeToUtc(kenyaTime, tz);
+            DateTime nowUtc = DateTime.UtcNow;
+
+            // Condition: older OR within next 2 hours
+            return eventUtc < nowUtc || eventUtc <= nowUtc.AddHours(2);
         }
     }
 }

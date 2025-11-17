@@ -117,8 +117,8 @@ namespace Ranalo.Woocommece.Api.Services
                 ID = int.Parse(account.AccountNo),
                 Deposit = deposit,
                 Daily = dailyRate,
-                Weekly = _calculatorService.CalculateWeekleyRate(dailyRate),
-                Monthly = _calculatorService.CalculateMonthlyRate(dailyRate),
+                Weekly = 0,//_calculatorService.CalculateWeekleyRate(dailyRate),
+                Monthly = 0, //_calculatorService.CalculateMonthlyRate(dailyRate),
                 RePaymentIntervals = "Daily",
                 TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, termsInMonths),
                 TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, termsInMonths)
@@ -506,8 +506,8 @@ namespace Ranalo.Woocommece.Api.Services
 
         private async Task<string> SecuredApiGetRequestStringResponse(string iso8601UtcDate, int page = 1)
         {
-            var consumerKey = "ck_9bf5ade6a031f04b53bd31938d462895db40e00c";
-            var consumerSecret = "cs_b2d5d61f3eae5093d85b7319905eb5942c614f99";
+            var consumerKey = "ck_0090896477d37b5ce6e006eabd7f579aacb1a97f";
+            var consumerSecret = "cs_2969d990e2967d37aab8078572ee30020417467f";
             var baseUrl = "https://ranalocredit.com/wp-json/wc/v3";
             var client = new HttpClient();
             var retries = 0;

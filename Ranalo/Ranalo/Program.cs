@@ -56,13 +56,13 @@ builder.Services.AddScoped<IMySqlPaymentsRepository, MySqlPaymentsRepository>();
 //{
 builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
 ////builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
-//builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
 //builder.Services.AddHostedService<ScheduledTaskCreateContractOrders>();
 //builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
 //builder.Services.AddHostedService<ScheduledActiveLockReminderMessages>();
 //builder.Services.AddHostedService<ScheduledRestructuredReminderMessages>();
 //builder.Services.AddHostedService<ScheduledLockRestructured>();
-builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
+//builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
 //builder.Services.AddHostedService<ScheduledLockPaying>();
 //}
 

@@ -1,6 +1,7 @@
 ﻿using Ranalo.DataStore;
 using Ranalo.Models;
 using Ranalo.Services;
+using System.Globalization;
 
 namespace Ranalo.ScheduledServices
 {
@@ -68,6 +69,11 @@ namespace Ranalo.ScheduledServices
             if (records == null && records?.Records?.Any() == false)
             { return null; }
 
+
+            var qualifying = records?.Records
+            //.Where(r => NeedsUpdate(r.NextLockDate))
+            .ToList();
+
             var devicesToLock = new List<LockTransaction>();
             //Not sure why this removes negative arrears
             //records.Records.RemoveAll(a => a.ArrearsR > 0);
@@ -87,6 +93,29 @@ namespace Ranalo.ScheduledServices
             var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock);
 
             return lockedDevices;
+        }
+
+        bool NeedsUpdate(string? kenyanTimestamp)
+        {
+            if (string.IsNullOrEmpty(kenyanTimestamp)) return true;
+
+            var tz = TimeZoneInfo.FindSystemTimeZoneById("E. Africa Standard Time");
+
+            if (!DateTime.TryParseExact(
+                    kenyanTimestamp,
+                    "dd/MM/yyyy'T'HH:mm:ss",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out DateTime kenyaTime))
+            {
+                return false; // invalid date → skip
+            }
+
+            DateTime eventUtc = TimeZoneInfo.ConvertTimeToUtc(kenyaTime, tz);
+            DateTime nowUtc = DateTime.UtcNow;
+
+            // Condition: older OR within next 2 hours
+            return eventUtc < nowUtc || eventUtc <= nowUtc.AddHours(2);
         }
     }
 }

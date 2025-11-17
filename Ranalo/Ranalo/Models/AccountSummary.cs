@@ -21,7 +21,7 @@
         public decimal UnitsLeft { get; set; }
         public decimal TermsInMonths { get; set; }
         public DateTime AutoLockDatePmtR { get; set; }
-
+        public string? NextLockDate { get; set; }
         public string? LastConnectedAt { get; set; }
 
     }

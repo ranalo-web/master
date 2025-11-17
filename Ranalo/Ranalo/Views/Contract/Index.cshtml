@@ -125,7 +125,7 @@
                                     <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
                                     <div class="dropdown-menu dropdown-menu-end">
                                         <ul class="link-list-opt no-bdr">
-                                            <li><button type="button" data-bs-toggle="modal" data-bs-target="#add-contract"><span>Add Contract</span></button></li>
+                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#add-contract"><span>Add Contract</span></a></li>
                                            
                                         </ul>
                                     </div>
@@ -614,51 +614,18 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="add-deposit">Deposit</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" step="0.01" class="form-control" name="deposit" id="add-deposit" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="add-daily">Daily</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" name="daily" step="0.01" class="form-control" id="add-daily" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="add-weekly">Weekly</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" name="weekly" step="0.01" class="form-control" id="add-weekly" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="add-monthly">Monthly</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" name="monthly" step="0.01" class="form-control" id="add-monthly" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="add-interval">Interval</label>
-                                <div class="form-control-wrap">
-                                    <input type="text" name="interval" class="form-control" id="add-interval" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="add-loan">Total Loan</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" name="loan" step="0.01" class="form-control" id="add-loan" required>
+                                <label class="form-label" for="default-06">Select Frequency</label>
+                                <div class="form-control-wrap ">
+                                    <div class="form-control-select">
+                                        <select class="form-control" name="interval" value="daily" id="default-06">
+                                            <option name="interval" value="daily">Daily</option>
+                                            <option name="interval" value="weekly">Weekly</option>
+                                            <option name="interval" value="monthly">Monthly</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>

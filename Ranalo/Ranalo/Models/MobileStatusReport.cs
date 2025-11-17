@@ -77,6 +77,7 @@
         public decimal Weekly { get; set; }
         public decimal Monthly { get; set; }
         public decimal Deposit { get; set; }
+        public decimal Last24hrPaidAmount { get; set; }
         public decimal TermsInMonths { get; set; }
         public string? NextLockDateIsoFormat { get; set; }
     }

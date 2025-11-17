@@ -204,39 +204,39 @@ namespace Ranalo.DataStore
                         PTable1 AS (
                             SELECT 
                                 AccountNoBigint AS AccountNo, 
-                                SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
+                                SUM(AmountValue) AS Total_Paid
                             FROM ValidPayments
                             GROUP BY AccountNoBigint
                         ),
                         PTable4 AS (
                             SELECT 
                                 p.AccountNoBigint AS AccountNo,
-                                p.Amount AS Last_Paid_Amount,
+                                p.AmountValue AS Last_Paid_Amount,
                                 p.PaymentDate AS LastPaidDate,
                                 p.MpesaCode AS Last_MPesaCode
                             FROM ValidPayments p
                             INNER JOIN (
-                                SELECT AccountNoBigint AS AccountNo, MAX(PaymentDate) AS Last_Payment_Date
+                                SELECT AccountNoBigint AS AccountNo, MAX(PaymentDateValue) AS Last_Payment_Date
                                 FROM ValidPayments
                                 GROUP BY AccountNoBigint
                             ) t3 
                               ON p.AccountNoBigint = t3.AccountNo 
-                             AND p.PaymentDate = t3.Last_Payment_Date	
+                             AND p.PaymentDateValue = t3.Last_Payment_Date	
                         ),
                         PTable5 AS (
                             SELECT 
                                 p.AccountNoBigint AS AccountNo,
-                                TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
-                                p.PaymentDate AS FirstPaidDate,
+                                p.AmountValue AS First_Paid_Amount,
+                                p.PaymentDateValue AS FirstPaidDate,
                                 p.MpesaCode AS First_MPesaCode
                             FROM ValidPayments p
                             INNER JOIN (
-                                SELECT AccountNoBigint AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
+                                SELECT AccountNoBigint AS AccountNo, MIN(PaymentDateValue) AS First_Payment_Date
                                 FROM ValidPayments
                                 GROUP BY AccountNoBigint
                             ) t2 
                               ON p.AccountNoBigint = t2.AccountNo 
-                             AND p.PaymentDate = t2.First_Payment_Date
+                             AND p.PaymentDateValue = t2.First_Payment_Date
                         ),
                         ContractInf0 AS (
                         	select d.Id, 
@@ -247,8 +247,8 @@ namespace Ranalo.DataStore
                             ci.Weekly,
                             ci.Monthly
                         	from Devices d
-                        	INNER join KosePayments p on TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT) = TRY_CAST(LTRIM(RTRIM(d.Id )) AS BIGINT)
-                        	INNER join Contract_Info ci on ci.ID = TRY_CAST(LTRIM(RTRIM(p.AccountNo )) AS BIGINT)
+                        	INNER join KosePayments p on p.AccountNoBigint = d.Id
+                        	INNER join Contract_Info ci on ci.ID = p.AccountNoBigint
                         	--where  wo.MpesaDepositRef is not null
                             where d.[Status] = 'enrolled'
                             GROUP BY d.Id, ci.TotalAmount, ci.First_Name,
@@ -317,7 +317,7 @@ namespace Ranalo.DataStore
                 PTable1 AS (
                     SELECT 
                         AccountNoBigint AS AccountNo, 
-                        SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
+                        SUM(AmountValue) AS Total_Paid
                     FROM ValidPayments
                     GROUP AccountNoBigint
                 ),
@@ -325,7 +325,7 @@ namespace Ranalo.DataStore
                     SELECT 
                         p.AccountNoBigint AS AccountNo,
                         p.Amount AS Last_Paid_Amount,
-                        p.PaymentDate AS LastPaidDate,
+                        p.PaymentDateValue AS LastPaidDate,
                         p.MpesaCode AS Last_MPesaCode
                     FROM ValidPayments p
                     INNER JOIN (
@@ -334,17 +334,17 @@ namespace Ranalo.DataStore
                         GROUP BY AccountNoBigint
                     ) t3 
                         ON p.AccountNoBigint = t3.AccountNo 
-                        AND p.PaymentDate = t3.Last_Payment_Date	
+                        AND p.PaymentDateValue = t3.Last_Payment_Date	
                 ),
                 PTable5 AS (
                     SELECT 
                         p.AccountNoBigint AS AccountNo,
-                        TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
-                        p.PaymentDate AS FirstPaidDate,
+                        p.AmountValue AS First_Paid_Amount,
+                        p.PaymentDateValue AS FirstPaidDate,
                         p.MpesaCode AS First_MPesaCode
                     FROM ValidPayments p
                     INNER JOIN (
-                        SELECT AccountNoBigint AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
+                        SELECT AccountNoBigint AS AccountNo, MIN(PaymentDateValue) AS First_Payment_Date
                         FROM ValidPayments
                         GROUP BY AccountNoBigint
                     ) t2 
@@ -843,44 +843,44 @@ namespace Ranalo.DataStore
             var sql = @"WITH 
                             PTable1 AS (
                                 SELECT 
-                                    AccountNo, 
+                                    AccountNoBigint AS AccountNo, 
                                     SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
                                 FROM KosePayments
-                                GROUP BY AccountNo
+                                GROUP BY AccountNoBigint
                             ),
                             PTable2 AS (
                                 SELECT 
-                                    AccountNo, 
-                                    MIN(PaymentDate) AS First_Payment_Date
+                                    AccountNoBigint AS AccountNo,
+                                    MIN(PaymentDateValue) AS First_Payment_Date
                                 FROM KosePayments
-                                GROUP BY AccountNo
+                                GROUP BY AccountNoBigint
                             ),
                             PTable3 AS (
                                 SELECT 
-                                    AccountNo, 
-                                    MAX(PaymentDate) AS Last_Payment_Date
+                                    AccountNoBigint AS AccountNo, 
+                                    MAX(PaymentDateValue) AS Last_Payment_Date
                                 FROM KosePayments
-                                GROUP BY AccountNo
+                                GROUP BY AccountNoBigint
                             ),
                             PTable4 AS (
                                 SELECT 
-                                    p.AccountNo,
-                                    p.Amount AS Last_Paid_Amount,
-                                    p.PaymentDate AS LastPaidDate,
+                                    p.AccountNoBigint AS AccountNo,,
+                                    p.AmountValue AS Last_Paid_Amount,
+                                    p.PaymentDateValue AS LastPaidDate,
                                     p.MpesaCode AS Last_MPesaCode
                                 FROM KosePayments p
                                 INNER JOIN PTable3 t3 ON p.AccountNoBigint = t3.AccountNo
-                                WHERE p.PaymentDate = t3.Last_Payment_Date	
+                                WHERE p.PaymentDateValue = t3.Last_Payment_Date	
                             ),
                             PTable5 AS (
                                 SELECT 
-                                    p.AccountNo,
-                                    TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
-                                    p.PaymentDate AS FirstPaidDate,
+                                    p.AccountNoBigint AS AccountNo,
+                                    p.AmountValue AS First_Paid_Amount,
+                                    p.PaymentDateValue AS FirstPaidDate,
                                     p.MpesaCode AS First_MPesaCode
                                 FROM KosePayments p
-                                INNER JOIN PTable2 t2 ON p.AccountNo = t2.AccountNo
-                                WHERE p.PaymentDate = t2.First_Payment_Date
+                                INNER JOIN PTable2 t2 ON p.AccountNoBigint = t2.AccountNo
+                                WHERE p.PaymentDateValue = t2.First_Payment_Date
                             ),
                             STable AS (
                                 SELECT 
@@ -1072,241 +1072,163 @@ namespace Ranalo.DataStore
         {
 
             var sql = @"WITH 
-                 PTable1 AS (
-                     SELECT 
-                         AccountNo, 
-                         SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
-                     FROM KosePayments
-                 	where AccountNo = @AccountId
-                     GROUP BY AccountNo
-                 ),
-                 PTable2 AS (
-                     SELECT 
-                         AccountNo, 
-                         MIN(PaymentDate) AS First_Payment_Date
-                     FROM KosePayments
-                 	where AccountNo = @AccountId
-                     GROUP BY AccountNo
-                 ),
-                 PTable3 AS (
-                     SELECT 
-                         AccountNo, 
-                         MAX(PaymentDate) AS Last_Payment_Date
-                     FROM KosePayments
-                 	where AccountNo = @AccountId
-                     GROUP BY AccountNo
-                 ),
-                 PTable4 AS (
-                     SELECT 
-                         p.AccountNo,
-                         p.Amount AS Last_Paid_Amount,
-                         p.PaymentDate AS LastPaidDate,
-                         p.MpesaCode AS Last_MPesaCode
-                     FROM KosePayments p
-                     INNER JOIN PTable3 t3 ON p.AccountNo = t3.AccountNo
-                     WHERE p.PaymentDate = t3.Last_Payment_Date	
-                 	AND P.AccountNo = @AccountId
-                 ),
-                 PTable5 AS (
-                     SELECT 
-                         p.AccountNo,
-                         TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
-                         p.PaymentDate AS FirstPaidDate,
-                         p.MpesaCode AS First_MPesaCode
-                     FROM KosePayments p
-                     INNER JOIN PTable2 t2 ON p.AccountNo = t2.AccountNo
-                     WHERE p.PaymentDate = t2.First_Payment_Date
-                 	AND p.AccountNo = @AccountId
-                 ),
-                 STable AS (
-                     SELECT 
-                         p.id,
-                         p.[Status],
-                         p.Model,
-                         p.Make,
-                         p.Locked,
-                         p.LockType,
-                         l.Last_Payment_Date,
-                         b.First_Paid_Amount,
-                         p.FirstLockDateIsoFormat AS First_Lock_Date,
-                         p.NextLockDateIsoFormat AS Next_Lock_Date,
-                         p.LastConnectedAt,
-                         t.Total_Paid,
-                         f.First_Payment_Date,
-                         b.FirstPaidDate,
-                         b.First_MPesaCode,
-                         a.Last_Paid_Amount,
-                         a.LastPaidDate,
-                         a.Last_MPesaCode,
-                         p.ImeiNo
-                     FROM Devices p
-                     LEFT JOIN PTable1 t ON p.id = TRY_CAST(t.AccountNo AS BIGINT)
-                     LEFT JOIN PTable2 f ON p.id = TRY_CAST(f.AccountNo AS BIGINT)
-                     LEFT JOIN PTable3 l ON p.id = TRY_CAST(l.AccountNo AS BIGINT)
-                     LEFT JOIN PTable4 a ON p.id = TRY_CAST(a.AccountNo AS BIGINT)
-                     LEFT JOIN PTable5 b ON p.id = TRY_CAST(b.AccountNo AS BIGINT)
-                 WHERE p.[Status] = 'enrolled'
-                 ),
-                 FilteredSTable AS (
-                     SELECT *
-                     FROM STable
-                     WHERE First_Paid_Amount IS NOT NULL
-                 ),
-                 Base AS (
-                     SELECT 
-                         *,
-                         CAST(Total_Paid AS DECIMAL(18,2)) AS b_price_numeric
-                     FROM FilteredSTable
-                 	--where [Status] in ('approved', 'approval-waiting')
-                 ),
-                 Computed AS (
-                     SELECT b.id,
-                         b.[Status],
-                         b.Model,
-                         b.Make,
-                         b.Locked,
-                         b.LockType,
-                         b.Last_Payment_Date,
-                         b.First_Paid_Amount,
-                         b.First_Lock_Date,
-                         b.Next_Lock_Date,
-                         b.LastConnectedAt,
-                         b.Total_Paid,
-                         b.First_Payment_Date,
-                         b.FirstPaidDate,
-                         b.First_MPesaCode,
-                         b.Last_Paid_Amount,
-                         b.LastPaidDate,
-                         b.Last_MPesaCode,
-                         b.ImeiNo,
-                 		ci.Term_in_Months AS TermsInMonths,
-                 		Total_Cost AS dealer_payment,
-                 		ci.Deposit  AS deposit,
-                 		ci.Daily AS daily_rate,
-                         ci.First_Name AS FirstName
-                 		FROM Base b
-                 		INNER JOIN Contract_Info ci on b.Id = ci.ID
-                 ),
-                 Final AS (
-                     SELECT 
-                         *,
-                         daily_rate * 7 AS weekly_rate,
-                         deposit + (daily_rate * 365) AS unit_year,
-                 		daily_rate * 30 AS monthly_rate
-                     FROM Computed
-                 ),
-                 STable1 AS (
-                     SELECT 
-                         s.*,
-                         d.ID AS WooOrderID,
-                 		d.deposit,
-                 		d.daily_rate as Daily,
-                 		d.weekly_rate as Weekly,
-                 		d.monthly_rate as Monthly,
-                 		d.FirstName,
-                 		d.TermsInMonths
-                     FROM FilteredSTable s
-                     LEFT JOIN Final d ON s.Id = d.Id
-                 ),
-                 ComputedSTable1 AS (
-                     SELECT *,
-                         CAST(First_Payment_Date AS DATETIME) AS First_Pay_Date,
-                         DATEDIFF(DAY, First_Payment_Date, GETDATE()) AS No_Days_Lifetime,
-                         DATEDIFF(DAY, First_Payment_Date, GETDATE()) * 1.0 AS No_Days_Units,
-                         DATEADD(DAY, TermsInMonths * 30, CAST(FirstPaidDate AS DATETIME)) AS Contract_End_Date,
-                         DATEDIFF(
-                             DAY,
-                             CAST(First_Payment_Date AS DATETIME),
-                             DATEADD(DAY, TermsInMonths * 30, CAST(FirstPaidDate AS DATETIME))
-                         ) AS Days_Contract_End
-                     FROM STable1
-                 ),
-                 FinalTable AS (
-                     SELECT *,
-                         -- Minimum_Days = least of Days_Contract_End and No_Days_Units (handling NULLs)
-                         CASE 
-                             WHEN Days_Contract_End IS NULL THEN No_Days_Units
-                             WHEN No_Days_Units IS NULL THEN Days_Contract_End
-                             ELSE 
-                                 CASE 
-                                     WHEN Days_Contract_End < No_Days_Units THEN Days_Contract_End
-                                     ELSE No_Days_Units
-                                 END
-                         END AS Minimum_Days
-                     FROM ComputedSTable1
-                 ),
-                 
-                 WithTotalDue AS (
-                     SELECT *,
-                         -- Total_Due = Deposit + (Daily * Minimum_Days) + (Weekly * Minimum_Days / 7) + (Monthly * Minimum_Days / 30)
-                         (Deposit 
-                             + (Daily * Minimum_Days) 
-                             + (Weekly * Minimum_Days / 7.0) 
-                             + (Monthly * Minimum_Days / 30.0)
-                         ) AS Total_Due,
-                 
-                         -- DailyPaymentALL = Daily + Weekly / 7 + Monthly / 30
-                         (Daily + (Weekly / 7.0) + (Monthly / 30.0)) AS DailyPaymentALL,
-                 
-                         -- Arrears = Total_Paid - Total_Due
-                         (Total_Paid - 
-                             (Deposit 
-                                 + (Daily * Minimum_Days) 
-                                 + (Weekly * Minimum_Days / 7.0) 
-                                 + (Monthly * Minimum_Days / 30.0)
-                             )
-                         ) AS Arrears,
-                 
-                         -- Loan_Balance = Deposit + Daily * 30 * Term + Weekly * (30/7) * Term + Monthly * Term - Total_Paid
-                         (
-                             Deposit 
-                             + (Daily * 30 * TermsInMonths) 
-                             + (Weekly * (30.0/7.0) * TermsInMonths) 
-                             + (Monthly * TermsInMonths) 
-                             - Total_Paid
-                         ) AS Loan_Balance,
-                 
-                         -- Curr_Run_Time = current datetime (used in R for timestamps)
-                         GETDATE() AS Curr_Run_Time
-                     FROM FinalTable
-                 )
-                 
-                 
-                 SELECT WooOrderID As AccountId
-                 		,LastPaidDate As LastPaymentDate
-                 		,FirstPaidDate AS FirstPaymentDate
-                 		,Loan_Balance AS LoanBalance
-                         ,First_Paid_Amount AS FirstAmount
-                        ,Last_Paid_Amount AS LastPaidAmount
-                 		,Daily
-                 		,Weekly
-                 		,Monthly
-                 		,deposit As Deposit
-                 		,Total_Paid AS TotalPaid
-                         ,Contract_End_Date AS ContractEndDate
-                         ,FirstName
-                         ,Arrears
-                 		,TermsInMonths
-                        ,LastConnectedAt
-                 FROM WithTotalDue
-                 --where WooOrderID = 1894076
-                 GROUP BY WooOrderID
-                 ,Loan_Balance
-                 , Daily
-                 , Weekly
-                 , Monthly
-                 , deposit
-                 , Total_Paid
-                 ,LastPaidDate
-                 ,FirstPaidDate
-                 ,Contract_End_Date
-                 ,First_Paid_Amount
-                 ,Last_Paid_Amount
-                 ,FirstName
-                 ,Arrears
-                ,LastConnectedAt
-                 ,TermsInMonths
-              ORDER BY LastPaidDate DESC";
+-- ============================================================
+-- 1. Payments (Unified source table)
+-- ============================================================
+Payments AS (
+    SELECT
+        kp.Id,
+        kp.MpesaCode,
+        kp.Amount,
+        kp.AmountValue,
+        kp.PaymentDateValue,
+        COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS RealAccountNo
+    FROM KosePayments kp
+    LEFT JOIN OrphanedPayments op 
+        ON op.MpesaCode = kp.MpesaCode
+    WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = @AccountId
+),
+
+-- ============================================================
+-- 2. Total paid
+-- ============================================================
+PTable1 AS (
+    SELECT 
+        RealAccountNo AS AccountNo,
+        SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
+    FROM Payments
+    GROUP BY RealAccountNo
+),
+
+-- ============================================================
+-- 3. First payment date
+-- ============================================================
+PTable2 AS (
+    SELECT 
+        RealAccountNo AS AccountNo,
+        MIN(PaymentDateValue) AS First_Payment_Date
+    FROM Payments
+    GROUP BY RealAccountNo
+),
+
+-- ============================================================
+-- 4. Last payment date
+-- ============================================================
+PTable3 AS (
+    SELECT 
+        RealAccountNo AS AccountNo,
+        MAX(PaymentDateValue) AS Last_Payment_Date
+    FROM Payments
+    GROUP BY RealAccountNo
+),
+
+-- ============================================================
+-- 5. Last payment detail
+-- ============================================================
+PTable4 AS (
+    SELECT 
+        p.RealAccountNo AS AccountNo,
+        p.AmountValue AS Last_Paid_Amount,
+        p.PaymentDateValue AS LastPaidDate,
+        p.MpesaCode AS Last_MPesaCode
+    FROM Payments p
+    INNER JOIN PTable3 t3 
+        ON p.RealAccountNo = t3.AccountNo
+       AND p.PaymentDateValue = t3.Last_Payment_Date
+),
+
+-- ============================================================
+-- 6. First payment detail
+-- ============================================================
+PTable5 AS (
+    SELECT 
+        p.RealAccountNo AS AccountNo,
+        TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
+        p.PaymentDateValue AS FirstPaidDate,
+        p.MpesaCode AS First_MPesaCode
+    FROM Payments p
+    INNER JOIN PTable2 t2 
+        ON p.RealAccountNo = t2.AccountNo
+       AND p.PaymentDateValue = t2.First_Payment_Date
+),
+
+-- ============================================================
+-- 7. Combine with Devices + cleaned payment data
+-- ============================================================
+STable AS (
+    SELECT 
+        d.Id,
+        d.Status,
+        d.Model,
+        d.Make,
+        d.Locked,
+        d.LockType,
+        p3.Last_Payment_Date,
+        p5.First_Paid_Amount,
+        d.FirstLockDateIsoFormat AS First_Lock_Date,
+        d.NextLockDateIsoFormat AS Next_Lock_Date,
+        d.LastConnectedAt,
+        p1.Total_Paid,
+        p2.First_Payment_Date,
+        p5.FirstPaidDate,
+        p5.First_MPesaCode,
+        p4.Last_Paid_Amount,
+        p4.LastPaidDate,
+        p4.Last_MPesaCode,
+        d.ImeiNo
+    FROM Devices d
+    LEFT JOIN PTable1 p1 ON d.Id = p1.AccountNo
+    LEFT JOIN PTable2 p2 ON d.Id = p2.AccountNo
+    LEFT JOIN PTable3 p3 ON d.Id = p3.AccountNo
+    LEFT JOIN PTable4 p4 ON d.Id = p4.AccountNo
+    LEFT JOIN PTable5 p5 ON d.Id = p5.AccountNo
+    WHERE d.Status = 'enrolled'
+),
+
+-- Only those with valid first payment
+FilteredSTable AS (
+    SELECT *
+    FROM STable
+    WHERE First_Paid_Amount IS NOT NULL
+),
+
+-- ============================================================
+-- 8. Add Contract_Info details
+-- ============================================================
+Computed AS (
+    SELECT 
+        s.*,
+        ci.Term_in_Months AS TermsInMonths,
+        ci.Total_Cost AS dealer_payment,
+        ci.Deposit,
+        ci.Daily AS Daily,
+        ci.Weekly AS Weekly,
+        ci.Monthly AS Monthly,
+        ci.First_Name AS FirstName
+    FROM FilteredSTable s
+    INNER JOIN Contract_Info ci ON s.Id = ci.ID
+)
+
+-- ============================================================
+-- 11. FINAL RESULT
+-- ============================================================
+SELECT 
+    Id As AccountId,
+    LastPaidDate As LastPaymentDate,
+    FirstPaidDate AS FirstPaymentDate,
+    First_Paid_Amount AS FirstAmount,
+    Last_Paid_Amount AS LastPaidAmount,
+    Daily,
+    Weekly,
+    Monthly,
+	Next_Lock_Date AS NextLockDate,
+    Deposit,
+    Total_Paid AS TotalPaid,
+    FirstName,
+    TermsInMonths,
+    LastConnectedAt
+FROM Computed
+ORDER BY LastPaidDate DESC";
 
             return await _db.QueryFirstOrDefaultAsync<AccountSummary>(sql, new { AccountId = customerId });
         }
@@ -1332,8 +1254,7 @@ namespace Ranalo.DataStore
             var countQuery = SetPaymentSummaryQuery();
             var totalRecords = await _db.QuerySingleAsync<int>(countQuery, new { DealerId = deviceGroupId, searchParam = searchTerm, AccountId = accountId });
 
-            var sql = @" IF OBJECT_ID('tempdb..#ValidPayments') IS NOT NULL DROP TABLE #ValidPayments;
-                        
+            var sql = @"IF OBJECT_ID('tempdb..#ValidPayments') IS NOT NULL DROP TABLE #ValidPayments;
                         SELECT 
                             kp.Id,
                             COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
@@ -1353,6 +1274,19 @@ namespace Ranalo.DataStore
                         -- STEP 2: Compute totals and first/last payments
                         ---------------------------------------------------
                         
+						-- 🕒 Payments in last 24 hours
+						IF OBJECT_ID('tempdb..#PTable24hrs') IS NOT NULL DROP TABLE #PTable24hrs;
+
+						SELECT 
+							AccountNo,
+							SUM(AmountValue) AS Last24hrPaidAmount
+						INTO #PTable24hrs
+						FROM #ValidPayments
+						WHERE PaymentDateValue >= DATEADD(HOUR, -24, GETDATE())
+						GROUP BY AccountNo;
+
+						CREATE INDEX IX_PTable24hrs_AccountNo ON #PTable24hrs(AccountNo);
+
                         -- 🧮 Total paid per account
                         IF OBJECT_ID('tempdb..#PTable1') IS NOT NULL DROP TABLE #PTable1;
                         SELECT 
@@ -1412,6 +1346,7 @@ namespace Ranalo.DataStore
                             p5.First_MPesaCode AS FirstMPesaCode,
                             p4.LastPaidDate,
                             p4.Last_Paid_Amount AS LastPaymentAmount,
+							p24.Last24hrPaidAmount,
                             p4.Last_MPesaCode AS LastMPesaCode,
                             ci.First_Name AS CustomerName,
                             ci.Daily,
@@ -1429,15 +1364,15 @@ namespace Ranalo.DataStore
                             d.ImeiNo,
                             d.Status,
                             d.LockType,
-                            d.NextLockDateIsoFormat AS NextLockDateIsoFormat,
-                            d.NextLockDate AS NextLockDate
+                            d.NextLockDateIsoFormat,
+                            d.NextLockDate
                         INTO #ContractInfo
                         FROM Devices d
                         JOIN #PTable1 p1 ON d.Id = p1.AccountNo
                         JOIN #PTable5 p5 ON d.Id = p5.AccountNo
                         JOIN #PTable4 p4 ON d.Id = p4.AccountNo
-                        JOIN #ValidPayments vp ON d.Id = vp.AccountNo
-                        JOIN Contract_Info ci ON ci.ID = vp.AccountNo
+                        JOIN Contract_Info ci ON ci.ID = d.Id
+						LEFT JOIN #PTable24hrs p24 ON d.Id = p24.AccountNo
                         WHERE d.[Status] = 'enrolled';
                         
                         CREATE INDEX IX_ContractInfo_AccountNo ON #ContractInfo(AccountNo);
@@ -1456,37 +1391,10 @@ namespace Ranalo.DataStore
                         AND (@searchParam IS NULL
                             OR AccountNo LIKE '%' + @searchParam + '%'
                             OR FirstMPesaCode LIKE '%' + @searchParam + '%'                            
-							OR FirstMPesaCode LIKE '%' + @searchParam + '%'
+                        				OR FirstMPesaCode LIKE '%' + @searchParam + '%'
                             OR CustomerName LIKE '%' + @searchParam + '%'  
                             )
-                        GROUP BY AccountNo, 
-                            TotalAmount,
-                        	TotalPaid,
-                            FirstPaidDate,
-                            FirstPaymentAmount,
-                            FirstMPesaCode,
-                            LastPaidDate,
-                            LastPaymentAmount,
-                            LastMPesaCode,
-                            CustomerName,
-                            Daily,
-                            Deposit,
-                            Weekly,
-                            Monthly,
-                            TermsInMonths,
-                        	Make,
-                            Model,
-                            LastConnectedAt,
-                            Locked,
-                            EnrolledOn,
-                            DeviceGroupId,
-                            [Name],
-                            ImeiNo,
-                        	Status,
-                            LockType,
-                            NextLockDate,
-                        	NextLockDateIsoFormat
-                            ORDER BY LastPaidDate desc
+                        ORDER BY LastPaidDate DESC
                         	OFFSET @offset ROWS 
                         	FETCH NEXT @pageSize ROWS ONLY;";
 
@@ -1587,7 +1495,7 @@ WHERE kp.AccountNoBigint IS NOT NULL
             var offset = (page - 1) * pageSize;
 
             var sql = @"SELECT kp.Id,
-                            TRY_CAST(LTRIM(RTRIM(COALESCE(op.AccountNo, kp.AccountNo))) AS BIGINT) AS AccountNo,
+                            TRY_CAST(LTRIM(RTRIM(COALESCE(op.AccountNoBigint, kp.AccountNoBigint))) AS BIGINT) AS AccountNo,
                             kp.MpesaCode,
                             kp.Amount,
                             kp.PaymentDate,
@@ -1595,7 +1503,7 @@ WHERE kp.AccountNoBigint IS NOT NULL
                             kp.PaymentDateValue
                 FROM [dbo].[KosePayments] kp
                 LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
-                WHERE COALESCE(op.AccountNo, kp.AccountNo) = @AccountNo
+                WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = @AccountNo
                 ORDER BY [PaymentDateValue] DESC
                 OFFSET @Offset ROWS 
                 FETCH NEXT @pageSize ROWS ONLY";
@@ -1603,7 +1511,7 @@ WHERE kp.AccountNoBigint IS NOT NULL
 
             var countSql = @"SELECT COUNT(*)
                 FROM [dbo].[KosePayments] 
-                WHERE [AccountNo] = @AccountNo";
+                WHERE [AccountNoBigint] = @AccountNo";
 
             var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { AccountNo = customerAccount });
 
@@ -2032,39 +1940,47 @@ WHERE kp.AccountNoBigint IS NOT NULL
 
             var sqlSelectAll = @"
                 SELECT 
-    r.AccountNo,
-    r.ID,
-    r.Date_Agreed AS DateAgreed,
-    r.Amount_Res AS AmountRes,
-    SUM(TRY_CAST(kp.Amount AS DECIMAL(18,2))) AS TotalPaidR,
-    MIN(kp.PaymentDateValue) AS FirstResPaymentDate,
-    MAX(kp.PaymentDateValue) AS LastResPaymentDate,
-    ci.Daily,
-    ci.Weekly,
-    ci.Monthly,
-    ci.First_Name AS FirstName
-FROM RestructuredRecords r
-LEFT JOIN KosePayments kp
-    ON kp.AccountNoBigint = r.AccountNo
-   AND kp.PaymentDateValue > r.Date_Agreed  -- moved filter into JOIN
-INNER JOIN Contract_Info ci
-    ON ci.ID = r.AccountNo
-LEFT JOIN OrphanedPayments op
-    ON kp.MpesaCode = op.MpesaCode
-WHERE 
-    @SearchTerm IS NULL
-    OR r.AccountNo LIKE '%' + @SearchTerm + '%'
-GROUP BY 
-    r.AccountNo,
-    r.ID,
-    r.Date_Agreed,
-    r.Amount_Res,
-    ci.Daily,
-    ci.Weekly,
-    ci.Monthly,
-    ci.First_Name
-ORDER BY 
-    r.Date_Agreed DESC
+                    r.AccountNo,
+                    r.ID,
+                    r.Date_Agreed AS DateAgreed,
+                    r.Amount_Res AS AmountRes,
+                    SUM(vp.AmountValue) AS TotalPaidR,
+                    MIN(vp.PaymentDateValue) AS FirstResPaymentDate,
+                    MAX(vp.PaymentDateValue) AS LastResPaymentDate,
+                    ci.Daily,
+                    ci.Weekly,
+                    ci.Monthly,
+                    ci.First_Name AS FirstName
+                FROM RestructuredRecords r
+                -- ✅ Merge KosePayments + OrphanedPayments properly
+                LEFT JOIN (
+                    SELECT 
+                        COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
+                        kp.MpesaCode,
+                        kp.AmountValue,
+                        kp.PaymentDateValue
+                    FROM KosePayments kp
+                    LEFT JOIN OrphanedPayments op 
+                        ON kp.MpesaCode = op.MpesaCode
+                ) vp 
+                    ON vp.AccountNo = r.AccountNo
+                    AND vp.PaymentDateValue > r.Date_Agreed
+                INNER JOIN Contract_Info ci 
+                    ON ci.ID = r.AccountNo
+                WHERE 
+                    @SearchTerm IS NULL
+                    OR r.AccountNo LIKE '%' + @SearchTerm + '%'
+                GROUP BY 
+                    r.AccountNo,
+                    r.ID,
+                    r.Date_Agreed,
+                    r.Amount_Res,
+                    ci.Daily,
+                    ci.Weekly,
+                    ci.Monthly,
+                    ci.First_Name
+                ORDER BY 
+                    r.Date_Agreed DESC
                 OFFSET @Offset ROWS 
                 FETCH NEXT @pageSize ROWS ONLY;";
 

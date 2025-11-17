@@ -287,6 +287,7 @@ namespace Ranalo.Services
                         LastConnectedAt = payment.LastConnectedAt,
                         LastPaymentDate = payment.LastPaidDate,
                         LastPaidAmt = payment.LastPaymentAmount,
+                        TotalLast24 = payment.Last24hrPaidAmount,
                         FirstPaidAmt = payment.FirstPaymentAmount,
                         FirstPaymentDate = payment.FirstPaidDate,
                         LiveFlag = "1", //Ask Eddie Not sure what this is
@@ -533,6 +534,7 @@ namespace Ranalo.Services
                 record.LastConnectedAt = paymentSummary.LastConnectedAt;
                 record.LastResPaymentDate = paymentSummary.LastPaymentDate;
                 record.LastPaidAmount = paymentSummary.LastPaidAmount;
+                record.NextLockDate = paymentSummary.NextLockDate;
 
                 if (due <= 0)
                 {

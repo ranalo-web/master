@@ -2,6 +2,7 @@
 using Ranalo.DataStore;
 using Ranalo.Models;
 using Ranalo.Services;
+using System.Globalization;
 
 namespace Ranalo.ScheduledServices
 {
@@ -9,7 +10,7 @@ namespace Ranalo.ScheduledServices
     {
         private readonly ILogger<ScheduledTaskLockAutoRestructured> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly TimeSpan _interval = TimeSpan.FromMinutes(120); // Run every 30 min
+        private readonly TimeSpan _interval = TimeSpan.FromMinutes(10); // Run every 30 min
 
         public ScheduledTaskLockAutoRestructured(
             ILogger<ScheduledTaskLockAutoRestructured> logger,
@@ -86,14 +87,14 @@ namespace Ranalo.ScheduledServices
 
             //Now check if they have paid more than the restructured new amount
             var qualifying = autoRestructured?
-            .Where(r => r.LastPaidAmt >= r.NewDaily)
+            .Where(r => r.TotalLast24 >= r.NewDaily )//&& NeedsUpdate(r.NextLockDate)) 
             .ToList();
 
             var devicesToLock = new List<LockTransaction>();
             //Not sure why this removes negative arrears
             //records.Records.RemoveAll(a => a.ArrearsR > 0);
 
-            if (qualifying != null)
+            if (qualifying != null && qualifying.Any())
             {
                 foreach (var account in qualifying)
                 {
@@ -113,6 +114,30 @@ namespace Ranalo.ScheduledServices
             }
 
             return devicesToLock;
+        }
+
+
+        bool NeedsUpdate(string? kenyanTimestamp)
+        {
+            if (string.IsNullOrEmpty(kenyanTimestamp)) return true;
+
+            var tz = TimeZoneInfo.FindSystemTimeZoneById("E. Africa Standard Time");
+
+            if (!DateTime.TryParseExact(
+                    kenyanTimestamp,
+                    "dd/MM/yyyy'T'HH:mm:ss",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out DateTime kenyaTime))
+            {
+                return false; // invalid date → skip
+            }
+
+            DateTime eventUtc = TimeZoneInfo.ConvertTimeToUtc(kenyaTime, tz);
+            DateTime nowUtc = DateTime.UtcNow;
+
+            // Condition: older OR within next 2 hours
+            return eventUtc < nowUtc || eventUtc <= nowUtc.AddHours(2);
         }
     }
 }

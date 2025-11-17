@@ -79,12 +79,7 @@ namespace Ranalo.Controllers
         [Route("add-contract")]
         public async Task<IActionResult> AddNewContractDetails(string firstName,
             int deviceId,
-            decimal deposit,
-            decimal daily,
-            decimal weekly,
-            decimal monthly,
             string interval,
-            decimal loan,
             decimal cost)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
@@ -96,13 +91,12 @@ namespace Ranalo.Controllers
             var contractToUpdate = new ContractInfo()
             {
                 ID = deviceId,
-                Deposit = deposit,
-                Daily = daily,
-                Weekly = weekly,
-                Monthly = monthly,
+                Deposit = 0,
+                Daily = 0,
+                Weekly = 0,
+                Monthly = 0,
                 RePaymentIntervals = interval,
                 TotalCost = cost,
-                TotalLoan = loan
             };
 
             var update = await _contractService.UpdateContractAsync(contractToUpdate);
