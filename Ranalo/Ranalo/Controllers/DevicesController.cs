@@ -38,7 +38,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("search-devices")]
-        public async Task<IActionResult> DevicesWithNoOrders(string searchTerm)
+        public async Task<IActionResult> DevicesWithNoOrders(string searchTerm = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -46,9 +46,22 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            return await GetAndRenderView(settings, null, searchTerm: searchTerm);
+            return await GetAndRenderView(settings, null, searchTerm: searchTerm.Trim());
         }
 
+        [Route("devices-with-no-contracts/{page:int?}/{pageSize:int?}")]
+        public async Task<IActionResult> DevicesWithNoContract(string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            var devices = await _devicesService.GetDevicesWithNoContracts(page: page, pageSize: pageSize, searchTerm: searchTerm.Trim());
+            await SetViewBags(settings, "index");
+            return View(devices);
+        }
         private async Task<IActionResult> GetAndRenderView(User settings, List<string>? errors, int page = 1, int pageSize = 10, string searchTerm = "")
         {
             await SetViewBags(settings, "index");
@@ -57,7 +70,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                devices = await _devicesService.GetDevicesWithNoOrders(page: page, pageSize: pageSize, searchTerm: searchTerm);
+                devices = await _devicesService.GetDevicesWithNoOrders(page: page, pageSize: pageSize, searchTerm: searchTerm.Trim());
 
                 if (errors != null)
                 {
@@ -71,7 +84,7 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            devices = await _devicesService.GetDevicesWithNoOrders(dealerId, page: page, pageSize: pageSize, searchTerm: searchTerm);
+            devices = await _devicesService.GetDevicesWithNoOrders(dealerId, page: page, pageSize: pageSize, searchTerm: searchTerm.Trim());
 
             if (errors != null)
             {
@@ -147,11 +160,11 @@ namespace Ranalo.Controllers
             }
             await SetViewBags(settings, "index");
             //await SetViewBags(settings, "index");
-            var accounts = new AllAccountsViewModel();
+            var accounts = new DevicesWithDealerViewModel();
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                accounts = await _applicationReportService.GetAllAccountsAsync(null, searchTerm: searchTerm, page: page, pageSize: pageSize);
+                accounts = await _devicesService.GetAllDevicesAsync(null, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
 
                 return View(accounts);
             }
@@ -160,7 +173,36 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            accounts = await _applicationReportService.GetAllAccountsAsync(dealerId, searchTerm: searchTerm, page: page, pageSize: pageSize);
+            accounts = await _devicesService.GetAllDevicesAsync(dealerId, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
+
+            return View(accounts);
+        }
+
+        [HttpGet]
+        [Route("devices-nopayments/{page:int?}")]
+        public async Task<IActionResult> DevicesWithNoPayments(int page = 1, int pageSize = 10, string searchTerm = "")
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            await SetViewBags(settings, "index");
+            //await SetViewBags(settings, "index");
+            var accounts = new DevicesWithDealerViewModel();
+
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                accounts = await _devicesService.GetAllDevicesWithNoPaymentsAsync(null, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
+
+                return View(accounts);
+            }
+
+            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+
+            var dealerId = Convert.ToInt32(dealer.DealerReference);
+
+            accounts = await _devicesService.GetAllDevicesWithNoPaymentsAsync(dealerId, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
 
             return View(accounts);
         }

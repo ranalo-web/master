@@ -134,36 +134,41 @@ namespace Ranalo.Woocommece.Api.Services
 
             foreach (var order in eligible)
             {
-                if(string.IsNullOrEmpty(order.FirstName))
+                if (string.IsNullOrEmpty(order.FirstName))
                 {
                     continue;
                 }
-                var dailyRate = _calculatorService.CalculateDailyRate(order.TotalAmount);
-                var deposit = _calculatorService.CalculateDeposit(order.TotalAmount);
-                var contract = new ContractInfo()
-                {
-                    ID = int.Parse(order.AccountNo),
-                    Deposit = deposit,
-                    Daily = dailyRate,
-                    Weekly = 0,
-                    Monthly = 0,
-                    RePaymentIntervals = "Daily",
-                    TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, 12),
-                    TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, 12),
-                    FirstName = order.FirstName,
-                    TotalAmount = order.TotalAmount
-                };
-
-                var contractId = await _kosePaymentsRepository.AddContractAsync(contract);
-
-                //Update the Orders with Contract Id 
-
-                await _kosePaymentsRepository.UpdateOrderContract(order.OrderId, contractId);
+                await CreateContractSingle(order);
 
                 accountsNos.Add(order.AccountNo);
             }
 
             return accountsNos;
+        }
+
+        public async Task CreateContractSingle(ContractCreateDto order)
+        {
+            var dailyRate = _calculatorService.CalculateDailyRate(order.TotalAmount);
+            var deposit = _calculatorService.CalculateDeposit(order.TotalAmount);
+            var contract = new ContractInfo()
+            {
+                ID = int.Parse(order.AccountNo),
+                Deposit = deposit,
+                Daily = dailyRate,
+                Weekly = 0,
+                Monthly = 0,
+                RePaymentIntervals = "Daily",
+                TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, 12),
+                TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, 12),
+                FirstName = order.FirstName,
+                TotalAmount = order.TotalAmount
+            };
+
+            var contractId = await _kosePaymentsRepository.AddContractAsync(contract);
+
+            //Update the Orders with Contract Id 
+
+            await _kosePaymentsRepository.UpdateOrderContract(order.OrderId, contractId);
         }
 
         public async Task<List<int>> UpdateImagesAsync(long orderId, List<ImagesMetadata> imagesForUpdate)

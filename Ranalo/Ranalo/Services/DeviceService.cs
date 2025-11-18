@@ -1,4 +1,5 @@
-﻿using Ranalo.DataStore;
+﻿using DocumentFormat.OpenXml.Wordprocessing;
+using Ranalo.DataStore;
 using Ranalo.Models;
 
 namespace Ranalo.Services
@@ -57,6 +58,21 @@ namespace Ranalo.Services
         public async Task<bool> MpesaCodeIsLinkedAsync(string newMpesa)
         {
             return await _devicesRepository.MpesaCodeIsAlreadyLinked(newMpesa);
+        }
+
+        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "")
+        {
+            return await _devicesRepository.GetDevicesWithNoContracts(dealerReference, page, pageSize, searchTerm);
+        }
+
+        public async Task<DevicesWithDealerViewModel> GetAllDevicesAsync(int? dealerId, string searchTerm, int page, int pageSize)
+        {
+            return await _devicesRepository.GetAllDevicesAsync(dealerId, page, pageSize, searchTerm);
+        }
+
+        public async Task<DevicesWithDealerViewModel> GetAllDevicesWithNoPaymentsAsync(int? dealerId, string searchTerm, int page, int pageSize)
+        {
+            return await _devicesRepository.GetDevicesWithNoPayments(dealerId, page, pageSize, searchTerm);
         }
     }
 }

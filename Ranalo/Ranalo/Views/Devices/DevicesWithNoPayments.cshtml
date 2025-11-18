@@ -6,12 +6,27 @@
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
-@functions{
-   private string SetLockStatusBadge(bool status)
+@functions {
+    private string FormartUtcDate(string? date)
+    {
+        if (date == null) return DateTime.MinValue.ToString("dd/MM/yyyy HH:mm:ss");
+        // Parse using exact format and culture
+        DateTime parsedDate = DateTime.ParseExact(
+            date.Replace(" UTC", ""),   // remove UTC label before parsing
+        "dd-MM-yy HH:mm:ss",
+        System.Globalization.CultureInfo.InvariantCulture,
+        System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal
+    );
+
+        // Format to desired output
+        return parsedDate.ToString("dd/MM/yyyy HH:mm:ss");
+    }
+
+    private string SetLockStatusBadge(bool status)
     {
         var statusClass = "";
 
-        if (status == false)
+        if (status == true)
         {
             return "badge badge-dim bg-danger";
         }
@@ -25,7 +40,7 @@
 
     private string SetLockStatusTextBadge(bool status)
     {
-        if (status == false)
+        if (status == true)
         {
             return "LOCKED";
         }
@@ -34,16 +49,32 @@
             return "UNLOCKED";
         }
     }
+
+    public string FormartDateWithT(string? input)
+    {
+        if (input == null) return DateTime.MinValue.ToString("dd/MM/yyyy HH:mm:ss");
+        input = input.Replace("T", " ");
+
+        // Parse it
+        DateTime parsedDate = DateTime.ParseExact(
+            input,
+            "dd/MM/yyyy HH:mm:ss",
+            System.Globalization.CultureInfo.InvariantCulture
+        );
+
+        // Format to desired string
+        return parsedDate.ToString("dd/MM/yyyy HH:mm:ss");
     }
+}
 
 <div class="nk-content-body">
 
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">All Devices</h3>
+                <h3 class="nk-block-title page-title">Devices No Payments</h3>
                 <div class="nk-block-des text-soft">
-                    <p>You have total of @Model?.TotalRecords devices in the system.</p>
+                    <p>You have total of @Model?.TotalRecords devices that do not have a matching order.</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -227,12 +258,6 @@
                                     <span class="tb-tnx-desc d-none d-sm-inline-block">
                                         <span>ImeiNo</span>
                                     </span>
-                                    <span class="tb-tnx-date d-md-inline-block d-none">
-                                        <span class="d-md-none">Date</span>
-                                        <span class="d-none d-md-block">
-                                            <span>CreatedAt</span>
-                                        </span>
-                                    </span>
                                 </th>
                                 <th class="tb-tnx-info">
                                     <span>Dealer Id</span>
@@ -240,6 +265,27 @@
                                 <th class="tb-tnx-info">
                                     <span>
                                         <span>Dealer Name</span>
+                                    </span>
+                                </th>
+                                <th class="tb-tnx-info">
+                                    <span>
+                                        <span>Enrolled On</span>
+                                    </span>
+                                </th>
+                                <th class="tb-tnx-info">
+                                    <span>
+                                        <span>Last Connected</span>
+                                    </span>
+                                </th>
+                                <th class="tb-tnx-info">
+                                    <span>
+                                        <span>Next Lock</span>
+                                    </span>
+                                </th>
+
+                                <th class="tb-tnx-info">
+                                    <span>
+                                        <span>Status</span>
                                     </span>
                                 </th>
                         </thead>
@@ -255,9 +301,6 @@
                                         <div class="tb-tnx-desc">
                                             <span class="title">@devices.ImeiNo</span>
                                         </div>
-                                        <div class="tb-tnx-date">
-                                            <span class="date">@devices.CreatedAtDate</span>
-                                        </div>
                                     </td>
                                     <td class="tb-tnx-info">
                                         <div class="tb-tnx-text">
@@ -267,6 +310,26 @@
                                     <td class="tb-tnx-info">
                                         <div class="tb-tnx-text">
                                             <span class="title">@devices.DealerName</span>
+                                        </div>
+                                    </td>
+                                    <td class="tb-tnx-info">
+                                        <div class="tb-tnx-text">
+                                            <span class="title">@FormartUtcDate(devices.EnrolledOn)</span>
+                                        </div>
+                                    </td>
+                                    <td class="tb-tnx-info">
+                                        <div class="tb-tnx-text">
+                                            <span class="title">@FormartUtcDate(devices.LastConnectedAt)</span>
+                                        </div>
+                                    </td>
+                                    <td class="tb-tnx-info">
+                                        <div class="tb-tnx-text">
+                                            <span class="title">@FormartDateWithT(devices?.NextLockDateIsoFormat)</span>
+                                        </div>
+                                    </td>
+                                    <td class="tb-tnx-info">
+                                        <div class="tb-tnx-text">
+                                            <span class="@SetLockStatusBadge(devices.Locked)">@SetLockStatusTextBadge(devices.Locked)</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -282,7 +345,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-contracts?page=@(Model.CurrentPage - 1)&pageSize=@(Model.PageSize)">Prev</a>
+                                        <a class="page-link" href="/devices-nopayments?page=@(Model.CurrentPage - 1)&pageSize=@(Model.PageSize)">Prev</a>
                                     </li>
                                 }
 
@@ -299,7 +362,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-contracts?page=1&pageSize=@(Model.PageSize)">1</a>
+                                        <a class="page-link" href="/devices-nopayments?page=1&pageSize=@(Model.PageSize)">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -309,7 +372,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/devices-with-no-contracts?page=@i&pageSize=@(Model.PageSize)">@i</a>
+                                        <a class="page-link" href="/devices-nopayments?page=@i&pageSize=@(Model.PageSize)">@i</a>
                                     </li>
                                 }
 
@@ -319,14 +382,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-contracts?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/devices-nopayments?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-contracts?page=@(Model.CurrentPage + 1)&pageSize=@(Model.PageSize)">Next</a>
+                                        <a class="page-link" href="/devices-nopayments?page=@(Model.CurrentPage + 1)&pageSize=@(Model.PageSize)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -338,7 +401,7 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/devices-with-no-contracts?page=' + this.value + '&pageSize=@(Model.PageSize)'">
+                                            onchange="location.href='/devices-nopayments?page=' + this.value + '&pageSize=@(Model.PageSize)'">
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>

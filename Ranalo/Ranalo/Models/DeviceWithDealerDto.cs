@@ -5,6 +5,10 @@ namespace Ranalo.Models
     public class DeviceWithDealerDto
     {
         public long DeviceId { get; set; }          // d.Id
+        public string? EnrolledOn { get; set; }
+        public bool Locked { get; set; }
+        public string? LastConnectedAt { get; set; }
+        public string? NextLockDateIsoFormat { get; set; }
         public int? DeviceGroupId { get; set; }     // d.DeviceGroupId (nullable if some are null)
         public string ImeiNo { get; set; } = string.Empty; // d.ImeiNo
         public string Make { get; set; } = string.Empty;   // d.Make

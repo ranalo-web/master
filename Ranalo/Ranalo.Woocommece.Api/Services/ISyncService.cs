@@ -34,5 +34,7 @@ namespace Ranalo.Woocommece.Api.Services
 
         Task<List<int>> SyncUpdateNextOfKinWooOrders();
         Task<List<int>> SyncUpdateMetaDataWooOrders();
+
+        Task CreateContractSingle(ContractCreateDto order);
     }
 }

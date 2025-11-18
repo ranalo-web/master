@@ -93,7 +93,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("never-paid")]
-        public async Task<IActionResult> NeverPaid(string searchTerm)
+        public async Task<IActionResult> NeverPaid(string searchTerm = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -104,7 +104,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin)
             {
-                var neverPaid = await _applicationReportService.GetAllNeverPaidOrdersAsync(searchTerm: searchTerm);
+                var neverPaid = await _applicationReportService.GetAllNeverPaidOrdersAsync(searchTerm: searchTerm.Trim());
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
                 return View("~/Views/Reports/NeverPaid.cshtml", neverPaid);
@@ -134,7 +134,7 @@ namespace Ranalo.Controllers
         }
 
         [Route("assignedpayments/{page:int?}")]
-        public async Task<IActionResult> AssignedPayments(string searchTerm, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> AssignedPayments(string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -143,7 +143,7 @@ namespace Ranalo.Controllers
             }
             await SetViewBags(settings, "index");
 
-            var assignedPayments = await _applicationReportService.GetAssignedPaymentsAsync(searchTerm, page, pageSize);
+            var assignedPayments = await _applicationReportService.GetAssignedPaymentsAsync(searchTerm.Trim(), page, pageSize);
 
             return View(assignedPayments);
         }
@@ -166,7 +166,7 @@ namespace Ranalo.Controllers
 
 
         [Route("allpayments/{page:int?}")]
-        public async Task<IActionResult> AllPayments(string searchTerm, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> AllPayments(string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -174,11 +174,11 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            await SetViewBags(settings, "index", searchTerm);
+            await SetViewBags(settings, "index", searchTerm.Trim());
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPayments = await _applicationReportService.GetAllPaymentsAsync(searchTerm, page: page, pageSize:pageSize);
+                var allPayments = await _applicationReportService.GetAllPaymentsAsync(searchTerm.Trim(), page: page, pageSize:pageSize);
 
                 return View(allPayments);
             }
@@ -346,7 +346,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("allpayments")]
-        public async Task<IActionResult> Search(string searchTerm)
+        public async Task<IActionResult> Search(string searchTerm = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -354,43 +354,43 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            await SetViewBags(settings, "index", searchTerm);
+            await SetViewBags(settings, "index", searchTerm.Trim());
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPayments = await _applicationReportService.GetAllPaymentsAsync(searchTerm);
+                var allPayments = await _applicationReportService.GetAllPaymentsAsync(searchTerm.Trim());
 
                 return View("AllPayments", allPayments);
             }
 
-            var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, searchTerm);
+            var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, searchTerm.Trim());
 
             return View("AllPayments", allPaymentsByUser);
         }
 
         [HttpPost]
         [Route("orders")]
-        public async Task<IActionResult> SearchDashBoard(string searchTerm)
+        public async Task<IActionResult> SearchDashBoard(string searchTerm = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
             {
                 return RedirectToAction("Index", "Login");
             }
-            await SetViewBags(settings, "index", searchTerm);
+            await SetViewBags(settings, "index", searchTerm.Trim());
 
             if (settings.RoleId == UserRole.Admin)
             {
                 var allAwaitngApproval = await _applicationReportService.GetAwaitingApprovalOrders(searchTerm);
-                allAwaitngApproval.SearchTerm = searchTerm;
+                allAwaitngApproval.SearchTerm = searchTerm.Trim();
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
                 return View("~/Views/Home/Index.cshtml", allAwaitngApproval);
             }
 
-            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, searchTerm);
+            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, searchTerm.Trim());
             ViewData["OrdersStatus"] = "All Orders";
-            waitingApprovalByUser.SearchTerm = searchTerm;
+            waitingApprovalByUser.SearchTerm = searchTerm.Trim();
             return View(waitingApprovalByUser);
         }
 
@@ -473,7 +473,7 @@ namespace Ranalo.Controllers
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
             ViewBag.UserName = settings.KnownAs;
-            ViewBag.SearchTerm = searchTerm;
+            ViewBag.SearchTerm = searchTerm.Trim();
             if (settings.RoleId == UserRole.Dealer)
             {
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);

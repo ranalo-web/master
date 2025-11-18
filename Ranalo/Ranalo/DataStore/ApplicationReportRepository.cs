@@ -319,7 +319,7 @@ namespace Ranalo.DataStore
                         AccountNoBigint AS AccountNo, 
                         SUM(AmountValue) AS Total_Paid
                     FROM ValidPayments
-                    GROUP AccountNoBigint
+                    GROUP BY AccountNoBigint
                 ),
                 PTable4 AS (
                     SELECT 

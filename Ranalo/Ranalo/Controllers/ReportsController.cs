@@ -37,7 +37,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null, null, page, pageSize, searchTerm);
+                var paymentSummaries = await _applicationReportService.GetStatusReportByDealer(null, null, page, pageSize, searchTerm.Trim());
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
@@ -48,7 +48,7 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference); 
 
-            var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(null, dealerId, page, pageSize, searchTerm);
+            var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(null, dealerId, page, pageSize, searchTerm.Trim());
 
             return View(delaerStatusReport);
 
@@ -70,7 +70,7 @@ namespace Ranalo.Controllers
             {
                 //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
 
-                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, null, null, page, pageSize, searchTerm);
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, null, null, page, pageSize, searchTerm.Trim());
 
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
@@ -104,7 +104,7 @@ namespace Ranalo.Controllers
             {
                 //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
 
-                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(false, true, null, null, page, pageSize, searchTerm);
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(false, true, null, null, page, pageSize, searchTerm.Trim());
 
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
@@ -116,7 +116,7 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, null, dealerId, page, pageSize, searchTerm);
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, null, dealerId, page, pageSize, searchTerm.Trim());
 
             return View(allDelaerStatusReport);
 
@@ -124,7 +124,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("missingmpesacode/{page:int?}")]
-        public async Task<IActionResult> MissingMpesa(string searchTerm, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> MissingMpesa(string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -135,7 +135,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allAwaitngApproval = await _applicationReportService.GetMissingMpesaOrders(searchTerm, page: page, pageSize: pageSize);
+                var allAwaitngApproval = await _applicationReportService.GetMissingMpesaOrders(searchTerm.Trim(), page: page, pageSize: pageSize);
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
                 return View("~/Views/Reports/MissingMpesa.cshtml", allAwaitngApproval);
@@ -230,7 +230,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("restructured/{page:int?}")]
-        public async Task<IActionResult> RestructuredReport(string searchTerm, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> RestructuredReport(string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -242,7 +242,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, null, null, page, pageSize, searchTerm);
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, null, null, page, pageSize, searchTerm.Trim());
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
@@ -253,14 +253,14 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, false, null, dealerId, page, pageSize, searchTerm);
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, false, null, dealerId, page, pageSize, searchTerm.Trim());
 
             return View(allDelaerStatusReport);
         }
 
         [HttpGet]
         [Route("manual-restructured/{page:int?}")]
-        public async Task<IActionResult> ManualRestructuredReport(string searchTerm, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> ManualRestructuredReport(string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -272,7 +272,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPaymentSummaries = await _applicationReportService.GetAllRestructured(searchTerm, page, pageSize);
+                var allPaymentSummaries = await _applicationReportService.GetAllRestructured(searchTerm.Trim(), page, pageSize);
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
@@ -283,7 +283,7 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.GetAllRestructured(searchTerm, page, pageSize);
+            var allDelaerStatusReport = await _applicationReportService.GetAllRestructured(searchTerm.Trim(), page, pageSize);
 
             return View(allDelaerStatusReport);
         }
@@ -294,7 +294,7 @@ namespace Ranalo.Controllers
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
-            ViewBag.SearchTerm = searchTerm;
+            ViewBag.SearchTerm = searchTerm.Trim();
 
             ViewBag.UserName = settings.KnownAs;
             if (settings.RoleId == UserRole.Dealer)

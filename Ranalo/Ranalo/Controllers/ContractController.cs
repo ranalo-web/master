@@ -4,6 +4,8 @@ using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.Services;
+using Ranalo.Woocommece.Api.Models;
+using Ranalo.Woocommece.Api.Services;
 
 namespace Ranalo.Controllers
 {
@@ -12,14 +14,16 @@ namespace Ranalo.Controllers
     {
         private readonly IContractService _contractService;
         private readonly IUserService _userService;
-        public ContractController(IContractService contractService, IUserService userService    )
+        private readonly ISyncService _syncService;
+        public ContractController(IContractService contractService, IUserService userService, ISyncService syncService)
         {
             _contractService = contractService;
             _userService = userService;
+            _syncService = syncService;
         }
         [HttpGet]
         [Route("contracts/{page:int?}")]
-        public async Task<IActionResult> Index(string searchTerm, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -30,7 +34,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var contracts = await _contractService.GetAllContractsAsync(page: page, pageSize: pageSize, searchTerm);
+                var contracts = await _contractService.GetAllContractsAsync(page: page, pageSize: pageSize, searchTerm.Trim());
                 
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
@@ -79,6 +83,7 @@ namespace Ranalo.Controllers
         [Route("add-contract")]
         public async Task<IActionResult> AddNewContractDetails(string firstName,
             int deviceId,
+            int orderId,
             string interval,
             decimal cost)
         {
@@ -88,18 +93,15 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            var contractToUpdate = new ContractInfo()
+            var contractToUpdate = new ContractCreateDto()
             {
-                ID = deviceId,
-                Deposit = 0,
-                Daily = 0,
-                Weekly = 0,
-                Monthly = 0,
-                RePaymentIntervals = interval,
-                TotalCost = cost,
+                AccountNo = deviceId.ToString(),
+                FirstName = firstName,
+                TotalAmount = cost,
+                OrderId = orderId
             };
 
-            var update = await _contractService.UpdateContractAsync(contractToUpdate);
+            await _syncService.CreateContractSingle(contractToUpdate);
 
             return RedirectToAction("Index", "Contract");
         }

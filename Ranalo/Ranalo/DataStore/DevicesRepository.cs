@@ -28,12 +28,10 @@ namespace Ranalo.DataStore
               WHERE NOT EXISTS (
                   SELECT 1
                   FROM Woo_Orders wo
-                  INNER JOIN KosePayments kp2 
-                      ON wo.MpesaDepositRef = kp2.MpesaCode
-                  WHERE kp2.AccountNoBigint = d.Id
-                    AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending' )
-            		AND d.[Status] = 'enrolled'
+                    WHERE wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending' )
+            		
             		)
+              AND d.[Status] = 'enrolled'
               AND (
                   @DealerId = 0 OR dealer.DealerReference = @DealerId
               )
@@ -49,41 +47,38 @@ namespace Ranalo.DataStore
             var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerReference, searchTerm });
 
             var sql = @"SELECT DISTINCT 
-                                d.Id AS DeviceId,
-                                d.DeviceGroupId,
-                                dealer.DealerReference AS DealerId,
-                                dealer.CompanyName AS DealerName,
-								d.CreatedAt,
-                                d.ImeiNo
-                            FROM Devices d
-                            INNER JOIN KosePayments kp 
-                                ON kp.AccountNoBigint = d.Id
-                            LEFT JOIN Dealers dealer
-                                ON dealer.DealerReference = d.DeviceGroupId
-                            WHERE NOT EXISTS (
-                                SELECT 1
-                                FROM Woo_Orders wo
-                                INNER JOIN KosePayments kp2 
-                                    ON wo.MpesaDepositRef = kp2.MpesaCode
-                                WHERE kp2.AccountNoBigint = d.Id
-                                  AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending')
-                                  AND d.[Status] = 'enrolled'
-                            )
-                            AND (
-                                @DealerId = 0 OR dealer.DealerReference = @DealerId
-                            )
-                            AND d.[Status] = 'enrolled'
-                        AND (
-                                @SearchTerm IS NULL
-                                OR d.Id LIKE '%' + @SearchTerm + '%'
-                                OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
-                                OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
-                                OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
-                            )
-                            
-                          order by d.Id
-                          OFFSET @Offset ROWS 
-                          FETCH NEXT @pageSize ROWS ONLY";
+    d.Id AS DeviceId,
+    d.DeviceGroupId,
+    dealer.DealerReference AS DealerId,
+    dealer.CompanyName AS DealerName,
+	d.CreatedAt,
+    d.ImeiNo
+FROM Devices d
+LEFT JOIN Dealers dealer
+    ON dealer.DealerReference = d.DeviceGroupId
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Woo_Orders wo
+	INNER JOIN KosePayments kp2 
+    ON wo.MpesaDepositRef = kp2.MpesaCode
+    WHERE kp2.AccountNoBigint = d.Id
+    AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending')
+)
+AND d.[Status] = 'enrolled'
+AND (
+    @DealerId = 0 OR dealer.DealerReference = @DealerId
+)
+AND d.[Status] = 'enrolled'
+AND (
+    @SearchTerm IS NULL
+    OR d.Id LIKE '%' + @SearchTerm + '%'
+    OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+    OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
+    OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
+)
+order by d.CreatedAt
+OFFSET @Offset ROWS 
+FETCH NEXT @pageSize ROWS ONLY";
             var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerReference, offset, pageSize, searchTerm });
 
             return new DevicesWithDealerViewModel()
@@ -230,7 +225,7 @@ namespace Ranalo.DataStore
                             INNER JOIN (
                                 SELECT AccountNoBigint AS AccountNo, MIN(PaymentDate) AS First_Payment_Date
                                 FROM ValidPayments
-                                GROUP AccountNoBigint
+                                GROUP BY AccountNoBigint
                             ) t2 
                               ON p.AccountNoBigint = t2.AccountNo 
                              AND p.PaymentDate = t2.First_Payment_Date
@@ -430,6 +425,217 @@ namespace Ranalo.DataStore
             var device = await _db.QueryFirstOrDefaultAsync<Device>(sql, new { AccountId = accountId });
 
             return device;
+        }
+
+        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "")
+        {
+            var offset = (page - 1) * pageSize;
+
+            var countSql = @"SELECT COUNT(DISTINCT D.Id)
+            FROM Devices d
+              LEFT JOIN Contract_Info ci
+                  ON d.Id = ci.ID
+				  WHERE ci.ID IS NULL
+				  AND d.[Status] = 'enrolled'
+              AND (
+                @SearchTerm IS NULL
+                OR d.Id LIKE '%' + @SearchTerm + '%'
+            )";
+
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerReference, searchTerm });
+
+            var sql = @"SELECT DISTINCT 
+                    d.Id AS DeviceId,
+                    d.DeviceGroupId,
+                    dealer.DealerReference AS DealerId,
+                    dealer.CompanyName AS DealerName,
+	                d.CreatedAt,
+                    d.ImeiNo,
+                    d.EnrolledOn,
+                    d.[LastConnectedAt],
+                    d.NextLockDateIsoFormat,
+                    d.Locked
+                FROM Devices d
+                LEFT JOIN Contract_Info ci
+                ON d.Id = ci.ID
+                LEFT JOIN Dealers dealer
+                ON dealer.DealerReference = d.DeviceGroupId
+                WHERE ci.ID IS NULL
+                AND d.[Status] = 'enrolled'
+                AND (
+                    @DealerId = 0 OR d.DeviceGroupId = @DealerId
+                )
+                AND (
+                    @SearchTerm IS NULL
+                    OR d.Id LIKE '%' + @SearchTerm + '%'
+                    OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+                    OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
+                    OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
+                )
+                order by d.CreatedAt
+                OFFSET @Offset ROWS 
+                FETCH NEXT @pageSize ROWS ONLY";
+            var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerReference, offset, pageSize, searchTerm });
+
+            return new DevicesWithDealerViewModel()
+            {
+                Devices = records.ToList(),
+                CurrentPage = page,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                TotalRecords = totalRecords,
+                SearchTerm = searchTerm,
+                PageSize = pageSize
+            };
+        }
+
+        public async Task<DevicesWithDealerViewModel> GetAllDevicesAsync(int? dealerId, int page, int pageSize, string searchTerm)
+        {
+            var offset = (page - 1) * pageSize;
+
+            var countSql = @"SELECT COUNT(DISTINCT D.Id)
+            FROM Devices d
+              LEFT JOIN Dealers dealer
+                  ON dealer.DealerReference = d.DeviceGroupId
+              WHERE d.[Status] = 'enrolled'
+              AND (
+                  @DealerId IS NULL OR dealer.DealerReference = @DealerId
+              )
+            
+              AND (
+                @SearchTerm IS NULL
+                OR d.Id LIKE '%' + @SearchTerm + '%'
+                OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+                OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
+                OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
+            )";
+
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerId, searchTerm });
+
+            var sql = @"SELECT DISTINCT 
+                                d.Id AS DeviceId,
+                                d.DeviceGroupId,
+                                dealer.DealerReference AS DealerId,
+                                dealer.CompanyName AS DealerName,
+								d.CreatedAt,
+                                d.ImeiNo,
+                                d.EnrolledOn,
+                                d.[LastConnectedAt],
+                                d.NextLockDateIsoFormat
+                            FROM Devices d
+                            LEFT JOIN Dealers dealer
+                                ON dealer.DealerReference = d.DeviceGroupId
+                            WHERE d.[Status] = 'enrolled'
+                            AND (
+                                @DealerId IS NULL OR dealer.DealerReference = @DealerId
+                            )
+                            
+                        AND (
+                                @SearchTerm IS NULL
+                                OR d.Id LIKE '%' + @SearchTerm + '%'
+                                OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+                                OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
+                                OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
+                            )
+                            
+                          order by d.CreatedAt
+                          OFFSET @Offset ROWS 
+                          FETCH NEXT @pageSize ROWS ONLY";
+            var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerId, offset, pageSize, searchTerm });
+
+            return new DevicesWithDealerViewModel()
+            {
+                Devices = records.ToList(),
+                CurrentPage = page,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                TotalRecords = totalRecords,
+                SearchTerm = searchTerm,
+                PageSize = pageSize
+            };
+        }
+
+        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoPayments(int? dealerId, int page, int pageSize, string searchTerm)
+        {
+            var offset = (page - 1) * pageSize;
+
+            var countSql = @"SELECT COUNT(DISTINCT D.Id)
+            FROM Devices d
+LEFT JOIN KosePayments kp
+    ON kp.AccountNoBigint = d.Id
+LEFT JOIN OrphanedPayments op
+    ON op.AccountNoBigint = d.Id 
+       OR op.MpesaCode IN (
+           SELECT MpesaCode FROM KosePayments WHERE AccountNoBigint = d.Id
+       )
+LEFT JOIN Dealers dealer
+    ON dealer.DealerReference = d.DeviceGroupId
+WHERE kp.AccountNoBigint IS NULL
+  AND op.AccountNoBigint IS NULL
+  AND d.Status = 'enrolled'
+              AND (
+                  @DealerId IS NULL OR dealer.DealerReference = @DealerId
+              )
+            
+              AND (
+                @SearchTerm IS NULL
+                OR d.Id LIKE '%' + @SearchTerm + '%'
+                OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+                OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
+                OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
+            )";
+
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerId, searchTerm });
+
+            var sql = @"SELECT 
+    d.Id AS DeviceId,
+    d.DeviceGroupId,
+    dealer.DealerReference AS DealerId,
+    dealer.CompanyName AS DealerName,
+    d.CreatedAt,
+    d.ImeiNo,
+    d.EnrolledOn,
+    d.LastConnectedAt,
+    d.Locked,
+    d.NextLockDateIsoFormat
+FROM Devices d
+LEFT JOIN KosePayments kp
+    ON kp.AccountNoBigint = d.Id
+LEFT JOIN OrphanedPayments op
+    ON op.AccountNoBigint = d.Id 
+       OR op.MpesaCode IN (
+           SELECT MpesaCode FROM KosePayments WHERE AccountNoBigint = d.Id
+       )
+LEFT JOIN Dealers dealer
+    ON dealer.DealerReference = d.DeviceGroupId
+WHERE kp.AccountNoBigint IS NULL
+  AND op.AccountNoBigint IS NULL
+  AND d.Status = 'enrolled'
+                          AND d.[Status] = 'enrolled'
+                            AND (
+                                @DealerId IS NULL OR dealer.DealerReference = @DealerId
+                            )
+                            
+                        AND (
+                                @SearchTerm IS NULL
+                                OR d.Id LIKE '%' + @SearchTerm + '%'
+                                OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+                                OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
+                                OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
+                            )
+                            
+                          order by d.CreatedAt
+                          OFFSET @Offset ROWS 
+                          FETCH NEXT @pageSize ROWS ONLY";
+            var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerId, offset, pageSize, searchTerm });
+
+            return new DevicesWithDealerViewModel()
+            {
+                Devices = records.ToList(),
+                CurrentPage = page,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                TotalRecords = totalRecords,
+                SearchTerm = searchTerm,
+                PageSize = pageSize
+            };
         }
     }
 }
