@@ -24,7 +24,7 @@
                         <a href="#" class="nk-nav-compact nk-quick-nav-icon d-none d-xl-inline-flex" data-target="sidebarMenu"><em class="icon ni ni-menu"></em></a>
                     </div>
                     <div class="nk-sidebar-brand">
-                        <a href="/orders" class="logo-link nk-sidebar-logo">
+                        <a href="/collections-home" class="logo-link nk-sidebar-logo">
                             <img class="logo-light logo-img" src="./images/Ranalo_Credit_Logo.png" srcset="./images/Ranalo_Credit_Logo.png 2x" alt="logo">
                             <img class="logo-dark logo-img" src="./images/Ranalo_Credit_Logo.png" srcset="./images/Ranalo_Credit_Logo.png 2x" alt="logo-dark">
                         </a>
@@ -39,197 +39,28 @@
                                 </li>
 
                                 <li class="nk-menu-item">
-                                    <a href="/index" class="nk-menu-link">
+                                    <a href="/collections-home" class="nk-menu-link">
                                         <span class="nk-menu-icon"><em class="icon ni ni-presentation"></em></span>
                                         <span class="nk-menu-text">Home</span>
                                     </a>
+                                    
                                 </li><!-- .nk-menu-item -->
-                                <li class="nk-menu-item">
-                                    <a href="/orders" class="nk-menu-link">
-                                        <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
-                                        <span class="nk-menu-text">Orders</span>
-                                    </a>
-                                </li>
-                                <li class="nk-menu-item">
-                                    <a href="/new-collections" class="nk-menu-link">
-                                        <span class="nk-menu-icon"><em class="icon ni ni-briefcase-fill"></em></span>
+                                <li class="nk-menu-item has-sub">
+                                    <a class="nk-menu-link nk-menu-toggle" href="collections">
+                                        <span class="nk-menu-icon">
+                                            <em class="icon ni ni-briefcase-fill"></em>
+                                        </span>
                                         <span class="nk-menu-text">Collections</span>
                                     </a>
-                                </li>
-                                @if (ViewBag.IsAdmin || ViewBag.IsApprover)
-                                {
-                                    <li class="nk-menu-item ">
-                                        <a class="nk-menu-link " href="/approver">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
-                                            <span class="nk-menu-text">Approver</span>
-                                        </a>
-                                    </li>
-                                }
-                                    @if (ViewBag.IsAdmin)
-                                {
-                                    <li class="nk-menu-item ">
-                                        <a class="nk-menu-link " href="/statements">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
-                                            <span class="nk-menu-text">Statements</span>
-                                        </a>
-                                    </li>
-                                        <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/contracts">
-                                                    <span class="nk-menu-icon"><em class="icon ni ni-file-text-fill"></em></span>
-                                                <span class="nk-menu-text">Contracts</span>
-                                            </a>
-                                        </li>
-                                            <li class="nk-menu-item has-sub">
-                                        <a class="nk-menu-link nk-menu-toggle" href="users">
-                                            <span class="nk-menu-icon">
-                                                <em class="icon ni ni-user-list"></em>
-                                            </span>
-                                            <span class="nk-menu-text">Users</span>
-                                        </a>
-                                        <ul class="nk-menu-sub">
-
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/users">
-                                                    <span class="nk-menu-text">Users</span>
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                }
-
-                                 @if (ViewBag.IsDealer)
-                                {
-                                    <li class="nk-menu-item ">
-                                        <a class="nk-menu-link " href="/statements">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
-                                            <span class="nk-menu-text">Statements</span>
-                                        </a>
-                                    </li>
-                                }
-                                
-
-                                <li class="nk-menu-item has-sub">
-                                    <a class="nk-menu-link nk-menu-toggle" href="payments">
-                                        <span class="nk-menu-icon">
-                                            <em class="icon ni ni-tranx"></em>
-                                        </span>
-                                        <span class="nk-menu-text">Payments</span>
-                                    </a>
                                     <ul class="nk-menu-sub">
 
-                                        @if ((bool)(ViewData["IsAdmin"] ?? false))
-                                        {
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/orphanedpayments">
-                                                    <span class="nk-menu-text">Orphaned Payments</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/assignedpayments">
-                                                    <span class="nk-menu-text">Assigned Payments</span>
-                                                </a>
-                                            </li>
-                                        }
-
                                         <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/paymentsummary">
-                                                <span class="nk-menu-text">Payment Summary</span>
-                                            </a>
-                                        </li>
-
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/allpayments">
-                                                <span class="nk-menu-text">All Payments</span>
+                                            <a class="nk-menu-link " href="/new-collections">
+                                                <span class="nk-menu-text">New Collections</span>
                                             </a>
                                         </li>
                                     </ul>
                                 </li>
-
-                                <li class="nk-menu-item has-sub">
-                                    <a class="nk-menu-link nk-menu-toggle" href="devices">
-                                        <span class="nk-menu-icon">
-                                            <em class="icon ni ni-mobile"></em>
-                                        </span>
-                                        <span class="nk-menu-text">Devices</span>
-                                    </a>
-                                    <ul class="nk-menu-sub">
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/alldevices">
-                                                <span class="nk-menu-text">All Devices</span>
-                                            </a>
-                                        </li>
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/devices-with-no-orders">
-                                                <span class="nk-menu-text">No Orders</span>
-                                            </a>
-                                        </li>
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/devices-with-no-contracts">
-                                                <span class="nk-menu-text">No Contracts</span>
-                                            </a>
-                                        </li>
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/devices-nopayments">
-                                                <span class="nk-menu-text">No Payments</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-
-                                <li class="nk-menu-item has-sub">
-                                    <a class="nk-menu-link nk-menu-toggle" href="reports">
-                                        <span class="nk-menu-icon">
-                                            <em class="icon ni ni-reports"></em>
-                                        </span>
-                                        <span class="nk-menu-text">Reports</span>
-                                    </a>
-                                    <ul class="nk-menu-sub">
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/statusreport">
-                                                <span class="nk-menu-text">Status Report</span>
-                                            </a>
-                                        </li>
-                                        @if (ViewBag.IsAdmin || ViewBag.IsApprover)
-                                        {
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/missingmpesacode">
-                                                    <span class="nk-menu-text">Missing Mpesa</span>
-                                                </a>
-                                            </li>
-
-                                                <li class="nk-menu-item ">
-                                                        <a class="nk-menu-link " href="/never-paid">
-                                                        <span class="nk-menu-text">Never Paid</span>
-                                                    </a>
-                                                </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/arrearsreport">
-                                                    <span class="nk-menu-text">Arrears Report</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/collections">
-                                                    <span class="nk-menu-text">Collections 90</span>
-                                                </a>
-                                            </li>
-
-                                                <li class="nk-menu-item ">
-                                                        <a class="nk-menu-link " href="/restructured">
-                                                        <span class="nk-menu-text">Auto Restructured</span>
-                                                    </a>
-                                                </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/manual-restructured">
-                                                    <span class="nk-menu-text">Manual Restructured</span>
-                                                </a>
-                                            </li>
-                                            //manual-restructured
-                                        }
-                                    </ul>
-
-                                    
-                                </li>
-
                             </ul>
                         </div><!-- .nk-sidebar-menu -->
                     </div><!-- .nk-sidebar-content -->
@@ -245,7 +76,7 @@
                                 <a href="#" class="nk-nav-toggle nk-quick-nav-icon" data-target="sidebarMenu"><em class="icon ni ni-menu"></em></a>
                             </div>
                             <div class="nk-header-brand d-xl-none">
-                                <a href="/dashboard" class="logo-link">
+                                <a href="/collections-home" class="logo-link">
                                     <img class="logo-light logo-img" src="./images/Ranalo_Credit_Logo.png" srcset="./images/Ranalo_Credit_Logo.png" alt="logo">
                                     <img class="logo-dark logo-img" src="./images/Ranalo_Credit_Logo.png" srcset="./images/Ranalo_Credit_Logo.png" alt="logo-dark">
                                 </a>

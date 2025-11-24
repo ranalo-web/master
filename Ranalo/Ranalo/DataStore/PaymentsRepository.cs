@@ -89,7 +89,8 @@ namespace Ranalo.DataStore
 
             const string query = @"SELECT ID, First_Name 
                                FROM Contract_Info 
-                               WHERE ID IN @Ids";
+                               WHERE ID IN @Ids
+                                AND EndDate IS NULL";
 
             var results = _db.Query<(int ID, string FirstName)>(query, new { Ids = validIds });
 
@@ -260,7 +261,7 @@ namespace Ranalo.DataStore
                             GETDATE()
                         ) AS Auto_Lock_Date_Pmt
                     FROM Devices d
-                    LEFT JOIN Contract_Info c ON d.id = c.ID
+                    LEFT JOIN Contract_Info c ON d.id = c.ID AND c.EndDate IS NULL
                     LEFT JOIN payment_agg dp ON d.id = dp.account_no
                     LEFT JOIN first_payment_details f ON dp.account_no = f.account_no
                     LEFT JOIN last_payment_details l ON dp.account_no = l.account_no

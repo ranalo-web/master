@@ -237,6 +237,7 @@ FETCH NEXT @pageSize ROWS ONLY";
                         	from Devices d
                         	INNER join KosePayments p on p.AccountNoBigint = d.Id
                         	INNER join Contract_Info ci on ci.ID = p.AccountNoBigint
+                            AND ci.EndDate IS NULL
                         	--where  wo.MpesaDepositRef is not null
                             where d.[Status] = 'enrolled'
                             GROUP BY d.Id, ci.Total_Cost, ci.First_Name
@@ -339,6 +340,7 @@ FETCH NEXT @pageSize ROWS ONLY";
                         	from Devices d
                         	INNER join KosePayments p on p.AccountNoBigint = d.Id
                         	INNER join Contract_Info ci on ci.ID = p.AccountNoBigint
+                            AND ci.EndDate IS NULL
                         	--where  wo.MpesaDepositRef is not null
                             where d.[Status] = 'enrolled'
                             GROUP BY d.Id, ci.Total_Cost, ci.First_Name
@@ -436,6 +438,7 @@ FETCH NEXT @pageSize ROWS ONLY";
               LEFT JOIN Contract_Info ci
                   ON d.Id = ci.ID
 				  WHERE ci.ID IS NULL
+                  
 				  AND d.[Status] = 'enrolled'
               AND (
                 @SearchTerm IS NULL

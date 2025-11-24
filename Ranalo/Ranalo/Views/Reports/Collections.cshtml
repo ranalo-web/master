@@ -335,7 +335,19 @@
                                 <div class="nk-tb-col nk-tb-col-tools">
                                     <ul class="nk-tb-actions gx-2">
                                         <li class="nk-tb-action-hidden">
-                                            <a href="/account-details/@report.AccountNo" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Disbursed Loan">
+                                            <a href="#edit-contract"
+                                            class="btn btn-sm btn-icon btn-trigger"
+                                            data-bs-toggle="modal"
+                                            data-id="@report.AccountNo"
+                                            data-name="@report.FirstName"
+                                            data-deposit="@report.Deposit"
+                                            data-interval="@report.RePaymentIntervals"
+                                            data-daily="@report.Daily"
+                                            data-weekly="@report.Weekly"
+                                            data-monthly="@report.Monthly"
+                                            data-loan="@report.TotalLoan"
+                                            data-bs-placement="top"
+                                            title="Recover Device">
                                                 <em class="icon ni ni-user-check-fill"></em>
                                             </a>
                                         </li>
@@ -345,7 +357,10 @@
                                                 <div class="dropdown-menu dropdown-menu-end">
                                                     <ul class="link-list-opt no-bdr">
                                                         <li><a href="/account-details/@report.AccountNo"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
-                                                        <li><a href="#edit-loan" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>View Account</span></a></li>
+                                                        <li><a href="#assign-collector"
+                                                               data-id="@report.AccountNo"
+                                                               data-name="@report.FirstName"
+                                                            data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Debt Collection</span></a></li>
                                                         @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
                                                     </ul>
                                                 </div>
@@ -423,9 +438,9 @@
                                 <div>Page</div>
                                 <div>
                                     <select class="form-select js-select2"
-                                            data-search="on"
-                                            data-dropdown="xs center"
-                                            onchange="location.href='/collections?page=' + this.value">
+                                    data-search="on"
+                                    data-dropdown="xs center"
+                                    onchange="location.href='/collections?page=' + this.value">
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>
@@ -444,99 +459,71 @@
     </div><!-- .nk-block -->
 </div>
 
-<div class="modal fade" tabindex="-1" id="edit-loan">
+<div class="modal fade" tabindex="-1" id="edit-contract">
     <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
             <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <em class="icon ni ni-cross-sm"></em>
             </a>
             <div class="modal-body modal-body-md">
-                <h5 class="modal-title">Update Loan</h5>
-                <form action="#" class="mt-2">
+                <h5 class="modal-title">Recover Device</h5>
+                <form action="/collection-device" method="post" class="mt-2">
                     <div class="row g-gs">
                         <div class="col-12">
                             <div class="form-group">
-                                <label class="form-label" for="edit-name">Borrower Name</label>
+                                <label class="form-label" for="modalFirstName">Customer Name</label>
                                 <div class="form-control-wrap">
-                                    <input type="text" class="form-control" id="edit-name" value="Abu Bin Ishtiyak" required>
+                                    <input type="text" name="oldName" class="form-control" readonly id="modalFirstName" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-12">
                             <div class="form-group">
-                                <label class="form-label" for="edit-acc">Account No.</label>
+                                <label class="form-label" for="modalDeviceId">Account No.</label>
                                 <div class="form-control-wrap">
-                                    <input type="text" class="form-control" id="edit-acc" value="100567" required>
+                                    <input type="text" class="form-control" name="displayDeviceId" readonly id="modalDeviceId" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label">Category</label>
+                                <label class="form-label" for="edit-amount">New Customer Name</label>
                                 <div class="form-control-wrap">
-                                    <select class="form-select js-select2">
-                                        <option value="education">Education</option>
-                                        <option value="emergency">Emergency</option>
-                                        <option value="daily">Daily</option>
-                                        <option value="kibaba">Kibaba</option>
-                                        <option value="bilashi">Bilashi</option>
-                                    </select>
+                                    <input type="text" name="newName" class="form-control" id="edit-amount" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="edit-amount">Amount</label>
+                                <label class="form-label" for="edit-month">Phone Number</label>
                                 <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-amount" value="20000" required>
+                                    <input type="text" name="Phone Number" class="form-control" id="edit-month" value="6" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="edit-interest">Interest(%)</label>
+                                <label class="form-label" for="edit-income">Total Cost</label>
                                 <div class="form-control-wrap">
-                                    <select class="form-select js-select2">
-                                        <option value="5">5%</option>
-                                        <option value="7">7%</option>
-                                        <option value="10">10%</option>
-                                        <option value="15">15%</option>
-                                        <option value="20">20%</option>
-                                    </select>
+                                    <input type="number" step="0.01" name="totalCost" class="form-control" id="edit-income" value="10000" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="edit-month">Month</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-month" value="6" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-income">Borrower Income</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-income" value="10000" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-date">Date</label>
+                                <label class="form-label" for="edit-date">Start Date</label>
                                 <div class="form-control-wrap">
                                     <div class="form-icon form-icon-left">
                                         <em class="icon ni ni-calendar"></em>
                                     </div>
-                                    <input type="text" id="edit-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
+                                    <input type="text" name="startDate" id="edit-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
                                 </div>
                             </div>
                         </div>
                         <div class="col-12">
                             <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
                                 <li>
-                                    <a href="#" data-bs-dismiss="modal" class="btn btn-lg btn-primary">Update Loan</a>
+                                    <button type="submit" class="btn btn-lg btn-primary">Recover Account</button>
                                 </li>
                                 <li>
                                     <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
@@ -549,3 +536,88 @@
         </div>
     </div>
 </div><!-- .Edit Modal-Content -->
+
+<!--Assign Contract to debt collector-->
+<div class="modal fade" tabindex="-1" id="assign-collector">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Send to Collector</h5>
+                <form action="/assign-collector" method="post" class="mt-2">
+                    <div class="row g-gs">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalFirstName1">Customer Name</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="oldName" class="form-control" readonly id="modalFirstName1" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalDeviceId1">Account No.</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" class="form-control" name="displayDeviceId" readonly id="modalDeviceId1" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="overline-title overline-title-alt">Select Collector</label>
+                                <select class="form-select js-select2" name="debtCollectorUserId">
+                                    @foreach (var item in ViewBag.Collectors)
+                                    {
+                                        <option value="@item.Value">@item.Text</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+          
+                        <div class="col-12">
+                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                                <li>
+                                    <button type="submit" class="btn btn-lg btn-primary">Assign Collector</button>
+                                </li>
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div><!-- .Edit Modal-Content -->
+
+
+@section Scripts
+            {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+                var modal = document.getElementById('edit-contract');
+            modal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget; // Button that triggered the modal
+                var deviceId = button.getAttribute('data-id');
+                    var name = button.getAttribute('data-name');
+                    document.getElementById('modalDeviceId').value = deviceId;
+                    document.getElementById('modalFirstName').value = name;
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+                        var modal1 = document.getElementById('assign-collector');
+        modal1.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget; // Button that triggered the modal
+            var deviceId = button.getAttribute('data-id');
+                var name = button.getAttribute('data-name');
+                document.getElementById('modalDeviceId1').value = deviceId;
+                document.getElementById('modalFirstName1').value = name;
+        });
+        });
+    </script>
+ }

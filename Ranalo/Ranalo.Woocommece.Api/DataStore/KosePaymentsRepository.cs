@@ -240,7 +240,9 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         public async Task<int> AddContractAsync(ContractInfo contract)
         {
-            var existingSql = "SELECT ID FROM Contract_Info WHERE ID = @Id";
+            var existingSql = @"SELECT ID FROM Contract_Info 
+                                WHERE ID = @Id
+                                AND EndDate IS NULL";
             int? existingContractId = await _db.QueryFirstOrDefaultAsync<int?>(existingSql, new { Id = contract.ID });
 
             if (existingContractId.HasValue)

@@ -167,7 +167,6 @@ namespace Ranalo.Woocommece.Api.Services
             var contractId = await _kosePaymentsRepository.AddContractAsync(contract);
 
             //Update the Orders with Contract Id 
-
             await _kosePaymentsRepository.UpdateOrderContract(order.OrderId, contractId);
         }
 
@@ -237,7 +236,7 @@ namespace Ranalo.Woocommece.Api.Services
         public async Task<List<WooOrder>> SyncWooOrders()
         {
             // Start from last sync date or fallback to 3 days ago
-            var iso8601UtcDate = DateTime.UtcNow.AddDays(-1000).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var iso8601UtcDate = DateTime.UtcNow.AddDays(-11).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
             var lastLog = await GetLastSycnLogDetails();
             if (lastLog != null)

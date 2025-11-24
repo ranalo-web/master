@@ -1,4 +1,5 @@
-﻿using DocumentFormat.OpenXml.Wordprocessing;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Mvc;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Services;
@@ -18,7 +19,7 @@ namespace Ranalo.Controllers
         [HttpGet]
         [Route("")]
         public IActionResult Index()
-        {
+            {
             var cookie = Request.Cookies["UserSettings"];
             if (string.IsNullOrEmpty(cookie))
             {
@@ -35,6 +36,20 @@ namespace Ranalo.Controllers
 
             // Optional: set it to HttpContext.Items if you want to use it elsewhere
             HttpContext.Items["UserSettings"] = cookieValue;
+
+            switch (cookieValue.RoleId)
+            {
+                case UserRole.Admin:
+                    return RedirectToAction("Index", "Home");
+                case UserRole.Dealer:
+                    return Redirect("/Index");
+                case UserRole.Approver:
+                    return RedirectToAction("Index", "Approver");
+                case UserRole.Collector:
+                    return RedirectToAction("Index", "Collections");
+                default:
+                    break;
+            }
 
             return Redirect("/Index");
         }
@@ -65,6 +80,7 @@ namespace Ranalo.Controllers
                     ViewBag.IsAdmin = user.RoleId == UserRole.Admin;
                     ViewBag.IsApprover = user.RoleId == UserRole.Approver;
                     ViewBag.IsDealer = user.RoleId == UserRole.Dealer;
+                    ViewBag.IsCollector = user.RoleId == UserRole.Collector;
 
 
                     switch (user.RoleId)
@@ -75,13 +91,15 @@ namespace Ranalo.Controllers
                             return Redirect("/Index");
                         case UserRole.Approver:
                             return RedirectToAction("Index", "Approver");
+                        case UserRole.Collector:
+                            return RedirectToAction("Index", "Collections");
                         default:
                             break;
                     }
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("Index", "Login");
                 }
 
-                return RedirectToAction("Index"); ;
+                return RedirectToAction("Index");
             }
             catch (Exception)
             {

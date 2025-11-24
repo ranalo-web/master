@@ -7,7 +7,8 @@
         Dealer,
         Customer,
         Supplier,
-        Approver
+        Approver,
+        Collector
     }
 
     public enum UserStatus

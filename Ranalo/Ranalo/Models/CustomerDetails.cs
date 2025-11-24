@@ -9,6 +9,7 @@ namespace Ranalo.Models
     {
         public int Id { get; set; }
         public int OrderID { get; set; }
+        public int AccountId { get; set; }
         public string Status { get; set; }
         public DateTime DateCreated { get; set; }
         public DateTime DateModified { get; set; }

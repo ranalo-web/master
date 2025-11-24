@@ -79,7 +79,7 @@ namespace Ranalo.ScheduledServices
             autoLockRecords?.RemoveAll(x => x.Arrears < 0);
 
             var qualifying = autoLockRecords?
-            .Where(r => NeedsUpdate(r.NextLockDate))
+            //.Where(r => NeedsUpdate(r.NextLockDate))
             .ToList();
 
             var devicesToLock = new List<LockTransaction>();

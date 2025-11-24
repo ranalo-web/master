@@ -249,6 +249,7 @@ namespace Ranalo.DataStore
                         	from Devices d
                         	INNER join KosePayments p on p.AccountNoBigint = d.Id
                         	INNER join Contract_Info ci on ci.ID = p.AccountNoBigint
+                            AND ci.EndDate IS NULL
                         	--where  wo.MpesaDepositRef is not null
                             where d.[Status] = 'enrolled'
                             GROUP BY d.Id, ci.TotalAmount, ci.First_Name,
@@ -363,6 +364,7 @@ namespace Ranalo.DataStore
                     from Devices d
                     INNER join KosePayments p on p.AccountNoBigint = d.Id
                     INNER join Contract_Info ci on ci.ID = p.AccountNoBigint
+                    AND ci.EndDate IS NULL
                     --where  wo.MpesaDepositRef is not null
                     where d.[Status] = 'enrolled'
                     GROUP BY 
@@ -949,6 +951,7 @@ namespace Ranalo.DataStore
                                     ci.First_Name AS FirstName
 	                        		FROM Base b
 	                        		INNER JOIN Contract_Info ci on b.Id = ci.ID
+                                    AND ci.EndDate IS NULL
                             ),
                             Final AS (
                                 SELECT 
@@ -1207,6 +1210,7 @@ Computed AS (
         ci.First_Name AS FirstName
     FROM FilteredSTable s
     INNER JOIN Contract_Info ci ON s.Id = ci.ID
+    AND ci.EndDate IS NULL
 )
 
 -- ============================================================
@@ -1372,6 +1376,7 @@ ORDER BY LastPaidDate DESC";
                         JOIN #PTable5 p5 ON d.Id = p5.AccountNo
                         JOIN #PTable4 p4 ON d.Id = p4.AccountNo
                         JOIN Contract_Info ci ON ci.ID = d.Id
+                        AND ci.EndDate IS NULL
 						LEFT JOIN #PTable24hrs p24 ON d.Id = p24.AccountNo
                         WHERE d.[Status] = 'enrolled';
                         
@@ -1420,6 +1425,7 @@ ORDER BY LastPaidDate DESC";
         ci.First_Name AS CustomerName
     FROM Devices d
     INNER JOIN Contract_Info ci ON ci.ID = d.Id
+    AND ci.EndDate IS NULL
     WHERE d.Status = 'enrolled'
 )
 SELECT COUNT(DISTINCT kp.AccountNoBigint) AS ActiveAccountCount
@@ -1967,6 +1973,7 @@ WHERE kp.AccountNoBigint IS NOT NULL
                     AND vp.PaymentDateValue > r.Date_Agreed
                 INNER JOIN Contract_Info ci 
                     ON ci.ID = r.AccountNo
+                    AND ci.EndDate IS NULL
                 WHERE 
                     @SearchTerm IS NULL
                     OR r.AccountNo LIKE '%' + @SearchTerm + '%'

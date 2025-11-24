@@ -22,7 +22,6 @@ namespace Ranalo.Services
         Task<User?> GetUserByPasswordAsync(string password);
 
         Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash);
-
-
+        Task<IEnumerable<User>> GetDebtCollectors();
     }
 }

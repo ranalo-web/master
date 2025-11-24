@@ -77,6 +77,11 @@ namespace Ranalo.Services
 
             return users.ToList();
         }
+
+        public async Task<IEnumerable<User>> GetDebtCollectors()
+        {
+            return await _userRepository.GetDebtCollectorsAsync();
+        }
         // similarly: GetById, Update, Delete
     }
 }

@@ -6,6 +6,7 @@ namespace Ranalo.Services
 {
     public interface IApplicationReportService
     {
+        Task<CustomerDetails> GetCustomerDetailsByAccountIdAsync(long orderId);
         Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrders(string searchTerm = "", int page = 1, int pageSize = 10);
         Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrdersByUser(int userId, string searchTerm = "", int page = 1, int pageSize = 10);
 

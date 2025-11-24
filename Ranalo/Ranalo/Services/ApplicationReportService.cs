@@ -121,7 +121,33 @@ namespace Ranalo.Services
             var result = await _applicationReportRepository.GetAllDevicesAsync();
             return result.ToList();
         }
-            
+
+        public async Task<CustomerDetails> GetCustomerDetailsByAccountIdAsync(long orderId)
+        {
+            CustomerDetails? customerDetails = null;
+
+            customerDetails = await _applicationReportRepository.GetCustomerDetailsByAccountId((int)orderId);
+            if (customerDetails != null) 
+            {
+                var identityImages = await _applicationReportRepository.GetIdentityImagesForOrder(customerDetails.OrderID);
+
+                customerDetails?.IdentityImages?.AddRange(identityImages.ToList());
+
+                //Populate Order device details
+                customerDetails.Product = await _applicationReportRepository.GetProductDetailsForOrder(customerDetails.OrderID);
+
+                customerDetails.NextOfKin = await _applicationReportRepository.GetNextOfKinForOrder(customerDetails.OrderID);
+                
+            }
+
+            var device = await _devicesRepository.GetDeviceByAccountId(orderId);
+            if (device != null)
+            {
+                customerDetails.DeviceDetails = device;
+            }
+
+            return customerDetails;
+        }
         public async Task<CustomerDetails> GetCustomerDetailsByOrderIdAsync(long orderId)
         {
             CustomerDetails? customerDetails = null;
@@ -306,7 +332,7 @@ namespace Ranalo.Services
                         Status = payment.Status,
                         LockType = payment.LockType,
                         NextLockDateIsoFormat = payment.NextLockDateIsoFormat,
-                        NotPaying90D = _calculatorService.HasNotPaidInLast90Days(DateHelper.ParseCustomDate(payment.NextLockDateIsoFormat)),
+                        NotPaying90D = _calculatorService.HasNotPaidInLast90Days(payment.LastPaidDate),
 
                     };
                     if (statusRow.Arrears < 0)
@@ -364,11 +390,13 @@ namespace Ranalo.Services
                     return await SetMobileStatusRecords(isInArrears, notPaid90, accountId, deviceGroupId, pageNumber, pageSize, searchTerm, result);
                 }
             );
+
+            var allQualified = result.page.DistinctBy(x => x.AccountNo).ToList();
             return new StatusReportViewModel()
             {
                 CurrentPage = page,
                 SearchTerm = searchTerm,
-                StatusReports = result.page.DistinctBy(x => x.AccountNo).ToList(),
+                StatusReports = allQualified,
                 TotalPages = (result.total / pageSize),
                 TotalRecords = result.total
             };
@@ -410,7 +438,7 @@ namespace Ranalo.Services
                 if (page == null || page.Count == 0)
                     yield break;
 
-                if (isInArrears)
+                if (isInArrears && notPaidIn90 == false)
                 {
                     foreach (var record in page)
                     {
@@ -418,7 +446,7 @@ namespace Ranalo.Services
                             yield return record;
                     }
                 }
-                if (notPaidIn90)
+                if (notPaidIn90 && isInArrears == false)
                 {
                     foreach (var record in page)
                     {
@@ -427,9 +455,12 @@ namespace Ranalo.Services
                     }
                 }
 
-                foreach (var record in page)
+                if(notPaidIn90 == false && isInArrears == false)
                 {
-                    yield return record;
+                    foreach (var record in page)
+                    {
+                        yield return record;
+                    }
                 }
 
                 pageNumber++;

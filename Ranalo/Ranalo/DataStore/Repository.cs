@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
 using Ranalo.DataStore.DataModels;
+using Ranalo.Models;
 
 namespace Ranalo.DataStore
 {
@@ -205,6 +206,21 @@ namespace Ranalo.DataStore
             catch (Exception)
             {
                 // Could log the exception before rethrowing
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<User>> GetDebtCollectorsAsync()
+        {
+            try
+            {
+                return await _context.Users
+                .Where(x => x.RoleId == UserRole.Collector)
+                .ToListAsync();
+            }
+            catch (Exception)
+            {
+
                 throw;
             }
         }

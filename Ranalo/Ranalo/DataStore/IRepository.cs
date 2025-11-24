@@ -24,5 +24,6 @@ namespace Ranalo.DataStore
 
         Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash);
         Task UpdateUserLastLogin(User user);
+        Task<IEnumerable<User>> GetDebtCollectorsAsync();
     }
 }

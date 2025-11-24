@@ -54,7 +54,7 @@ builder.Services.AddScoped<IMySqlPaymentsRepository, MySqlPaymentsRepository>();
 //IUserService
 //if (!builder.Environment.IsDevelopment())
 //{
-builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
+//builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
 ////builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
 builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
 //builder.Services.AddHostedService<ScheduledTaskCreateContractOrders>();

@@ -1,5 +1,7 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
@@ -15,12 +17,15 @@ namespace Ranalo.Controllers
     {
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
+        private readonly IContractService _contractorService;
 
         public ReportsController(IApplicationReportService applicationReportService, 
-            IUserService userService)
+            IUserService userService,
+            IContractService contractorService)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
+            _contractorService = contractorService;
         }
 
         [HttpGet]
@@ -100,6 +105,17 @@ namespace Ranalo.Controllers
 
             await SetViewBags(settings, "approver");
 
+            //Set debt collectors
+            var collectors = await _userService.GetDebtCollectors();
+
+            ViewBag.Collectors = collectors
+                .Select(x => new SelectListItem
+                {
+                    Value = x.UserId.ToString(),
+                    Text = $"{x.Name} {x.LastName}"
+                })
+                .ToList();
+
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
                 //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
@@ -120,6 +136,56 @@ namespace Ranalo.Controllers
 
             return View(allDelaerStatusReport);
 
+        }
+
+        [HttpPost]
+        [Route("recover-contract")]
+        public async Task<IActionResult> RecoverAccount(long displayDeviceId,
+            string deposit,
+            string oldName,
+            string newName,
+            string startDate,
+            string interval,
+            decimal totalCost)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "collector");
+
+            var contractToUpdate = new Woocommece.Api.Models.ContractCreateDto()
+            {
+                AccountNo = displayDeviceId.ToString(),
+                FirstName = newName,
+                TotalAmount = totalCost,
+            };
+
+            var update = await _contractorService.CreateRecoveredAccountAsync(contractToUpdate);
+
+            return RedirectToAction("Collections", "Reports");
+        }
+
+        [HttpPost]
+        [Route("assign-collector")]
+        public async Task<IActionResult> AssignAccountCollector(long displayDeviceId,
+            string deposit,
+            string oldName,
+            int debtCollectorUserId)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "collector");
+
+            await _contractorService.AssignContractToCollector((int)displayDeviceId, debtCollectorUserId);
+
+            return RedirectToAction("Collections", "Reports");
         }
 
         [HttpGet]
