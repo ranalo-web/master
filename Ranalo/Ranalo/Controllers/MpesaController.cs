@@ -29,6 +29,7 @@ namespace Ranalo.Controllers
                 Amount = transaction.TransAmount,
                 MpesaCode = transaction.TransID,
                 PaymentDate = DateTime.ParseExact(transaction.TransTime, "yyyyMMddHHmmss", CultureInfo.InvariantCulture).ToString(),
+                FirstName = transaction.FirstName
             };
 
             var result = await _syncService.CreateKosePaymentAsync(newPayment);
@@ -44,5 +45,6 @@ namespace Ranalo.Controllers
         public string TransAmount { get; set; }
         public string BillRefNumber { get; set; }
         public string TransTime { get; set; }
+        public string FirstName { get; set; }
     }
 }

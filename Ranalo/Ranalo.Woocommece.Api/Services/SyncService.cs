@@ -158,10 +158,11 @@ namespace Ranalo.Woocommece.Api.Services
                 Weekly = 0,
                 Monthly = 0,
                 RePaymentIntervals = "Daily",
-                TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, 12),
-                TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, 12),
+                TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, order.TermInMonths),
+                TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, order.TermInMonths),
                 FirstName = order.FirstName,
-                TotalAmount = order.TotalAmount
+                TotalAmount = order.TotalAmount,
+                TermInMonths = order.TermInMonths
             };
 
             var contractId = await _kosePaymentsRepository.AddContractAsync(contract);
@@ -510,8 +511,8 @@ namespace Ranalo.Woocommece.Api.Services
 
         private async Task<string> SecuredApiGetRequestStringResponse(string iso8601UtcDate, int page = 1)
         {
-            var consumerKey = "ck_0090896477d37b5ce6e006eabd7f579aacb1a97f";
-            var consumerSecret = "cs_2969d990e2967d37aab8078572ee30020417467f";
+            var consumerKey = "ck_9bf5ade6a031f04b53bd31938d462895db40e00c";
+            var consumerSecret = "cs_b2d5d61f3eae5093d85b7319905eb5942c614f99";
             var baseUrl = "https://ranalocredit.com/wp-json/wc/v3";
             var client = new HttpClient();
             var retries = 0;
@@ -538,6 +539,15 @@ namespace Ranalo.Woocommece.Api.Services
 
                 var queryString = await new FormUrlEncodedContent(queryParams).ReadAsStringAsync();
                 var urlWithParams = $"{baseUrl}/orders?{queryString}";
+
+                client.DefaultRequestHeaders.Add("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                client.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
+                client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br");
+                client.DefaultRequestHeaders.Add("Connection", "keep-alive");
+                client.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
+                client.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
 
 
                 var response = await client.GetAsync(urlWithParams);
@@ -570,8 +580,8 @@ namespace Ranalo.Woocommece.Api.Services
 
         private async Task<string> SecuredApiGetSingleOrderRequestStringResponse(int orderId)
         {
-            var consumerKey = "ck_9bf5ade6a031f04b53bd31938d462895db40e00c";
-            var consumerSecret = "cs_b2d5d61f3eae5093d85b7319905eb5942c614f99";
+            var consumerKey = "ck_0090896477d37b5ce6e006eabd7f579aacb1a97f";
+            var consumerSecret = "cs_2969d990e2967d37aab8078572ee30020417467f";
             var baseUrl = "https://ranalocredit.com/wp-json/wc/v3";
             var client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

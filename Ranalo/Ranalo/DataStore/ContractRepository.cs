@@ -75,6 +75,7 @@ namespace Ranalo.DataStore
                           ,[Total_Loan] as TotalLoan
                           ,[Total_Cost] as TotalCost
                           ,[First_Name] as FirstName
+                          ,TotalAmount
                         FROM Contract_Info
                          WHERE (
                             @SearchTerm IS NULL
@@ -113,7 +114,8 @@ namespace Ranalo.DataStore
                 rePayment_Intervals = @RePaymentIntervals,
                 Total_Loan = @TotalLoan,
                 Total_Cost = @TotalCost,
-                First_Name = @FirstName
+                First_Name = @FirstName,
+                [Term_in_Months] = @TermInMonths
             WHERE ID = @ID";
 
             return await _db.ExecuteAsync(sql, contract);
@@ -231,149 +233,149 @@ namespace Ranalo.DataStore
             var countQuery = SetPaymentSummaryQuery();
             var totalRecords = await _db.QuerySingleAsync<int>(countQuery, new { UserId = userId, DealerId = deviceGroupId, searchParam = searchTerm, AccountId = accountId });
 
-            var sql = @"IF OBJECT_ID('tempdb..#ValidPayments') IS NOT NULL DROP TABLE #ValidPayments;
-    SELECT 
-        kp.Id,
-        COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
-        kp.MpesaCode,
-        kp.Amount,
-        kp.AmountValue,
-        kp.PaymentDateValue AS PaymentDateValue
-    INTO #ValidPayments
-    FROM KosePayments kp
-    LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode;
+                                                    var sql = @"IF OBJECT_ID('tempdb..#ValidPayments') IS NOT NULL DROP TABLE #ValidPayments;
+                                            SELECT 
+                                                kp.Id,
+                                                COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
+                                                kp.MpesaCode,
+                                                kp.Amount,
+                                                kp.AmountValue,
+                                                kp.PaymentDateValue AS PaymentDateValue
+                                            INTO #ValidPayments
+                                            FROM KosePayments kp
+                                            LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode;
                         
-    -- Index for performance
-    CREATE INDEX IX_ValidPayments_AccountNo ON #ValidPayments(AccountNo);
-    CREATE INDEX IX_ValidPayments_PaymentDate ON #ValidPayments(AccountNo, PaymentDateValue);
+                                            -- Index for performance
+                                            CREATE INDEX IX_ValidPayments_AccountNo ON #ValidPayments(AccountNo);
+                                            CREATE INDEX IX_ValidPayments_PaymentDate ON #ValidPayments(AccountNo, PaymentDateValue);
                         
-    ---------------------------------------------------
-    -- STEP 2: Compute totals and first/last payments
-    ---------------------------------------------------
+                                            ---------------------------------------------------
+                                            -- STEP 2: Compute totals and first/last payments
+                                            ---------------------------------------------------
                         
-	-- 🕒 Payments in last 24 hours
-	IF OBJECT_ID('tempdb..#PTable24hrs') IS NOT NULL DROP TABLE #PTable24hrs;
+	                                        -- 🕒 Payments in last 24 hours
+	                                        IF OBJECT_ID('tempdb..#PTable24hrs') IS NOT NULL DROP TABLE #PTable24hrs;
 
-	SELECT 
-		AccountNo,
-		SUM(AmountValue) AS Last24hrPaidAmount
-	INTO #PTable24hrs
-	FROM #ValidPayments
-	WHERE PaymentDateValue >= DATEADD(HOUR, -24, GETDATE())
-	GROUP BY AccountNo;
+	                                        SELECT 
+		                                        AccountNo,
+		                                        SUM(AmountValue) AS Last24hrPaidAmount
+	                                        INTO #PTable24hrs
+	                                        FROM #ValidPayments
+	                                        WHERE PaymentDateValue >= DATEADD(HOUR, -24, GETDATE())
+	                                        GROUP BY AccountNo;
 
-	CREATE INDEX IX_PTable24hrs_AccountNo ON #PTable24hrs(AccountNo);
+	                                        CREATE INDEX IX_PTable24hrs_AccountNo ON #PTable24hrs(AccountNo);
 
-    -- 🧮 Total paid per account
-    IF OBJECT_ID('tempdb..#PTable1') IS NOT NULL DROP TABLE #PTable1;
-    SELECT 
-        AccountNo,
-        SUM(AmountValue) AS Total_Paid
-    INTO #PTable1
-    FROM #ValidPayments
-    GROUP BY AccountNo;
+                                            -- 🧮 Total paid per account
+                                            IF OBJECT_ID('tempdb..#PTable1') IS NOT NULL DROP TABLE #PTable1;
+                                            SELECT 
+                                                AccountNo,
+                                                SUM(AmountValue) AS Total_Paid
+                                            INTO #PTable1
+                                            FROM #ValidPayments
+                                            GROUP BY AccountNo;
                         
-    CREATE INDEX IX_PTable1_AccountNo ON #PTable1(AccountNo);
+                                            CREATE INDEX IX_PTable1_AccountNo ON #PTable1(AccountNo);
                         
-    -- 💰 Last payment details
-    IF OBJECT_ID('tempdb..#PTable4') IS NOT NULL DROP TABLE #PTable4;
-    SELECT 
-        v.AccountNo,
-        v.AmountValue AS Last_Paid_Amount,
-        v.PaymentDateValue AS LastPaidDate,
-        v.MpesaCode AS Last_MPesaCode
-    INTO #PTable4
-    FROM #ValidPayments v
-    INNER JOIN (
-        SELECT AccountNo, MAX(PaymentDateValue) AS Last_Payment_Date
-        FROM #ValidPayments
-        GROUP BY AccountNo
-    ) t3 ON v.AccountNo = t3.AccountNo AND v.PaymentDateValue = t3.Last_Payment_Date;
+                                            -- 💰 Last payment details
+                                            IF OBJECT_ID('tempdb..#PTable4') IS NOT NULL DROP TABLE #PTable4;
+                                            SELECT 
+                                                v.AccountNo,
+                                                v.AmountValue AS Last_Paid_Amount,
+                                                v.PaymentDateValue AS LastPaidDate,
+                                                v.MpesaCode AS Last_MPesaCode
+                                            INTO #PTable4
+                                            FROM #ValidPayments v
+                                            INNER JOIN (
+                                                SELECT AccountNo, MAX(PaymentDateValue) AS Last_Payment_Date
+                                                FROM #ValidPayments
+                                                GROUP BY AccountNo
+                                            ) t3 ON v.AccountNo = t3.AccountNo AND v.PaymentDateValue = t3.Last_Payment_Date;
                         
-    CREATE INDEX IX_PTable4_AccountNo ON #PTable4(AccountNo);
+                                            CREATE INDEX IX_PTable4_AccountNo ON #PTable4(AccountNo);
                         
-    -- 🪙 First payment details
-    IF OBJECT_ID('tempdb..#PTable5') IS NOT NULL DROP TABLE #PTable5;
-    SELECT 
-        v.AccountNo,
-        v.AmountValue AS First_Paid_Amount,
-        v.PaymentDateValue AS FirstPaidDate,
-        v.MpesaCode AS First_MPesaCode
-    INTO #PTable5
-    FROM #ValidPayments v
-    INNER JOIN (
-        SELECT AccountNo, MIN(PaymentDateValue) AS First_Payment_Date
-        FROM #ValidPayments
-        GROUP BY AccountNo
-    ) t2 ON v.AccountNo = t2.AccountNo AND v.PaymentDateValue = t2.First_Payment_Date;
+                                            -- 🪙 First payment details
+                                            IF OBJECT_ID('tempdb..#PTable5') IS NOT NULL DROP TABLE #PTable5;
+                                            SELECT 
+                                                v.AccountNo,
+                                                v.AmountValue AS First_Paid_Amount,
+                                                v.PaymentDateValue AS FirstPaidDate,
+                                                v.MpesaCode AS First_MPesaCode
+                                            INTO #PTable5
+                                            FROM #ValidPayments v
+                                            INNER JOIN (
+                                                SELECT AccountNo, MIN(PaymentDateValue) AS First_Payment_Date
+                                                FROM #ValidPayments
+                                                GROUP BY AccountNo
+                                            ) t2 ON v.AccountNo = t2.AccountNo AND v.PaymentDateValue = t2.First_Payment_Date;
                         
-    CREATE INDEX IX_PTable5_AccountNo ON #PTable5(AccountNo);
+                                            CREATE INDEX IX_PTable5_AccountNo ON #PTable5(AccountNo);
                         
-    ---------------------------------------------------
-    -- STEP 3: Combine all precomputed tables
-    ---------------------------------------------------
-    IF OBJECT_ID('tempdb..#ContractInfo') IS NOT NULL DROP TABLE #ContractInfo;
+                                            ---------------------------------------------------
+                                            -- STEP 3: Combine all precomputed tables
+                                            ---------------------------------------------------
+                                            IF OBJECT_ID('tempdb..#ContractInfo') IS NOT NULL DROP TABLE #ContractInfo;
                         
-    SELECT 
-        d.Id AS AccountNo, 
-        ci.TotalAmount,
-        p1.Total_Paid AS TotalPaid,
-        p5.FirstPaidDate,
-        p5.First_Paid_Amount AS FirstPaymentAmount,
-        p5.First_MPesaCode AS FirstMPesaCode,
-        p4.LastPaidDate,
-        p4.Last_Paid_Amount AS LastPaymentAmount,
-		p24.Last24hrPaidAmount,
-        p4.Last_MPesaCode AS LastMPesaCode,
-        ci.First_Name AS CustomerName,
-        ci.Daily,
-        ci.Deposit,
-        ci.Weekly,
-        ci.Monthly,
-        ci.Term_in_Months AS TermsInMonths,
-        d.Make,
-        d.Model,
-        d.LastConnectedAt,
-        d.Locked,
-        d.EnrolledOn,
-        d.DeviceGroupId,
-        d.[Name],
-        d.ImeiNo,
-        d.Status,
-        d.LockType,
-        d.NextLockDateIsoFormat,
-        d.NextLockDate
-    INTO #ContractInfo
-    FROM Devices d
-    JOIN #PTable1 p1 ON d.Id = p1.AccountNo
-    JOIN #PTable5 p5 ON d.Id = p5.AccountNo
-    JOIN #PTable4 p4 ON d.Id = p4.AccountNo
-    JOIN Contract_Info ci ON ci.ID = d.Id
-	AND ci.DebtCollectorUserId = @UserId
-    AND ci.EndDate IS NULL
-	LEFT JOIN #PTable24hrs p24 ON d.Id = p24.AccountNo
-    WHERE d.[Status] = 'enrolled';
+                                            SELECT 
+                                                d.Id AS AccountNo, 
+                                                ci.TotalAmount,
+                                                p1.Total_Paid AS TotalPaid,
+                                                p5.FirstPaidDate,
+                                                p5.First_Paid_Amount AS FirstPaymentAmount,
+                                                p5.First_MPesaCode AS FirstMPesaCode,
+                                                p4.LastPaidDate,
+                                                p4.Last_Paid_Amount AS LastPaymentAmount,
+		                                        p24.Last24hrPaidAmount,
+                                                p4.Last_MPesaCode AS LastMPesaCode,
+                                                ci.First_Name AS CustomerName,
+                                                ci.Daily,
+                                                ci.Deposit,
+                                                ci.Weekly,
+                                                ci.Monthly,
+                                                ci.Term_in_Months AS TermsInMonths,
+                                                d.Make,
+                                                d.Model,
+                                                d.LastConnectedAt,
+                                                d.Locked,
+                                                d.EnrolledOn,
+                                                d.DeviceGroupId,
+                                                d.[Name],
+                                                d.ImeiNo,
+                                                d.Status,
+                                                d.LockType,
+                                                d.NextLockDateIsoFormat,
+                                                d.NextLockDate
+                                            INTO #ContractInfo
+                                            FROM Devices d
+                                            JOIN #PTable1 p1 ON d.Id = p1.AccountNo
+                                            JOIN #PTable5 p5 ON d.Id = p5.AccountNo
+                                            JOIN #PTable4 p4 ON d.Id = p4.AccountNo
+                                            JOIN Contract_Info ci ON ci.ID = d.Id
+	                                        LEFT JOIN #PTable24hrs p24 ON d.Id = p24.AccountNo
+                                            WHERE d.[Status] = 'enrolled'
+                                             AND (@UserId = 0 OR ci.DebtCollectorUserId = @UserId)
+                                            AND ci.EndDate IS NULL;
                         
-    CREATE INDEX IX_ContractInfo_AccountNo ON #ContractInfo(AccountNo);
+                                            CREATE INDEX IX_ContractInfo_AccountNo ON #ContractInfo(AccountNo);
                         
-    ---------------------------------------------------
-    -- STEP 4: Return results
-    ---------------------------------------------------
-    SELECT *
-    FROM #ContractInfo
-    WHERE (@DealerId = 0
-        OR DeviceGroupId = @DealerId
-        )
-    AND (@AccountId IS NULL
-        OR AccountNo = @AccountId
-        )
-    AND (@searchParam IS NULL
-        OR AccountNo LIKE '%' + @searchParam + '%'
-        OR FirstMPesaCode LIKE '%' + @searchParam + '%'                            
-    				OR FirstMPesaCode LIKE '%' + @searchParam + '%'
-        OR CustomerName LIKE '%' + @searchParam + '%'  
-        )
-    ORDER BY LastPaidDate DESC
+                                            ---------------------------------------------------
+                                            -- STEP 4: Return results
+                                            ---------------------------------------------------
+                                            SELECT *
+                                            FROM #ContractInfo
+                                            WHERE (@DealerId = 0
+                                                OR DeviceGroupId = @DealerId
+                                                )
+                                            AND (@AccountId IS NULL
+                                                OR AccountNo = @AccountId
+                                                )
+                                            AND (@searchParam IS NULL
+                                                OR AccountNo LIKE '%' + @searchParam + '%'
+                                                OR FirstMPesaCode LIKE '%' + @searchParam + '%'                            
+    				                                        OR FirstMPesaCode LIKE '%' + @searchParam + '%'
+                                                OR CustomerName LIKE '%' + @searchParam + '%'  
+                                                )
+                                            ORDER BY LastPaidDate DESC
                         	OFFSET @offset ROWS 
                         	FETCH NEXT @pageSize ROWS ONLY;";
 
@@ -402,6 +404,8 @@ namespace Ranalo.DataStore
     AND ci.DebtCollectorUserId = @UserId
     AND ci.EndDate IS NULL
     WHERE d.Status = 'enrolled'
+    AND (@UserId = 0 OR ci.DebtCollectorUserId = @UserId)
+    AND ci.EndDate IS NULL
 )
 SELECT COUNT(DISTINCT kp.AccountNoBigint) AS ActiveAccountCount
 FROM KosePayments kp

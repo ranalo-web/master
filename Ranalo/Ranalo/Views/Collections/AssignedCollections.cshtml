@@ -72,7 +72,7 @@
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">Collection Report</h3>
+                <h3 class="nk-block-title page-title">@(ViewBag.PageOrigin) - Collection Report</h3>
                 <div class="nk-block-des text-soft">
                     <p>You have @Model.TotalRecords Collections in this report</p>
                 </div>
@@ -387,7 +387,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/collections?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="/@(ViewBag.PageOrigin)-collections?page=@(Model.CurrentPage - 1)">Prev</a>
                                     </li>
                                 }
 
@@ -404,7 +404,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/collections?page=1">1</a>
+                                        <a class="page-link" href="/@(ViewBag.PageOrigin)-collections?page=1">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -414,7 +414,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/collections?page=@i">@i</a>
+                                        <a class="page-link" href="/@(ViewBag.PageOrigin)-collections?page=@i">@i</a>
                                     </li>
                                 }
 
@@ -424,14 +424,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/collections?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/@(ViewBag.PageOrigin)-collections?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/collections?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/@(ViewBag.PageOrigin)-collections?page=@(Model.CurrentPage + 1)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -443,7 +443,7 @@
                                     <select class="form-select js-select2"
                                     data-search="on"
                                     data-dropdown="xs center"
-                                    onchange="location.href='/collections?page=' + this.value">
+                                    onchange="location.href='/' + @(ViewBag.PageOrigin) + '-collections?page=' + this.value">
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>

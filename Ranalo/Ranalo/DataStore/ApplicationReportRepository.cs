@@ -44,7 +44,7 @@ namespace Ranalo.DataStore
                     ,[OrderID]
                     ,[Status]
                     ,[DateCreated]
-                    ,[FirstName]
+                    ,WO.[FirstName]
                     ,[LastName]
                     ,[Address1]
                     ,[Email]
@@ -155,7 +155,7 @@ namespace Ranalo.DataStore
                             ,[OrderID]
                             ,wo.[Status]
                             ,[DateCreated]
-                            ,[FirstName]
+                            ,wo.[FirstName]
                             ,[LastName]
                             ,[Address1]
                             ,wo.[Email]
@@ -490,7 +490,7 @@ namespace Ranalo.DataStore
                             ,[OrderID]
                             ,wo.[Status]
                             ,[DateCreated]
-                            ,[FirstName]
+                            ,wo.[FirstName]
                             ,[LastName]
                             ,[Address1]
                             ,wo.[Email]
@@ -761,7 +761,7 @@ namespace Ranalo.DataStore
                     ON KP.MpesaCode = wo.MpesaDepositRef
                     LEFT JOIN [dbo].[Woo_Orders_Images] woi
                     ON wo.Id = woi.OrderId
-                    WHERE kp.AccountNoBigint = @AccountId";
+                    WHERE wo.OrderID = @AccountId";
 
             return await _db.QueryFirstOrDefaultAsync<CustomerDetails>(sql, new { AccountId = accountId });
         }
@@ -1075,164 +1075,179 @@ namespace Ranalo.DataStore
         {
 
             var sql = @"WITH 
--- ============================================================
--- 1. Payments (Unified source table)
--- ============================================================
-Payments AS (
-    SELECT
-        kp.Id,
-        kp.MpesaCode,
-        kp.Amount,
-        kp.AmountValue,
-        kp.PaymentDateValue,
-        COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS RealAccountNo
-    FROM KosePayments kp
-    LEFT JOIN OrphanedPayments op 
-        ON op.MpesaCode = kp.MpesaCode
-    WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = @AccountId
-),
+                        -- ============================================================
+                        -- 1. Payments (Unified source table)
+                        -- ============================================================
+                        Payments AS (
+                            SELECT
+                                kp.Id,
+                                kp.MpesaCode,
+                                kp.Amount,
+                                kp.AmountValue,
+                                kp.PaymentDateValue,
+                                COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS RealAccountNo
+                            FROM KosePayments kp
+                            LEFT JOIN OrphanedPayments op 
+                                ON op.MpesaCode = kp.MpesaCode
+                            WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = @AccountId
+                        ),
 
--- ============================================================
--- 2. Total paid
--- ============================================================
-PTable1 AS (
-    SELECT 
-        RealAccountNo AS AccountNo,
-        SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
-    FROM Payments
-    GROUP BY RealAccountNo
-),
+                        -- ============================================================
+                        -- X. Total paid in last 24 hours
+                        -- ============================================================
+                        Last24 AS (
+                            SELECT 
+                                RealAccountNo AS AccountNo,
+                                SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Last24Hours
+                            FROM Payments
+                            WHERE PaymentDateValue >= DATEADD(HOUR, -24, GETDATE())
+                            GROUP BY RealAccountNo
+                        ),
 
--- ============================================================
--- 3. First payment date
--- ============================================================
-PTable2 AS (
-    SELECT 
-        RealAccountNo AS AccountNo,
-        MIN(PaymentDateValue) AS First_Payment_Date
-    FROM Payments
-    GROUP BY RealAccountNo
-),
+                        -- ============================================================
+                        -- 2. Total paid
+                        -- ============================================================
+                        PTable1 AS (
+                            SELECT 
+                                RealAccountNo AS AccountNo,
+                                SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Paid
+                            FROM Payments
+                            GROUP BY RealAccountNo
+                        ),
 
--- ============================================================
--- 4. Last payment date
--- ============================================================
-PTable3 AS (
-    SELECT 
-        RealAccountNo AS AccountNo,
-        MAX(PaymentDateValue) AS Last_Payment_Date
-    FROM Payments
-    GROUP BY RealAccountNo
-),
+                        -- ============================================================
+                        -- 3. First payment date
+                        -- ============================================================
+                        PTable2 AS (
+                            SELECT 
+                                RealAccountNo AS AccountNo,
+                                MIN(PaymentDateValue) AS First_Payment_Date
+                            FROM Payments
+                            GROUP BY RealAccountNo
+                        ),
 
--- ============================================================
--- 5. Last payment detail
--- ============================================================
-PTable4 AS (
-    SELECT 
-        p.RealAccountNo AS AccountNo,
-        p.AmountValue AS Last_Paid_Amount,
-        p.PaymentDateValue AS LastPaidDate,
-        p.MpesaCode AS Last_MPesaCode
-    FROM Payments p
-    INNER JOIN PTable3 t3 
-        ON p.RealAccountNo = t3.AccountNo
-       AND p.PaymentDateValue = t3.Last_Payment_Date
-),
+                        -- ============================================================
+                        -- 4. Last payment date
+                        -- ============================================================
+                        PTable3 AS (
+                            SELECT 
+                                RealAccountNo AS AccountNo,
+                                MAX(PaymentDateValue) AS Last_Payment_Date
+                            FROM Payments
+                            GROUP BY RealAccountNo
+                        ),
 
--- ============================================================
--- 6. First payment detail
--- ============================================================
-PTable5 AS (
-    SELECT 
-        p.RealAccountNo AS AccountNo,
-        TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
-        p.PaymentDateValue AS FirstPaidDate,
-        p.MpesaCode AS First_MPesaCode
-    FROM Payments p
-    INNER JOIN PTable2 t2 
-        ON p.RealAccountNo = t2.AccountNo
-       AND p.PaymentDateValue = t2.First_Payment_Date
-),
+                        -- ============================================================
+                        -- 5. Last payment detail
+                        -- ============================================================
+                        PTable4 AS (
+                            SELECT 
+                                p.RealAccountNo AS AccountNo,
+                                p.AmountValue AS Last_Paid_Amount,
+                                p.PaymentDateValue AS LastPaidDate,
+                                p.MpesaCode AS Last_MPesaCode
+                            FROM Payments p
+                            INNER JOIN PTable3 t3 
+                                ON p.RealAccountNo = t3.AccountNo
+                                AND p.PaymentDateValue = t3.Last_Payment_Date
+                        ),
 
--- ============================================================
--- 7. Combine with Devices + cleaned payment data
--- ============================================================
-STable AS (
-    SELECT 
-        d.Id,
-        d.Status,
-        d.Model,
-        d.Make,
-        d.Locked,
-        d.LockType,
-        p3.Last_Payment_Date,
-        p5.First_Paid_Amount,
-        d.FirstLockDateIsoFormat AS First_Lock_Date,
-        d.NextLockDateIsoFormat AS Next_Lock_Date,
-        d.LastConnectedAt,
-        p1.Total_Paid,
-        p2.First_Payment_Date,
-        p5.FirstPaidDate,
-        p5.First_MPesaCode,
-        p4.Last_Paid_Amount,
-        p4.LastPaidDate,
-        p4.Last_MPesaCode,
-        d.ImeiNo
-    FROM Devices d
-    LEFT JOIN PTable1 p1 ON d.Id = p1.AccountNo
-    LEFT JOIN PTable2 p2 ON d.Id = p2.AccountNo
-    LEFT JOIN PTable3 p3 ON d.Id = p3.AccountNo
-    LEFT JOIN PTable4 p4 ON d.Id = p4.AccountNo
-    LEFT JOIN PTable5 p5 ON d.Id = p5.AccountNo
-    WHERE d.Status = 'enrolled'
-),
+                        -- ============================================================
+                        -- 6. First payment detail
+                        -- ============================================================
+                        PTable5 AS (
+                            SELECT 
+                                p.RealAccountNo AS AccountNo,
+                                TRY_CAST(p.Amount AS DECIMAL(18,2)) AS First_Paid_Amount,
+                                p.PaymentDateValue AS FirstPaidDate,
+                                p.MpesaCode AS First_MPesaCode
+                            FROM Payments p
+                            INNER JOIN PTable2 t2 
+                                ON p.RealAccountNo = t2.AccountNo
+                                AND p.PaymentDateValue = t2.First_Payment_Date
+                        ),
 
--- Only those with valid first payment
-FilteredSTable AS (
-    SELECT *
-    FROM STable
-    WHERE First_Paid_Amount IS NOT NULL
-),
+                        -- ============================================================
+                        -- 7. Combine with Devices + cleaned payment data
+                        -- ============================================================
+                        STable AS (
+                            SELECT 
+                                d.Id,
+                                d.Status,
+                                d.Model,
+                                d.Make,
+                                d.Locked,
+                                d.LockType,
+                                p3.Last_Payment_Date,
+                                p5.First_Paid_Amount,
+                                d.FirstLockDateIsoFormat AS First_Lock_Date,
+                                d.NextLockDateIsoFormat AS Next_Lock_Date,
+                                d.LastConnectedAt,
+                                p1.Total_Paid,
+                                p2.First_Payment_Date,
+                                p5.FirstPaidDate,
+                                p5.First_MPesaCode,
+                                p4.Last_Paid_Amount,
+                                p4.LastPaidDate,
+                                p4.Last_MPesaCode,
+                                l24.Total_Last24Hours,
+                                d.ImeiNo
+                            FROM Devices d
+                            LEFT JOIN PTable1 p1 ON d.Id = p1.AccountNo
+                            LEFT JOIN PTable2 p2 ON d.Id = p2.AccountNo
+                            LEFT JOIN PTable3 p3 ON d.Id = p3.AccountNo
+                            LEFT JOIN PTable4 p4 ON d.Id = p4.AccountNo
+                            LEFT JOIN PTable5 p5 ON d.Id = p5.AccountNo
+                            LEFT JOIN Last24 l24 ON d.Id = l24.AccountNo
+                            WHERE d.Status = 'enrolled'
+                        ),
 
--- ============================================================
--- 8. Add Contract_Info details
--- ============================================================
-Computed AS (
-    SELECT 
-        s.*,
-        ci.Term_in_Months AS TermsInMonths,
-        ci.Total_Cost AS dealer_payment,
-        ci.Deposit,
-        ci.Daily AS Daily,
-        ci.Weekly AS Weekly,
-        ci.Monthly AS Monthly,
-        ci.First_Name AS FirstName
-    FROM FilteredSTable s
-    INNER JOIN Contract_Info ci ON s.Id = ci.ID
-    AND ci.EndDate IS NULL
-)
+                        -- Only those with valid first payment
+                        FilteredSTable AS (
+                            SELECT *
+                            FROM STable
+                            WHERE First_Paid_Amount IS NOT NULL
+                        ),
 
--- ============================================================
--- 11. FINAL RESULT
--- ============================================================
-SELECT 
-    Id As AccountId,
-    LastPaidDate As LastPaymentDate,
-    FirstPaidDate AS FirstPaymentDate,
-    First_Paid_Amount AS FirstAmount,
-    Last_Paid_Amount AS LastPaidAmount,
-    Daily,
-    Weekly,
-    Monthly,
-	Next_Lock_Date AS NextLockDate,
-    Deposit,
-    Total_Paid AS TotalPaid,
-    FirstName,
-    TermsInMonths,
-    LastConnectedAt
-FROM Computed
-ORDER BY LastPaidDate DESC";
+                        -- ============================================================
+                        -- 8. Add Contract_Info details
+                        -- ============================================================
+                        Computed AS (
+                            SELECT 
+                                s.*,
+                                ci.Term_in_Months AS TermsInMonths,
+                                ci.Total_Cost AS dealer_payment,
+                                ci.Deposit,
+                                ci.Daily AS Daily,
+                                ci.Weekly AS Weekly,
+                                ci.Monthly AS Monthly,
+                                ci.First_Name AS FirstName
+                            FROM FilteredSTable s
+                            INNER JOIN Contract_Info ci ON s.Id = ci.ID
+                            AND ci.EndDate IS NULL
+                        )
+
+                        -- ============================================================
+                        -- 11. FINAL RESULT
+                        -- ============================================================
+                        SELECT 
+                            Id As AccountId,
+                            LastPaidDate As LastPaymentDate,
+                            FirstPaidDate AS FirstPaymentDate,
+                            First_Paid_Amount AS FirstAmount,
+                            Last_Paid_Amount AS LastPaidAmount,
+                            Daily,
+                            Weekly,
+                            Monthly,
+                            Next_Lock_Date AS NextLockDate,
+                            Deposit,
+                            Total_Paid AS TotalPaid,
+                            Total_Last24Hours AS PaidLast24Hours,    -- <--- new column
+                            FirstName,
+                            TermsInMonths,
+                            LastConnectedAt
+                        FROM Computed
+                        ORDER BY LastPaidDate DESC;";
 
             return await _db.QueryFirstOrDefaultAsync<AccountSummary>(sql, new { AccountId = customerId });
         }
@@ -1290,6 +1305,20 @@ ORDER BY LastPaidDate DESC";
 						GROUP BY AccountNo;
 
 						CREATE INDEX IX_PTable24hrs_AccountNo ON #PTable24hrs(AccountNo);
+
+                        -- 🕒 Payments in last Week
+						IF OBJECT_ID('tempdb..#PTableWeek') IS NOT NULL DROP TABLE #PTableWeek;
+
+						SELECT 
+							AccountNo,
+							SUM(AmountValue) AS LastWeekPaidAmount
+						INTO #PTableWeek
+						FROM #ValidPayments
+						WHERE PaymentDateValue >= DATEADD(DAY, -7, GETDATE())
+						GROUP BY AccountNo;
+
+						CREATE INDEX IX_PTableWeek_AccountNo ON #PTableWeek(AccountNo);
+
 
                         -- 🧮 Total paid per account
                         IF OBJECT_ID('tempdb..#PTable1') IS NOT NULL DROP TABLE #PTable1;
@@ -1351,6 +1380,7 @@ ORDER BY LastPaidDate DESC";
                             p4.LastPaidDate,
                             p4.Last_Paid_Amount AS LastPaymentAmount,
 							p24.Last24hrPaidAmount,
+                            pWk.LastWeekPaidAmount,
                             p4.Last_MPesaCode AS LastMPesaCode,
                             ci.First_Name AS CustomerName,
                             ci.Daily,
@@ -1369,7 +1399,8 @@ ORDER BY LastPaidDate DESC";
                             d.Status,
                             d.LockType,
                             d.NextLockDateIsoFormat,
-                            d.NextLockDate
+                            d.NextLockDate,
+							ci.DebtCollectorUserId
                         INTO #ContractInfo
                         FROM Devices d
                         JOIN #PTable1 p1 ON d.Id = p1.AccountNo
@@ -1377,7 +1408,8 @@ ORDER BY LastPaidDate DESC";
                         JOIN #PTable4 p4 ON d.Id = p4.AccountNo
                         JOIN Contract_Info ci ON ci.ID = d.Id
                         AND ci.EndDate IS NULL
-						LEFT JOIN #PTable24hrs p24 ON d.Id = p24.AccountNo
+						LEFT JOIN #PTable24hrs p24 ON d.Id = p24.AccountNo						
+                        LEFT JOIN #PTableWeek pWk ON d.Id = pWk.AccountNo
                         WHERE d.[Status] = 'enrolled';
                         
                         CREATE INDEX IX_ContractInfo_AccountNo ON #ContractInfo(AccountNo);
@@ -1818,7 +1850,7 @@ WHERE kp.AccountNoBigint IS NOT NULL
             var sql = @"SELECT TOP(4) kp.AccountNoBigint AccountNo
                                 ,[Status]
                                 ,[DateCreated]
-                                ,[FirstName]
+                                ,WO.[FirstName]
                                 ,[LastName]
                                 ,[DealerRef]
                                 ,[MpesaDepositRef]
@@ -1831,7 +1863,7 @@ WHERE kp.AccountNoBigint IS NOT NULL
 	                        GROUP BY KP.[AccountNoBigint]
 	                            ,[Status]
                                 ,[DateCreated]
-                                ,[FirstName]
+                                ,WO.[FirstName]
                                 ,[LastName]
                                 ,[DealerRef]
                                 ,[MpesaDepositRef]
@@ -1851,7 +1883,7 @@ WHERE kp.AccountNoBigint IS NOT NULL
                         SELECT TOP(4) TRY_CAST(kp.AccountNo AS bigint) AccountNo
                                 ,WO.[Status]
                                 ,[DateCreated]
-                                ,[FirstName]
+                                ,WO.[FirstName]
                                 ,[LastName]
                                 ,[DealerRef]
                                 ,[MpesaDepositRef]
@@ -1868,7 +1900,7 @@ WHERE kp.AccountNoBigint IS NOT NULL
 	                        GROUP BY KP.[AccountNo]
 	                            ,WO.[Status]
                                 ,[DateCreated]
-                                ,[FirstName]
+                                ,WO.[FirstName]
                                 ,[LastName]
                                 ,[DealerRef]
                                 ,[MpesaDepositRef]
@@ -1879,16 +1911,19 @@ WHERE kp.AccountNoBigint IS NOT NULL
         #region Restructured
         public async Task InsertRestructured(RestructuredRecord restructuringRecord)
         {
-            var existing = @"";
-
             var sql = @"
-                SELECT TOP 1 *
-                FROM [RestructuredRecords]
-                WHERE [AccountNo] = @AccountNo;";
+                    SELECT CASE WHEN EXISTS (
+                        SELECT 1 FROM [RestructuredRecords]
+                        WHERE [AccountNo] = @AccountNo
+                    ) THEN 1 ELSE 0 END;
+                ";
 
-            var existingRecord = await _db.ExecuteScalarAsync<RestructuredRecord>(sql, new { AccountNo = restructuringRecord.AccountNo });
+            bool exists = await _db.ExecuteScalarAsync<bool>(sql, new
+            {
+                AccountNo = restructuringRecord.AccountNo.ToString()
+            });
 
-            if(existingRecord != null)
+            if (exists)
             {
                 var update = @"UPDATE [dbo].[RestructuredRecords]
                               SET [Date_Agreed] = @DateAgreed

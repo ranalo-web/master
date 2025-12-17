@@ -16,6 +16,7 @@
 
         public decimal TotalPaidR { get; set; }
 
+        public decimal PaidLast24Hours { get; set; }
         public decimal ArrearsR { get; set; }
         public decimal Arrears { get; set; }
         public DateTime? FirstResPaymentDate { get; set; }
@@ -23,6 +24,7 @@
 
         public DateTime? LastResPaymentDate { get; set; }
         public decimal Daily { get; set; }
+        public decimal NewDaily { get; set; }
         public decimal Weekly { get; set; }
         public decimal Monthly { get; set; }
         public string? LastConnectedAt { get; set; }

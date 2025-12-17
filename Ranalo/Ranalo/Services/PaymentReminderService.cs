@@ -9,9 +9,6 @@ namespace Ranalo.Services
 {
     public class PaymentReminderService : IPaymentReminderService
     {
-        private static readonly HttpClient _httpClient = new();
-        // true = live mode, false = test
-
         public PaymentReminderService()
         {
             
@@ -82,6 +79,7 @@ namespace Ranalo.Services
                     var message = $"Dear {name}: {messageText}<br>" +
                                   "Paybill 4090703 <br>" +
                                   $"Account No {rec.AccountId}<br>" +
+                                  $"Amount to pay {rec.NewDaily}<br>" +
                                   "For assistance please contact us on: 0772 007 007. We're here to help. " +
                                   "If you've already paid, then no further action is needed. Thank you for being a valued customer!";
 
@@ -127,7 +125,109 @@ namespace Ranalo.Services
             }
         }
 
-       
+
+        public async Task<List<AccountSendMessage>> RunPaymentsSummariesAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository)
+        {
+            try
+            {
+                await ProcessSummaryBlock(records, paymentsRepository);
+            }
+            catch (Exception)
+            {
+
+                return new List<AccountSendMessage>();
+            }
+
+            return records;
+        }
+
+        private async Task ProcessSummaryBlock(List<AccountSendMessage> block, IPaymentsRepository paymentsRepository)
+        {
+            if (block.Count == 0)
+            {
+                Console.WriteLine("No records in this block.");
+                return;
+            }
+
+            bool _sendLive = true;
+
+            var df = new List<MessageLog>();
+            int totalRows = block.Count();
+            int batchSize = 100;
+
+            using (var client = new HttpClient())
+            {
+                string consumerKey = "Token 8efccf09d4874f88ba2a62f5db8d8efc";
+
+                client.DefaultRequestHeaders.Accept.Add(
+                    new MediaTypeWithQualityHeaderValue("application/json"));
+
+                client.DefaultRequestHeaders.Add("Authorization", consumerKey);
+
+                for (int start = 0; start < totalRows; start += batchSize)
+                {
+                    int end = Math.Min(start + batchSize, totalRows);
+
+                    // Process one batch
+                    var batch = block.Skip(start).Take(batchSize).ToList();
+
+                    Console.WriteLine($"\n---- Processing batch {start} to {end - 1} ----\n");
+
+                    foreach (var rec in batch)
+                    {
+                        // Build your message (example – replace with your logic)
+                        string message = rec.MessageText;
+
+                        var payload = new
+                        {
+                            message_text = message,
+                            device_ids = new[] { rec.AccountId }
+                        };
+
+                        string jsonBody = JsonConvert.SerializeObject(payload);
+                        var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+                        string resText = "TEST MODE - not sent";
+
+                        if (_sendLive)
+                        {
+                            // Safe-send to API
+                            var response = client.PostAsync(
+                                "https://app.nuovopay.com/dm/api/v1/payment_reminders/send_message.json",
+                                content).Result;
+
+                            resText = response.IsSuccessStatusCode
+                                ? response.Content.ReadAsStringAsync().Result
+                                : response.StatusCode.ToString();
+                        }
+                        else
+                        {
+                            Console.WriteLine($"TEST payload for {rec.AccountId}:\n{jsonBody}\n");
+                        }
+
+                        // Log results
+                        df.Add(new MessageLog
+                        {
+                            Id = Guid.NewGuid(),
+                            AccountNo = rec.AccountId.ToString(),
+                            DateSent = DateTime.UtcNow,
+                            Message = message,
+                            MessageError = resText,
+                            MessageStatus = _sendLive ? "sent" : "test",
+                            MessageType = "Summary",
+                            PhoneNumber = ""
+                        });
+                    }
+                }
+            }
+
+            // Print results
+            foreach (var record in df)
+            {
+                await paymentsRepository.CreateMessageLogAsync(record);
+            }
+        }
+
     }
 
 }

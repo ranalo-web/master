@@ -18,14 +18,17 @@ namespace Ranalo.Controllers
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
         private readonly IContractService _contractorService;
+        private readonly IDeviceProcessor _deviceProcessor;
 
         public ReportsController(IApplicationReportService applicationReportService, 
             IUserService userService,
-            IContractService contractorService)
+            IContractService contractorService,
+            IDeviceProcessor deviceProcessor)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
             _contractorService = contractorService;
+            _deviceProcessor = deviceProcessor;
         }
 
         [HttpGet]
@@ -75,7 +78,7 @@ namespace Ranalo.Controllers
             {
                 //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
 
-                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, null, null, page, pageSize, searchTerm.Trim());
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, false, null, null, page, pageSize, searchTerm.Trim());
 
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
@@ -87,7 +90,7 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(true, false, null, dealerId, page, pageSize, "");
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(true, false, false, null, dealerId, page, pageSize, "");
 
             return View(allDelaerStatusReport);
 
@@ -120,7 +123,7 @@ namespace Ranalo.Controllers
             {
                 //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
 
-                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(false, true, null, null, page, pageSize, searchTerm.Trim());
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(false, true, false, null, null, page, pageSize, searchTerm.Trim());
 
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
@@ -132,7 +135,7 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, null, dealerId, page, pageSize, searchTerm.Trim());
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, false, null, dealerId, page, pageSize, searchTerm.Trim());
 
             return View(allDelaerStatusReport);
 
@@ -168,25 +171,7 @@ namespace Ranalo.Controllers
             return RedirectToAction("Collections", "Reports");
         }
 
-        [HttpPost]
-        [Route("assign-collector")]
-        public async Task<IActionResult> AssignAccountCollector(long displayDeviceId,
-            string deposit,
-            string oldName,
-            int debtCollectorUserId)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-
-            await SetViewBags(settings, "collector");
-
-            await _contractorService.AssignContractToCollector((int)displayDeviceId, debtCollectorUserId);
-
-            return RedirectToAction("Collections", "Reports");
-        }
+        
 
         [HttpGet]
         [Route("missingmpesacode/{page:int?}")]
@@ -308,7 +293,7 @@ namespace Ranalo.Controllers
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, null, null, page, pageSize, searchTerm.Trim());
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, false, null, null, page, pageSize, searchTerm.Trim());
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
@@ -319,7 +304,7 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, false, null, dealerId, page, pageSize, searchTerm.Trim());
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, false, false, null, dealerId, page, pageSize, searchTerm.Trim());
 
             return View(allDelaerStatusReport);
         }

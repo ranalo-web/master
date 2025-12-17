@@ -124,7 +124,7 @@ namespace Ranalo.Services
 
         public async Task<CustomerDetails> GetCustomerDetailsByAccountIdAsync(long orderId)
         {
-            CustomerDetails? customerDetails = null;
+            CustomerDetails customerDetails = new CustomerDetails();
 
             customerDetails = await _applicationReportRepository.GetCustomerDetailsByAccountId((int)orderId);
             if (customerDetails != null) 
@@ -143,6 +143,10 @@ namespace Ranalo.Services
             var device = await _devicesRepository.GetDeviceByAccountId(orderId);
             if (device != null)
             {
+                if(customerDetails == null)
+                {
+                    customerDetails = new CustomerDetails();
+                }
                 customerDetails.DeviceDetails = device;
             }
 
@@ -258,7 +262,13 @@ namespace Ranalo.Services
 
             string result = await client.UpdateOrderStatusAsync(orderId, "approved");
 
-            return await _applicationReportRepository.ApproveOrder(orderId);
+            var approved = await _applicationReportRepository.ApproveOrder(orderId);
+            //Maybe we should create a contract here. Or wait for the pull from WooCommerce
+            if(approved == 1)
+            {
+
+            }
+            return approved;
         }
 
         public async Task<StatusReportViewModel> GetStatusReportByDealer(int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm)
@@ -314,6 +324,8 @@ namespace Ranalo.Services
                         LastPaymentDate = payment.LastPaidDate,
                         LastPaidAmt = payment.LastPaymentAmount,
                         TotalLast24 = payment.Last24hrPaidAmount,
+                        TotalWeekPaid = payment.LastWeekPaidAmount,
+                        LastPaidMpesa = payment.LastMPesaCode,
                         FirstPaidAmt = payment.FirstPaymentAmount,
                         FirstPaymentDate = payment.FirstPaidDate,
                         LiveFlag = "1", //Ask Eddie Not sure what this is
@@ -326,13 +338,14 @@ namespace Ranalo.Services
                         SaleWeek = DateTime.Now, //Ask Eddie Whats this????
                         Weekly = payment.Weekly,
                         LoanBalance = _calculatorService.CalculateOutstandingAmount(payment.Deposit, payment.Daily, payment.Weekly, payment.Monthly, payment.TotalPaid, payment.TermsInMonths),
-                        TotalLoan = payment.Daily * 30 * 12,
+                        TotalLoan = payment.Daily * 30 * payment.TermsInMonths,
                         NumberDaysLifeTime = _calculatorService.CalculateNoDaysUnit(payment.FirstPaidDate),
                         NextLockDate = payment.NextLockDate,
                         Status = payment.Status,
                         LockType = payment.LockType,
                         NextLockDateIsoFormat = payment.NextLockDateIsoFormat,
                         NotPaying90D = _calculatorService.HasNotPaidInLast90Days(payment.LastPaidDate),
+                        DebtCollectorUserId = payment.DebtCollectorUserId
 
                     };
                     if (statusRow.Arrears < 0)
@@ -366,7 +379,7 @@ namespace Ranalo.Services
             return mobileStatusReports;
         }
 
-        public async Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm)
+        public async Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, bool assigned, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm)
         {
             deviceGroupId ??= 0;
 
@@ -375,6 +388,7 @@ namespace Ranalo.Services
                 pageSize: pageSize,
                 isInArrears,
                 notPaid90,
+                assigned,
                 fetchPageAsync: async (pageNumber, pageSize) =>
                 {
                     // Fetch *this page* directly from repo
@@ -404,12 +418,12 @@ namespace Ranalo.Services
 
         public async Task<(int total, List<MobileStatusReport> page)> GetQualifyingPageAsync(
             int pageNumber, int pageSize,
-            bool isInArrears, bool notPaid90,Func<int, int, Task<List<MobileStatusReport>>> fetchPageAsync)
+            bool isInArrears, bool notPaid90, bool assigned, Func<int, int, Task<List<MobileStatusReport>>> fetchPageAsync)
         {
             var qualifying = new List<MobileStatusReport>();
             int total = 0;
 
-            await foreach (var record in GetAllQualifyingRecordsAsync(fetchPageAsync, isInArrears, notPaid90))
+            await foreach (var record in GetAllQualifyingRecordsAsync(fetchPageAsync, isInArrears, notPaid90, assigned))
             {
                 total++;
                 qualifying.Add(record);
@@ -428,6 +442,7 @@ namespace Ranalo.Services
         Func<int, int, Task<List<MobileStatusReport>>> fetchPageAsync,
         bool isInArrears,
         bool notPaidIn90,
+        bool assigned,
         int dbPageSize = 1000)
         {
             int pageNumber = 1;
@@ -450,8 +465,16 @@ namespace Ranalo.Services
                 {
                     foreach (var record in page)
                     {
-                        if (record.NotPaying90D && record.Arrears < 0) // arrears logic in C#
-                            yield return record;
+                        if(assigned)
+                        {
+                            if (record.NotPaying90D && record.Arrears < 0 && record.DebtCollectorUserId != null) // arrears logic in C#
+                                yield return record;
+                        }
+                        else
+                        {
+                            if (record.NotPaying90D && record.Arrears < 0 && record.DebtCollectorUserId == null) // arrears logic in C#
+                                yield return record;
+                        }
                     }
                 }
 
@@ -562,10 +585,12 @@ namespace Ranalo.Services
                 var arrears = (record.TotalPaidR - due);
                 record.Arrears = paymentSummary.Arrears;
                 record.Daily = paymentSummary.Daily;
+                record.NewDaily = record.AmountRes;
                 record.LastConnectedAt = paymentSummary.LastConnectedAt;
                 record.LastResPaymentDate = paymentSummary.LastPaymentDate;
                 record.LastPaidAmount = paymentSummary.LastPaidAmount;
                 record.NextLockDate = paymentSummary.NextLockDate;
+                record.PaidLast24Hours = paymentSummary.PaidLast24Hours;
 
                 if (due <= 0)
                 {

@@ -19,14 +19,14 @@ namespace Ranalo.ScheduledServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Woo Orders Task started at: {time}", DateTime.UtcNow);
+            _logger.LogInformation("Woo Orders Task new headers started at: {time}", DateTime.UtcNow);
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
                     // Example: perform a database operation
-                    _logger.LogInformation("Running scheduled task at: {time}", DateTime.UtcNow);
+                    _logger.LogInformation("Running scheduled new headers task at: {time}", DateTime.UtcNow);
 
                     using (var scope = _scopeFactory.CreateScope())
                     {
@@ -34,7 +34,7 @@ namespace Ranalo.ScheduledServices
                         var inactiveUsers = await syncService.SyncWooOrders();
                         foreach (var order in inactiveUsers)
                         {
-                            _logger.LogInformation("Synced order: {user}", order.Id);
+                            _logger.LogInformation("Synced order new headers: {user}", order.Id);
                             // Possibly send email reminders, clean up data, etc.
                         }
                     }
@@ -48,11 +48,11 @@ namespace Ranalo.ScheduledServices
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error while running scheduled task.");
+                    _logger.LogError(ex, "Error while running scheduled task new headers.");
                 }
             }
 
-            _logger.LogInformation("ScheduledTaskService stopped at: {time}", DateTime.UtcNow);
+            _logger.LogInformation("ScheduledTaskService new headers stopped at: {time}", DateTime.UtcNow);
         }
     }
 }

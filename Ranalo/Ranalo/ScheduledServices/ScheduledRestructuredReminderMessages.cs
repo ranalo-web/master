@@ -78,6 +78,7 @@ namespace Ranalo.ScheduledServices
                 {
                     AccountId = account.AccountNo,
                     FirstName = account.FirstName,
+                    NewDaily = account.NewDaily,
                     AutoLockDatePmtR = account.AutoLockDatePmtR
                 };
 

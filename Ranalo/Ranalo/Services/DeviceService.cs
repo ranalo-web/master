@@ -44,6 +44,7 @@ namespace Ranalo.Services
 
         public async Task<int> SendMpesaUpdate(long orderId, string newMpesa, long metadataId)
         {
+            //DONT BOTHER UPDATING WOO COMMERCE
             var client = new WooCommerceClient(
                 "https://ranalocredit.com/wp-json/wc/v3",
                 "ck_9bf5ade6a031f04b53bd31938d462895db40e00c",

@@ -27,9 +27,10 @@ namespace Ranalo.Woocommece.Api.DataStore
            ,[AmountValue]
            ,[PaymentDateValue]
            ,[Created]
+           ,[FirstName]
             )
             VALUES (
-                @AccountNo, @MpesaCode, @Amount, @PaymentDate, @AmountValue, @PaymentDateValue, GETDATE()
+                @AccountNo, @MpesaCode, @Amount, @PaymentDate, @AmountValue, @PaymentDateValue, GETDATE(), @FirstName
             );
 
             SELECT CAST(SCOPE_IDENTITY() as bigint);

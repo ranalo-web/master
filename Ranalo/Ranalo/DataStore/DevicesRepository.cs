@@ -21,17 +21,17 @@ namespace Ranalo.DataStore
 
             var countSql = @"SELECT COUNT(DISTINCT D.Id)
             FROM Devices d
-              INNER JOIN KosePayments kp 
-                  ON kp.AccountNoBigint = d.Id
-              LEFT JOIN Dealers dealer
-                  ON dealer.DealerReference = d.DeviceGroupId
-              WHERE NOT EXISTS (
-                  SELECT 1
-                  FROM Woo_Orders wo
-                    WHERE wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending' )
-            		
-            		)
-              AND d.[Status] = 'enrolled'
+                LEFT JOIN Dealers dealer
+                    ON dealer.DealerReference = d.DeviceGroupId
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM Woo_Orders wo
+	                INNER JOIN KosePayments kp2 
+                    ON wo.MpesaDepositRef = kp2.MpesaCode
+                    WHERE kp2.AccountNoBigint = d.Id
+                    AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending')
+                )
+                AND d.[Status] = 'enrolled'
               AND (
                   @DealerId = 0 OR dealer.DealerReference = @DealerId
               )

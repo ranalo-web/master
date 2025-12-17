@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Ranalo.Calculator.Logic.Models;
 using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
+using Ranalo.Models;
 using Ranalo.Services;
 using Ranalo.Woocommece.Api.Models;
 
@@ -13,14 +15,17 @@ namespace Ranalo.Controllers
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
         private readonly IContractService _contractorService;
+        private readonly IDeviceProcessor _deviceProcessor;
 
         public CollectionsController(IApplicationReportService applicationReportService,
             IUserService userService,
-            IContractService contractorService)
+            IContractService contractorService,
+            IDeviceProcessor deviceProcessor)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
             _contractorService = contractorService;
+            _deviceProcessor = deviceProcessor;
         }
 
         [Route("collections-home/{page:int?}")]
@@ -49,7 +54,7 @@ namespace Ranalo.Controllers
 
             await SetViewBags(settings, "collector");
 
-            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Collector)
+            if (settings.RoleId == UserRole.Collector)
             {
                 //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
 
@@ -60,44 +65,20 @@ namespace Ranalo.Controllers
                 return View(allPaymentSummaries);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
-
-            var dealerId = Convert.ToInt32(dealer.DealerReference);
-
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, null, dealerId, page, pageSize, searchTerm.Trim());
-
-            return View(allDelaerStatusReport);
-
-        }
-
-        [HttpPost]
-        [Route("recover-contract")]
-        public async Task<IActionResult> RecoverAccount(long displayDeviceId,
-            string deposit,
-            string oldName,
-            string newName,
-            string startDate,
-            string interval,
-            decimal totalCost)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
+            if (settings.RoleId == UserRole.Admin)
             {
-                return RedirectToAction("Index", "Login");
+                //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
+
+                var allPaymentSummaries = await _contractorService.GetCollectorsContractSummaryAsync(0, null, 0, page, pageSize, searchTerm.Trim());
+
+                ViewData["OrdersStatus"] = "Waiting Approval";
+
+                return View(allPaymentSummaries);
             }
 
-            await SetViewBags(settings, "collector");
+            //settings.RoleId == UserRole.Admin || 
+            return View(new StatusReportViewModel());
 
-            var contractToUpdate = new ContractCreateDto()
-            {
-                AccountNo = displayDeviceId.ToString(),
-                FirstName = newName,
-                TotalAmount = totalCost,
-            };
-
-            var update = await _contractorService.CreateRecoveredAccountAsync(contractToUpdate);
-
-            return RedirectToAction("NewCollections", "Contract");
         }
 
         [Route("customer-details/{accountId:int}")]
@@ -118,10 +99,9 @@ namespace Ranalo.Controllers
                 return View(customerDetails);
             }
             //Get customer Notes
-            var customerId = customerDetails.OrderID == 0 ? long.Parse(customerDetails.Payments.FirstOrDefault().AccountNo) : customerDetails.OrderID;
-            var notes = await _applicationReportService.GetNotesByOrderIdAsync(customerId);
+            var notes = await _applicationReportService.GetNotesByOrderIdAsync(accountId);
             customerDetails.AccountId = (int)accountId;
-            customerDetails.CustomerId = customerId.ToString();
+            customerDetails.CustomerId = accountId.ToString();
             if (notes != null)
             {
                 foreach (var note in notes)
@@ -160,6 +140,149 @@ namespace Ranalo.Controllers
 
             return Redirect($"/customer-details/{orderId}");
         }
+
+        [HttpGet]
+        [Route("assigned-collections/{page:int?}")]
+        public async Task<IActionResult> AssignedCollections(string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            //Page Origin ViewBad
+            ViewBag.PageOrigin = "assigned";
+            await SetViewBags(settings, "approver");
+
+            //Set debt collectors
+            var collectors = await _userService.GetDebtCollectors();
+
+            ViewBag.Collectors = collectors
+                .Select(x => new SelectListItem
+                {
+                    Value = x.UserId.ToString(),
+                    Text = $"{x.Name} {x.LastName}"
+                })
+                .ToList();
+
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
+
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(false, true, true, null, null, page, pageSize, searchTerm.Trim());
+
+
+                ViewData["OrdersStatus"] = "Waiting Approval";
+
+                return View(allPaymentSummaries);
+            }
+
+            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+
+            var dealerId = Convert.ToInt32(dealer.DealerReference);
+
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, true, null, dealerId, page, pageSize, searchTerm.Trim());
+
+            return View(allDelaerStatusReport);
+
+        }
+
+
+        [HttpGet]
+        [Route("unassigned-collections/{page:int?}")]
+        public async Task<IActionResult> UnAssignedCollections(string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            ViewBag.PageOrigin = "unassigned";
+            await SetViewBags(settings, "approver");
+
+            //Set debt collectors
+            var collectors = await _userService.GetDebtCollectors();
+
+            ViewBag.Collectors = collectors
+                .Select(x => new SelectListItem
+                {
+                    Value = x.UserId.ToString(),
+                    Text = $"{x.Name} {x.LastName}"
+                })
+                .ToList();
+
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                //var allPaymentSummaries = await _applicationReportService.GetStatusReportByDealer(null,null);
+
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(false, true, false, null, null, page, pageSize, searchTerm.Trim());
+
+
+                ViewData["OrdersStatus"] = "Waiting Approval";
+
+                return View("AssignedCollections", allPaymentSummaries);
+            }
+
+            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+
+            var dealerId = Convert.ToInt32(dealer.DealerReference);
+
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, false, null, dealerId, page, pageSize, searchTerm.Trim());
+
+            return View(allDelaerStatusReport);
+
+        }
+
+        [HttpPost]
+        [Route("assign-collector")]
+        public async Task<IActionResult> AssignAccountCollector(long displayDeviceId,
+            string deposit,
+            string oldName,
+            int debtCollectorUserId)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "collector");
+
+            await _contractorService.AssignContractToCollector((int)displayDeviceId, debtCollectorUserId);
+
+            return RedirectToAction("Collections", "Reports");
+        }
+
+        [HttpPost]
+        [Route("lock-device")]
+        public async Task<IActionResult> LockCustomerDeviceAsync(long displayDeviceId,
+            string customerName,
+            string lockDate)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "collector");
+
+            DateTime finalDate = string.IsNullOrWhiteSpace(lockDate)
+            ? DateTime.Now
+            : DateTime.Parse(lockDate);
+
+            var lockTransaction = new LockTransaction()
+            {
+                AccountId = displayDeviceId,
+                FirstName = customerName,
+                AutoLockDate = finalDate
+            };
+
+            await _deviceProcessor.ProcessSingleAsync(lockTransaction);
+
+            return RedirectToAction("Collections", "Collections");
+        }
+
         private async Task SetViewBags(User settings, string backLink, string searchTerm = "")
         {
             ViewBag.BackLink = backLink;

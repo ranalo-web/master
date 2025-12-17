@@ -47,8 +47,8 @@ namespace Ranalo.Woocommece.Api.Controllers
 
         private async Task<string> SecuredApiGetRequestStringResponse(string url = "", string token = "")
         {
-            var consumerKey = "ck_9bf5ade6a031f04b53bd31938d462895db40e00c";
-            var consumerSecret = "cs_b2d5d61f3eae5093d85b7319905eb5942c614f99";
+            var consumerKey = "ck_0090896477d37b5ce6e006eabd7f579aacb1a97f";
+            var consumerSecret = "cs_2969d990e2967d37aab8078572ee30020417467f";
             var baseUrl = "https://ranalocredit.com/wp-json/wc/v3";
             var client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

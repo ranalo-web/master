@@ -27,6 +27,8 @@
         public decimal ArrearsAmt { get; set; }
         public decimal FirstPaidAmt { get; set; }
         public decimal LastPaidAmt { get; set; }
+
+        public int? DebtCollectorUserId { get; set; }
         public DateTime? SaleWeek { get; set; }
         public string LiveFlag { get; set; }
         public int DeviceGroupId { get; set; }
@@ -47,6 +49,8 @@
         public string? NextLockDateIsoFormat { get; set; }
         public List<RestructuredRecord> RestructuredRecords { get; set; } = new List<RestructuredRecord>();
         public CustomerDetails? CustomerDetails { get; set; }
+        public string? LastPaidMpesa { get; set; }
+        public decimal TotalWeekPaid { get; internal set; }
     }
 
     public class PaymentSummary
@@ -78,8 +82,10 @@
         public decimal Monthly { get; set; }
         public decimal Deposit { get; set; }
         public decimal Last24hrPaidAmount { get; set; }
+        public decimal LastWeekPaidAmount { get; set; }
         public decimal TermsInMonths { get; set; }
         public string? NextLockDateIsoFormat { get; set; }
+        public int? DebtCollectorUserId { get; set; }
     }
 
 }

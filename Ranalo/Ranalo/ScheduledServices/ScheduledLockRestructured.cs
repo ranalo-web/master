@@ -64,27 +64,31 @@ namespace Ranalo.ScheduledServices
         {
             var records = await reminderService.GetAllRestructured("", 1, 1000); ;
 
-            records.Records.RemoveAll(x => x.ArrearsR < 0);
-
-            if (records == null && records?.Records?.Any() == false)
-            { return null; }
-
-
-            var qualifying = records?.Records
-            //.Where(r => NeedsUpdate(r.NextLockDate))
-            .ToList();
+            var qualifying = GetQualifyingRecords(records);
 
             var devicesToLock = new List<LockTransaction>();
-            //Not sure why this removes negative arrears
-            //records.Records.RemoveAll(a => a.ArrearsR > 0);
-
-            foreach (var account in records.Records)
+           
+            if(qualifying == null || qualifying.Any() == false)
             {
+                return null;
+            }
+
+           
+
+            foreach (var account in qualifying)
+            {
+                var nextLock = account.AutoLockDatePmtR;
+
+                if (account.ArrearsR < 0 && account.PaidLast24Hours > 0)
+                {
+                    nextLock = (account.LastPaymentDate ?? DateTime.UtcNow).AddHours(30);
+                }
+
                 var lockDevice = new LockTransaction()
                 {
                     AccountId = account.AccountNo,
                     FirstName = account.FirstName,
-                    AutoLockDate = account.AutoLockDatePmtR
+                    AutoLockDate = nextLock
                 };
 
                 devicesToLock.Add(lockDevice);
@@ -93,6 +97,25 @@ namespace Ranalo.ScheduledServices
             var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock);
 
             return lockedDevices;
+        }
+
+        public static List<RestructuredRecord> GetQualifyingRecords(RestructuredViewModel? records)
+        {
+            // Robust null checks
+            if (records == null || records.Records == null || !records.Records.Any())
+                return null;
+
+            // Remove records where arrears are negative (optional — if still needed)
+            var qualifying = records.Records
+                .Where(r =>
+                    // Condition 1: Not in arrears
+                    r.ArrearsR >= 0 ||
+
+                    // Condition 2: In arrears but made a payment in last 24 hours
+                    (r.ArrearsR < 0 && r.PaidLast24Hours > 0)
+                ).ToList();
+
+            return qualifying;
         }
 
         bool NeedsUpdate(string? kenyanTimestamp)

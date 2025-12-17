@@ -14,6 +14,7 @@ namespace Ranalo.Woocommece.Api.Models
         public required string Amount { get; set; }
         [JsonProperty("payment_date")]
         public required string PaymentDate { get; set; }
+        public string? FirstName { get; set; }
 
         public decimal AmountValue => decimal.Parse(Amount);
         public DateTime PaymentDateValue => DateTime.Parse(PaymentDate);

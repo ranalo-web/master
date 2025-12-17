@@ -50,11 +50,10 @@ namespace Ranalo.Controllers
         public async Task<IActionResult> UpdateContractDetails(int deviceId, 
             decimal deposit, 
             decimal daily, 
-            decimal weekly, 
-            decimal monthly, 
-            string interval,
+            int term, 
             decimal loan,
             decimal cost,
+            decimal buyingPrice,
             string firstName)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
@@ -68,12 +67,12 @@ namespace Ranalo.Controllers
                 ID = deviceId,
                 Deposit = deposit,
                 Daily = daily,
-                Weekly = weekly,
-                Monthly = monthly,
-                RePaymentIntervals = interval,
+                TermInMonths = term,
                 TotalCost = cost,
                 TotalLoan = loan,
-                FirstName = firstName
+                TotalAmount = buyingPrice,
+                FirstName = firstName,
+                RePaymentIntervals = "Daily"
             };
 
             var update = await _contractService.UpdateContractAsync(contractToUpdate);
@@ -87,6 +86,7 @@ namespace Ranalo.Controllers
             int deviceId,
             int orderId,
             string interval,
+            int term,
             decimal cost)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
@@ -100,6 +100,7 @@ namespace Ranalo.Controllers
                 AccountNo = deviceId.ToString(),
                 FirstName = firstName,
                 TotalAmount = cost,
+                TermInMonths = term,
                 OrderId = orderId
             };
 

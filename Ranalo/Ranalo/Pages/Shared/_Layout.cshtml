@@ -50,11 +50,25 @@
                                         <span class="nk-menu-text">Orders</span>
                                     </a>
                                 </li>
-                                <li class="nk-menu-item">
-                                    <a href="/new-collections" class="nk-menu-link">
-                                        <span class="nk-menu-icon"><em class="icon ni ni-briefcase-fill"></em></span>
+                                <li class="nk-menu-item has-sub">
+                                    <a class="nk-menu-link nk-menu-toggle" href="collections">
+                                        <span class="nk-menu-icon">
+                                            <em class="icon ni ni-briefcase-fill"></em>
+                                        </span>
                                         <span class="nk-menu-text">Collections</span>
                                     </a>
+                                    <ul class="nk-menu-sub">
+                                        <li class="nk-menu-item ">
+                                            <a class="nk-menu-link " href="/assigned-collections">
+                                                <span class="nk-menu-text">Assigned Collections</span>
+                                            </a>
+                                        </li>
+                                        <li class="nk-menu-item ">
+                                            <a class="nk-menu-link " href="/unassigned-collections">
+                                                <span class="nk-menu-text">Unassigned Collections</span>
+                                            </a>
+                                        </li>
+                                    </ul>
                                 </li>
                                 @if (ViewBag.IsAdmin || ViewBag.IsApprover)
                                 {

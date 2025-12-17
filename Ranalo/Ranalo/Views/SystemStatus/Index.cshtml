@@ -1,0 +1,228 @@
+﻿@using Ranalo.Models
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model DevicesWithDealerViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+@functions {
+    private string SetLockStatusBadge(bool status)
+    {
+        var statusClass = "";
+
+        if (status == false)
+        {
+            return "badge badge-dim bg-danger";
+        }
+        else
+        {
+            return "badge badge-dim bg-success";
+        }
+
+        return statusClass;
+    }
+
+    private string SetLockStatusTextBadge(bool status)
+    {
+        if (status == false)
+        {
+            return "LOCKED";
+        }
+        else
+        {
+            return "UNLOCKED";
+        }
+    }
+}
+
+<div class="nk-content-body">
+
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">All Devices</h3>
+                <div class="nk-block-des text-soft">
+                    <p>You have total of @Model?.TotalRecords devices in the system.</p>
+                </div>
+            </div><!-- .nk-block-head-content -->
+            <div class="nk-block-head-content">
+                <div class="toggle-wrap nk-block-tools-toggle">
+                    <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu"><em class="icon ni ni-menu-alt-r"></em></a>
+                    <div class="toggle-expand-content" data-content="pageMenu">
+                        <ul class="nk-block-tools g-3">
+                            <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
+                            <li class="nk-block-tools-opt">
+                                <div class="drodown">
+                                    <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <ul class="link-list-opt no-bdr">
+                                            <li><a href="#"><span>Add Customer</span></a></li>
+                                            <li><a href="#"><span>Import Customer</span></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div><!-- .toggle-wrap -->
+            </div><!-- .nk-block-head-content -->
+        </div><!-- .nk-block-between -->
+    </div><!-- .nk-block-head -->
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="col-lg-7">
+                <div class="card h-100">
+                    <div class="card-inner mb-n2">
+                        <div class="card-title-group">
+                            <div class="card-title card-title-sm">
+                                <h6 class="title">Browser Used</h6>
+                            </div>
+                            <div class="card-tools">
+                                <div class="drodown">
+                                    <a href="#" class="dropdown-toggle dropdown-indicator btn btn-sm btn-outline-light btn-white" data-bs-toggle="dropdown">30 Days</a>
+                                    <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
+                                        <ul class="link-list-opt no-bdr">
+                                            <li><a href="#"><span>7 Days</span></a></li>
+                                            <li><a href="#"><span>15 Days</span></a></li>
+                                            <li><a href="#"><span>30 Days</span></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="nk-tb-list is-loose">
+                        <div class="nk-tb-item nk-tb-head">
+                            <div class="nk-tb-col"><span>Browser</span></div>
+                            <div class="nk-tb-col text-end"><span>Users</span></div>
+                            <div class="nk-tb-col"><span>% Users</span></div>
+                            <div class="nk-tb-col tb-col-sm text-end"><span>Bounce Rate</span></div>
+                        </div><!-- .nk-tb-head -->
+                        <div class="nk-tb-item">
+                            <div class="nk-tb-col">
+                                <div class="icon-text">
+                                    <em class="text-primary icon ni ni-globe"></em>
+                                    <span class="tb-lead">Google Chrome</span>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col text-end">
+                                <span class="tb-sub tb-amount"><span>1,641</span></span>
+                            </div>
+                            <div class="nk-tb-col">
+                                <div class="progress progress-md progress-alt bg-transparent">
+                                    <div class="progress-bar" data-progress="72.84"></div>
+                                    <div class="progress-amount">72.84%</div>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col tb-col-sm text-end">
+                                <span class="tb-sub">22.62%</span>
+                            </div>
+                        </div><!-- .nk-tb-item -->
+                        <div class="nk-tb-item">
+                            <div class="nk-tb-col">
+                                <div class="icon-text">
+                                    <em class="text-danger icon ni ni-globe"></em>
+                                    <span class="tb-lead">Mozilla Firefox</span>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col text-end">
+                                <span class="tb-sub tb-amount"><span>497</span></span>
+                            </div>
+                            <div class="nk-tb-col">
+                                <div class="progress progress-md progress-alt bg-transparent">
+                                    <div class="progress-bar" data-progress="7.93"></div>
+                                    <div class="progress-amount">7.93%</div>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col tb-col-sm text-end">
+                                <span class="tb-sub">20.49%</span>
+                            </div>
+                        </div><!-- .nk-tb-item -->
+                        <div class="nk-tb-item">
+                            <div class="nk-tb-col">
+                                <div class="icon-text">
+                                    <em class="text-info icon ni ni-globe"></em>
+                                    <span class="tb-lead">Safari Browser</span>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col text-end">
+                                <span class="tb-sub tb-amount"><span>187</span></span>
+                            </div>
+                            <div class="nk-tb-col">
+                                <div class="progress progress-md progress-alt bg-transparent">
+                                    <div class="progress-bar" data-progress="4.87"></div>
+                                    <div class="progress-amount">4.87%</div>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col tb-col-sm text-end">
+                                <span class="tb-sub">21.34%</span>
+                            </div>
+                        </div><!-- .nk-tb-item -->
+                        <div class="nk-tb-item">
+                            <div class="nk-tb-col">
+                                <div class="icon-text">
+                                    <em class="text-orange icon ni ni-globe"></em>
+                                    <span class="tb-lead">UC Browser</span>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col text-end">
+                                <span class="tb-sub tb-amount"><span>96</span></span>
+                            </div>
+                            <div class="nk-tb-col">
+                                <div class="progress progress-md progress-alt bg-transparent">
+                                    <div class="progress-bar" data-progress="2.46"></div>
+                                    <div class="progress-amount">2.46%</div>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col tb-col-sm text-end">
+                                <span class="tb-sub">20.33%</span>
+                            </div>
+                        </div><!-- .nk-tb-item -->
+                        <div class="nk-tb-item">
+                            <div class="nk-tb-col">
+                                <div class="icon-text">
+                                    <em class="text-blue icon ni ni-globe"></em>
+                                    <span class="tb-lead">Edge / IE</span>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col text-end">
+                                <span class="tb-sub tb-amount"><span>28</span></span>
+                            </div>
+                            <div class="nk-tb-col">
+                                <div class="progress progress-md progress-alt bg-transparent">
+                                    <div class="progress-bar" data-progress="1.14"></div>
+                                    <div class="progress-amount">1.14%</div>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col tb-col-sm text-end">
+                                <span class="tb-sub">21.34%</span>
+                            </div>
+                        </div><!-- .nk-tb-item -->
+                        <div class="nk-tb-item">
+                            <div class="nk-tb-col">
+                                <div class="icon-text">
+                                    <em class="text-purple icon ni ni-globe"></em>
+                                    <span class="tb-lead">Other Browser</span>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col text-end">
+                                <span class="tb-sub tb-amount"><span>683</span></span>
+                            </div>
+                            <div class="nk-tb-col">
+                                <div class="progress progress-md progress-alt bg-transparent">
+                                    <div class="progress-bar" data-progress="10.76"></div>
+                                    <div class="progress-amount">10.76%</div>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col tb-col-sm text-end">
+                                <span class="tb-sub">20.49%</span>
+                            </div>
+                        </div><!-- .nk-tb-item -->
+                    </div><!-- .nk-tb-list -->
+                </div><!-- .card -->
+            </div>
+        </div>
+    </div>
+
+</div>

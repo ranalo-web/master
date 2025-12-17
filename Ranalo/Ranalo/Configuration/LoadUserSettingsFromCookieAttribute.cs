@@ -20,12 +20,12 @@ namespace Ranalo.Configuration
                 }
                 catch
                 {
-                    context.Result = new RedirectToActionResult("Configure", "Settings", null);
+                    context.Result = new RedirectToActionResult("Index", "Login", null);
                 }
             }
             else
             {
-                context.Result = new RedirectToActionResult("Configure", "Settings", null);
+                context.Result = new RedirectToActionResult("Index", "Login", null);
             }
 
             base.OnActionExecuting(context);

@@ -18,6 +18,7 @@
         public decimal Arrears { get; set; }
         public DateTime ContractEndDate { get; set; }
         public decimal DailyPaymentALL { get; set; }
+        public decimal PaidLast24Hours { get; set; }
         public decimal UnitsLeft { get; set; }
         public decimal TermsInMonths { get; set; }
         public DateTime AutoLockDatePmtR { get; set; }
