@@ -10,6 +10,7 @@ using Ranalo.Woocommece.Api.DataStore;
 using Ranalo.Woocommece.Api.Services;
 using Ranalo.Calculator.Logic.Contract;
 using Ranalo.DataStore.MySql;
+using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +47,8 @@ builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
 builder.Services.AddScoped<IPaymentReminderService, PaymentReminderService>();
 builder.Services.AddScoped<IDeviceProcessor, DeviceProcessor>();
 builder.Services.AddScoped<IWooCommerceService, WooCommerceService>();
+builder.Services.AddScoped<IPaymentsService, PaymentsService>();
+//IPaymentsService
 
 //MySql Db connection
 builder.Services.AddScoped<IMySqlPaymentsRepository, MySqlPaymentsRepository>();
@@ -56,11 +59,13 @@ bool runWooTask = builder.Configuration.GetValue<bool>("RunWooTask");
 
 if (runWooTask)
 {
-    builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+     
+    //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
     //builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
 }
 else
 {
+    builder.Services.AddHostedService<ScheduledLockFullyPaid>();
     builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
     builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
     ////builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
@@ -73,13 +78,16 @@ else
     builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
     builder.Services.AddHostedService<ScheduledLockPaying>();
     builder.Services.AddHostedService<ScheduledDailyPaymentSummary>();
+   
 }
 
-    //Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int deviceGroupId)
-    //IUserService
-    //if (!builder.Environment.IsDevelopment())
-    //{
-    
+
+//ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+//Task<IEnumerable<MobileStatusReport>> GetStatusReportByDealer(int deviceGroupId)
+//IUserService
+//if (!builder.Environment.IsDevelopment())
+//{
+
 //}
 
 builder.Services.AddDistributedMemoryCache(); // or use Redis, etc.

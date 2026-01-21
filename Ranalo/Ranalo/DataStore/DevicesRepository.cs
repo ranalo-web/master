@@ -506,7 +506,8 @@ FETCH NEXT @pageSize ROWS ONLY";
             
               AND (
                 @SearchTerm IS NULL
-                OR d.Id LIKE '%' + @SearchTerm + '%'
+                OR d.Id LIKE '%' + @SearchTerm + '%'                
+                OR d.ImeiNo LIKE '%' + @SearchTerm + '%'
                 OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
                 OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
                 OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
@@ -536,6 +537,7 @@ FETCH NEXT @pageSize ROWS ONLY";
                                 @SearchTerm IS NULL
                                 OR d.Id LIKE '%' + @SearchTerm + '%'
                                 OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+                                OR d.ImeiNo LIKE '%' + @SearchTerm + '%'
                                 OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
                                 OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
                             )

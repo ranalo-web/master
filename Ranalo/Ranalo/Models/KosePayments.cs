@@ -7,5 +7,6 @@
         public decimal AmountValue { get; set; }
         public DateTime PaymentDateValue { get; set; }
         public string? OrphanedAccountNo { get; set; }
+        public bool? Imported { get; set; }
     }
 }

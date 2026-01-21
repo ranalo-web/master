@@ -33,7 +33,7 @@ namespace Ranalo.DataStore
         Task CreateCustomerNote(CustomerNote newNote);
         Task<List<CustomerNote>> GetNotesByOrderId(long orderId);
         Task<WooOrderProduct?> GetProductDetailsForOrder(long orderId);
-        Task<Contact?> GetNextOfKinForOrder(long orderId);
+        Task<Contact?> GetNextOfKinForOrder(long orderId, bool isPrimary);
 
         Task<AwaitingApprovalViewModel> GetAllMissingMpesaAsync(string searchTerm = "", int page = 1, int pageSize = 10);
         Task<KosePaymentsViewModel> GetPaymentsForAccount(string? customerAccount, int page = 1, int pageSize = 10);

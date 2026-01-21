@@ -136,7 +136,7 @@ namespace Ranalo.Services
                 //Populate Order device details
                 customerDetails.Product = await _applicationReportRepository.GetProductDetailsForOrder(customerDetails.OrderID);
 
-                customerDetails.NextOfKin = await _applicationReportRepository.GetNextOfKinForOrder(customerDetails.OrderID);
+                customerDetails.NextOfKin = await _applicationReportRepository.GetNextOfKinForOrder(customerDetails.OrderID, true);
                 
             }
 
@@ -201,7 +201,10 @@ namespace Ranalo.Services
             //Populate Order device details
             customerDetails.Product = await _applicationReportRepository.GetProductDetailsForOrder(customerDetails.Id);
 
-            customerDetails.NextOfKin = await _applicationReportRepository.GetNextOfKinForOrder(customerDetails.OrderID);
+            customerDetails.NextOfKin = await _applicationReportRepository.GetNextOfKinForOrder(customerDetails.OrderID, true);
+
+            customerDetails.NextOfKin2 = await _applicationReportRepository.GetNextOfKinForOrder(customerDetails.OrderID, false);
+
             //Now lets get AccountId by Mpesa
             var customerAccount = await _applicationReportRepository.GetCustomerAccountByMpesa(customerDetails.MpesaDepositRef);
             if(!string.IsNullOrEmpty(customerAccount))

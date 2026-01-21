@@ -518,6 +518,43 @@
 
                             <!-- .nk-block -->
                         }
+
+                        @if (Model.NextOfKin2 != null)
+                        {
+                            <div class="nk-block">
+                                <div class="nk-block-head nk-block-head-line">
+                                    <h6 class="title overline-title text-base">Second Next of kin details</h6>
+                                </div><!-- .nk-block-head -->
+                                <div class="profile-ud-list">
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Name</span>
+                                            <span class="profile-ud-value">@Model.NextOfKin2?.Name</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Email</span>
+                                            <span class="profile-ud-value">@Model.NextOfKin2?.Email</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Phone</span>
+                                            <span class="profile-ud-value">@Model.NextOfKin2?.Phone</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-ud-item">
+                                        <div class="profile-ud wider">
+                                            <span class="profile-ud-label">Address</span>
+                                            <span class="profile-ud-value">@Model.NextOfKin2?.Address</span>
+                                        </div>
+                                    </div>
+                                </div><!-- .profile-ud-list -->
+                            </div>
+
+                            <!-- .nk-block -->
+                        }
                         
 
                         <div class="nk-divider divider md"></div>

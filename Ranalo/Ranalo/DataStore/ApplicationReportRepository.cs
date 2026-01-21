@@ -594,7 +594,7 @@ namespace Ranalo.DataStore
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
             var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { SearchTerm = searchParam });
 
-            var sql = @" SELECT MpesaCode, AccountNo, AmountValue, PaymentDateValue 
+            var sql = @" SELECT MpesaCode, AccountNo, AmountValue, PaymentDateValue, Imported 
                         FROM KosePayments kp
                         WHERE (
                         @SearchTerm IS NULL
@@ -761,7 +761,7 @@ namespace Ranalo.DataStore
                     ON KP.MpesaCode = wo.MpesaDepositRef
                     LEFT JOIN [dbo].[Woo_Orders_Images] woi
                     ON wo.Id = woi.OrderId
-                    WHERE wo.OrderID = @AccountId";
+                    WHERE KP.AccountNoBigint = @AccountId";
 
             return await _db.QueryFirstOrDefaultAsync<CustomerDetails>(sql, new { AccountId = accountId });
         }
@@ -1517,13 +1517,14 @@ WHERE kp.AccountNoBigint IS NOT NULL
             return record;
         }
 
-        public async Task<Contact?> GetNextOfKinForOrder(long orderId)
+        public async Task<Contact?> GetNextOfKinForOrder(long orderId, bool isPrimary)
         {
             var sql = @" SELECT *
                         FROM [dbo].[Woo_Orders_NextOfKin]
-                          WHERE OrderId = @OrderId";
+                          WHERE OrderId = @OrderId
+                          AND [IsPrimary] = @Primary";
 
-            var record = await _db.QueryFirstOrDefaultAsync<Contact>(sql, new { OrderId = orderId });
+            var record = await _db.QueryFirstOrDefaultAsync<Contact>(sql, new { OrderId = orderId, Primary = isPrimary });
 
             return record;
         }

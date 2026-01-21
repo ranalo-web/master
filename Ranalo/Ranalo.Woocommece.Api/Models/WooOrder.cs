@@ -27,6 +27,7 @@
         public List<ImagesMetadata>? ImagesMetadata { get; set; }
 
         public Contact? NextOfKin { get; set; }
+        public Contact? NextOfKin2 { get; set; }
 
         public UserMetaData? MetaData { get; set; }
     }

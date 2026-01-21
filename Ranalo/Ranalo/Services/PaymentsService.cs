@@ -1,14 +1,19 @@
 ﻿using Ranalo.Models;
+using Ranalo.Woocommece.Api.DataStore;
+using Ranalo.Woocommece.Api.Models;
 using System.Data;
+using System.Globalization;
 
 namespace Ranalo.Services
 {
-    public class PaymentsService
+    public class PaymentsService : IPaymentsService
     {
         private readonly IApplicationReportService _reportsService;
-        public PaymentsService(IApplicationReportService reportsService) 
-        { 
+        private readonly IKosePaymentsRepository _kosePaymentsRepo;
+        public PaymentsService(IApplicationReportService reportsService, IKosePaymentsRepository kosePaymentsRepo)
+        {
             _reportsService = reportsService;
+            _kosePaymentsRepo = kosePaymentsRepo;
         }
 
 
@@ -65,7 +70,71 @@ namespace Ranalo.Services
             return DataTableConverter.ToDataTable(merged.ToList());
         }
 
-       
+        public async Task<List<string>?> CreatePayments(List<MpesaRecord> payments)
+        {
+            Dictionary<string, List<MpesaRecord>>? grouped = new Dictionary<string, List<MpesaRecord>>();
+
+            grouped = payments
+                .GroupBy(r => r.AccountNo)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            return await _kosePaymentsRepo.SaveToDatabaseAsync(grouped);
+        }
+
+        public List<MpesaRecord> MapXlsPayments(List<PaymentTransaction> payments)
+        {
+
+            var results = new List<MpesaRecord>();
+
+            foreach (var payment in payments)
+            {
+                results.Add(new MpesaRecord
+                {
+                    AccountNo = payment.AccountNumber,
+                    Amount = payment.PaidIn.ToString(),
+                    MpesaCode = payment.ReceiptNo,
+                    PaymentDate = ParseExcelDateToAmPmString(payment.CompletionTime),
+                    Imported = true
+                });
+            }
+
+            return results;
+
+        }
+
+        public static string ParseExcelDateToAmPmString(string rawDate)
+        {
+            if (string.IsNullOrWhiteSpace(rawDate))
+                return null;
+
+            var normalized = rawDate
+                .Trim()
+                .Replace('\u00A0', ' ')   // non-breaking space from Excel
+                .Replace("–", "-")
+                .Replace("—", "-");
+
+            var formats = new[]
+            {
+        "dd-MM-yyyy HH:mm:ss",
+        "d-M-yyyy HH:mm:ss",
+        "dd/MM/yyyy HH:mm:ss",
+        "M/d/yyyy h:mm:ss tt",   // fallback if already formatted
+        "M/d/yyyy hh:mm:ss tt"
+    };
+
+            if (!DateTime.TryParseExact(
+                    normalized,
+                    formats,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out var date))
+            {
+                throw new FormatException($"Invalid date value: '{rawDate}'");
+            }
+
+            // Required output format: 1/5/2026 8:07:28 PM
+            return date.ToString("M/d/yyyy h:mm:ss tt", CultureInfo.InvariantCulture);
+        }
 
     }
 }

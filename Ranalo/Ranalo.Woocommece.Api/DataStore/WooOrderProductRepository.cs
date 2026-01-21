@@ -131,7 +131,8 @@ namespace Ranalo.Woocommece.Api.DataStore
                               ,[Email]
                               ,[Address]
                                FROM [dbo].[Woo_Orders_NextOfKin]
-                               WHERE [OrderId] = @OrderID";
+                               WHERE [OrderId] = @OrderID
+                               AND [IsPrimary] = 1";
 
             var existingId = await _db.QueryFirstOrDefaultAsync<Contact>(existSql, new { OrderID = nextOfKin.OrderId });
 
@@ -154,6 +155,55 @@ namespace Ranalo.Woocommece.Api.DataStore
                               ,@Phone
                               ,@Email
                               ,@Address);"
+                               ;
+
+            await _db.ExecuteScalarAsync<int>(sql, new
+            {
+                Id = nextOfKin.Id,
+                OrderId = nextOfKin.OrderId,
+                Name = nextOfKin.Name,
+                Phone = nextOfKin.Phone,
+                Email = nextOfKin.Email,
+                Address = nextOfKin.Address
+
+            });
+        }
+
+        public async Task InsertNextOfKin2Async(Contact nextOfKin)
+        {
+            var existSql = @"SELECT TOP (1) [Id]
+                              ,[OrderId]
+                              ,[Name]
+                              ,[Phone]
+                              ,[Email]
+                              ,[Address]
+                               FROM [dbo].[Woo_Orders_NextOfKin]
+                               WHERE [OrderId] = @OrderID
+                               AND [IsPrimary] = 0";
+
+            var existingId = await _db.QueryFirstOrDefaultAsync<Contact>(existSql, new { OrderID = nextOfKin.OrderId });
+
+            if (existingId != null)
+            {
+                return;
+            }
+
+            var sql = @"INSERT INTO [dbo].[Woo_Orders_NextOfKin]
+                              ([Id]
+                              ,[OrderId]
+                              ,[Name]
+                              ,[Phone]
+                              ,[Email]
+                              ,[Address]
+                              ,[IsPrimary])
+                        VALUES
+                              (@Id
+                              ,@OrderId
+                              ,@Name
+                              ,@Phone
+                              ,@Email
+                              ,@Address
+                              ,0);"
                                ;
 
             await _db.ExecuteScalarAsync<int>(sql, new

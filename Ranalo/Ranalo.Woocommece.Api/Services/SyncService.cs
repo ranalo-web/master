@@ -93,7 +93,13 @@ namespace Ranalo.Woocommece.Api.Services
                     {
                         await _wooOrderProductRepository.InsertNextOfKinAsync(order.NextOfKin);
                     }
-                    if(order.MetaData != null)
+
+                    if (order.NextOfKin2 != null)
+                    {
+                        await _wooOrderProductRepository.InsertNextOfKinAsync(order.NextOfKin2);
+                    }
+
+                    if (order.MetaData != null)
                     {
                         await _wooOrderProductRepository.InsertMetaDataAsync(order.MetaData);
                     }
@@ -237,7 +243,7 @@ namespace Ranalo.Woocommece.Api.Services
         public async Task<List<WooOrder>> SyncWooOrders()
         {
             // Start from last sync date or fallback to 3 days ago
-            var iso8601UtcDate = DateTime.UtcNow.AddDays(-11).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var iso8601UtcDate = DateTime.UtcNow.AddDays(-30).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
             var lastLog = await GetLastSycnLogDetails();
             if (lastLog != null)
@@ -694,6 +700,7 @@ namespace Ranalo.Woocommece.Api.Services
                 Products = MapOrderProducts(value),
                 ImagesMetadata = ExtractDocumentMetadata(value["meta_data"].ToString()),
                 NextOfKin = ExtractNextKin(value["id"]?.Value<int?>() ?? 0, value["meta_data"].ToString()),
+                NextOfKin2 = ExtractNextKin2(value["id"]?.Value<int?>() ?? 0, value["meta_data"].ToString()),
                 MetaData = ExtractAllMetadata(value)
             };
         }
@@ -734,13 +741,32 @@ namespace Ranalo.Woocommece.Api.Services
             return null;
         }
 
+        private Contact ExtractNextKin2(long orderId, string jsonString)
+        {
+            var metaDataEntries = JsonConvert.DeserializeObject<List<MetaDataEntry>>(jsonString);
+
+            var metaDataList = new List<MetaDataEntry>();
+
+            try
+            {
+                return MapFromNextOfKin2MetaData(orderId, metaDataEntries);
+            }
+            catch (JsonReaderException)
+            {
+                // Handle bad JSON inside value field (e.g. a non-object value)
+                //continue;
+            }
+
+            return null;
+        }
+
         public static Contact MapFromMetaData(long orderId, IEnumerable<MetaDataEntry> metaDataEntries)
         {
             var targetKeys = new[] {
-                "_billing_next_of_kin",
-                "_billing_next_of_kin_contacts",
-                "_billing_email_of_your_next_of_kin",
-                "_billing_next_of_kin_address"
+                "billing_next_of_kin",
+                "billing_next_of_kin_contacts",
+                "billing_email_of_your_next_of_kin",
+                "billing_next_of_kin_address"
             };
 
             var lookup = metaDataEntries
@@ -751,10 +777,34 @@ namespace Ranalo.Woocommece.Api.Services
             {
                 Id = Guid.NewGuid(),
                 OrderId = orderId,
-                Name = lookup.GetValueOrDefault("_billing_next_of_kin", string.Empty),
-                Phone = lookup.GetValueOrDefault("_billing_next_of_kin_contacts", string.Empty),
-                Email = lookup.GetValueOrDefault("_billing_email_of_your_next_of_kin", string.Empty),
-                Address = lookup.GetValueOrDefault("_billing_next_of_kin_address", string.Empty)
+                Name = lookup.GetValueOrDefault("billing_next_of_kin", string.Empty),
+                Phone = lookup.GetValueOrDefault("billing_next_of_kin_contacts", string.Empty),
+                Email = lookup.GetValueOrDefault("billing_email_of_your_next_of_kin", string.Empty),
+                Address = lookup.GetValueOrDefault("billing_next_of_kin_address", string.Empty)
+            };
+        }
+
+        public static Contact MapFromNextOfKin2MetaData(long orderId, IEnumerable<MetaDataEntry> metaDataEntries)
+        {
+            var targetKeys = new[] {
+                "billing_next_of_kin_2",
+                "billing_next_of_kin_contacts_2",
+                "billing_email_of_your_next_of_kin_2",
+                "billing_next_of_kin_address_2"
+            };
+
+            var lookup = metaDataEntries
+                .Where(m => targetKeys.Contains(m.Key))
+                .ToDictionary(m => m.Key, m => m.Value);
+
+            return new Contact
+            {
+                Id = Guid.NewGuid(),
+                OrderId = orderId,
+                Name = lookup.GetValueOrDefault("billing_next_of_kin_2", string.Empty),
+                Phone = lookup.GetValueOrDefault("billing_next_of_kin_contacts_2", string.Empty),
+                Email = lookup.GetValueOrDefault("billing_email_of_your_next_of_kin_2", string.Empty),
+                Address = lookup.GetValueOrDefault("billing_next_of_kin_address_2", string.Empty)
             };
         }
 
@@ -764,7 +814,12 @@ namespace Ranalo.Woocommece.Api.Services
                 "national_id_front",
                 "national_id_back",
                 "photo_of_locked_phone",
-                "photo_of_applicant"
+                "photo_of_applicant",
+                "photo_of_locked_device",
+                "next_of_kin_1_national_id_front",
+                "next_of_kin_1_national_id_back",
+                "next_of_kin_2_national_id_front",
+                "next_of_kin_2_national_id_back"
             };
 
             try

@@ -247,6 +247,31 @@
                                     </div>
                                 }
                             </div><!-- .card-inner -->
+
+                            <div class="card-inner">
+                                <h6 class="overline-title mb-2">Second Next of Kin</h6>
+                                @if (Model.NextOfKin2 != null)
+                                {
+                                    <div class="row g-3">
+                                        <div class="col-sm-6 col-md-4 col-xl-12">
+                                            <span class="sub-text">Name:</span>
+                                            <span>@Model.NextOfKin2?.Name</span>
+                                        </div>
+                                        <div class="col-sm-6 col-md-4 col-xl-12">
+                                            <span class="sub-text">Email:</span>
+                                            <span>@Model.NextOfKin2?.Email</span>
+                                        </div>
+                                        <div class="col-sm-6 col-md-4 col-xl-12">
+                                            <span class="sub-text">Phone:</span>
+                                            <span>@Model.NextOfKin2?.Phone</span>
+                                        </div>
+                                        <div class="col-sm-6 col-md-4 col-xl-12">
+                                            <span class="sub-text">Address:</span>
+                                            <span>@Model.NextOfKin2?.Address</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div><!-- .card-inner -->
                         </div>
                     </div>
                 </div><!-- .col -->

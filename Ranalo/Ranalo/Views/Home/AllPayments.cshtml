@@ -27,8 +27,7 @@
 									<a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
 									<div class="dropdown-menu dropdown-menu-end">
 										<ul class="link-list-opt no-bdr">
-											<li><a href="#"><span>Add Customer</span></a></li>
-											<li><a href="#"><span>Import Customer</span></a></li>
+                                            <li><a href="#upload-payments" data-bs-toggle="modal"><span>Import Payments</span></a></li>
 										</ul>
 									</div>
 								</div>
@@ -194,6 +193,7 @@
                                 </th>
                                 <th class="tb-tnx-amount is-alt">
                                     <span class="tb-tnx-total">Amount</span>
+                                    <span class="tb-tnx-status d-none d-md-inline-block">Imported</span>
                                 </th>
                                 <th class="tb-tnx-action">
                                     <span>&nbsp;</span>
@@ -219,6 +219,9 @@
                                     <td class="tb-tnx-amount is-alt">
                                         <div class="tb-tnx-total">
                                             <span class="amount">@payment.AmountValue</span>
+                                        </div>
+                                        <div class="tb-tnx-status">
+                                            <span class="amount">@payment.Imported</span>
                                         </div>
                                     </td>
                                     <td class="tb-tnx-action">
@@ -323,4 +326,41 @@
         </div>
     </div>
 	</div>
+
+<div class="modal fade" tabindex="-1" id="upload-payments">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <button class="close" data-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross"></em>
+            </button>
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Payments</h5>
+            </div>
+            <form action="/upload-payments" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="nk-block nk-block-lg">
+                        <div class="card">
+                            <div class="card-inner">
+                                <div class="form-group">
+                                    <label class="form-label" for="customFileLabel">Select statement</label>
+                                    <div class="form-control-wrap">
+                                        <div class="form-file">
+                                            <input type="file" name="file" class="form-file-input" id="customFile">
+                                            <label class="form-file-label" for="customFile">Choose file</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- .nk-block -->
+                </div>
+                <div class="modal-footer bg-light">
+                    <button data-bs-dismiss="modal" class="btn btn-lg btn-danger">Cancel</button>
+                    <button type="submit" class="btn btn-lg btn-primary">Save</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
 

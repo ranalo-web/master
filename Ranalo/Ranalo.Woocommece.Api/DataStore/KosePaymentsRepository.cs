@@ -56,8 +56,8 @@ namespace Ranalo.Woocommece.Api.DataStore
             var response = new List<string>();
 
             const string insertQuery = @"
-        INSERT INTO [dbo].[KosePayments] ([AccountNo], [MpesaCode], [Amount], [PaymentDate], [AmountValue], [PaymentDateValue], [Created])
-        VALUES (@AccountNo, @MpesaCode, @Amount, @PaymentDate, @AmountValue, @PaymentDateValue, GETDATE())";
+        INSERT INTO [dbo].[KosePayments] ([AccountNo], [MpesaCode], [Amount], [PaymentDate], [AmountValue], [PaymentDateValue], [Created], [Imported])
+        VALUES (@AccountNo, @MpesaCode, @Amount, @PaymentDate, @AmountValue, @PaymentDateValue, GETDATE(), @Imported)";
 
             foreach (var kvp in groupedRecords)
             {
@@ -83,7 +83,8 @@ namespace Ranalo.Woocommece.Api.DataStore
                             record.Amount,
                             record.PaymentDate,
                             record.AmountValue,
-                            record.PaymentDateValue
+                            record.PaymentDateValue,
+                            record.Imported
                         });
                     }
                 }

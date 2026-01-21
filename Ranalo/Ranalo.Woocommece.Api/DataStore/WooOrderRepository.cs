@@ -48,7 +48,7 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         public async Task<WooOrder?> GetLastSyncedOrderAsync()
         {
-            var sql = "SELECT * FROM [dbo].[Woo_Orders] WHERE ORDER BY DateSynced DESC";
+            var sql = "SELECT * FROM [dbo].[Woo_Orders] ORDER BY DateSynced DESC";
             return await _db.QueryFirstOrDefaultAsync<WooOrder>(sql);
         }
 
