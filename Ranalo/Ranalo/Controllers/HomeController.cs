@@ -423,6 +423,35 @@ namespace Ranalo.Controllers
             return View(dealerUsers);
         }
 
+        [Route("dealers")]
+        public async Task<IActionResult> Dealers()
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "index");
+
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                var dealers = new DealersViewModel()
+                {
+                    Dealers = await _userService.GetAllDealers()
+                };
+
+                return View(dealers);
+            }
+
+            var dealerUsers = new UsersViewModel()
+            {
+                Users = await _userService.GetUsersByDealerIdAsync(settings.DealerId)
+            };
+
+            return View(dealerUsers);
+        }
+
 
         [Route("adduser")]
         public async Task<IActionResult> AddUser()
@@ -464,6 +493,45 @@ namespace Ranalo.Controllers
             }
 
             return RedirectToAction("Users");
+        }
+
+        [Route("adddealer")]
+        public async Task<IActionResult> AddDealer()
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "index");
+
+            return View();
+        }
+
+        [HttpPost]
+        [Route("adddealer")]
+        public async Task<IActionResult> AddDealerSubmit(DataStore.Dealer dealerDetails)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "index");
+
+            try
+            {
+                await _userService.AddDealerAsync(dealerDetails);
+            }
+            catch (Exception)
+            {
+
+                return View("AddDealer");
+            }
+
+            return RedirectToAction("Dealers");
         }
 
         private async Task SetViewBags(User settings, string backLink, string searchTerm = "")

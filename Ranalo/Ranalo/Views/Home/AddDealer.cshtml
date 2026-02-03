@@ -1,0 +1,108 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Create Dealer</h3>
+                <div class="nk-block-des text-soft">
+                    <p>On completion you will be redirected to the Dealers list page.</p>
+                </div>
+            </div>
+        </div><!-- .nk-block-head -->
+        <div class="nk-block nk-block-lg">
+            <div class="card card-bordered card-preview">
+                <div class="card-inner">
+                    <div class="preview-block">
+                        <span class="preview-title-lg overline-title">Dealer Details</span>
+                        <form action="/adddealer" class="form-validate" novalidate="novalidate" method="post">
+                        <div class="row gy-4">
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                        <label class="form-label" for="default-01">Dealer Name</label>
+                                    <div class="form-control-wrap">
+                                        <div class="form-icon form-icon-left">
+                                            <em class="icon ni ni-user"></em>
+                                        </div>
+                                            <input type="text" name="companyName" class="form-control" id="default-01" placeholder="Enter user first name" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="form-label" for="default-05">User Id</label>
+                                    <div class="form-control-wrap">
+                                        <div class="form-icon form-icon-left">
+                                            <em class="icon ni ni-user"></em>
+                                        </div>
+                                            <input type="text" name="userId" class="form-control" id="default-05" placeholder="Enter user primary user id" required>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="default-04">Dealer Reference</label>
+                                        <div class="form-control-wrap">
+                                            <div class="form-icon form-icon-left">
+                                                <em class="icon ni ni-building"></em>
+                                            </div>
+                                            <input type="text" name="dealerReference" class="form-control" id="default-04" placeholder="Enter Dealer Reference">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="default-04">City</label>
+                                        <div class="form-control-wrap">
+                                            <div class="form-icon form-icon-left">
+                                                <em class="icon ni ni-building"></em>
+                                            </div>
+                                            <input type="text" name="city" class="form-control" id="default-04" placeholder="Enter a city">
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="form-label" for="default-03">Address</label>
+                                    <div class="form-control-wrap">
+                                        <div class="form-icon form-icon-left">
+                                            <em class="icon ni ni-user"></em>
+                                        </div>
+                                        <input type="text" name="address" class="form-control" id="default-03" placeholder="Enter dealer address">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="default-04">Email Address</label>
+                                    <div class="form-control-wrap">
+                                        <div class="form-icon form-icon-left">
+                                            <em class="icon ni ni-mail"></em>
+                                        </div>
+                                            <input type="text" name="email" class="form-control" id="default-04" placeholder="Enter a valid email address" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+
+                                <div class="col-sm-12">
+                                    <div class="form-control-wrap">
+                                        <div class="form-btn-group">
+                                            <button type="submit" class="btn btn-lg btn-success">Submit</button>
+                                        </div>
+                                    </div>
+                                </div>
+                        </div>
+                        </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- .card-preview -->
+</div><!-- .nk-block -->

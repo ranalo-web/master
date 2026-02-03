@@ -59,6 +59,14 @@ namespace Ranalo.Services
             return await _userRepository.GetDealerByUserIdAsync(userId);
         }
 
+
+        public async Task<List<Dealer>?> GetAllDealers()
+        {
+            var dealers = await _userRepository.GetAllDealersAsync();
+
+            return dealers.ToList();
+        }
+
         public async Task<User?> GetUserByCustomerIdAsync(int userId)
         {
             return await _userRepository.GetByCustomerIdAsync(userId);
@@ -81,6 +89,22 @@ namespace Ranalo.Services
         public async Task<IEnumerable<User>> GetDebtCollectors()
         {
             return await _userRepository.GetDebtCollectorsAsync();
+        }
+
+        public async Task AddDealerAsync(Dealer dealerDetails)
+        {
+            var existingDealer = await GetDealerByDealerRef(dealerDetails.DealerReference);
+            if (existingDealer == null)
+            {
+                await _userRepository.CreateDealerAsync(dealerDetails);
+            }
+
+            return;
+        }
+
+        private async Task<Dealer?> GetDealerByDealerRef(string dealerReference)
+        {
+            return await _userRepository.GetDealerByDealerRefAsync(dealerReference);
         }
         // similarly: GetById, Update, Delete
     }

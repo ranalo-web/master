@@ -1,4 +1,6 @@
-﻿namespace Ranalo.Models
+﻿using Ranalo.DataStore.DataModels;
+
+namespace Ranalo.Models
 {
     public class Dealer
     {
@@ -8,4 +10,5 @@
         public string Address { get; set; }
         public string Phone { get; set; }
     }
+
 }

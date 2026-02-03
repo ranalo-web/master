@@ -224,5 +224,52 @@ namespace Ranalo.DataStore
                 throw;
             }
         }
+
+        //// DEALERS 
+        ///
+        public async Task<IEnumerable<Dealer>> GetAllDealersAsync()
+        {
+            try
+            {
+                return await _context.Dealers.AsNoTracking().ToListAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+
+        }
+
+        public async Task<Dealer?> GetDealerByDealerRefAsync(string dealerReference)
+        {
+            try
+            {
+                return await _context.Dealers
+                .FirstOrDefaultAsync(x => x.DealerReference == dealerReference);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        public async Task CreateDealerAsync(Dealer dealerDetails)
+        {
+            try
+            {
+                // Add the user to the DbSet
+                await _context.Dealers.AddAsync(dealerDetails);
+
+                // Save changes to the database
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // log exception if needed
+                throw;
+            }
+        }
     }
 }
