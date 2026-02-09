@@ -53,44 +53,53 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         public async Task<List<string>> SaveToDatabaseAsync(Dictionary<string, List<MpesaRecord>> groupedRecords)
         {
-            var response = new List<string>();
+            try
+            {
+                var response = new List<string>();
 
-            const string insertQuery = @"
+                const string insertQuery = @"
         INSERT INTO [dbo].[KosePayments] ([AccountNo], [MpesaCode], [Amount], [PaymentDate], [AmountValue], [PaymentDateValue], [Created], [Imported])
         VALUES (@AccountNo, @MpesaCode, @Amount, @PaymentDate, @AmountValue, @PaymentDateValue, GETDATE(), @Imported)";
 
-            foreach (var kvp in groupedRecords)
-            {
-                string groupKey = kvp.Key;
-                List<MpesaRecord> records = kvp.Value;
-
-                foreach (var record in records)
+                foreach (var kvp in groupedRecords)
                 {
-                    //Check if already exist
-                    var existingSql = @"SELECT * 
+                    string groupKey = kvp.Key;
+                    List<MpesaRecord> records = kvp.Value;
+
+                    foreach (var record in records)
+                    {
+                        //Check if already exist
+                        var existingSql = @"SELECT * 
                                           FROM [dbo].[KosePayments]
                                         WHERE [AccountNo] = @AccountNo
                                           AND [MpesaCode] = @MpesaCode";
-                    var existing = await _db.QueryFirstOrDefaultAsync<MpesaRecord>(existingSql, new { AccountNo = groupKey , MpesaCode = record.MpesaCode });
+                        var existing = await _db.QueryFirstOrDefaultAsync<MpesaRecord>(existingSql, new { AccountNo = groupKey, MpesaCode = record.MpesaCode });
 
-                    if(existing == null)
-                    {
-                        response.Add(groupKey);
-                        await _db.ExecuteAsync(insertQuery, new
+                        if (existing == null)
                         {
-                            AccountNo = groupKey,
-                            record.MpesaCode,
-                            record.Amount,
-                            record.PaymentDate,
-                            record.AmountValue,
-                            record.PaymentDateValue,
-                            record.Imported
-                        });
+                            response.Add(groupKey);
+                            await _db.ExecuteAsync(insertQuery, new
+                            {
+                                AccountNo = groupKey,
+                                record.MpesaCode,
+                                record.Amount,
+                                record.PaymentDate,
+                                record.AmountValue,
+                                record.PaymentDateValue,
+                                record.Imported
+                            });
+                        }
                     }
                 }
-            }
 
-            return response;
+                return response;
+            }
+            catch (Exception ex) 
+            {
+
+                throw;
+            }
+            
         }
 
         public async Task SaveDevicesToDatabaseAsync(List<Device> groupedRecords)
