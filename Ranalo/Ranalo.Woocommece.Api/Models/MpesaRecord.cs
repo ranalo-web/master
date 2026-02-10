@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Globalization;
 
 namespace Ranalo.Woocommece.Api.Models
 {
@@ -18,6 +19,7 @@ namespace Ranalo.Woocommece.Api.Models
         public bool? Imported { get; set; }
 
         public decimal AmountValue => decimal.Parse(Amount);
-        public DateTime PaymentDateValue => DateTime.Parse(PaymentDate);
+        
+        public DateTime PaymentDateValue => DateTime.Parse( PaymentDate, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces);
     }
 }
