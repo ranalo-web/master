@@ -553,12 +553,16 @@ namespace Ranalo.DataStore
             var countSql = @"SELECT COUNT(*)
                             FROM KosePayments kp
                         LEFT JOIN Devices D ON D.Id = kp.AccountNoBigint
-                        WHERE D.Id is null";
+                        LEFT JOIN [dbo].[OrphanedPayments] OP ON OP.AccountNoBigint = kp.AccountNoBigint
+                        WHERE D.Id is null
+                        AND OP.AccountNoBigint IS NULL";
 
-            var sql = @" SELECT kp.MpesaCode, kp.AccountNo, kp.AmountValue, kp.PaymentDateValue 
+            var sql = @"SELECT kp.MpesaCode, kp.AccountNo, kp.AmountValue, kp.PaymentDateValue 
                         FROM KosePayments kp
                         LEFT JOIN Devices D ON D.Id = kp.AccountNoBigint
+                        LEFT JOIN [dbo].[OrphanedPayments] OP ON OP.AccountNoBigint = kp.AccountNoBigint
                         WHERE D.Id is null
+                        AND OP.AccountNoBigint IS NULL
                         --AND D.[Status] = 'enrolled'
                         ORDER BY kp.PaymentDateValue desc
                         OFFSET @Offset ROWS 

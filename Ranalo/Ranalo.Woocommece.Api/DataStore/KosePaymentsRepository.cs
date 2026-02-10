@@ -69,8 +69,7 @@ namespace Ranalo.Woocommece.Api.DataStore
                     //Check if already exist
                     var existingSql = @"SELECT * 
                                           FROM [dbo].[KosePayments]
-                                        WHERE [AccountNo] = @AccountNo
-                                          AND [MpesaCode] = @MpesaCode";
+                                        WHERE [MpesaCode] = @MpesaCode";
                     var existing = await _db.QueryFirstOrDefaultAsync<MpesaRecord>(existingSql, new { AccountNo = groupKey , MpesaCode = record.MpesaCode });
 
                     if(existing == null)
@@ -255,10 +254,10 @@ namespace Ranalo.Woocommece.Api.DataStore
             var sql = @"
             INSERT INTO Contract_Info
             (ID, Deposit, Daily, Weekly, Monthly, 
-             rePayment_Intervals, Term_in_Months, Total_Loan, Total_Cost, First_Name)
+             rePayment_Intervals, Term_in_Months, Total_Loan, Total_Cost, First_Name, StartDate)
             VALUES
             (@ID, @Deposit, @Daily, @Weekly, @Monthly, 
-             @RePaymentIntervals, @TermInMonths, @TotalLoan, @TotalCost, @FirstName);
+             @RePaymentIntervals, @TermInMonths, @TotalLoan, @TotalCost, @FirstName, GETDATE());
             SELECT CAST(SCOPE_IDENTITY() as int);";
 
             return await _db.ExecuteScalarAsync<int>(sql, contract);

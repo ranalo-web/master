@@ -16,12 +16,14 @@ namespace Ranalo.Controllers
         private readonly IDeviceService _devicesService;
         private readonly IUserService _userService;
         private readonly IApplicationReportService _applicationReportService;
+        private readonly IDeviceProcessor _deviceProcessor;
 
-        public DevicesController(IDeviceService devicesService, IUserService userService, IApplicationReportService applicationReportService)
+        public DevicesController(IDeviceService devicesService, IUserService userService, IApplicationReportService applicationReportService, IDeviceProcessor deviceProcessor)
         {
             _devicesService = devicesService;
             _userService = userService;
             _applicationReportService = applicationReportService;
+            _deviceProcessor = deviceProcessor;
         }
 
         [Route("devices-with-no-orders/{page:int?}/{pageSize:int?}")]
@@ -178,6 +180,35 @@ namespace Ranalo.Controllers
             return View(accounts);
         }
 
+        [HttpPost]
+        [Route("adminlock-device")]
+        public async Task<IActionResult> LockCustomerDeviceAsync(long displayDeviceId,
+            string lockDate)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "collector");
+
+            DateTime finalDate = string.IsNullOrWhiteSpace(lockDate)
+            ? DateTime.Now
+            : DateTime.Parse(lockDate);
+
+            var lockTransaction = new LockTransaction()
+            {
+                AccountId = displayDeviceId,
+                AutoLockDate = finalDate
+            };
+
+            await _deviceProcessor.ProcessSingleAsync(lockTransaction);
+
+            return RedirectToAction("AllDevices", "Devices");
+        }
+
+
         [HttpGet]
         [Route("devices-nopayments/{page:int?}")]
         public async Task<IActionResult> DevicesWithNoPayments(int page = 1, int pageSize = 10, string searchTerm = "")
@@ -206,6 +237,63 @@ namespace Ranalo.Controllers
 
             return View(accounts);
         }
+
+        [HttpPost]
+        [Route("reallocate-account")]
+        public async Task<IActionResult> ReAllocateAccount(long accountno, long oldAccountno, string name)
+        {
+            return View();
+            //var settings = HttpContext.Items["UserSettings"] as User;
+            //if (settings == null)
+            //{
+            //    return RedirectToAction("Index", "Login");
+            //}
+            ////Check old account exists
+            //var result = await _devicesService.GetCheckOrderIdLinkedAsync(orderNumber);
+            //var errors = new List<string>();
+            //if (result.AccountNo != null && result.DeviceId.HasValue)
+            //{
+            //    errors.Add("Order Id already mapped to an account.");
+            //}
+
+            ////Validate Mpesa Code
+            //if (!await _devicesService.MpesaCodeIsValidAsync(newMpesa))
+            //{
+            //    errors.Add("Mpesa Code is invalid.");
+            //}
+            ////Check if we have already seen this Mpesa
+            //if (await _devicesService.MpesaCodeIsLinkedAsync(newMpesa))
+            //{
+            //    errors.Add("Mpesa already linked to an order.");
+            //}
+
+            ////Validate Order Id
+            //if (!await _devicesService.OrderNumberIsValidAsync(orderNumber))
+            //{
+            //    errors.Add("Order number is invalid.");
+            //}
+
+            //if (errors.Any())
+            //{
+            //    return await GetAndRenderView(settings, errors, page, pageSize);
+            //}
+
+            ////Only if no errors do we need to assign new MPESA
+            //try
+            //{
+            //    await _devicesService.AssignMpesaToOrderAsync(orderNumber, newMpesa);
+            //}
+            //catch (Exception)
+            //{
+
+            //    errors.Add("System error occured, please try again later.");
+            //}
+
+
+            //return await GetAndRenderView(settings, errors, page, pageSize);
+
+        }
+
         private async Task SetViewBags(User settings, string backLink)
         {
             ViewBag.BackLink = backLink;

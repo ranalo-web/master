@@ -242,6 +242,14 @@
                                         <span>Dealer Name</span>
                                     </span>
                                 </th>
+                                <th class="tb-tnx-info">
+                                    <span>
+                                        <span>Status</span>
+                                    </span>
+                                </th>
+                                <th class="nk-tb-col text">
+                                    <span class="sub-text">Actions</span>
+                                </th>
                         </thead>
                         @if (Model?.Devices != null)
                         {
@@ -267,6 +275,31 @@
                                     <td class="tb-tnx-info">
                                         <div class="tb-tnx-text">
                                             <span class="title">@devices.DealerName</span>
+                                        </div>
+                                    </td>
+                                    <td class="tb-tnx-info">
+                                        <div class="tb-tnx-text">
+                                            <span class="@SetLockStatusBadge(devices.Locked)">@SetLockStatusTextBadge(devices.Locked)</span>
+                                        </div>
+                                    </td>
+                                    <td class="tb-tnx-info">
+                                        <div class="nk-tb-col nk-tb-col-tools">
+                                            <ul class="nk-tb-actions gx-2">
+                                                <li>
+                                                    <div class="drodown">
+                                                        <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                                        <div class="dropdown-menu dropdown-menu-end">
+                                                            <ul class="link-list-opt no-bdr">
+                                                                <li>
+                                                                    <a href="#lock-device"
+                                                                       data-id="@devices.DeviceId"
+                                                                       data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Lock Device</span></a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            </ul>
                                         </div>
                                     </td>
                                 </tr>
@@ -357,3 +390,68 @@
     </div>
 
 </div>
+
+<!-- Lock Device Pop Up-->
+<div class="modal fade" tabindex="-1" id="lock-device">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Lock Device</h5>
+                <form action="/adminlock-device" method="post" class="mt-2">
+                    <div class="row g-gs">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalDeviceId2">Account No.</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" class="form-control" name="displayDeviceId" readonly id="modalDeviceId2" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-date">Lock Date</label>
+                                <div class="form-control-wrap">
+                                    <div class="form-icon form-icon-left">
+                                        <em class="icon ni ni-calendar"></em>
+                                    </div>
+                                    <input type="text" name="lockDate" id="lock-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                                <li>
+                                    <button type="submit" class="btn btn-lg btn-primary">Lock Device</button>
+                                </li>
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div><!-- .Edit Modal-Content -->
+@section Scripts
+{
+    <script>
+        //Lock Device
+            document.addEventListener("DOMContentLoaded", function () {
+                            var modal1 = document.getElementById('lock-device');
+            modal1.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget; // Button that triggered the modal
+                var deviceId = button.getAttribute('data-id');
+                    var name = button.getAttribute('data-name');
+                    document.getElementById('modalDeviceId2').value = deviceId;
+                    document.getElementById('modalFirstName2').value = name;
+            });
+            });
+    </script>
+ }

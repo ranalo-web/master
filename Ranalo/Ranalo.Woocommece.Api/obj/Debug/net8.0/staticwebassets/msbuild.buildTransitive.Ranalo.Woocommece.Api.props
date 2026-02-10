@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\Ranalo.Woocommece.Api.props" />
-</Project>
