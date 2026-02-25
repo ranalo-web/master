@@ -24,6 +24,19 @@ namespace Ranalo.Services
             {
                 await _userRepository.CreateUserAsync(user);
             }
+            else
+            {
+                // Update existing user
+                // You can copy properties from input 'user' to 'existingUser'
+                existingUser.Name = user.Name;
+                existingUser.RoleId = user.RoleId;
+                existingUser.OtherSelectedRoles = user.OtherSelectedRoles;
+                existingUser.Email = user.Email;
+                existingUser.City = user.City;
+                // ... copy any other properties you need
+
+                await _userRepository.UpdateUserAsync(existingUser);
+            }
 
             return;
         }

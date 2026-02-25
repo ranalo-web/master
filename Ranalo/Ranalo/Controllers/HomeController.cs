@@ -8,6 +8,9 @@ using Ranalo.DataStore.DataModels;
 using Ranalo.DataStore.MySql;
 using Ranalo.Models;
 using Ranalo.Services;
+using Ranalo.SumsungKnox;
+using Ranalo.SumsungKnox.Models;
+using Ranalo.VeriTechClient;
 using System.Drawing.Printing;
 using System.IO;
 using System.Reflection.PortableExecutable;
@@ -21,15 +24,19 @@ namespace Ranalo.Controllers
         private readonly IUserService _userService;
         private readonly IStatementService _statementService;
         private readonly IMySqlPaymentsRepository _mysqlRepository;
+        private readonly IKnoxGuardClient _knoxSerciceClient;
+        private readonly IVeritechApiClient _veritechApiClient;
         public HomeController(IApplicationReportService applicationReportService, 
             IUserService userService, 
             IStatementService statementService,
-            IMySqlPaymentsRepository mysqlRepository)
+            IMySqlPaymentsRepository mysqlRepository, IKnoxGuardClient knoxClient, IVeritechApiClient veritechApiClient)
         {
             _mysqlRepository = mysqlRepository;
             _applicationReportService = applicationReportService;
             _userService = userService;
             _statementService = statementService;
+            _knoxSerciceClient = knoxClient;
+            _veritechApiClient = veritechApiClient;
         }
 
         [HttpGet]
@@ -41,6 +48,68 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
+
+            //Test Veritech
+            //var foo = await _veritechClient.GetDevicesAsync();
+            //var devices = new List<string>() { "351065613616471" };
+            //var foo = await _veritechApiClient.UploadDevicesAsync(devices);
+
+            //var response = await _knoxSerciceClient.ListDevicesAsync(new ListDevicesRequest
+            //{
+            //    PageNum = 0,
+            //    PageSize = 20,
+            //    SortBy = "updateTime",
+            //    SortOrder = "descending",
+            //    Filter = new DeviceListFilter
+            //    {
+            //        Status = new List<string> { "Active", "Active|Locked" },
+            //        //SimControlEnabled = true
+            //    }
+            //});
+
+            //var request = new UnlockDeviceRequest
+            //{
+            //    DeviceUid = "351065613492352",
+            //    Message = "Device unlocked after payment received"
+            //};
+
+            //var fruitBalls = await _knoxSerciceClient.UnlockDeviceAsync(request);
+
+            //var deviceToApprove = new ApproveDeviceRequest() { 
+            //     DeviceUid = "351065613616471",
+            //     ApproveId = "vkdp302411utid",
+            //     ApproveComment = "Test Approval comment"
+            //};
+
+            //DateTime utcDate = DateTime.UtcNow.AddDays(1);
+
+            //long unixTimestamp = new DateTimeOffset(utcDate)
+            //    .ToUnixTimeMilliseconds();
+
+            //var request = new DeviceActionsRequest
+            //{
+            //    DeviceUid = "351065613492352",
+            //    ApproveId = "TestApprovalViaKnoxUI",
+            //    Actions = new List<DeviceActionItem>
+            //    {
+            //        new DeviceActionItem
+            //        {
+            //            Action = "unLock",
+            //            Timestamp = 0
+            //        },
+            //        new DeviceActionItem
+            //        {
+            //            Action = "lock",
+            //            Timestamp = unixTimestamp,
+            //            Message = "Device lock message"
+            //        }
+            //    }
+            //};
+
+            //var bar = await _knoxSerciceClient.ExecuteDeviceActionsAsync(request);
+
+            //var fooBar = await _knoxSerciceClient.ApproveDeviceAsync(deviceToApprove);
+
 
             await SetViewBags(settings, "index");
 
@@ -455,6 +524,20 @@ namespace Ranalo.Controllers
 
         [Route("adduser")]
         public async Task<IActionResult> AddUser()
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "index");
+
+            return View();
+        }
+
+        [Route("edituser")]
+        public async Task<IActionResult> EditUser(int userId)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)

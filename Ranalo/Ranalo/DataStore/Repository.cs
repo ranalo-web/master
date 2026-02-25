@@ -59,6 +59,26 @@ namespace Ranalo.DataStore
             }
         }
 
+        public async Task<User> UpdateUserAsync(User newUser)
+        {
+            try
+            {
+                // Update user to the DbSet
+                _context.Users.Update(newUser);
+
+                // Save changes to the database
+                await _context.SaveChangesAsync();
+
+                return newUser; // now it has the generated UserId
+            }
+            catch (Exception ex)
+            {
+                // log exception if needed
+                throw;
+            }
+        }
+
+
         public async Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash)
         {
             try

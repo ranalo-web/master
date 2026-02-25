@@ -17,7 +17,7 @@ namespace Ranalo.DataStore.DataModels
         public DateTime? LastLogin { get; set; }
         public string? City { get; set; }
         public string? Phone { get; set; }
-
+        public List<string>? OtherSelectedRoles { get; set; }
         public Role Role { get; set; }
         public ICollection<Dealer> Dealers { get; set; } = new List<Dealer>();
     }

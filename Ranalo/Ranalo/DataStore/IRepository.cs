@@ -18,6 +18,7 @@ namespace Ranalo.DataStore
         Task<IEnumerable<User>> GetAllUsersAsync();
 
         Task<User> CreateUserAsync(User newUser);
+        Task<User> UpdateUserAsync(User newUser);
         Task<User?> GetUserByEmailAsync(string email);
 
         Task<User?> GetUserByPasswordAsync(string password);

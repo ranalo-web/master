@@ -2,6 +2,8 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Ranalo.DataStore.DataModels;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.Text.Json;
 
 namespace Ranalo.DataStore
 {
@@ -39,7 +41,18 @@ namespace Ranalo.DataStore
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-      
+            var converter = new ValueConverter<List<string>, string>(
+                   v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                   v => string.IsNullOrEmpty(v)
+                           ? new List<string>()
+                           : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null)
+               );
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.OtherSelectedRoles)
+                .HasConversion(converter)
+                .HasColumnType("nvarchar(max)");
+
             modelBuilder.Entity<User>()
             .Ignore(u => u.Role);
 

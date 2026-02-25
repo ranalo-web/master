@@ -11,6 +11,12 @@ using Ranalo.Woocommece.Api.Services;
 using Ranalo.Calculator.Logic.Contract;
 using Ranalo.DataStore.MySql;
 using OfficeOpenXml;
+using DocumentFormat.OpenXml.InkML;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using Ranalo.VeriTechClient;
+using Ranalo.SumsungKnox;
+using Microsoft.Extensions.Options;
+using Ranalo.SumsungKnox.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +29,39 @@ builder.Services.AddScoped<IDbConnection>(sp =>
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+//VeriTech Client API
+var config = builder.Configuration;
+
+builder.Services.AddHttpClient<IVeritechApiClient, VeritechApiClient>(client =>
+{
+    client.BaseAddress = new Uri(config["Veritech:BaseUrl"]);
+    client.DefaultRequestHeaders.Add("x-vtkdp-key", config["Veritech:ApiKey"]);
+});
+
+//Sumsung Knox
+builder.Services.AddHttpClient<IKnoxGuardClient, KnoxGuardClient>(client =>
+{
+    client.BaseAddress = new Uri("https://eu-kcs-api.samsungknox.com");
+});
+
+//Knox token registration 
+builder.Services.AddHttpClient<KnoxJwtTokenProvider>(client =>
+{
+    client.BaseAddress = new Uri("https://eu-kcs-api.samsungknox.com");
+});
+
+builder.Services.Configure<KnoxSettings>(
+    builder.Configuration.GetSection("Knox"));
+
+builder.Services.AddHttpClient<IKnoxTokenProvider, KnoxJwtTokenProvider>(
+    (sp, client) =>
+    {
+        var settings =
+            sp.GetRequiredService<IOptions<KnoxSettings>>().Value;
+
+        client.BaseAddress = new Uri(settings.RegionBaseUrl);
+    });
 
 // Register your repository
 builder.Services.AddScoped<IWooOrderRepository, WooOrderRepository>();
