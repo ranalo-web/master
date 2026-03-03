@@ -33,10 +33,10 @@ namespace Ranalo.ScheduledServices
                     using (var scope = _scopeFactory.CreateScope())
                     {
                         var deviceProcessor = scope.ServiceProvider.GetRequiredService<IDeviceProcessor>();
-                        //IPaymentsRepository
                         var reminderService = scope.ServiceProvider.GetRequiredService<IApplicationReportService>();
                         var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
-                        var inactiveUsers = await Process(deviceProcessor, reminderService, paymentsRepository);
+                        var enrolmentService = scope.ServiceProvider.GetRequiredService<IEnrolmentService>();
+                        var inactiveUsers = await Process(deviceProcessor, reminderService, paymentsRepository, enrolmentService);
                         foreach (var device in inactiveUsers)
                         {
                             _logger.LogInformation("Restructured locking locked: {device}", device.AccountId);
@@ -60,15 +60,16 @@ namespace Ranalo.ScheduledServices
             _logger.LogInformation("Restructured locking task stopped at: {time}", DateTime.UtcNow);
         }
 
-        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, IApplicationReportService reminderService, IPaymentsRepository paymentsRepository)
+        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, IApplicationReportService reminderService, IPaymentsRepository paymentsRepository, IEnrolmentService enrolmentService)
         {
             var records = await reminderService.GetAllRestructured("", 1, 1000); ;
 
             var qualifying = GetQualifyingRecords(records);
 
             var devicesToLock = new List<LockTransaction>();
-           
-            if(qualifying == null || qualifying.Any() == false)
+            var devicesToLockKnox = new List<LockTransaction>();
+
+            if (qualifying == null || qualifying.Any() == false)
             {
                 return null;
             }
@@ -91,10 +92,22 @@ namespace Ranalo.ScheduledServices
                     AutoLockDate = nextLock
                 };
 
-                devicesToLock.Add(lockDevice);
+                if (account.LockGroup == 2)
+                {
+                    devicesToLockKnox.Add(lockDevice);
+                }
+                else
+                {
+                    devicesToLock.Add(lockDevice);
+                }
             }
 
             var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock);
+
+            if (devicesToLockKnox.Any())
+            {
+                await enrolmentService.LockDevicesKnox(devicesToLockKnox);
+            }
 
             return lockedDevices;
         }

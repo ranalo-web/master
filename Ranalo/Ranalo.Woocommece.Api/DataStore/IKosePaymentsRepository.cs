@@ -16,5 +16,9 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         Task<int> AddContractAsync(ContractInfo contract);
         Task UpdateOrderContract(long orderId, int contractId);
+        Task SaveDeviceToDatabaseAsync(Device device);
+        Task UpdateDeviceToDatabaseAsync(Device device);
+
+        Task<Device?> GetDeviceByAccountId(long accountId);
     }
 }

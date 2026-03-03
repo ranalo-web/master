@@ -1195,7 +1195,8 @@ namespace Ranalo.DataStore
                                 p4.LastPaidDate,
                                 p4.Last_MPesaCode,
                                 l24.Total_Last24Hours,
-                                d.ImeiNo
+                                d.ImeiNo,
+                                d.LockGroup
                             FROM Devices d
                             LEFT JOIN PTable1 p1 ON d.Id = p1.AccountNo
                             LEFT JOIN PTable2 p2 ON d.Id = p2.AccountNo
@@ -1249,7 +1250,8 @@ namespace Ranalo.DataStore
                             Total_Last24Hours AS PaidLast24Hours,    -- <--- new column
                             FirstName,
                             TermsInMonths,
-                            LastConnectedAt
+                            LastConnectedAt,
+                            LockGroup
                         FROM Computed
                         ORDER BY LastPaidDate DESC;";
 
@@ -1404,7 +1406,8 @@ namespace Ranalo.DataStore
                             d.LockType,
                             d.NextLockDateIsoFormat,
                             d.NextLockDate,
-							ci.DebtCollectorUserId
+							ci.DebtCollectorUserId,
+                            d.LockGroup
                         INTO #ContractInfo
                         FROM Devices d
                         JOIN #PTable1 p1 ON d.Id = p1.AccountNo

@@ -1,49 +1,87 @@
-﻿@using Ranalo.Models
+﻿@using Ranalo.DataStore.DataModels
+@using Ranalo.Models
+@using System.Text.Json
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
-@model DevicesWithDealerViewModel
+@model EnrolmentViewModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
-@functions{
-   private string SetLockStatusBadge(bool status)
+@functions {
+
+    private string SetStatusBadge(EnrolmentStatus? status)
     {
         var statusClass = "";
-
-        if (status == true)
+        switch (status)
         {
-            return "badge badge-dim bg-danger";
+            case EnrolmentStatus.Approved:
+                statusClass = "tb-status text-success";
+                break;
+            case EnrolmentStatus.Pending:
+                statusClass = "tb-status text-warning";
+                break;
+            case EnrolmentStatus.New:
+                statusClass = "tb-status text-info";
+                break;
+            case EnrolmentStatus.Locked:
+                statusClass = "tb-status text-danger";
+                break;
+            default:
+                statusClass = "tb-status text-danger";
+                break;
         }
-        else
+
+        return statusClass;
+    }
+    private string SetStatusText(EnrolmentStatus? status)
+    {
+        var statusClass = "";
+        switch (status)
         {
-            return "badge badge-dim bg-success";
+            case EnrolmentStatus.New:
+                statusClass = "New";
+                break;
+            case EnrolmentStatus.Pending:
+                statusClass = "Pending";
+                break;
+            case EnrolmentStatus.Locked:
+                statusClass = "Locked";
+                break;
+            case EnrolmentStatus.Approved:
+                statusClass = "Approved";
+                break;
+            default:
+                statusClass = "No Status";
+                break;
         }
 
         return statusClass;
     }
 
-    private string SetLockStatusTextBadge(bool status)
+    private string GetInitials(string fullName)
     {
-        if (status == true)
-        {
-            return "LOCKED";
-        }
-        else
-        {
-            return "UNLOCKED";
-        }
+        if (string.IsNullOrWhiteSpace(fullName))
+            return string.Empty;
+
+        // Split by spaces and take first character of each word
+        var initials = fullName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => char.ToUpper(word[0]))
+            .Take(2) // only take first 2 initials
+            .ToArray();
+
+        return new string(initials);
     }
-    }
+}
 
 <div class="nk-content-body">
-
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">All Devices</h3>
+                <h3 class="nk-block-title page-title">Device Enrolments</h3>
                 <div class="nk-block-des text-soft">
-                    <p>You have total of @Model?.TotalRecords devices in the system.</p>
+                    <p>You have total @Model.TotalCount enrolments.</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -54,13 +92,7 @@
                             <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
                             <li class="nk-block-tools-opt">
                                 <div class="drodown">
-                                    <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-end">
-                                        <ul class="link-list-opt no-bdr">
-                                            <li><a href="#"><span>Add Customer</span></a></li>
-                                            <li><a href="#"><span>Import Customer</span></a></li>
-                                        </ul>
-                                    </div>
+                                    <a href="/addenrolment" class="btn btn-icon btn-primary"><em class="icon ni ni-plus"></em></a>
                                 </div>
                             </li>
                         </ul>
@@ -69,7 +101,6 @@
             </div><!-- .nk-block-head-content -->
         </div><!-- .nk-block-between -->
     </div><!-- .nk-block-head -->
-
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -81,8 +112,9 @@
                                     <select class="form-select js-select2" data-search="off" data-placeholder="Bulk Action">
                                         <option value="">Bulk Action</option>
                                         <option value="email">Send Email</option>
-                                        <option value="suspend">Suspend</option>
-                                        <option value="delete">Delete</option>
+                                        <option value="group">Change Group</option>
+                                        <option value="suspend">Suspend User</option>
+                                        <option value="delete">Delete User</option>
                                     </select>
                                 </div>
                                 <div class="btn-wrap">
@@ -113,7 +145,12 @@
                                                         </a>
                                                         <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
                                                             <div class="dropdown-head">
-                                                                <span class="sub-title dropdown-title">Filter Customers</span>
+                                                                <span class="sub-title dropdown-title">Filter Enrolments</span>
+                                                                <div class="dropdown">
+                                                                    <a href="#" class="btn btn-sm btn-icon">
+                                                                        <em class="icon ni ni-more-h"></em>
+                                                                    </a>
+                                                                </div>
                                                             </div>
                                                             <div class="dropdown-body dropdown-body-rg">
                                                                 <div class="row gx-6 gy-3">
@@ -131,12 +168,12 @@
                                                                     </div>
                                                                     <div class="col-6">
                                                                         <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Card Type</label>
+                                                                            <label class="overline-title overline-title-alt">Role</label>
                                                                             <select class="form-select js-select2">
-                                                                                <option value="any">Any Card</option>
-                                                                                <option value="Visa">Visa</option>
-                                                                                <option value="Mastercard">Mastercard</option>
-                                                                                <option value="AmericanExpress">American Express</option>
+                                                                                <option value="any">Any Role</option>
+                                                                                <option value="investor">Investor</option>
+                                                                                <option value="seller">Seller</option>
+                                                                                <option value="buyer">Buyer</option>
                                                                             </select>
                                                                         </div>
                                                                     </div>
@@ -145,8 +182,8 @@
                                                                             <label class="overline-title overline-title-alt">Status</label>
                                                                             <select class="form-select js-select2">
                                                                                 <option value="any">Any Status</option>
-                                                                                <option value="new">New</option>
                                                                                 <option value="active">Active</option>
+                                                                                <option value="pending">Pending</option>
                                                                                 <option value="suspend">Suspend</option>
                                                                                 <option value="deleted">Deleted</option>
                                                                             </select>
@@ -174,10 +211,9 @@
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
                                                             <ul class="link-check">
                                                                 <li><span>Show</span></li>
-                                                                <li class="@(Model.PageSize == 10 ? "active" : "")"><a href="/alldevices?page=1&pageSize=10">10</a></li>
-                                                                <li class="@(Model.PageSize == 20 ? "active" : "")"><a href="/alldevices?page=1&pageSize=20">20</a></li>
-                                                                <li class="@(Model.PageSize == 40 ? "active" : "")"><a href="/alldevices?page=1&pageSize=40">40</a></li>
-                                                                <li class="@(Model.PageSize == 80 ? "active" : "")"><a href="/alldevices?page=1&pageSize=80">80</a></li>
+                                                                <li class="active"><a href="#">10</a></li>
+                                                                <li><a href="#">20</a></li>
+                                                                <li><a href="#">50</a></li>
                                                             </ul>
                                                             <ul class="link-check">
                                                                 <li><span>Order</span></li>
@@ -198,115 +234,131 @@
                         <div class="card-body">
                             <div class="search-content">
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <form action="/alldevices" method="get">
-                                    <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" value="@Model?.SearchTerm" placeholder="Search by name">
-                                    <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
-                                </form>
+                                <input type="text" class="form-control border-transparent form-focus-none" placeholder="Search by enrolment details">
+                                <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
                             </div>
                         </div>
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
-
                 <div class="card-inner p-0">
-                    @if (Model.Errors.Any())
-                    {
-                        foreach (var error in Model.Errors)
-                        {
-                            <div class="alert alert-danger alert-icon alert-dismissible">
-                                <em class="icon ni ni-cross-circle"></em>
-                                <strong>Update failed</strong>! @error.
-                                <button class="close" data-bs-dismiss="alert"></button>
+                    <div class="nk-tb-list nk-tb-ulist is-compact">
+                        <div class="nk-tb-item nk-tb-head">
+                            <div class="nk-tb-col nk-tb-col-check">
+                                <div class="custom-control custom-control-sm custom-checkbox notext">
+                                    <input type="checkbox" class="custom-control-input" id="uid">
+                                    <label class="custom-control-label" for="uid"></label>
+                                </div>
                             </div>
-                        }
-                    }
-
-                    <table class="table table-tranx">
-                        <thead>
-                            <tr class="tb-tnx-head">
-                                <th class="tb-tnx-id"><span class="">Account No</span></th>
-                                <th class="tb-tnx-info">
-                                    <span class="tb-tnx-desc d-none d-sm-inline-block">
-                                        <span>ImeiNo</span>
-                                    </span>
-                                    <span class="tb-tnx-date d-md-inline-block d-none">
-                                        <span class="d-md-none">Date</span>
-                                        <span class="d-none d-md-block">
-                                            <span>CreatedAt</span>
-                                        </span>
-                                    </span>
-                                </th>
-                                <th class="tb-tnx-info">
-                                    <span>Dealer Id</span>
-                                </th>
-                                <th class="tb-tnx-info">
-                                    <span>
-                                        <span>Dealer Name</span>
-                                    </span>
-                                </th>
-                                <th class="tb-tnx-info">
-                                    <span>
-                                        <span>Status</span>
-                                    </span>
-                                </th>
-                                <th class="nk-tb-col text">
-                                    <span class="sub-text">Actions</span>
-                                </th>
-                        </thead>
-                        @if (Model?.Devices != null)
+                            <div class="nk-tb-col"><span class="sub-text">User</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">National ID</span></div>
+                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Name</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Surname</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">IMEI</span></div>
+                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Date Created</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Date Updated</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Status</span></div>
+                            <div class="nk-tb-col nk-tb-col-tools text-end">
+                                <div class="dropdown">
+                                    <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-offset="0,5"><em class="icon ni ni-plus"></em></a>
+                                    <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
+                                        <ul class="link-tidy sm no-bdr">
+                                            <li>
+                                                <div class="custom-control custom-control-sm custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" checked="" id="bl">
+                                                    <label class="custom-control-label" for="bl">Balance</label>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="custom-control custom-control-sm custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" checked="" id="ph">
+                                                    <label class="custom-control-label" for="ph">Phone</label>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="custom-control custom-control-sm custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" id="vri">
+                                                    <label class="custom-control-label" for="vri">Verified</label>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="custom-control custom-control-sm custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" id="st">
+                                                    <label class="custom-control-label" for="st">Status</label>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- .nk-tb-item -->
+                        @foreach (var enrolment in Model.Enrolments ?? Enumerable.Empty<Enrolment>())
                         {
-                            foreach (var devices in Model.Devices)
-                            {
-                                <tr class="tb-tnx-item">
-                                    <td class="tb-tnx-id">
-                                        <a href="#"><span>@devices.DeviceId</span></a>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-desc">
-                                            <span class="title">@devices.ImeiNo</span>
+                            <div class="nk-tb-item">
+                                <div class="nk-tb-col nk-tb-col-check">
+                                    <div class="custom-control custom-control-sm custom-checkbox notext">
+                                        <input type="checkbox" class="custom-control-input" id="uid1">
+                                        <label class="custom-control-label" for="uid1"></label>
+                                    </div>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <div class="user-card">
+                                        <div class="user-avatar xs bg-primary">
+                                            <span>@GetInitials(enrolment.FirstName + " " + enrolment.LastName)</span>
                                         </div>
-                                        <div class="tb-tnx-date">
-                                            <span class="date">@devices.CreatedAtDate</span>
+                                        <div class="user-name">
+                                            <span class="tb-lead">@enrolment.FirstName @enrolment.LastName</span>
                                         </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="title">@devices.DealerId</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="title">@devices.DealerName</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="@SetLockStatusBadge(devices.Locked)">@SetLockStatusTextBadge(devices.Locked)</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="nk-tb-col nk-tb-col-tools">
-                                            <ul class="nk-tb-actions gx-2">
-                                                <li>
-                                                    <div class="drodown">
-                                                        <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
-                                                        <div class="dropdown-menu dropdown-menu-end">
-                                                            <ul class="link-list-opt no-bdr">
-                                                                <li>
-                                                                    <a href="#lock-device"
-                                                                       data-id="@devices.DeviceId"
-                                                                       data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Lock Device</span></a>
-                                                                </li>
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
+                                    </div>
+                                </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    <span>@enrolment.AccountId</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-sm">
+                                    <span>@enrolment.FirstName</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    <span>@enrolment.LastName</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-xxl">
+                                    <span>@enrolment.IMEI</span>
+                                </div>
+                                <div class="nk-tb-col tb-col-lg">
+                                    <ul class="list-status">
+                                        <li><em class="icon text-success"></em> <span>@enrolment.Created</span></li>
+                                    </ul>
+                                </div>
+                                <div class="nk-tb-col tb-col-xxl">
+                                    <span>@enrolment.Updated</span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span class="@SetStatusBadge(enrolment.Status)">@SetStatusText(enrolment.Status)</span>
+                                </div>
+                                <div class="nk-tb-col nk-tb-col-tools">
+                                    <ul class="nk-tb-actions gx-2">
+                                        <li class="nk-tb-action-hidden">
+                                            <a href="/approve-enrolment/@enrolment.IMEI" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Approve">
+                                                <em class="icon ni ni-file-check-fill"></em>
+                                            </a>
+                                        </li>
+                                        <li class="nk-tb-action-hidden">
+                                            <a href="/delete-enrolment/@enrolment.Id" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
+                                                <em class="icon ni ni-delete-fill"></em>
+                                            </a>
+                                        </li>
+                                        <li class="nk-tb-action-hidden">
+                                            <a href="#" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Suspend">
+                                                <em class="icon ni ni-user-cross-fill"></em>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- .nk-tb-item -->
                         }
-                    </table>
+
+
+                    </div><!-- .nk-tb-list -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
                     <div class="nk-block-between-md g-3">
@@ -385,74 +437,7 @@
                         </div><!-- .pagination-goto -->
                     </div><!-- .nk-block-between -->
                 </div><!-- .card-inner -->
-
-            </div>
-        </div>
-    </div>
-
+            </div><!-- .card-inner-group -->
+        </div><!-- .card -->
+    </div><!-- .nk-block -->
 </div>
-
-<!-- Lock Device Pop Up-->
-<div class="modal fade" tabindex="-1" id="lock-device">
-    <div class="modal-dialog modal-md" role="document">
-        <div class="modal-content">
-            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
-                <em class="icon ni ni-cross-sm"></em>
-            </a>
-            <div class="modal-body modal-body-md">
-                <h5 class="modal-title">Lock Device</h5>
-                <form action="/adminlock-device" method="post" class="mt-2">
-                    <div class="row g-gs">
-                        <div class="col-12">
-                            <div class="form-group">
-                                <label class="form-label" for="modalDeviceId2">Account No.</label>
-                                <div class="form-control-wrap">
-                                    <input type="text" class="form-control" name="displayDeviceId" readonly id="modalDeviceId2" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-date">Lock Date</label>
-                                <div class="form-control-wrap">
-                                    <div class="form-icon form-icon-left">
-                                        <em class="icon ni ni-calendar"></em>
-                                    </div>
-                                    <input type="text" name="lockDate" id="lock-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12">
-                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
-                                <li>
-                                    <button type="submit" class="btn btn-lg btn-primary">Lock Device</button>
-                                </li>
-                                <li>
-                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div><!-- .Edit Modal-Content -->
-@section Scripts
-{
-    <script>
-        //Lock Device
-            document.addEventListener("DOMContentLoaded", function () {
-                            var modal1 = document.getElementById('lock-device');
-            modal1.addEventListener('show.bs.modal', function (event) {
-                var button = event.relatedTarget; // Button that triggered the modal
-                var deviceId = button.getAttribute('data-id');
-                    var name = button.getAttribute('data-name');
-                    document.getElementById('modalDeviceId2').value = deviceId;
-                    document.getElementById('modalFirstName2').value = name;
-            });
-            });
-    </script>
- }

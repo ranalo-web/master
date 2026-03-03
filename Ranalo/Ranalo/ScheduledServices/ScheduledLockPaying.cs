@@ -36,12 +36,18 @@ namespace Ranalo.ScheduledServices
                         //IPaymentsRepository
                         var reminderService = scope.ServiceProvider.GetRequiredService<IApplicationReportService>();
                         var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository);
-                        foreach (var order in inactiveUsers)
+                        var enrolmentService = scope.ServiceProvider.GetRequiredService<IEnrolmentService>();
+                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService);
+                        
+                        if(inactiveUsers != null && inactiveUsers.Any())
                         {
-                            _logger.LogInformation("lock Auto for: {user}", order.AccountId);
-                            // Possibly send email reminders, clean up data, etc.
+                            foreach (var order in inactiveUsers)
+                            {
+                                _logger.LogInformation("lock Auto for: {user}", order.AccountId);
+                                // Possibly send email reminders, clean up data, etc.
+                            }
                         }
+                        
                     }
 
                     // Wait until next run
@@ -60,7 +66,10 @@ namespace Ranalo.ScheduledServices
             _logger.LogInformation("Live lock Reminder stopped at: {time}", DateTime.UtcNow);
         }
 
-        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, IApplicationReportService applicationReportService, IPaymentsRepository paymentsRepository)
+        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, 
+            IApplicationReportService applicationReportService, 
+            IPaymentsRepository paymentsRepository,
+            IEnrolmentService enrolmentService)
         {
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); ;
 
@@ -83,6 +92,7 @@ namespace Ranalo.ScheduledServices
             .ToList();
 
             var devicesToLock = new List<LockTransaction>();
+            var devicesToLockKnox = new List<LockTransaction>();
             //Not sure why this removes negative arrears
             //records.Records.RemoveAll(a => a.ArrearsR > 0);
 
@@ -103,10 +113,22 @@ namespace Ranalo.ScheduledServices
                         AutoLockDate = account.LoanBalance < 1 ? DateTime.MaxValue : autoLockDatePmt
                     };
 
-                    devicesToLock.Add(lockDevice);
+                    if(account.LockGroup == 2)
+                    {
+                        devicesToLockKnox.Add(lockDevice);
+                    }
+                    else
+                    {
+                        devicesToLock.Add(lockDevice);
+                    }
                 }
 
                 var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock);
+
+                if(devicesToLockKnox.Any())
+                {
+                    await enrolmentService.LockDevicesKnox(devicesToLockKnox);
+                }
 
                 return lockedDevices;
             }

@@ -89,6 +89,10 @@
 
     private string ConvertUTCDate(string dateString)
     {
+        if (string.IsNullOrEmpty(dateString))
+        {
+            return "Not set";
+        }
         DateTime dt = DateTime.ParseExact(
             dateString,
             "dd-MM-yy HH:mm:ss 'UTC'",

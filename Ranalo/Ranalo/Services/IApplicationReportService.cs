@@ -12,7 +12,7 @@ namespace Ranalo.Services
 
         Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize);
 
-        Task<IEnumerable<PaymentsSummaryTotals>> PaymentsSummary();
+        Task<IEnumerable<PaymentsSummaryTotals>> PaymentsSummary(int? userId = null);
 
         Task<KosePaymentsViewModel> GetAllPaymentsAsync(string searchTerm = "", int page = 1, int pageSize = 10);
         Task<KosePaymentsViewModel> GetAllPaymentsAsync(int userId, string searchTerm = "", int page = 1, int pageSize = 10);
@@ -56,5 +56,7 @@ namespace Ranalo.Services
         Task CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo);
 
         Task<List<RestructuredRecord>> GetAllRestructuredNoCalculation();
+
+        Task<CustomerDetails?> GetOrderByOrderIdAsync(long orderId);
     }
 }

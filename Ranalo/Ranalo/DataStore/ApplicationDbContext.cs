@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Ranalo.DataStore.DataModels;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Text.Json;
+using Ranalo.Models;
 
 namespace Ranalo.DataStore
 {
@@ -16,6 +17,7 @@ namespace Ranalo.DataStore
         public DbSet<Product> Products { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<Customer> Customers { get; set; }
+        public DbSet<Enrolment> Enrolments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

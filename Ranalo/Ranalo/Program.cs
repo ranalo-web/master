@@ -87,6 +87,8 @@ builder.Services.AddScoped<IPaymentReminderService, PaymentReminderService>();
 builder.Services.AddScoped<IDeviceProcessor, DeviceProcessor>();
 builder.Services.AddScoped<IWooCommerceService, WooCommerceService>();
 builder.Services.AddScoped<IPaymentsService, PaymentsService>();
+builder.Services.AddScoped<IEnrolmentService, EnrolmentService>();
+builder.Services.AddScoped<IEnrolmentRepository, EnrolmentRepository>();
 //IPaymentsService
 
 //MySql Db connection
@@ -98,9 +100,10 @@ bool runWooTask = builder.Configuration.GetValue<bool>("RunWooTask");
 
 if (runWooTask)
 {
-     
+
     //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
     //builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
+    //builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
 }
 else
 {

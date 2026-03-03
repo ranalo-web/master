@@ -85,9 +85,18 @@ namespace Ranalo.Services
             return dealerPayments;
         }
 
-        public async Task<IEnumerable<PaymentsSummaryTotals>> PaymentsSummary()
+        public async Task<IEnumerable<PaymentsSummaryTotals>> PaymentsSummary(int? userId = null)
         {
-            var payments = await GetAllPaymentsAsync();
+            var payments = new KosePaymentsViewModel();
+            if (userId != null)
+            {
+                payments = await GetAllPaymentsAsync((int)userId);
+            }
+            else
+            {
+                payments = await GetAllPaymentsAsync();
+            }
+                
             var allOrphaned = await GetOrphanedPaymentsAsync(1, 10000);
 
             var orphaned = allOrphaned.Payments?.DistinctBy(r => r.MpesaCode).ToList();
@@ -151,6 +160,11 @@ namespace Ranalo.Services
             }
 
             return customerDetails;
+        }
+
+        public async Task<CustomerDetails?> GetOrderByOrderIdAsync(long orderId)
+        {
+            return await _applicationReportRepository.GetCustomerDetails(orderId);
         }
         public async Task<CustomerDetails> GetCustomerDetailsByOrderIdAsync(long orderId)
         {
@@ -348,7 +362,8 @@ namespace Ranalo.Services
                         LockType = payment.LockType,
                         NextLockDateIsoFormat = payment.NextLockDateIsoFormat,
                         NotPaying90D = _calculatorService.HasNotPaidInLast90Days(payment.LastPaidDate),
-                        DebtCollectorUserId = payment.DebtCollectorUserId
+                        DebtCollectorUserId = payment.DebtCollectorUserId,
+                        LockGroup = payment.LockGroup
 
                     };
                     if (statusRow.Arrears < 0)
@@ -594,6 +609,7 @@ namespace Ranalo.Services
                 record.LastPaidAmount = paymentSummary.LastPaidAmount;
                 record.NextLockDate = paymentSummary.NextLockDate;
                 record.PaidLast24Hours = paymentSummary.PaidLast24Hours;
+                record.LockGroup = paymentSummary.LockGroup;
 
                 if (due <= 0)
                 {

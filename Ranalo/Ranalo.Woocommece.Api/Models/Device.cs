@@ -154,6 +154,7 @@ namespace Ranalo.Woocommece.Api.Models
 
         [JsonProperty("dlc_status")]
         public string? DlcStatus { get; set; }
+        public int? LockGroup { get; set; } = 1;
     }
 
     public class SimLockInfo

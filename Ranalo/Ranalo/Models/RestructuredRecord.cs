@@ -31,5 +31,7 @@
         public decimal LastPaidAmount { get; set; }
         public string? NextLockDate { get; set; }
         public DateTime AutoLockDatePmtR { get; set; }
+
+        public int? LockGroup { get; set; }
     }
 }

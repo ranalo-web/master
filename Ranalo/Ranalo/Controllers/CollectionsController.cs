@@ -229,6 +229,7 @@ namespace Ranalo.Controllers
 
             var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, false, null, dealerId, page, pageSize, searchTerm.Trim());
 
+            return View("AssignedCollections", allDelaerStatusReport);
             return View(allDelaerStatusReport);
 
         }

@@ -54,17 +54,22 @@ namespace Ranalo.Controllers
             //var devices = new List<string>() { "351065613616471" };
             //var foo = await _veritechApiClient.UploadDevicesAsync(devices);
 
+            //Knox
+            //var deviceId = "351065613616471";
+            //var foo = await _knoxSerciceClient.GetDeviceInfoAsync(deviceId);
+
             //var response = await _knoxSerciceClient.ListDevicesAsync(new ListDevicesRequest
             //{
             //    PageNum = 0,
             //    PageSize = 20,
             //    SortBy = "updateTime",
             //    SortOrder = "descending",
-            //    Filter = new DeviceListFilter
-            //    {
-            //        Status = new List<string> { "Active", "Active|Locked" },
-            //        //SimControlEnabled = true
-            //    }
+            //    Search = "351065613616471"
+            //    //Filter = new DeviceListFilter
+            //    //{
+            //    //    Status = new List<string> { "Enrolled" },
+            //    //    //SimControlEnabled = true
+            //    //}
             //});
 
             //var request = new UnlockDeviceRequest
@@ -408,7 +413,14 @@ namespace Ranalo.Controllers
             }
             await SetViewBags(settings, "index");
 
-            var allAwaitngApproval = await _applicationReportService.PaymentsSummary();
+            if (settings.RoleId == UserRole.Admin)
+            {
+                var allPayments = await _applicationReportService.PaymentsSummary();
+
+                return View("AllPayments", allPayments);
+            }
+
+            var allAwaitngApproval = await _applicationReportService.PaymentsSummary(settings.UserId);
 
             return View(allAwaitngApproval.ToList());
         }

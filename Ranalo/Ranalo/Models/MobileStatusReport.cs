@@ -51,6 +51,8 @@
         public CustomerDetails? CustomerDetails { get; set; }
         public string? LastPaidMpesa { get; set; }
         public decimal TotalWeekPaid { get; internal set; }
+
+        public int? LockGroup { get; set; }
     }
 
     public class PaymentSummary
@@ -86,6 +88,7 @@
         public decimal TermsInMonths { get; set; }
         public string? NextLockDateIsoFormat { get; set; }
         public int? DebtCollectorUserId { get; set; }
+        public int? LockGroup { get; set; }
     }
 
 }

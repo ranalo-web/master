@@ -196,6 +196,100 @@ namespace Ranalo.Woocommece.Api.DataStore
                 }
         }
 
+        public async Task SaveDeviceToDatabaseAsync(Device device)
+        {
+            const string insertQuery = @"
+        INSERT INTO [dbo].[Devices]
+           ([Id]
+           ,[Name]
+           ,[ImeiNo]
+           ,[ImeiNo2]
+           ,[SerialNo]
+           ,[IsTv]
+           ,[PhoneNumber]
+           ,[Model]
+           ,[Make]
+           ,[OsVersion]
+           ,[SdkVersion]
+           ,[Status]
+           ,[Locked]
+           ,[LockType]
+           ,[DeviceGroupId]
+           ,[AdminLockType]
+           ,[AdminLocked]
+           ,[AppVersionCode]
+           ,[AppVersionName]
+           ,[CreatedAt]
+           ,[CustomerName]
+           ,[CustomerEmail]
+           ,[CustomerAddress]
+           ,[CustomerPhoneNumber]
+           ,[UnlockCode]
+           ,[ValidityOfUnlockCode]
+           ,[IsActivated]
+           ,[IsLockedOnSimSwap]
+           ,[FirstLockDate]
+           ,[FirstLockDateIsoFormat]
+           ,[NextLockDate]
+           ,[NextLockDateIsoFormat]
+           ,[EulaStatus]
+           ,[EulaActionPerformedOn]
+           ,[LastConnectedAt]
+           ,[GettingStartedButtonClicked]
+           ,[EnrollmentStatus]
+           ,[EnrollmentFailureReason]
+           ,[AdditionalSetupDone]
+           ,[BatteryOptimizationGranted]
+           ,[EnrolledOn]
+           ,[DlcStatus]
+           ,[LockGroup])
+        VALUES (@Id, 
+                @Name, 
+                @ImeiNo, 
+                @ImeiNo2, 
+                @SerialNo, 
+                @IsTv,
+                @PhoneNumber, 
+                @Model,                 
+                @Make, 
+                @OsVersion, 
+                @SdkVersion, 
+                @Status, 
+                @Locked, 
+                @LockType, 
+                @DeviceGroupId, 
+                @AdminLockType, 
+                @AdminLocked, 
+                @AppVersionCode, 
+                @AppVersionName, 
+                @CreatedAt, 
+                @CustomerName, 
+                @CustomerEmail, 
+                @CustomerAddress, 
+                @CustomerPhoneNumber, 
+                @UnlockCode, 
+                @ValidityOfUnlockCode, 
+                @IsActivated,                 
+                @IsLockedOnSimSwap, 
+                @FirstLockDate, 
+                @FirstLockDateIsoFormat, 
+                @NextLockDate, 
+                @NextLockDateIsoFormat, 
+                @EulaStatus, 
+                @EulaActionPerformedOn, 
+                @LastConnectedAt, 
+                @GettingStartedButtonClicked, 
+                @EnrollmentStatus, 
+                @EnrollmentFailureReason, 
+                @AdditionalSetupDone, 
+                @BatteryOptimizationGranted, 
+                @EnrolledOn, 
+                @DlcStatus,
+                @LockGroup)";
+
+                await _db.ExecuteAsync(insertQuery, device);
+        }
+
         public async Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords)
         {
             const string updateQuery = @"UPDATE [dbo].[Devices]
@@ -212,7 +306,6 @@ namespace Ranalo.Woocommece.Api.DataStore
                                                ,[Status] = @Status
                                                ,[Locked] = @Locked
                                                ,[LockType] = @LockType
-                                               ,[DeviceGroupId] = @DeviceGroupId
                                                ,[AdminLockType] = @AdminLockType
                                                ,[AdminLocked] = @AdminLocked
                                                ,[AppVersionCode] = @AppVersionCode
@@ -248,6 +341,55 @@ namespace Ranalo.Woocommece.Api.DataStore
             }
         }
 
+        public async Task UpdateDeviceToDatabaseAsync(Device device)
+        {
+            const string updateQuery = @"UPDATE [dbo].[Devices]
+                                            SET [Name] = @Name
+                                               ,[ImeiNo] = @ImeiNo
+                                               ,[ImeiNo2] = @ImeiNo2
+                                               ,[SerialNo] = @SerialNo
+                                               ,[IsTv] = @IsTv
+                                               ,[PhoneNumber] = @PhoneNumber
+                                               ,[Model] = @Model
+                                               ,[Make] = @Make
+                                               ,[OsVersion] = @OsVersion
+                                               ,[SdkVersion] = @SdkVersion
+                                               ,[Status] = @Status
+                                               ,[Locked] = @Locked
+                                               ,[LockType] = @LockType
+                                               ,[AdminLockType] = @AdminLockType
+                                               ,[AdminLocked] = @AdminLocked
+                                               ,[AppVersionCode] = @AppVersionCode
+                                               ,[AppVersionName] = @AppVersionName
+                                               ,[CreatedAt] = @CreatedAt
+                                               ,[CustomerName] = @CustomerName
+                                               ,[CustomerEmail] = @CustomerEmail
+                                               ,[CustomerAddress] = @CustomerAddress
+                                               ,[CustomerPhoneNumber] = @CustomerPhoneNumber
+                                               ,[UnlockCode] = @UnlockCode
+                                               ,[ValidityOfUnlockCode] = @ValidityOfUnlockCode
+                                               ,[IsActivated] = @IsActivated
+                                               ,[IsLockedOnSimSwap] = @IsLockedOnSimSwap
+                                               ,[FirstLockDate] = @FirstLockDate
+                                               ,[FirstLockDateIsoFormat] = @FirstLockDateIsoFormat
+                                               ,[NextLockDate] = @NextLockDate
+                                               ,[NextLockDateIsoFormat] = @NextLockDateIsoFormat
+                                               ,[EulaStatus] = @EulaStatus
+                                               ,[EulaActionPerformedOn] = @EulaActionPerformedOn
+                                               ,[LastConnectedAt] = @LastConnectedAt
+                                               ,[GettingStartedButtonClicked] = @GettingStartedButtonClicked
+                                               ,[EnrollmentStatus] = @EnrollmentStatus
+                                               ,[EnrollmentFailureReason] = @EnrollmentFailureReason
+                                               ,[AdditionalSetupDone] = @AdditionalSetupDone
+                                               ,[BatteryOptimizationGranted] = @BatteryOptimizationGranted
+                                               ,[EnrolledOn] = @EnrolledOn
+                                               ,[DlcStatus] = @DlcStatus
+                                          WHERE [Id] = @Id";
+
+            
+                await _db.ExecuteAsync(updateQuery, device);
+        }
+
         public async Task<int> AddContractAsync(ContractInfo contract)
         {
             var existingSql = @"SELECT ID FROM Contract_Info 
@@ -277,6 +419,16 @@ namespace Ranalo.Woocommece.Api.DataStore
             var sql = @"UPDATE Woo_Orders SET [ContractId] = @ContractId WHERE [OrderID] = @OrderId";
 
             await _db.ExecuteAsync(sql, new { ContractId = contractId, OrderId = orderId });
+        }
+
+        public async Task<Device?> GetDeviceByAccountId(long accountId)
+        {
+            var sql = @"SELECT * FROM Devices
+                         WHERE [Id] = @AccountId"
+            ;
+            var device = await _db.QueryFirstOrDefaultAsync<Device>(sql, new { AccountId = accountId });
+
+            return device;
         }
     }
 }

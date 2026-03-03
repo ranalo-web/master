@@ -40,7 +40,7 @@ namespace Ranalo.SumsungKnox
 
             var json = JsonSerializer.Serialize(body, JsonOptions);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-
+            await Task.Delay(3000);
             var response = await _httpClient.PostAsync(endpoint, content);
             var responseContent = await response.Content.ReadAsStringAsync();
             response.EnsureSuccessStatusCode();
@@ -50,6 +50,7 @@ namespace Ranalo.SumsungKnox
         private async Task<TResponse> PostAsync<TResponse>(string endpoint, object body)
         {
             await PrepareHeadersAsync();
+            await Task.Delay(3000);
 
             var response = await _httpClient.PostAsJsonAsync(endpoint, body, JsonOptions);
             var responseContent = await response.Content.ReadAsStringAsync();

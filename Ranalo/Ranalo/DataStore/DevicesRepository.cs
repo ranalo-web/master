@@ -524,7 +524,8 @@ FETCH NEXT @pageSize ROWS ONLY";
                                 d.ImeiNo,
                                 d.EnrolledOn,
                                 d.[LastConnectedAt],
-                                d.NextLockDateIsoFormat
+                                d.NextLockDateIsoFormat,
+	                            d.Locked
                             FROM Devices d
                             LEFT JOIN Dealers dealer
                                 ON dealer.DealerReference = d.DeviceGroupId

@@ -1,0 +1,137 @@
+﻿@using Ranalo.Models
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model EnrolmentViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+@{
+    var enrolment = Model.Enrolments?.FirstOrDefault();
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Create New Enrolment</h3>
+                <div class="nk-block-des text-soft">
+                    <p>On completion you will be redirected to the Enrolments list page.</p>
+                </div>
+            </div>
+        </div><!-- .nk-block-head -->
+        <div class="nk-block nk-block-lg">
+            <div class="card card-bordered card-preview">
+                <div class="card-inner">
+                    @if (Model.Errors.Any())
+                    {
+                        foreach (var error in Model.Errors)
+                        {
+                            <div class="alert alert-danger alert-icon alert-dismissible">
+                                <em class="icon ni ni-cross-circle"></em>
+                                <strong>Create failed</strong>! @error.
+                                <button class="close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+                    }
+                    <div class="preview-block">
+                        <span class="preview-title-lg overline-title">Enrolment Details</span>
+                        <form action="/addenrolment" class="form-validate" novalidate="novalidate" method="post">
+                            <div class="row gy-4">
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="firstName">First Name</label>
+                                        <div class="form-control-wrap">
+                                            <div class="form-icon form-icon-left">
+                                                <em class="icon ni ni-user"></em>
+                                            </div>
+                                            <input type="text"
+                                                   name="firstName"
+                                                   class="form-control" 
+                                                id="firstName"
+                                                   value="@enrolment?.FirstName"
+                                                placeholder="Enter user first name" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="lastName">Last Name</label>
+                                        <div class="form-control-wrap">
+                                            <div class="form-icon form-icon-left">
+                                                <em class="icon ni ni-user"></em>
+                                            </div>
+                                            <input type="text" 
+                                                name="lastname" 
+                                                class="form-control" 
+                                                id="lastName"
+                                                   value="@enrolment?.LastName"
+                                                placeholder="Enter user last name" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="accountId">National ID</label>
+                                        <div class="form-control-wrap">
+                                            <div class="form-icon form-icon-left">
+                                                <em class="icon ni ni-user-alt-fill"></em>
+                                            </div>
+                                            <input type="number" 
+                                                name="accountId" 
+                                                class="form-control" 
+                                                id="accountId"
+                                                   value="@enrolment?.AccountId"
+                                                   placeholder="Enter a National Id Number" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="imei">IMEI</label>
+                                        <div class="form-control-wrap">
+                                            <div class="form-icon form-icon-left">
+                                                <em class="icon ni ni-tag-alt-fill"></em>
+                                            </div>
+                                            <input type="text" 
+                                                name="imei" 
+                                                class="form-control"
+                                                   id="imei"
+                                                   value="@enrolment?.IMEI"
+                                                placeholder="Enter a valid IMEI number" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="imeiNumber">Order ID</label>
+                                        <div class="form-control-wrap">
+                                            <div class="form-icon form-icon-left">
+                                                <em class="icon ni ni-tag-alt-fill"></em>
+                                            </div>
+                                            <input type="text"
+                                                   name="orderId"
+                                                   class="form-control"
+                                                   id="orderId"
+                                                   value="@enrolment?.OrderId"
+                                                   placeholder="Enter a valid Order Id number" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-sm-12">
+                                    <div class="form-control-wrap">
+                                        <div class="form-btn-group">
+                                            <button type="submit" class="btn btn-lg btn-success">Submit</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .card-preview -->
+</div><!-- .nk-block -->

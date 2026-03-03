@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Ranalo.SumsungKnox.Models;
 using knoxAPIUtility;
+using System.Diagnostics;
 
 namespace Ranalo.SumsungKnox
 {
@@ -59,10 +60,20 @@ namespace Ranalo.SumsungKnox
         {
             // 1️⃣ Generate signed client identifier JWT
             var fullPath = GetFullPath(_settings.KeysFilePath);
+
+            Console.WriteLine("BaseDirectory: " + AppContext.BaseDirectory);
+            Console.WriteLine("Relative path: " + _settings.KeysFilePath);
+            Console.WriteLine("Full path: " + fullPath);
+            Console.WriteLine("File exists: " + File.Exists(fullPath));
+
             var signedClientId =
                 KnoxTokenUtility.generateSignedClientIdentifierJWT(
                     fullPath,
                     _settings.ClientIdentifier);
+
+            await Task.Delay(3000);
+
+            Console.WriteLine($"Signed client is ready {signedClientId}. and Full Path is there {fullPath}");
 
             var payload = new
             {
@@ -76,6 +87,7 @@ namespace Ranalo.SumsungKnox
             using var content =
                 new StringContent(json, Encoding.UTF8, "application/json");
 
+            Console.WriteLine("Content of post: " + content);
             var response =
                 await _httpClient.PostAsync("/ams/v1/users/accesstoken", content);
 

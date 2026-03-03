@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
@@ -234,9 +235,15 @@ namespace Ranalo.DataStore
         {
             try
             {
-                return await _context.Users
-                .Where(x => x.RoleId == UserRole.Collector)
-                .ToListAsync();
+                var users = await _context.Users.ToListAsync();
+
+                return users
+                    .Where(x =>
+                        x.RoleId == UserRole.Collector ||
+                        (x.OtherSelectedRoles != null &&
+                         x.OtherSelectedRoles.Contains("Collector"))
+                    )
+                    .ToList();
             }
             catch (Exception)
             {

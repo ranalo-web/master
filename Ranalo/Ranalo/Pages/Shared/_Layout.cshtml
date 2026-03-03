@@ -79,6 +79,16 @@
                                         </a>
                                     </li>
                                 }
+                                @if (ViewBag.IsAdmin || ViewBag.IsDealer || ViewBag.IsApprover)
+                                {
+                                    <li class="nk-menu-item ">
+                                        <a class="nk-menu-link " href="/enrolments">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-cpu"></em></span>
+                                            <span class="nk-menu-text">Enrolments</span>
+                                        </a>
+                                    </li>
+                                }
+
                                     @if (ViewBag.IsAdmin)
                                 {
                                     <li class="nk-menu-item ">

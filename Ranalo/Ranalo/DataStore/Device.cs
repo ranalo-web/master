@@ -44,5 +44,6 @@
         public string BatteryOptimizationGranted { get; set; }
         public string EnrolledOn { get; set; }
         public string? DlcStatus { get; set; }
+        public int? LockGroup { get; set; }
     }
 }
