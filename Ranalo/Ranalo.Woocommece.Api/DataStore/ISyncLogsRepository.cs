@@ -9,6 +9,7 @@ namespace Ranalo.Woocommece.Api.DataStore
         Task<SyncPaymentsLog?> GetLastPaymentLog();
         Task<DataSyncLog?> GetLastSyncLogAsync();
         Task<Device?> GetLatestDeviceAsync();
+        Task<Device?> GetDeviceByIdAsync(long deviceId);
         Task<int> InsertAsync(DataSyncLog log);
         Task InsertPaymentLogAsync(SyncPaymentsLog log);
     }

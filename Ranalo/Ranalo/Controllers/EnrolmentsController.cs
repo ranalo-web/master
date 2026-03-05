@@ -4,6 +4,7 @@ using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.Services;
+using Ranalo.Woocommece.Api.Services;
 
 namespace Ranalo.Controllers
 {
@@ -13,11 +14,16 @@ namespace Ranalo.Controllers
         private readonly IUserService _userService;
         private readonly IEnrolmentService _enrolmentService;
         private readonly IApplicationReportService _applicationReportService;
-        public EnrolmentsController(IUserService userService, IEnrolmentService enrolmentService, IApplicationReportService applicationReportService)
+        private readonly ISyncService _syncService;
+        public EnrolmentsController(IUserService userService, 
+            IEnrolmentService enrolmentService, 
+            IApplicationReportService applicationReportService,
+            ISyncService syncService)
         {
             _userService = userService;
             _enrolmentService = enrolmentService;
             _applicationReportService = applicationReportService;
+            _syncService = syncService;
         }
 
         [Route("enrolments")]
@@ -133,7 +139,7 @@ namespace Ranalo.Controllers
             }
 
             var response = new EnrolmentViewModel();
-            if(string.IsNullOrEmpty(enrolment.IMEI))
+            if (string.IsNullOrEmpty(enrolment.IMEI))
             {
                 response.Errors.Add("The IMEI number is missing!");
             }
@@ -149,7 +155,7 @@ namespace Ranalo.Controllers
             {
                 response.Errors.Add("There are no orders for the order Id!");
             }
-            if(order?.NationalId != enrolment.AccountId.ToString())
+            if (order?.NationalId != enrolment.AccountId.ToString())
             {
                 response.Errors.Add("The National Id Number does not match the one on this order");
             }
@@ -166,7 +172,7 @@ namespace Ranalo.Controllers
 
             var existingEnrolment = await _enrolmentService.GetByImeiNumberAsync(enrolment.IMEI);
 
-            if(existingEnrolment != null)
+            if (existingEnrolment != null)
             {
                 response.Errors.Add("The IMEI Number is registered to another order");
             }
@@ -174,7 +180,7 @@ namespace Ranalo.Controllers
             //Validate IMEI
             await SetViewBags(settings, "index");
 
-            if(response.Errors.Any())
+            if (response.Errors.Any())
             {
                 response.Enrolments.Add(enrolment);
 
@@ -190,12 +196,25 @@ namespace Ranalo.Controllers
                 enrolment.UpdatedBy = settings.Name;
                 enrolment.DealerId = settings.DealerId;
                 enrolment.Id = Guid.NewGuid();
-                await _enrolmentService.CreateEnrolmentasync(enrolment, order);
+                enrolment = await _enrolmentService.CreateEnrolmentasync(enrolment, order);
             }
             catch (Exception)
             {
                 response.Errors.Add("There was an Error processing your request. Please contact the system administrator.");
                 return View(response);
+            }
+
+            var nouvaDevice = await _syncService.DevicePullSearch(enrolment.IMEI);
+            if (nouvaDevice == null)
+            {
+                enrolment = await _enrolmentService.StartEnrolmentasync(enrolment, order);
+            }
+            else
+            {
+                enrolment.Status = EnrolmentStatus.Approved;
+                enrolment.Updated = DateTime.UtcNow;
+                enrolment.UpdatedBy = "NOUVAPAY";
+                await _enrolmentService.UpdateEnrolmentasync(enrolment);
             }
 
             return RedirectToAction("Index");

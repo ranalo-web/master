@@ -228,14 +228,29 @@ namespace Ranalo.Woocommece.Api.Services
             await _kosePaymentsRepository.SaveDevicesToDatabaseAsync(groupedRecords);
         }
 
+        public async Task CreateDeviceToDatabaseAsync(Device device)
+        {
+            await _kosePaymentsRepository.SaveDeviceToDatabaseAsync(device);
+        }
+
         public async Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords)
         {
             await _kosePaymentsRepository.UpdateDevicesToDatabaseAsync(groupedRecords);
         }
 
+        public async Task UpdateDeviceToDatabaseAsync(Device device)
+        {
+            await _kosePaymentsRepository.UpdateDeviceToDatabaseAsync(device);
+        }
+
         public async Task<Device?> GetLatestDeviceId()
         {
             return await _syncLogsRepository.GetLatestDeviceAsync();
+        }
+
+        public async Task<Device?> GetDeviceById(long deviceId)
+        {
+            return await _syncLogsRepository.GetDeviceByIdAsync(deviceId);
         }
 
         #region sync Services
@@ -404,6 +419,37 @@ namespace Ranalo.Woocommece.Api.Services
             await UpdateDevicesToDatabaseAsync(currentDevices);
 
             return devicesToCreate;
+        }
+
+        public async Task<Device?> DevicePullSearch(string searchTerm)
+        {
+            var currentDevice = new Device();
+           
+                var result = await SecuredApiGetDeviceLockingRequestStringResponse(searchTerm);
+
+                var device = JsonConvert.DeserializeObject<LockDevices>(result);
+
+            if (device != null && device.Devices != null)
+            {
+                currentDevice = device.Devices.FirstOrDefault();
+
+                if(currentDevice != null)
+                {
+                    var existingDevice = await GetDeviceById(currentDevice.Id);
+                    if (existingDevice != null) 
+                    {
+                        await UpdateDeviceToDatabaseAsync(existingDevice);
+
+                        return existingDevice;
+                    }
+
+                    await CreateDeviceToDatabaseAsync(currentDevice);
+
+                    return currentDevice;
+                }
+            }
+
+            return null;
         }
 
         public async Task<WooOrder> OrderById(int orderId)
@@ -624,6 +670,37 @@ namespace Ranalo.Woocommece.Api.Services
             var queryParams = new Dictionary<string, string>
             {
                 { "page", page.ToString() }
+            };
+
+            var queryString = await new FormUrlEncodedContent(queryParams).ReadAsStringAsync();
+            var urlWithParams = $"{baseUrl}?{queryString}";
+
+
+            var response = await client.GetAsync(urlWithParams);
+
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            if (content.Trim() == "[]")
+            {
+                // Empty result set
+                return "";
+            }
+            return content;
+        }
+
+        private async Task<string> SecuredApiGetDeviceLockingRequestStringResponse(string searchText)
+        {
+            var consumerKey = "Token 8efccf09d4874f88ba2a62f5db8d8efc";
+            var baseUrl = "https://app.nuovopay.com/dm/api/v1/devices.json";
+            var client = new HttpClient();
+            var authToken = Encoding.ASCII.GetBytes(consumerKey);
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", consumerKey);
+            // var iso8601UtcDate = DateTime.UtcNow.AddDays(-3).ToString("yyyy-MM-ddTHH:mm:ssZ"); ;
+
+            var queryParams = new Dictionary<string, string>
+            {
+                { "search_string", searchText }
             };
 
             var queryString = await new FormUrlEncodedContent(queryParams).ReadAsStringAsync();

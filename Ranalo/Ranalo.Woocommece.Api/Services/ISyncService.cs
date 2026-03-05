@@ -36,5 +36,9 @@ namespace Ranalo.Woocommece.Api.Services
         Task<List<int>> SyncUpdateMetaDataWooOrders();
 
         Task CreateContractSingle(ContractCreateDto order);
+
+        Task<Device?> GetDeviceById(long deviceId);
+
+        Task<Device?> DevicePullSearch(string searchTerm);
     }
 }

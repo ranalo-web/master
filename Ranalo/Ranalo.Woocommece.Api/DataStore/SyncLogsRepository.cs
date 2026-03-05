@@ -79,5 +79,11 @@ namespace Ranalo.Woocommece.Api.DataStore
             var sql = "SELECT TOP 1 * FROM [dbo].[Devices] ORDER BY [id] desc";
             return await _db.QueryFirstOrDefaultAsync<Device>(sql);
         }
+
+        public async Task<Device?> GetDeviceByIdAsync(long deviceId)
+        {
+            var sql = "SELECT TOP 1 * FROM [dbo].[Devices] WHERE Id = @Id";
+            return await _db.QueryFirstOrDefaultAsync<Device>(sql, new { Id = deviceId });
+        }
     }
 }

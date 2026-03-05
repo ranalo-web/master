@@ -35,6 +35,14 @@ namespace Ranalo.Services
             //Create Enrolment
             await _enrolmentRepository.CreateEnrolmentAsync(newEnrolment);
 
+            return newEnrolment;
+        }
+
+        public async Task<Enrolment> StartEnrolmentasync(Enrolment newEnrolment, CustomerDetails? order)
+        {
+            //Create Enrolment
+            await _enrolmentRepository.CreateEnrolmentAsync(newEnrolment);
+
             //Need to Call Veritech to enrol a device
             var deviceToEnrol = new List<string>() { newEnrolment.IMEI };
             var enroll = await _veriTechClient.UploadDevicesAsync(deviceToEnrol);
@@ -251,6 +259,11 @@ namespace Ranalo.Services
                 }
             }
 
+        }
+
+        public async Task<Enrolment> UpdateEnrolmentasync(Enrolment newEnrolment)
+        {
+            return await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
         }
     }
 }

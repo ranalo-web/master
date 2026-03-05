@@ -19,5 +19,9 @@ namespace Ranalo.Services
 
         Task CreateDeviceFromKnox(Enrolment newEnrolment);
         Task LockDevicesKnox(List<LockTransaction> devicesToLockKnox);
+
+        Task<Enrolment> StartEnrolmentasync(Enrolment newEnrolment, CustomerDetails? order);
+
+        Task<Enrolment> UpdateEnrolmentasync(Enrolment newEnrolment);
     }
 }
