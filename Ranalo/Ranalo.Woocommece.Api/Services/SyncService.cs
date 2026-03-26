@@ -225,7 +225,21 @@ namespace Ranalo.Woocommece.Api.Services
 
         public async Task CreateDevicesToDatabaseAsync(List<Device> groupedRecords)
         {
-            await _kosePaymentsRepository.SaveDevicesToDatabaseAsync(groupedRecords);
+            var newDeviceList = new List<Device>();
+            foreach (var device in groupedRecords)
+            {
+                var deviceExists = await _kosePaymentsRepository.GetDeviceByAccountId(device.Id);
+                if(deviceExists == null)
+                {
+                    newDeviceList.Add(device);
+                }
+            }
+
+            if (newDeviceList.Any())
+            {
+                await _kosePaymentsRepository.SaveDevicesToDatabaseAsync(newDeviceList);
+            }
+            
         }
 
         public async Task CreateDeviceToDatabaseAsync(Device device)
@@ -258,12 +272,12 @@ namespace Ranalo.Woocommece.Api.Services
         public async Task<List<WooOrder>> SyncWooOrders()
         {
             // Start from last sync date or fallback to 3 days ago
-            var iso8601UtcDate = DateTime.UtcNow.AddDays(-30).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var iso8601UtcDate = DateTime.UtcNow.AddDays(-2).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
             var lastLog = await GetLastSycnLogDetails();
             if (lastLog != null)
             {
-                var lastOrderDate = lastLog.LastOrderCreatedDate;
+                var lastOrderDate = lastLog.LastOrderCreatedDate.AddDays(-3);
                 iso8601UtcDate = lastOrderDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
             }
 
@@ -408,7 +422,7 @@ namespace Ranalo.Woocommece.Api.Services
 
             if (latestDeviceId != null)
             {
-                devicesToCreate = currentDevices.Where(x => x.Id > latestDeviceId.Id).ToList();
+                devicesToCreate = currentDevices;
                 if (devicesToCreate.Any())
                 {
                     await CreateDevicesToDatabaseAsync(devicesToCreate);

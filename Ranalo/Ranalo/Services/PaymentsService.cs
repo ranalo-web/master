@@ -58,7 +58,7 @@ namespace Ranalo.Services
         }
         public async Task<DataTable> PaymentsWithOrphanedSummary()
         {
-            var payments = await _reportsService.GetAllPaymentsAsync();
+            var payments = await _reportsService.GetAllPaymentsAsync(null);
             var allOrphaned = await _reportsService.GetOrphanedPaymentsAsync(1, 1000);
 
             var orphaned = allOrphaned.Payments?.DistinctBy(r => r.MpesaCode).ToList();

@@ -224,9 +224,15 @@
                                             <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
                                             <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
                                                 <ul class="link-list-plain">
-                                                    <li><a href="#">View</a></li>
-                                                    <li><a href="#">Edit</a></li>
-                                                    <li><a href="#">Remove</a></li>
+                                                    <li>
+                                                        <a href="#edit-payment"
+                                                           data-bs-toggle="modal"
+                                                           data-orphanedAccountNo="@payment.AccountNo"
+                                                           data-amount="@payment.AmountValue"
+                                                           data-mpesacode="@payment.MpesaCode">
+                                                            <em class="icon ni ni-eye"></em><span>Assign Payment</span>
+                                                        </a>
+                                                    </li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -322,3 +328,85 @@
 		</div>
 
 	</div>
+
+
+<div class="modal fade" tabindex="-1" id="edit-payment">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Assign Payment</h5>
+                <form action="/assign-payments" method="post" class="mt-2">
+                    <div class="row g-gs">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-income">Orphaned Account No</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="orphanedNo" class="form-control" id="edit-orphanedAccountNo" readonly />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-income">Mpesa Code</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="mpesaCode" class="form-control" id="edit-mpesacode" readonly />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-account">Account No</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="accountNo" class="form-control" id="edit-account" required />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-amount">Account No</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="amount" class="form-control" id="edit-amount" readonly />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                                <li>
+                                    <button type="submit" class="btn btn-lg btn-primary">Submit</button>
+                                </li>
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts
+{
+        <script>
+    document.addEventListener("DOMContentLoaded", function () {
+            var modal = document.getElementById('edit-payment');
+        modal.addEventListener('shown.bs.modal', function (event) {
+            var button = event.relatedTarget; // Button that triggered the modal
+                    var orphanedAccountNo = button.getAttribute('data-orphanedAccountNo');
+                    var mpesacode = button.getAttribute('data-mpesacode');
+                        var amount = button.getAttribute('data-amount');
+
+                        document.getElementById('edit-orphanedAccountNo').value = orphanedAccountNo;
+                        document.getElementById('edit-mpesacode').value = mpesacode;
+                        document.getElementById('edit-amount').value = amount;
+        });
+   
+    })
+    </script>
+}
+

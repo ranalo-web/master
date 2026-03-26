@@ -76,7 +76,7 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         public async Task<Device?> GetLatestDeviceAsync()
         {
-            var sql = "SELECT TOP 1 * FROM [dbo].[Devices] ORDER BY [id] desc";
+            var sql = "SELECT TOP 1 * FROM [dbo].[Devices] WHERE [LockGroup] = 1 ORDER BY [id] desc";
             return await _db.QueryFirstOrDefaultAsync<Device>(sql);
         }
 

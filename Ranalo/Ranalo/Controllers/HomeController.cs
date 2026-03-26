@@ -192,76 +192,6 @@ namespace Ranalo.Controllers
             return RedirectToAction("Index", "Login");
         }
 
-        [Route("orphanedpayments/{page:int?}")]
-        public async Task<IActionResult> OrphanedPayments(int page = 1, int pageSize = 10)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-            await SetViewBags(settings, "index");
-
-            var orphanedPayments = await _applicationReportService.GetOrphanedPaymentsAsync(page, pageSize);
-
-            return View(orphanedPayments);
-        }
-
-        [Route("assignedpayments/{page:int?}")]
-        public async Task<IActionResult> AssignedPayments(string searchTerm = "", int page = 1, int pageSize = 10)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-            await SetViewBags(settings, "index");
-
-            var assignedPayments = await _applicationReportService.GetAssignedPaymentsAsync(searchTerm.Trim(), page, pageSize);
-
-            return View(assignedPayments);
-        }
-
-        [HttpPost]
-        [Route("assign-payments")]
-        public async Task<IActionResult> CreateAssignedPayments(string orphanedNo, string mpesaCode, string accountNo)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-            await SetViewBags(settings, "index");
-
-            await _applicationReportService.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo);
-
-            return RedirectToAction("AssignedPayments", "Home");
-        }
-
-
-        [Route("allpayments/{page:int?}")]
-        public async Task<IActionResult> AllPayments(string searchTerm = "", int page = 1, int pageSize = 10)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-
-            await SetViewBags(settings, "index", searchTerm.Trim());
-
-            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
-            {
-                var allPayments = await _applicationReportService.GetAllPaymentsAsync(searchTerm.Trim(), page: page, pageSize:pageSize);
-
-                return View(allPayments);
-            }
-
-            var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, page: page, pageSize: pageSize);
-
-            return View(allPaymentsByUser);
-        }
-
         [Route("statements/{page:int?}")]
         public async Task<IActionResult> Statements(int page = 1, int pageSize = 10)
         {
@@ -402,53 +332,6 @@ namespace Ranalo.Controllers
             return RedirectToAction("Statements", "Home");
         }
 
-
-        [Route("paymentsummary")]
-        public async Task<IActionResult> PaymentSummary()
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-            await SetViewBags(settings, "index");
-
-            if (settings.RoleId == UserRole.Admin)
-            {
-                var allPayments = await _applicationReportService.PaymentsSummary();
-
-                return View("AllPayments", allPayments);
-            }
-
-            var allAwaitngApproval = await _applicationReportService.PaymentsSummary(settings.UserId);
-
-            return View(allAwaitngApproval.ToList());
-        }
-
-        [HttpPost]
-        [Route("allpayments")]
-        public async Task<IActionResult> Search(string searchTerm = "")
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-
-            await SetViewBags(settings, "index", searchTerm.Trim());
-
-            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
-            {
-                var allPayments = await _applicationReportService.GetAllPaymentsAsync(searchTerm.Trim());
-
-                return View("AllPayments", allPayments);
-            }
-
-            var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, searchTerm.Trim());
-
-            return View("AllPayments", allPaymentsByUser);
-        }
-
         [HttpPost]
         [Route("orders")]
         public async Task<IActionResult> SearchDashBoard(string searchTerm = "")
@@ -532,7 +415,6 @@ namespace Ranalo.Controllers
 
             return View(dealerUsers);
         }
-
 
         [Route("adduser")]
         public async Task<IActionResult> AddUser()

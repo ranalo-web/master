@@ -104,6 +104,8 @@ if (runWooTask)
     //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
     //builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
     //builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
+    //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+    //builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
 }
 else
 {

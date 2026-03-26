@@ -9,6 +9,8 @@ using Ranalo.SumsungKnox;
 using Ranalo.SumsungKnox.Models;
 using Ranalo.VeriTechClient;
 using Ranalo.Woocommece.Api.DataStore;
+using Ranalo.Woocommece.Api.Models;
+using Ranalo.Woocommece.Api.Services;
 using System;
 
 namespace Ranalo.Services
@@ -19,15 +21,18 @@ namespace Ranalo.Services
         private readonly IVeritechApiClient _veriTechClient;
         private readonly IKnoxGuardClient _knoxGuardClient;
         private readonly IKosePaymentsRepository _kosePaymentsRepository;
+        private readonly ISyncService _syncService;
         public EnrolmentService(IEnrolmentRepository enrolmentRepository, 
             IVeritechApiClient veriTechClient, 
             IKnoxGuardClient knoxGuardClient,
-            IKosePaymentsRepository kosePaymentsRepository)
+            IKosePaymentsRepository kosePaymentsRepository,
+            ISyncService syncService)
         {
             _enrolmentRepository = enrolmentRepository;
             _veriTechClient = veriTechClient;
             _knoxGuardClient = knoxGuardClient;
             _kosePaymentsRepository = kosePaymentsRepository;
+            _syncService = syncService;
         }
 
         public async Task<Enrolment> CreateEnrolmentasync(Enrolment newEnrolment, CustomerDetails? order)
@@ -59,47 +64,61 @@ namespace Ranalo.Services
 
             await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
 
-            // Call Knox and approve the device.
-            var deviceToApprove = new ApproveDeviceRequest()
+            _ = Task.Run(async () =>
             {
-                DeviceUid = newEnrolment.IMEI,
-                ApproveId = enroll.Data.Transaction_Id, //"vkdp302411utid",
-                ApproveComment = $"Approval for Order - {newEnrolment.OrderId}"
-            };
+                try
+                {
+                    // Call Knox and approve the device.
+                    var deviceToApprove = new ApproveDeviceRequest()
+                    {
+                        DeviceUid = newEnrolment.IMEI,
+                        ApproveId = enroll.Data.Transaction_Id, //"vkdp302411utid",
+                        ApproveComment = $"Approval for Order - {newEnrolment.OrderId}"
+                    };
 
-            try
-            {
-                var approvedDevice = await _knoxGuardClient.ApproveDeviceAsync(deviceToApprove);
+                    var approvedDevice = await _knoxGuardClient.ApproveDeviceAsync(deviceToApprove);
 
-                var responseContent = await approvedDevice.Content.ReadAsStringAsync();
-                //Now update Enrolment to Approved
-                newEnrolment.Status = EnrolmentStatus.Approved;
-                newEnrolment.Updated = DateTime.UtcNow;
-                newEnrolment.UpdatedBy = "KNOX";
-                newEnrolment.KnoxResponse = responseContent;
-                await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
+                    var responseContent = await approvedDevice.Content.ReadAsStringAsync();
+                    //Now update Enrolment to Approved
+                    newEnrolment.Status = EnrolmentStatus.Approved;
+                    newEnrolment.Updated = DateTime.UtcNow;
+                    newEnrolment.UpdatedBy = "KNOX";
+                    newEnrolment.KnoxResponse = responseContent;
+                    await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
 
-                await CreateDeviceFromKnox(newEnrolment);
+                    await CreateDeviceFromKnox(newEnrolment);
 
+                }
+                catch (Exception ex)
+                {
+                    newEnrolment.Status = EnrolmentStatus.Error;
+                    newEnrolment.Updated = DateTime.UtcNow;
+                    newEnrolment.UpdatedBy = "KNOX";
+                    newEnrolment.KnoxResponse = ex.Message;
+                    await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
+                }
             }
-            catch (Exception)
+            );
+
+            if(order != null)
             {
-                throw;
+                var newContract = new ContractCreateDto() 
+                { 
+                    AccountNo = order.AccountId.ToString(),
+                    FirstName = order.FirstName,
+                    MpesaDepositRef = order.MpesaDepositRef,
+                    TotalAmount = order.TotalAmount
+                };
+
+                await _syncService.CreateContractSingle(newContract);
             }
+           
             return newEnrolment;
         }
 
         public async Task CreateDeviceFromKnox(Enrolment newEnrolment)
         {
-            //Read device details from Knox
-            var deviceDetails = await _knoxGuardClient.ListDevicesAsync(new ListDevicesRequest
-            {
-                PageNum = 0,
-                PageSize = 20,
-                SortBy = "updateTime",
-                SortOrder = "descending",
-                Search = newEnrolment.IMEI
-            });
+            ListDevicesResponse deviceDetails = await DoFilterDevicesFromKnox(newEnrolment.IMEI);
 
             if (deviceDetails != null && deviceDetails.DeviceList != null && deviceDetails.DeviceList.Any())
             {
@@ -125,6 +144,7 @@ namespace Ranalo.Services
                     AppVersionName = newdevice.FirmwareVersion,
                     CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(newdevice.CreateDate).UtcDateTime.ToString("dd-MM-yy HH:mm:ss 'UTC'"),
                     IsActivated = true,
+                    LastConnectedAt = DateTimeOffset.FromUnixTimeMilliseconds(newdevice.LastSeen).UtcDateTime.ToString("dd-MM-yy HH:mm:ss 'UTC'"),
                     IsLockedOnSimSwap = newdevice.IsSimControlLocked,
                     EnrollmentStatus = newdevice.Status == "Enrolled" ? "Completed" : "Failed",
                     EnrolledOn = newEnrolment.ApprovedDate.ToString("dd-MM-yy HH:mm:ss 'UTC'"),
@@ -136,6 +156,19 @@ namespace Ranalo.Services
                 await _kosePaymentsRepository.SaveDeviceToDatabaseAsync(deviceToDb);
 
             }
+        }
+
+        private async Task<ListDevicesResponse> DoFilterDevicesFromKnox(string imei)
+        {
+            //Read device details from Knox
+            return await _knoxGuardClient.ListDevicesAsync(new ListDevicesRequest
+            {
+                PageNum = 0,
+                PageSize = 20,
+                SortBy = "updateTime",
+                SortOrder = "descending",
+                Search = imei
+            });
         }
 
         private bool SetLockedByRelock(long? relockTimestamp)
@@ -193,6 +226,7 @@ namespace Ranalo.Services
                 existingEnrolment.Status = EnrolmentStatus.Approved;
                 existingEnrolment.Updated = DateTime.UtcNow;
                 existingEnrolment.UpdatedBy = "KNOX";
+                existingEnrolment.ApprovedDate = DateTime.UtcNow;
                 existingEnrolment.KnoxResponse = responseContent;
                 await _enrolmentRepository.UpdateEnrolmentAsync(existingEnrolment);
             }

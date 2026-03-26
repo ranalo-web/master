@@ -7,8 +7,13 @@ namespace Ranalo.DataStore
 {
     public interface IApplicationReportRepository
     {
-        Task<KosePaymentsViewModel> GetAllPaymentsAsync(string searchTerm = "", int page = 1, int pageSize = 10);
+        #region Payments
+        Task<KosePaymentsViewModel> GetAllPaymentsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10);
+        Task<PaymentsSummaryTotalsViewModel> GetPaymentsSummaryAsync(string searchTerm = "", int page = 1, int pageSize = 10);
         Task<KosePaymentsViewModel> GetAllPaymentsByDealerIdAsync(int dealerId, string searchTerm = "", int page = 1, int pageSize = 10);
+
+        Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "");
+        #endregion
 
         Task<AwaitingApprovalViewModel> GetAllWaitingApprovalAsync(string searchTerm = "", int page = 1, int pageSize = 10);
         Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int dealerId, string searchTerm, int page, int pageSize);
@@ -29,7 +34,7 @@ namespace Ranalo.DataStore
         Task<AccountSummary?> GetPaymentSummaryForAccountId(string accountNo);
         Task<string?> GetCustomerAccountByMpesa(string mpesaDepositRef);
         Task<AccountSummary?> GetAccountSummary(string customerAccount);
-        Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "");
+        
         Task CreateCustomerNote(CustomerNote newNote);
         Task<List<CustomerNote>> GetNotesByOrderId(long orderId);
         Task<WooOrderProduct?> GetProductDetailsForOrder(long orderId);

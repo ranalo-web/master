@@ -550,21 +550,51 @@ namespace Ranalo.DataStore
         {
             var offset = (page - 1) * pageSize;
 
-            var countSql = @"SELECT COUNT(*)
+            var countSql = @"WITH PaymentsNoDevice AS (
+                            SELECT kp.*
                             FROM KosePayments kp
-                        LEFT JOIN Devices D ON D.Id = kp.AccountNoBigint
-                        LEFT JOIN [dbo].[OrphanedPayments] OP ON OP.AccountNoBigint = kp.AccountNoBigint
-                        WHERE D.Id is null
-                        AND OP.AccountNoBigint IS NULL";
+                            WHERE NOT EXISTS (
+                                SELECT 1 
+                                FROM Devices d 
+                                WHERE d.Id = kp.AccountNoBigint
+                            )
+                        ),
+                        PaymentsLinkedToOrphaned AS (
+                            SELECT pnd.*, op.AccountNoBigint AS OrphanedAccountNoBigint
+                            FROM PaymentsNoDevice pnd
+                            LEFT JOIN OrphanedPayments op 
+                                ON op.OrphanedAccountNo = pnd.AccountNo
+                        )
+                        SELECT COUNT(*)
+                        FROM PaymentsLinkedToOrphaned plo
+                        LEFT JOIN Devices d 
+                            ON d.Id = plo.OrphanedAccountNoBigint
+                        WHERE d.Id IS NULL;";
 
-            var sql = @"SELECT kp.MpesaCode, kp.AccountNo, kp.AmountValue, kp.PaymentDateValue 
-                        FROM KosePayments kp
-                        LEFT JOIN Devices D ON D.Id = kp.AccountNoBigint
-                        LEFT JOIN [dbo].[OrphanedPayments] OP ON OP.AccountNoBigint = kp.AccountNoBigint
-                        WHERE D.Id is null
-                        AND OP.AccountNoBigint IS NULL
-                        --AND D.[Status] = 'enrolled'
-                        ORDER BY kp.PaymentDateValue desc
+            var sql = @"WITH PaymentsNoDevice AS (
+                            -- Step 1: payments with no matching device
+                            SELECT kp.*
+                            FROM KosePayments kp
+                            WHERE NOT EXISTS (
+                                SELECT 1 
+                                FROM Devices d 
+                                WHERE d.Id = kp.AccountNoBigint
+                            )
+                        ),
+                        PaymentsLinkedToOrphaned AS (
+                            -- Step 2: link to OrphanedPayments using AccountNo
+                            SELECT pnd.*, op.AccountNoBigint AS OrphanedAccountNoBigint
+                            FROM PaymentsNoDevice pnd
+                            LEFT JOIN OrphanedPayments op 
+                                ON op.OrphanedAccountNo = pnd.AccountNo
+                        )
+                        -- Step 3: remove any payment that now has a device
+                        SELECT plo.*
+                        FROM PaymentsLinkedToOrphaned plo
+                        LEFT JOIN Devices d 
+                            on d.Id = plo.OrphanedAccountNoBigint
+	                        WHERE d.Id IS NULL
+                        ORDER BY plo.PaymentDateValue DESC
                         OFFSET @Offset ROWS 
                         FETCH NEXT @pageSize ROWS ONLY";
 
@@ -581,36 +611,144 @@ namespace Ranalo.DataStore
 
         }
 
-        public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<PaymentsSummaryTotalsViewModel> GetPaymentsSummaryAsync(string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var offset = (page - 1) * pageSize;
 
-            var countsql = @" SELECT COUNT(*) 
-                        FROM KosePayments kp
-                        WHERE (
-                        @SearchTerm IS NULL
-                        OR AccountNo LIKE '%' + @SearchTerm + '%'
-                        OR AmountValue LIKE '%' + @SearchTerm + '%'
-                        OR PaymentDateValue LIKE '%' + @SearchTerm + '%'
-                        OR MpesaCode LIKE '%' + @SearchTerm + '%')
+            var countsql = @" SELECT COUNT(DISTINCT kp.AccountNoBigint)
+                                FROM KosePayments kp
+                                WHERE (
+                                    @SearchTerm IS NULL
+                                    OR kp.AccountNo LIKE '%' + @SearchTerm + '%'
+                                    OR CAST(kp.AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                                    OR CAST(kp.PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                                    OR kp.MpesaCode LIKE '%' + @SearchTerm + '%'
+                                );
                         ";
 
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
             var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { SearchTerm = searchParam });
 
-            var sql = @" SELECT MpesaCode, AccountNo, AmountValue, PaymentDateValue, Imported 
-                        FROM KosePayments kp
-                        WHERE (
-                        @SearchTerm IS NULL
-                        OR AccountNo LIKE '%' + @SearchTerm + '%'
-                        OR AmountValue LIKE '%' + @SearchTerm + '%'
-                        OR PaymentDateValue LIKE '%' + @SearchTerm + '%'
-                        OR MpesaCode LIKE '%' + @SearchTerm + '%')
+            var sql = @" SELECT
+                            a.AccountNoBigint AS Account,
+
+                            totals.TotalPaid,
+
+                            fp.AmountValue AS FirstPayment,
+                            fp.PaymentDateValue AS First,
+
+                            lp.AmountValue AS LastPayment,
+                            lp.PaymentDateValue AS Last
+
+                        FROM
+                        (
+                            SELECT DISTINCT AccountNoBigint
+                            FROM dbo.KosePayments
+                            WHERE AccountNoBigint IS NOT NULL
+                        ) a
+
+                        OUTER APPLY
+                        (
+                            SELECT SUM(AmountValue) AS TotalPaid
+                            FROM dbo.KosePayments kp
+                            WHERE kp.AccountNoBigint = a.AccountNoBigint
+                        ) totals
+
+                        OUTER APPLY
+                        (
+                            SELECT TOP 1
+                                AmountValue,
+                                PaymentDateValue
+                            FROM dbo.KosePayments kp
+                            WHERE kp.AccountNoBigint = a.AccountNoBigint
+                            ORDER BY PaymentDateValue ASC
+                        ) fp
+
+                        OUTER APPLY
+                        (
+                            SELECT TOP 1
+                                AmountValue,
+                                PaymentDateValue
+                            FROM dbo.KosePayments kp
+                            WHERE kp.AccountNoBigint = a.AccountNoBigint
+                            ORDER BY PaymentDateValue DESC
+                        ) lp
+
+                        ORDER BY lp.PaymentDateValue DESC
+                        OFFSET @Offset ROWS 
+                        FETCH NEXT @pageSize ROWS ONLY";
+
+            var payments = await _db.QueryAsync<PaymentsSummaryTotals>(sql, new { SearchTerm = searchParam, offset, pageSize });
+
+            return new PaymentsSummaryTotalsViewModel()
+            {
+                CurrentPage = page,
+                Payments = payments.ToList(),
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+            };
+        }
+
+        public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var offset = (page - 1) * pageSize;
+
+            var countsql = @" SELECT COUNT(*) 
+                                FROM dbo.KosePayments kp
+                                INNER JOIN Devices d 
+                                    ON kp.AccountNoBigint = d.Id
+                                LEFT JOIN Dealers dl 
+                                    ON dl.DealerReference = d.DeviceGroupId
+                                WHERE d.Status = 'enrolled'
+
+                                -- Dealer filter
+                                AND (
+                                    @dealerId IS NULL 
+                                    OR dl.DealerId = @dealerId
+                                )
+                                -- Search filter
+                                AND (
+                                    @SearchTerm IS NULL
+                                    OR kp.AccountNoBigint LIKE '%' + @SearchTerm + '%'
+                                    OR CAST(kp.AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                                    OR CAST(kp.PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                                    OR kp.MpesaCode LIKE '%' + @SearchTerm + '%'
+                                );";
+
+            var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
+            var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { dealerId, SearchTerm = searchParam });
+
+            var sql = @"SELECT kp.[Id]
+                             ,[AccountNo]
+                             ,[MpesaCode]
+                             ,[Amount]
+                             ,[PaymentDate]
+                             ,[AmountValue]
+                             ,[PaymentDateValue]
+                             ,[Created]
+                        FROM [dbo].[KosePayments] kp
+                        INNER JOIN Devices d on kp.AccountNoBigint = d.Id
+                        LEFT JOIN Dealers dl 
+                                    ON dl.DealerReference = d.DeviceGroupId
+                                WHERE d.Status = 'enrolled'
+
+                                -- Dealer filter
+                                AND (
+                                    @dealerId IS NULL 
+                                    OR dl.DealerId = @dealerId
+                                )
+                                -- Search filter
+                                AND (
+                                    @SearchTerm IS NULL
+                                    OR kp.AccountNoBigint LIKE '%' + @SearchTerm + '%'
+                                    OR CAST(kp.AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                                    OR CAST(kp.PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                                    OR kp.MpesaCode LIKE '%' + @SearchTerm + '%'
+                                )
                         ORDER BY PaymentDateValue desc
                         OFFSET @Offset ROWS 
                         FETCH NEXT @pageSize ROWS ONLY";
 
-            var payments = await _db.QueryAsync<KosePayments>(sql, new { SearchTerm = searchParam, offset, pageSize });
+            var payments = await _db.QueryAsync<KosePayments>(sql, new { dealerId, offset, pageSize, SearchTerm = searchParam });
 
             return new KosePaymentsViewModel()
             {
@@ -1279,166 +1417,136 @@ namespace Ranalo.DataStore
             var countQuery = SetPaymentSummaryQuery();
             var totalRecords = await _db.QuerySingleAsync<int>(countQuery, new { DealerId = deviceGroupId, searchParam = searchTerm, AccountId = accountId });
 
-            var sql = @"IF OBJECT_ID('tempdb..#ValidPayments') IS NOT NULL DROP TABLE #ValidPayments;
-                        SELECT 
-                            kp.Id,
-                            COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
-                            kp.MpesaCode,
-                            kp.Amount,
-                            kp.AmountValue,
-                            kp.PaymentDateValue AS PaymentDateValue
-                        INTO #ValidPayments
-                        FROM KosePayments kp
-                        LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode;
-                        
-                        -- Index for performance
-                        CREATE INDEX IX_ValidPayments_AccountNo ON #ValidPayments(AccountNo);
-                        CREATE INDEX IX_ValidPayments_PaymentDate ON #ValidPayments(AccountNo, PaymentDateValue);
-                        
-                        ---------------------------------------------------
-                        -- STEP 2: Compute totals and first/last payments
-                        ---------------------------------------------------
-                        
-						-- 🕒 Payments in last 24 hours
-						IF OBJECT_ID('tempdb..#PTable24hrs') IS NOT NULL DROP TABLE #PTable24hrs;
+            var sql = @";WITH ValidPayments AS
+(
+    SELECT
+        COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
+        kp.MpesaCode,
+        kp.AmountValue,
+        kp.PaymentDateValue
+    FROM KosePayments kp
+    LEFT JOIN OrphanedPayments op 
+        ON op.MpesaCode = kp.MpesaCode
+),
 
-						SELECT 
-							AccountNo,
-							SUM(AmountValue) AS Last24hrPaidAmount
-						INTO #PTable24hrs
-						FROM #ValidPayments
-						WHERE PaymentDateValue >= DATEADD(HOUR, -24, GETDATE())
-						GROUP BY AccountNo;
+PaymentStats AS
+(
+    SELECT
+        AccountNo,
 
-						CREATE INDEX IX_PTable24hrs_AccountNo ON #PTable24hrs(AccountNo);
+        SUM(AmountValue) AS TotalPaid,
 
-                        -- 🕒 Payments in last Week
-						IF OBJECT_ID('tempdb..#PTableWeek') IS NOT NULL DROP TABLE #PTableWeek;
+        SUM(CASE 
+            WHEN PaymentDateValue >= DATEADD(HOUR,-24,GETDATE()) 
+            THEN AmountValue END) AS Last24hrPaidAmount,
 
-						SELECT 
-							AccountNo,
-							SUM(AmountValue) AS LastWeekPaidAmount
-						INTO #PTableWeek
-						FROM #ValidPayments
-						WHERE PaymentDateValue >= DATEADD(DAY, -7, GETDATE())
-						GROUP BY AccountNo;
+        SUM(CASE 
+            WHEN PaymentDateValue >= DATEADD(DAY,-7,GETDATE()) 
+            THEN AmountValue END) AS LastWeekPaidAmount,
 
-						CREATE INDEX IX_PTableWeek_AccountNo ON #PTableWeek(AccountNo);
+        MIN(PaymentDateValue) AS FirstPaidDate,
+        MAX(PaymentDateValue) AS LastPaidDate
+    FROM ValidPayments
+    GROUP BY AccountNo
+),
 
+FirstPayment AS
+(
+    SELECT *
+    FROM
+    (
+        SELECT
+            AccountNo,
+            AmountValue,
+            MpesaCode,
+            PaymentDateValue,
+            ROW_NUMBER() OVER
+            (
+                PARTITION BY AccountNo
+                ORDER BY PaymentDateValue ASC
+            ) rn
+        FROM ValidPayments
+    ) t
+    WHERE rn = 1
+),
 
-                        -- 🧮 Total paid per account
-                        IF OBJECT_ID('tempdb..#PTable1') IS NOT NULL DROP TABLE #PTable1;
-                        SELECT 
-                            AccountNo,
-                            SUM(AmountValue) AS Total_Paid
-                        INTO #PTable1
-                        FROM #ValidPayments
-                        GROUP BY AccountNo;
-                        
-                        CREATE INDEX IX_PTable1_AccountNo ON #PTable1(AccountNo);
-                        
-                        -- 💰 Last payment details
-                        IF OBJECT_ID('tempdb..#PTable4') IS NOT NULL DROP TABLE #PTable4;
-                        SELECT 
-                            v.AccountNo,
-                            v.AmountValue AS Last_Paid_Amount,
-                            v.PaymentDateValue AS LastPaidDate,
-                            v.MpesaCode AS Last_MPesaCode
-                        INTO #PTable4
-                        FROM #ValidPayments v
-                        INNER JOIN (
-                            SELECT AccountNo, MAX(PaymentDateValue) AS Last_Payment_Date
-                            FROM #ValidPayments
-                            GROUP BY AccountNo
-                        ) t3 ON v.AccountNo = t3.AccountNo AND v.PaymentDateValue = t3.Last_Payment_Date;
-                        
-                        CREATE INDEX IX_PTable4_AccountNo ON #PTable4(AccountNo);
-                        
-                        -- 🪙 First payment details
-                        IF OBJECT_ID('tempdb..#PTable5') IS NOT NULL DROP TABLE #PTable5;
-                        SELECT 
-                            v.AccountNo,
-                            v.AmountValue AS First_Paid_Amount,
-                            v.PaymentDateValue AS FirstPaidDate,
-                            v.MpesaCode AS First_MPesaCode
-                        INTO #PTable5
-                        FROM #ValidPayments v
-                        INNER JOIN (
-                            SELECT AccountNo, MIN(PaymentDateValue) AS First_Payment_Date
-                            FROM #ValidPayments
-                            GROUP BY AccountNo
-                        ) t2 ON v.AccountNo = t2.AccountNo AND v.PaymentDateValue = t2.First_Payment_Date;
-                        
-                        CREATE INDEX IX_PTable5_AccountNo ON #PTable5(AccountNo);
-                        
-                        ---------------------------------------------------
-                        -- STEP 3: Combine all precomputed tables
-                        ---------------------------------------------------
-                        IF OBJECT_ID('tempdb..#ContractInfo') IS NOT NULL DROP TABLE #ContractInfo;
-                        
-                        SELECT 
-                            d.Id AS AccountNo, 
-                            ci.TotalAmount,
-                            p1.Total_Paid AS TotalPaid,
-                            p5.FirstPaidDate,
-                            p5.First_Paid_Amount AS FirstPaymentAmount,
-                            p5.First_MPesaCode AS FirstMPesaCode,
-                            p4.LastPaidDate,
-                            p4.Last_Paid_Amount AS LastPaymentAmount,
-							p24.Last24hrPaidAmount,
-                            pWk.LastWeekPaidAmount,
-                            p4.Last_MPesaCode AS LastMPesaCode,
-                            ci.First_Name AS CustomerName,
-                            ci.Daily,
-                            ci.Deposit,
-                            ci.Weekly,
-                            ci.Monthly,
-                            ci.Term_in_Months AS TermsInMonths,
-                            d.Make,
-                            d.Model,
-                            d.LastConnectedAt,
-                            d.Locked,
-                            d.EnrolledOn,
-                            d.DeviceGroupId,
-                            d.[Name],
-                            d.ImeiNo,
-                            d.Status,
-                            d.LockType,
-                            d.NextLockDateIsoFormat,
-                            d.NextLockDate,
-							ci.DebtCollectorUserId,
-                            d.LockGroup
-                        INTO #ContractInfo
-                        FROM Devices d
-                        JOIN #PTable1 p1 ON d.Id = p1.AccountNo
-                        JOIN #PTable5 p5 ON d.Id = p5.AccountNo
-                        JOIN #PTable4 p4 ON d.Id = p4.AccountNo
-                        JOIN Contract_Info ci ON ci.ID = d.Id
-                        AND ci.EndDate IS NULL
-						LEFT JOIN #PTable24hrs p24 ON d.Id = p24.AccountNo						
-                        LEFT JOIN #PTableWeek pWk ON d.Id = pWk.AccountNo
-                        WHERE d.[Status] = 'enrolled';
-                        
-                        CREATE INDEX IX_ContractInfo_AccountNo ON #ContractInfo(AccountNo);
-                        
-                        ---------------------------------------------------
-                        -- STEP 4: Return results
-                        ---------------------------------------------------
-                        SELECT *
-                        FROM #ContractInfo
-                        WHERE (@DealerId = 0
-                            OR DeviceGroupId = @DealerId
-                            )
-                        AND (@AccountId IS NULL
-                            OR AccountNo = @AccountId
-                            )
-                        AND (@searchParam IS NULL
-                            OR AccountNo LIKE '%' + @searchParam + '%'
-                            OR FirstMPesaCode LIKE '%' + @searchParam + '%'                            
-                        				OR FirstMPesaCode LIKE '%' + @searchParam + '%'
-                            OR CustomerName LIKE '%' + @searchParam + '%'  
-                            )
-                        ORDER BY LastPaidDate DESC
+LastPayment AS
+(
+    SELECT *
+    FROM
+    (
+        SELECT
+            AccountNo,
+            AmountValue,
+            MpesaCode,
+            PaymentDateValue,
+            ROW_NUMBER() OVER
+            (
+                PARTITION BY AccountNo
+                ORDER BY PaymentDateValue DESC
+            ) rn
+        FROM ValidPayments
+    ) t
+    WHERE rn = 1
+)
+
+SELECT
+    d.Id AS AccountNo,
+    ci.TotalAmount,
+    ps.TotalPaid,
+
+    fp.PaymentDateValue AS FirstPaidDate,
+    fp.AmountValue AS FirstPaymentAmount,
+    fp.MpesaCode AS FirstMPesaCode,
+
+    lp.PaymentDateValue AS LastPaidDate,
+    lp.AmountValue AS LastPaymentAmount,
+    lp.MpesaCode AS LastMPesaCode,
+
+    ps.Last24hrPaidAmount,
+    ps.LastWeekPaidAmount,
+
+    ci.First_Name AS CustomerName,
+    ci.Daily,
+    ci.Deposit,
+    ci.Weekly,
+    ci.Monthly,
+    ci.Term_in_Months AS TermsInMonths,
+
+    d.Make,
+    d.Model,
+    d.LastConnectedAt,
+    d.Locked,
+    d.EnrolledOn,
+    d.DeviceGroupId,
+    d.Name,
+    d.ImeiNo,
+    d.Status,
+    d.LockType,
+    d.NextLockDateIsoFormat,
+    d.NextLockDate,
+    ci.DebtCollectorUserId,
+    d.LockGroup
+
+FROM Devices d
+JOIN PaymentStats ps ON d.Id = ps.AccountNo
+JOIN FirstPayment fp ON d.Id = fp.AccountNo
+JOIN LastPayment lp ON d.Id = lp.AccountNo
+JOIN Contract_Info ci 
+    ON ci.ID = d.Id
+    AND ci.EndDate IS NULL
+
+WHERE d.Status = 'enrolled'
+AND (@DealerId = 0 OR d.DeviceGroupId = @DealerId)
+AND (@AccountId IS NULL OR d.Id = @AccountId)
+AND (
+    @searchParam IS NULL
+    OR CAST(d.Id AS NVARCHAR(50)) LIKE '%' + @searchParam + '%'
+    OR fp.MpesaCode LIKE '%' + @searchParam + '%'
+    OR ci.First_Name LIKE '%' + @searchParam + '%'
+)
+
+ORDER BY lp.PaymentDateValue DESC
                         	OFFSET @offset ROWS 
                         	FETCH NEXT @pageSize ROWS ONLY;";
 
@@ -1457,29 +1565,37 @@ namespace Ranalo.DataStore
 
         private string SetPaymentSummaryQuery()
         {
-            return @"WITH EnrolledContracts AS (
-    SELECT 
-        d.Id,
-        d.DeviceGroupId,
-        ci.First_Name AS CustomerName
-    FROM Devices d
-    INNER JOIN Contract_Info ci ON ci.ID = d.Id
-    AND ci.EndDate IS NULL
+            return @"SELECT COUNT(*)
+FROM
+(
+    SELECT kp.AccountNoBigint
+    FROM KosePayments kp
+
+    JOIN Devices d 
+        ON d.Id = kp.AccountNoBigint
+
+    JOIN Contract_Info ci 
+        ON ci.ID = d.Id
+        AND ci.EndDate IS NULL
+
     WHERE d.Status = 'enrolled'
-)
-SELECT COUNT(DISTINCT kp.AccountNoBigint) AS ActiveAccountCount
-FROM KosePayments kp
-JOIN EnrolledContracts ec 
-    ON ec.Id = kp.AccountNoBigint
-WHERE kp.AccountNoBigint IS NOT NULL
-  AND (@DealerId = 0 OR ec.DeviceGroupId = @DealerId)
-  AND (@AccountId IS NULL OR kp.AccountNoBigint = @AccountId)
-  AND (
+
+    AND (@DealerId = 0 OR d.DeviceGroupId = @DealerId)
+
+    AND (@AccountId IS NULL OR kp.AccountNoBigint = @AccountId)
+
+    AND (
         @searchParam IS NULL
-        OR CAST(kp.AccountNoBigint AS NVARCHAR(50)) LIKE '%' + @searchParam + '%'
+        OR ci.First_Name LIKE '%' + @searchParam + '%'
         OR kp.MpesaCode LIKE '%' + @searchParam + '%'
-        OR ec.CustomerName LIKE '%' + @searchParam + '%'
-      );";
+        OR (
+            ISNUMERIC(@searchParam) = 1
+            AND kp.AccountNoBigint = CAST(@searchParam AS BIGINT)
+        )
+    )
+
+    GROUP BY kp.AccountNoBigint
+) t;";
         }
 
         public async Task CreateCustomerNote(CustomerNote newNote)
@@ -2109,19 +2225,23 @@ WHERE kp.AccountNoBigint IS NOT NULL
         {
             var offset = (page - 1) * pageSize;
 
-            var countSql = @"SELECT COUNT(*)
-                            FROM OrphanedPayments
-                            WHERE (
-                        @SearchTerm IS NULL
-                        OR MpesaCode LIKE '%' + @SearchTerm + '%'
-                        OR AccountNo LIKE '%' + @SearchTerm + '%'
-                        OR OrphanedAccountNo LIKE '%' + @SearchTerm + '%')";
+            var countSql = @"SELECT Count(*)
+                                FROM [dbo].[OrphanedPayments] op
+                                INNER JOIN Devices d 
+                                ON d.Id = op.AccountNoBigint
+                                  WHERE (
+                                @SearchTerm IS NULL
+                                OR MpesaCode LIKE '%' + @SearchTerm + '%'
+                                OR AccountNo LIKE '%' + @SearchTerm + '%'
+                                OR OrphanedAccountNo LIKE '%' + @SearchTerm + '%')";
 
             var sql = @" SELECT [OrphanedAccountNo] AS OrphanedAccountNo
                             ,[MpesaCode] AS MpesaCode
                             ,[AccountNo] AS AccountNo
                             ,[DateCreated] AS PaymentDateValue
-                        FROM [dbo].[OrphanedPayments]
+                        FROM [dbo].[OrphanedPayments] op
+                        INNER JOIN Devices d 
+                        ON d.Id = op.AccountNoBigint
                           WHERE (
                         @SearchTerm IS NULL
                         OR MpesaCode LIKE '%' + @SearchTerm + '%'

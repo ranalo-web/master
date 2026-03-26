@@ -34,6 +34,7 @@ namespace Ranalo.Models
         public string? VeriTechMessage { get; set; }
         public long? VeriTechCode { get; set; }
         public string? KnoxResponse { get; set; }
+        //public string? DepositMpesa { get; set; }
     }
 
     public enum EnrolmentStatus
@@ -41,6 +42,7 @@ namespace Ranalo.Models
             New = 0,
             Pending = 1,
             Approved = 2,
-            Locked = 3
+            Locked = 3,
+            Error = 4
     }
 }

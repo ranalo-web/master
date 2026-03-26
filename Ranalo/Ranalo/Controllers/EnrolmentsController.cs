@@ -78,6 +78,10 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
+            //var imei = "352801608547712";
+            //var enrolment = await _enrolmentService.GetByImeiNumberAsync(imei);
+            //await _enrolmentService.CreateDeviceFromKnox(enrolment);
+
             await SetViewBags(settings, "index");
 
             return View(new EnrolmentViewModel() { Enrolments = new List<Enrolment>() });

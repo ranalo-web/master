@@ -65,9 +65,16 @@ namespace Ranalo.Services
             return result.ToList();
         }
 
-        public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<PaymentsSummaryTotalsViewModel> GetPaymentsSummaryAsync(string searchTerm = "", int page = 1, int pageSize = 10)
         {
-            var result = await _applicationReportRepository.GetAllPaymentsAsync(searchTerm, page, pageSize);
+            var result = await _applicationReportRepository.GetPaymentsSummaryAsync(searchTerm, page, pageSize);
+            return result;
+
+        }
+
+        public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var result = await _applicationReportRepository.GetAllPaymentsAsync(dealerId, searchTerm, page, pageSize);
             return result;
 
         }
@@ -85,39 +92,10 @@ namespace Ranalo.Services
             return dealerPayments;
         }
 
-        public async Task<IEnumerable<PaymentsSummaryTotals>> PaymentsSummary(int? userId = null)
+        public async Task<PaymentsSummaryTotalsViewModel> PaymentsSummary(string searchTerm = "", int page = 1, int pageSize = 10)
         {
-            var payments = new KosePaymentsViewModel();
-            if (userId != null)
-            {
-                payments = await GetAllPaymentsAsync((int)userId);
-            }
-            else
-            {
-                payments = await GetAllPaymentsAsync();
-            }
-                
-            var allOrphaned = await GetOrphanedPaymentsAsync(1, 10000);
-
-            var orphaned = allOrphaned.Payments?.DistinctBy(r => r.MpesaCode).ToList();
-            //.DistinctBy(r => r.MpesaCode).ToList();
-            var merged = from p in payments.Payments
-                         join o in orphaned on p.MpesaCode equals o.MpesaCode into oo
-                         select new { Payment = p, Orphan = oo.FirstOrDefault() };
-
-            //Producing Eddie report
-            var pTotals = merged.GroupBy(m => m.Payment.AccountNo)
-                .Select(g => new PaymentsSummaryTotals
-                {
-                    Account = g.Key,
-                    TotalPaid = g.Sum(m => m.Payment.AmountValue),
-                    First = g.Min(m => m.Payment.PaymentDateValue),
-                    Last = g.Max(m => m.Payment.PaymentDateValue),
-                    FirstPayment = g.OrderBy(m => m.Payment.PaymentDateValue).First().Payment,
-                    LastPayment = g.OrderByDescending(m => m.Payment.PaymentDateValue).First().Payment,
-                });
-
-            return pTotals;
+            var payments = await GetPaymentsSummaryAsync(searchTerm, page, pageSize);
+            return payments;
         }
 
         public async Task<List<Dealer>> GetAllDealersAsync()
@@ -590,7 +568,7 @@ namespace Ranalo.Services
 
         public async Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10)
         {
-            pageSize = 1000; // We nned to use qualifying records logic here
+            //pageSize = 1000; // We nned to use qualifying records logic here
             var allRestructuredRecords = await _applicationReportRepository.GetAllRestructured(searchTerm, page, pageSize);
 
             foreach (var record in allRestructuredRecords.Records)

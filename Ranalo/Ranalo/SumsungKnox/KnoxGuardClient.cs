@@ -42,8 +42,8 @@ namespace Ranalo.SumsungKnox
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             await Task.Delay(3000);
             var response = await _httpClient.PostAsync(endpoint, content);
-            var responseContent = await response.Content.ReadAsStringAsync();
-            response.EnsureSuccessStatusCode();
+            //var responseContent = await response.Content.ReadAsStringAsync();
+            //response.EnsureSuccessStatusCode();
             return response;
         }
 

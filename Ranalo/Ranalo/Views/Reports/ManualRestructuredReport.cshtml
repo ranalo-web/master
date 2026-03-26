@@ -10,6 +10,7 @@
 {
     private string ConvertUTCDate(string dateString)
     {
+        if (string.IsNullOrEmpty(dateString)) return DateTime.MinValue.ToString("dd/MM/yy HH:mm"); ;
         DateTime dt = DateTime.ParseExact(
             dateString,
             "dd-MM-yy HH:mm:ss 'UTC'",
