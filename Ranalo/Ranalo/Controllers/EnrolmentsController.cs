@@ -78,9 +78,9 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            //var imei = "352801608547712";
-            //var enrolment = await _enrolmentService.GetByImeiNumberAsync(imei);
-            //await _enrolmentService.CreateDeviceFromKnox(enrolment);
+            var iemi = "350154840923628";
+            var enrolment = await _enrolmentService.GetByImeiNumberAsync(iemi);
+            await _enrolmentService.CreateDeviceFromKnox(enrolment);
 
             await SetViewBags(settings, "index");
 
@@ -208,18 +208,29 @@ namespace Ranalo.Controllers
                 return View(response);
             }
 
-            var nouvaDevice = await _syncService.DevicePullSearch(enrolment.IMEI);
-            if (nouvaDevice == null)
+            try
             {
-                enrolment = await _enrolmentService.StartEnrolmentasync(enrolment, order);
+                var nouvaDevice = await _syncService.DevicePullSearch(enrolment.IMEI);
+                if (nouvaDevice == null)
+                {
+                    enrolment = await _enrolmentService.StartEnrolmentasync(enrolment, order);
+                }
+                else
+                {
+                    enrolment.Status = EnrolmentStatus.Approved;
+                    enrolment.Updated = DateTime.UtcNow;
+                    enrolment.UpdatedBy = "NOUVAPAY";
+                    await _enrolmentService.UpdateEnrolmentasync(enrolment);
+                }
             }
-            else
+            catch (Exception)
             {
-                enrolment.Status = EnrolmentStatus.Approved;
-                enrolment.Updated = DateTime.UtcNow;
-                enrolment.UpdatedBy = "NOUVAPAY";
-                await _enrolmentService.UpdateEnrolmentasync(enrolment);
+
+                response.Errors.Add("There was an sending device to Nouvapay or Knox. Please contact the system administrator.");
+                return View(response);
             }
+
+            
 
             return RedirectToAction("Index");
         }

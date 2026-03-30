@@ -7,6 +7,8 @@ namespace Ranalo.Services
     {
         //Task AddUserAsync(User user);
         //Task<IEnumerable<User>> GetAllUsersAsync();
+
+        Task SuspendUserAsync(int userId);
         Task<User?> LoginUser(string email, string password);
 
         Task<Dealer?> GetDealerByUserId(int userId);

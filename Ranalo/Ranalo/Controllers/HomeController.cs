@@ -472,6 +472,30 @@ namespace Ranalo.Controllers
             return RedirectToAction("Users");
         }
 
+        [Route("suspenduser/{userId:int}")]
+        public async Task<IActionResult> SuspendUserSubmit(int userId)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "index");
+
+            try
+            {
+                await _userService.SuspendUserAsync(userId);
+            }
+            catch (Exception)
+            {
+
+                return RedirectToAction("Users");
+            }
+
+            return RedirectToAction("Users");
+        }
+
         [Route("adddealer")]
         public async Task<IActionResult> AddDealer()
         {

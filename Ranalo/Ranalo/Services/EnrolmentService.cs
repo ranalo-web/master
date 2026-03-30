@@ -46,7 +46,7 @@ namespace Ranalo.Services
         public async Task<Enrolment> StartEnrolmentasync(Enrolment newEnrolment, CustomerDetails? order)
         {
             //Create Enrolment
-            await _enrolmentRepository.CreateEnrolmentAsync(newEnrolment);
+            //await _enrolmentRepository.CreateEnrolmentAsync(newEnrolment);
 
             //Need to Call Veritech to enrol a device
             var deviceToEnrol = new List<string>() { newEnrolment.IMEI };
@@ -158,7 +158,7 @@ namespace Ranalo.Services
             }
         }
 
-        private async Task<ListDevicesResponse> DoFilterDevicesFromKnox(string imei)
+        public async Task<ListDevicesResponse> DoFilterDevicesFromKnox(string imei)
         {
             //Read device details from Knox
             return await _knoxGuardClient.ListDevicesAsync(new ListDevicesRequest
@@ -216,6 +216,8 @@ namespace Ranalo.Services
                 ApproveId = existingEnrolment.VeriTechTransId, //"vkdp302411utid",
                 ApproveComment = $"Approval for Order - {existingEnrolment.OrderId}"
             };
+
+            var foo = await _veriTechClient.GetDevicesAsync();
 
             try
             {

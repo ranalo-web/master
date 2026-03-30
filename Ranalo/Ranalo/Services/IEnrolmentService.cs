@@ -1,4 +1,5 @@
 ﻿using Ranalo.Models;
+using Ranalo.SumsungKnox.Models;
 
 namespace Ranalo.Services
 {
@@ -23,5 +24,7 @@ namespace Ranalo.Services
         Task<Enrolment> StartEnrolmentasync(Enrolment newEnrolment, CustomerDetails? order);
 
         Task<Enrolment> UpdateEnrolmentasync(Enrolment newEnrolment);
+
+        Task<ListDevicesResponse> DoFilterDevicesFromKnox(string imei);
     }
 }

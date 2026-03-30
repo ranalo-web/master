@@ -8,5 +8,6 @@
         public DateTime PaymentDateValue { get; set; }
         public string? OrphanedAccountNo { get; set; }
         public bool? Imported { get; set; }
+        public string? FirstName { get; set; }
     }
 }

@@ -693,58 +693,58 @@ namespace Ranalo.DataStore
             var offset = (page - 1) * pageSize;
 
             var countsql = @" SELECT COUNT(*) 
-                                FROM dbo.KosePayments kp
-                                INNER JOIN Devices d 
-                                    ON kp.AccountNoBigint = d.Id
-                                LEFT JOIN Dealers dl 
-                                    ON dl.DealerReference = d.DeviceGroupId
-                                WHERE d.Status = 'enrolled'
-
-                                -- Dealer filter
-                                AND (
-                                    @dealerId IS NULL 
-                                    OR dl.DealerId = @dealerId
-                                )
-                                -- Search filter
-                                AND (
-                                    @SearchTerm IS NULL
-                                    OR kp.AccountNoBigint LIKE '%' + @SearchTerm + '%'
-                                    OR CAST(kp.AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
-                                    OR CAST(kp.PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
-                                    OR kp.MpesaCode LIKE '%' + @SearchTerm + '%'
-                                );";
+                                FROM [dbo].[KosePayments] kp
+                        LEFT JOIN Devices d 
+                            ON kp.AccountNoBigint = d.Id
+                        LEFT JOIN Dealers dl 
+                            ON dl.DealerReference = d.DeviceGroupId
+                        WHERE
+                            -- Dealer filter (only applies if provided)
+                            (
+                                @dealerId IS NULL 
+                                OR dl.DealerId = @dealerId
+                            )
+                            -- Search filter
+                            AND (
+                                @SearchTerm IS NULL
+                                OR kp.AccountNoBigint LIKE '%' + @SearchTerm + '%'
+                                OR CAST(kp.AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                                OR CAST(kp.PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                                OR kp.MpesaCode LIKE '%' + @SearchTerm + '%'
+                            );";
 
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
             var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { dealerId, SearchTerm = searchParam });
 
             var sql = @"SELECT kp.[Id]
-                             ,[AccountNo]
-                             ,[MpesaCode]
-                             ,[Amount]
-                             ,[PaymentDate]
-                             ,[AmountValue]
-                             ,[PaymentDateValue]
-                             ,[Created]
+                            ,[AccountNo]
+                            ,[MpesaCode]
+                            ,[Amount]
+                            ,[PaymentDate]
+                            ,[AmountValue]
+                            ,[PaymentDateValue]
+                            ,[Created]
+                            ,kp.FirstName
                         FROM [dbo].[KosePayments] kp
-                        INNER JOIN Devices d on kp.AccountNoBigint = d.Id
+                        LEFT JOIN Devices d 
+                            ON kp.AccountNoBigint = d.Id
                         LEFT JOIN Dealers dl 
-                                    ON dl.DealerReference = d.DeviceGroupId
-                                WHERE d.Status = 'enrolled'
-
-                                -- Dealer filter
-                                AND (
-                                    @dealerId IS NULL 
-                                    OR dl.DealerId = @dealerId
-                                )
-                                -- Search filter
-                                AND (
-                                    @SearchTerm IS NULL
-                                    OR kp.AccountNoBigint LIKE '%' + @SearchTerm + '%'
-                                    OR CAST(kp.AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
-                                    OR CAST(kp.PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
-                                    OR kp.MpesaCode LIKE '%' + @SearchTerm + '%'
-                                )
-                        ORDER BY PaymentDateValue desc
+                            ON dl.DealerReference = d.DeviceGroupId
+                        WHERE
+                            -- Dealer filter (only applies if provided)
+                            (
+                                @dealerId IS NULL 
+                                OR dl.DealerId = @dealerId
+                            )
+                            -- Search filter
+                            AND (
+                                @SearchTerm IS NULL
+                                OR kp.AccountNoBigint LIKE '%' + @SearchTerm + '%'
+                                OR CAST(kp.AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                                OR CAST(kp.PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                                OR kp.MpesaCode LIKE '%' + @SearchTerm + '%'
+                            )
+                        ORDER BY PaymentDateValue DESC
                         OFFSET @Offset ROWS 
                         FETCH NEXT @pageSize ROWS ONLY";
 

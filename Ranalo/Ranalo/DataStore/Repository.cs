@@ -126,7 +126,7 @@ namespace Ranalo.DataStore
             try
             {
                 return await _context.Users
-                .FirstOrDefaultAsync(u => u.UserId == userId);
+                .FirstOrDefaultAsync(u => u.UserId == userId && u.Status != UserStatus.Suspended);
             }
             catch (Exception)
             {

@@ -41,6 +41,26 @@ namespace Ranalo.Services
             return;
         }
 
+        public async Task SuspendUserAsync(int userId)
+        {
+            var existingUser = await _userRepository.GetByCustomerIdAsync(userId);
+            if (existingUser == null)
+            {
+                return;
+            }
+            else
+            {
+                // Update existing user
+                // You can copy properties from input 'user' to 'existingUser'
+                existingUser.Status = UserStatus.Suspended;
+                // ... copy any other properties you need
+
+                await _userRepository.UpdateUserAsync(existingUser);
+            }
+
+            return;
+        }
+
         public async Task<User?> LoginUser(string email, string password)
         {
             var user = await _userRepository.GetByEmailAndPasswordAsync(email, password);
