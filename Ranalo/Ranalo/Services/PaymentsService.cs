@@ -88,6 +88,11 @@ namespace Ranalo.Services
 
             foreach (var payment in payments)
             {
+                if (!long.TryParse(payment.AccountNumber, out long numericAccount))
+                {
+                    continue;
+                }
+
                 results.Add(new MpesaRecord
                 {
                     AccountNo = payment.AccountNumber,

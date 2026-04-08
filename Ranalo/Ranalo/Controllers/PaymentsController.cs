@@ -34,10 +34,10 @@ namespace Ranalo.Controllers
             catch (Exception)
             {
 
-                return RedirectToAction("AllPayments", "Home");
+                return RedirectToAction("AllPayments", "Payments");
             }
             
-            return RedirectToAction("AllPayments", "Home");
+            return RedirectToAction("AllPayments", "Payments");
         }
 
         [Route("allpayments/{page:int?}")]

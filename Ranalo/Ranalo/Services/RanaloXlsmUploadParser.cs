@@ -23,8 +23,8 @@ namespace Ranalo.Services
             for (int row = headerRow + 1; row <= ws.LastRowUsed().RowNumber(); row++)
             {
                 var receipt = ws.Cell(row, 1).GetString();
-                if (!receipt.StartsWith("UA"))
-                    continue;
+                //if (!receipt.StartsWith("UA"))
+                //    continue;
 
                 var paidInText = ws.Cell(row, 6).GetString();
                 if (string.IsNullOrWhiteSpace(paidInText))
