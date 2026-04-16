@@ -5,6 +5,7 @@
         public string? ObjectId { get; set; }
         public string? DeviceUid { get; set; }
         public string? ApproveId { get; set; }
+        public string? RequestId { get; set; }
 
         public string? Tel { get; set; }
         public bool? EnableFullscreen { get; set; }

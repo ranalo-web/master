@@ -26,5 +26,6 @@ namespace Ranalo.Services
         Task<Enrolment> UpdateEnrolmentasync(Enrolment newEnrolment);
 
         Task<ListDevicesResponse> DoFilterDevicesFromKnox(string imei);
+        Task SendReminderMessage(string imei);
     }
 }

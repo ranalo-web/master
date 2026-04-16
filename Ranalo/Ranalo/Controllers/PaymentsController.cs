@@ -9,13 +9,16 @@ namespace Ranalo.Controllers
         private readonly IPaymentsService _paymentsService;
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
+        private readonly IEnrolmentService _enrolmentService;
         public PaymentsController(IPaymentsService paymentsService,
             IApplicationReportService applicationReportService,
-            IUserService userService)
+            IUserService userService,
+            IEnrolmentService enrolmentService)
         {
             _paymentsService = paymentsService;
             _applicationReportService = applicationReportService;
             _userService = userService;
+            _enrolmentService = enrolmentService;
         }
 
         [HttpPost("upload-payments")]
@@ -50,6 +53,8 @@ namespace Ranalo.Controllers
             }
 
             await SetViewBags(settings, "index", searchTerm.Trim());
+
+            //await _enrolmentService.SendReminderMessage("359063757998542");
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {

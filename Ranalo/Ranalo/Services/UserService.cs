@@ -105,6 +105,11 @@ namespace Ranalo.Services
             return await _userRepository.GetByCustomerIdAsync(userId);
         }
 
+        public async Task<User?> GetUserAnyUserByIdAsync(int userId)
+        {
+            return await _userRepository.GetAnyUserByUserIdAsync(userId);
+        }
+
         public async Task<List<User>> GetUsersByDealerIdAsync(int dealerId)
         {
             var users = await _userRepository.GetUsersByDealerIdAsync(dealerId);

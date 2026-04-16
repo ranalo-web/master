@@ -38,12 +38,13 @@ namespace Ranalo.SumsungKnox
         {
             await PrepareHeadersAsync();
 
-            var json = JsonSerializer.Serialize(body, JsonOptions);
+            var json = JsonSerializer.Serialize(body, JsonOptions).ToLowerInvariant();
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             await Task.Delay(3000);
             var response = await _httpClient.PostAsync(endpoint, content);
             //var responseContent = await response.Content.ReadAsStringAsync();
             //response.EnsureSuccessStatusCode();
+            var responseContent = await response.Content.ReadAsStringAsync();
             return response;
         }
 
@@ -100,7 +101,7 @@ namespace Ranalo.SumsungKnox
             => PostAsync("/kcs/v1.1/kg/devices/lock", request);
 
         public Task<HttpResponseMessage> SendMessageAsync(SendMessageRequest request)
-            => PostAsync("/kcs/v1.1/kg/devices/message", request);
+            => PostAsync("/kcs/v1.1/kg/devices/sendMessage", request);
 
         public async Task<HttpResponseMessage> GetDeviceInfoAsync(string deviceId)
         {

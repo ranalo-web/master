@@ -217,7 +217,7 @@ namespace Ranalo.Services
                 ApproveComment = $"Approval for Order - {existingEnrolment.OrderId}"
             };
 
-            var foo = await _veriTechClient.GetDevicesAsync();
+           // var foo = await _veriTechClient.GetDevicesAsync();
 
             try
             {
@@ -301,5 +301,22 @@ namespace Ranalo.Services
         {
             return await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
         }
+
+        public async Task SendReminderMessage(string imei)
+        {
+            var message = new SendMessageRequest() 
+            { 
+                DeviceUid = imei,
+                Message = "Test Knox Message",
+                //ObjectId = "TestObj",
+                RequestId = "10002",
+                //ApproveId = "24063589",
+                Tel = "0001112233444"
+
+            };
+            var foo = await _knoxGuardClient.SendMessageAsync(message);
+
+
+        }
+        }
     }
-}

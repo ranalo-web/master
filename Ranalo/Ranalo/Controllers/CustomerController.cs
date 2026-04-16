@@ -84,7 +84,7 @@ namespace Ranalo.Controllers
             {
                 foreach (var note in notes)
                 {
-                    var userDetails = await _userService.GetUserByCustomerIdAsync(note.UserId);
+                    var userDetails = await _userService.GetUserAnyUserByIdAsync(note.UserId);
                     if (userDetails.RoleId == UserRole.Dealer)
                     {
                         var dealer = await _userService.GetDealerByUserId(note.UserId);

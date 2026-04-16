@@ -135,6 +135,21 @@ namespace Ranalo.DataStore
             }
 
         }
+
+        public async Task<User?> GetAnyUserByUserIdAsync(int userId)
+        {
+            try
+            {
+                return await _context.Users
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+
+        }
         public async Task<IEnumerable<User>> GetAllUsersAsync()
         {
             try
