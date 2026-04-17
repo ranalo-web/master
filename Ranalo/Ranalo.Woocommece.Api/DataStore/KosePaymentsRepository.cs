@@ -198,96 +198,107 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         public async Task SaveDeviceToDatabaseAsync(Device device)
         {
-            const string insertQuery = @"
-        INSERT INTO [dbo].[Devices]
-           ([Id]
-           ,[Name]
-           ,[ImeiNo]
-           ,[ImeiNo2]
-           ,[SerialNo]
-           ,[IsTv]
-           ,[PhoneNumber]
-           ,[Model]
-           ,[Make]
-           ,[OsVersion]
-           ,[SdkVersion]
-           ,[Status]
-           ,[Locked]
-           ,[LockType]
-           ,[DeviceGroupId]
-           ,[AdminLockType]
-           ,[AdminLocked]
-           ,[AppVersionCode]
-           ,[AppVersionName]
-           ,[CreatedAt]
-           ,[CustomerName]
-           ,[CustomerEmail]
-           ,[CustomerAddress]
-           ,[CustomerPhoneNumber]
-           ,[UnlockCode]
-           ,[ValidityOfUnlockCode]
-           ,[IsActivated]
-           ,[IsLockedOnSimSwap]
-           ,[FirstLockDate]
-           ,[FirstLockDateIsoFormat]
-           ,[NextLockDate]
-           ,[NextLockDateIsoFormat]
-           ,[EulaStatus]
-           ,[EulaActionPerformedOn]
-           ,[LastConnectedAt]
-           ,[GettingStartedButtonClicked]
-           ,[EnrollmentStatus]
-           ,[EnrollmentFailureReason]
-           ,[AdditionalSetupDone]
-           ,[BatteryOptimizationGranted]
-           ,[EnrolledOn]
-           ,[DlcStatus]
-           ,[LockGroup])
-        VALUES (@Id, 
-                @Name, 
-                @ImeiNo, 
-                @ImeiNo2, 
-                @SerialNo, 
-                @IsTv,
-                @PhoneNumber, 
-                @Model,                 
-                @Make, 
-                @OsVersion, 
-                @SdkVersion, 
-                @Status, 
-                @Locked, 
-                @LockType, 
-                @DeviceGroupId, 
-                @AdminLockType, 
-                @AdminLocked, 
-                @AppVersionCode, 
-                @AppVersionName, 
-                @CreatedAt, 
-                @CustomerName, 
-                @CustomerEmail, 
-                @CustomerAddress, 
-                @CustomerPhoneNumber, 
-                @UnlockCode, 
-                @ValidityOfUnlockCode, 
-                @IsActivated,                 
-                @IsLockedOnSimSwap, 
-                @FirstLockDate, 
-                @FirstLockDateIsoFormat, 
-                @NextLockDate, 
-                @NextLockDateIsoFormat, 
-                @EulaStatus, 
-                @EulaActionPerformedOn, 
-                @LastConnectedAt, 
-                @GettingStartedButtonClicked, 
-                @EnrollmentStatus, 
-                @EnrollmentFailureReason, 
-                @AdditionalSetupDone, 
-                @BatteryOptimizationGranted, 
-                @EnrolledOn, 
-                @DlcStatus,
-                @LockGroup)";
+            const string query = @"
+            IF NOT EXISTS (
+                SELECT 1 
+                FROM [dbo].[Devices] 
+                WHERE Id = @Id
+            )
+            BEGIN
+                INSERT INTO [dbo].[Devices]
+                (
+                    [Id],
+                    [Name],
+                    [ImeiNo],
+                    [ImeiNo2],
+                    [SerialNo],
+                    [IsTv],
+                    [PhoneNumber],
+                    [Model],
+                    [Make],
+                    [OsVersion],
+                    [SdkVersion],
+                    [Status],
+                    [Locked],
+                    [LockType],
+                    [DeviceGroupId],
+                    [AdminLockType],
+                    [AdminLocked],
+                    [AppVersionCode],
+                    [AppVersionName],
+                    [CreatedAt],
+                    [CustomerName],
+                    [CustomerEmail],
+                    [CustomerAddress],
+                    [CustomerPhoneNumber],
+                    [UnlockCode],
+                    [ValidityOfUnlockCode],
+                    [IsActivated],
+                    [IsLockedOnSimSwap],
+                    [FirstLockDate],
+                    [FirstLockDateIsoFormat],
+                    [NextLockDate],
+                    [NextLockDateIsoFormat],
+                    [EulaStatus],
+                    [EulaActionPerformedOn],
+                    [LastConnectedAt],
+                    [GettingStartedButtonClicked],
+                    [EnrollmentStatus],
+                    [EnrollmentFailureReason],
+                    [AdditionalSetupDone],
+                    [BatteryOptimizationGranted],
+                    [EnrolledOn],
+                    [DlcStatus],
+                    [LockGroup]
+                )
+                VALUES (
+                    @Id,
+                    @Name,
+                    @ImeiNo,
+                    @ImeiNo2,
+                    @SerialNo,
+                    @IsTv,
+                    @PhoneNumber,
+                    @Model,
+                    @Make,
+                    @OsVersion,
+                    @SdkVersion,
+                    @Status,
+                    @Locked,
+                    @LockType,
+                    @DeviceGroupId,
+                    @AdminLockType,
+                    @AdminLocked,
+                    @AppVersionCode,
+                    @AppVersionName,
+                    @CreatedAt,
+                    @CustomerName,
+                    @CustomerEmail,
+                    @CustomerAddress,
+                    @CustomerPhoneNumber,
+                    @UnlockCode,
+                    @ValidityOfUnlockCode,
+                    @IsActivated,
+                    @IsLockedOnSimSwap,
+                    @FirstLockDate,
+                    @FirstLockDateIsoFormat,
+                    @NextLockDate,
+                    @NextLockDateIsoFormat,
+                    @EulaStatus,
+                    @EulaActionPerformedOn,
+                    @LastConnectedAt,
+                    @GettingStartedButtonClicked,
+                    @EnrollmentStatus,
+                    @EnrollmentFailureReason,
+                    @AdditionalSetupDone,
+                    @BatteryOptimizationGranted,
+                    @EnrolledOn,
+                    @DlcStatus,
+                    @LockGroup
+                );
+            END";
 
-                await _db.ExecuteAsync(insertQuery, device);
+            await _db.ExecuteAsync(query, device);
         }
 
         public async Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords)

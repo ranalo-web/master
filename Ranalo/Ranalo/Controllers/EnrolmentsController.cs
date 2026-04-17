@@ -110,6 +110,38 @@ namespace Ranalo.Controllers
                 await _enrolmentService.ApproveEnrolment(existingEnrolment);
             }
 
+            var updatedEnrolment = await _enrolmentService.GetByImeiNumberAsync(imei);
+
+            if (updatedEnrolment != null && updatedEnrolment.Status == EnrolmentStatus.Approved)
+            {
+                await _enrolmentService.CreateDeviceFromKnox(updatedEnrolment);
+            }
+
+
+            return RedirectToAction("Index", "Enrolments");
+        }
+
+        [Route("create-device/{imei}")]
+        public async Task<IActionResult> CreateKnoxDevice(string imei)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            // Call the approval for IMEI
+            var existingEnrolment = await _enrolmentService.GetByImeiNumberAsync(imei);
+
+            //Test
+            //await _enrolmentService.CreateDeviceFromKnox(existingEnrolment);
+
+
+            if (existingEnrolment != null && existingEnrolment.Status == EnrolmentStatus.Approved)
+            {
+                await _enrolmentService.CreateDeviceFromKnox(existingEnrolment);
+            }
+
 
             return RedirectToAction("Index", "Enrolments");
         }
@@ -231,8 +263,6 @@ namespace Ranalo.Controllers
                 response.Errors.Add("There was an sending device to Nouvapay or Knox. Please contact the system administrator.");
                 return View(response);
             }
-
-            
 
             return RedirectToAction("Index");
         }
