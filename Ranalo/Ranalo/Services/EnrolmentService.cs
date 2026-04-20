@@ -309,7 +309,6 @@ namespace Ranalo.Services
                 DeviceUid = imei,
                 Message = "Test Knox Message",
                 //ObjectId = "TestObj",
-                RequestId = "10002",
                 //ApproveId = "24063589",
                 Tel = "0001112233444"
 
