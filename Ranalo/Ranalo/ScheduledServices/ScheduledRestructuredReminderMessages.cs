@@ -1,6 +1,7 @@
 ﻿using Ranalo.DataStore;
 using Ranalo.Models;
 using Ranalo.Services;
+using Ranalo.SumsungKnox;
 
 namespace Ranalo.ScheduledServices
 {
@@ -35,7 +36,8 @@ namespace Ranalo.ScheduledServices
                         //IPaymentsRepository
                         var reminderService = scope.ServiceProvider.GetRequiredService<IApplicationReportService>();
                         var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository);
+                        var knoxGuardClient = scope.ServiceProvider.GetRequiredService<IKnoxGuardClient>();
+                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, knoxGuardClient);
                         foreach (var order in inactiveUsers)
                         {
                             _logger.LogInformation("Restructured lock Reminder sent to: {user}", order.AccountId);
@@ -59,9 +61,15 @@ namespace Ranalo.ScheduledServices
             _logger.LogInformation("Restructured lock Reminder stopped at: {time}", DateTime.UtcNow);
         }
 
-        public async Task<List<AccountSendMessage>?> Process(IPaymentReminderService syncService, IApplicationReportService reminderService, IPaymentsRepository paymentsRepository)
+        public async Task<List<AccountSendMessage>?> Process(IPaymentReminderService syncService, 
+            IApplicationReportService reminderService, 
+            IPaymentsRepository paymentsRepository,
+            IKnoxGuardClient knoxGuardClient)
         {
-            var records = await reminderService.GetAllRestructured("", 1, 1000); ;
+            var records = await reminderService.GetAllRestructured("", 1, 1000);
+
+            //Remove all fully paid
+            records.Records?.RemoveAll(x => x.Arrears > 0 && x.LoanBalance < 0);
 
             records.Records.RemoveAll(x => x.ArrearsR < 0);
 
@@ -69,6 +77,7 @@ namespace Ranalo.ScheduledServices
             { return null; }
 
             var accountMessages = new List<AccountSendMessage>();
+            var knoxReminders = new List<AccountSendMessage>();
             //Not sure why this removes negative arrears
             //records.Records.RemoveAll(a => a.ArrearsR > 0);
 
@@ -79,15 +88,30 @@ namespace Ranalo.ScheduledServices
                     AccountId = account.AccountNo,
                     FirstName = account.FirstName,
                     NewDaily = account.NewDaily,
-                    AutoLockDatePmtR = account.AutoLockDatePmtR
+                    AutoLockDatePmtR = account.AutoLockDatePmtR,
+                    Imei = account.ImeiNo
                 };
 
-                accountMessages.Add(accountMessage);
+                if (account.LockGroup == 2)
+                {
+                    knoxReminders.Add(accountMessage);
+                }
+                else
+                {
+                    accountMessages.Add(accountMessage);
+                }
+            }
+            if (accountMessages.Any())
+            {
+                var sentMessages = await syncService.RunRemindersAsync(accountMessages, paymentsRepository);
             }
 
-            var sentMessages = await syncService.RunRemindersAsync(accountMessages, paymentsRepository);
+            if (knoxReminders.Any())
+            {
+                await syncService.RunRemindersKnoxAsync(knoxReminders, paymentsRepository, knoxGuardClient);
+            }
 
-            return sentMessages;
+            return accountMessages;
         }
 
         private static decimal SafeDivide(decimal numerator, decimal denominator)

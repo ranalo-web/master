@@ -89,6 +89,9 @@ builder.Services.AddScoped<IWooCommerceService, WooCommerceService>();
 builder.Services.AddScoped<IPaymentsService, PaymentsService>();
 builder.Services.AddScoped<IEnrolmentService, EnrolmentService>();
 builder.Services.AddScoped<IEnrolmentRepository, EnrolmentRepository>();
+builder.Services.AddScoped<ICommissionsReportsService, CommissionsReportsService>();
+builder.Services.AddScoped<ICommissionsRepository, CommissionsRepository>();
+
 //IPaymentsService
 
 //MySql Db connection
@@ -107,9 +110,13 @@ if (runWooTask)
     //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
     //builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
     //builder.Services.AddHostedService<ScheduledLockPaying>();
+    //builder.Services.AddHostedService<ScheduledLockRestructured>();
+    //builder.Services.AddHostedService<ScheduledLockFullyPaid>();
+    //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
 }
 else
 {
+    builder.Services.AddHostedService<ScheduledTaskKnoxDevicesPull>();
     builder.Services.AddHostedService<ScheduledLockFullyPaid>();
     builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
     builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();

@@ -11,6 +11,9 @@ namespace Ranalo.DataStore
         Task<bool> MpesaCodeIsAlreadyLinked(string newMpesa);
         Task<bool> MpesaCodeIsValidAsync(string mpesaCode);
 
+        Task<Device?> GetDeviceByImei(string imei);
+        Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords);
+
         Task<bool> OrderNumberIsValidAsync(long orderId);
         Task<int> UpdateMpesaForOrder(long orderId, string newMpesa);
         Task<Device?> GetDeviceByAccountId(long accountId);

@@ -51,11 +51,12 @@ namespace Ranalo.Woocommece.Api.Services
             {
                 foreach (var order in orders)
                 {
-                    //No Mpesa no honey
-                    //if(string.IsNullOrEmpty(order.MpesaDepositRef))
-                    //{
-                    //    continue;
-                    //}
+                    //We need to remap the Sale Price and Total amount
+                    if (order.DailySalePrice != null && order.DeviceAmount != null)
+                    {
+                        order.TotalAmount = (decimal)order.DeviceAmount;
+                        //deposit = _calculatorService.CalculateSalesDeposit(order.TotalAmount, (decimal)order.DailySalePrice);
+                    }
                     //Check if recor exists
                     var existingOrder = await _wooOrderRepository.GetByOrderIdAsync(order.OrderID);
                     if (existingOrder != null)
@@ -116,8 +117,20 @@ namespace Ranalo.Woocommece.Api.Services
 
         private async Task DoCreateContractInfo(WooOrder order, MpesaRecord account, decimal termsInMonths)
         {
-            var dailyRate = _calculatorService.CalculateDailyRate(order.TotalAmount);
-            var deposit = _calculatorService.CalculateDeposit(order.TotalAmount);
+            decimal dailyRate = 0;
+            decimal deposit = 0;
+            if (order.DailySalePrice != null)
+            {
+                dailyRate = (decimal)order.DailySalePrice;
+                deposit = _calculatorService.CalculateSalesDeposit(order.TotalAmount, (decimal)order.DailySalePrice);
+            }
+            else
+            {
+                dailyRate = _calculatorService.CalculateDailyRate(order.TotalAmount);
+                deposit = _calculatorService.CalculateDeposit(order.TotalAmount);
+            }
+                
+            
             var contract = new ContractInfo()
             {
                 ID = int.Parse(account.AccountNo),
@@ -127,7 +140,8 @@ namespace Ranalo.Woocommece.Api.Services
                 Monthly = 0, //_calculatorService.CalculateMonthlyRate(dailyRate),
                 RePaymentIntervals = "Daily",
                 TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, termsInMonths),
-                TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, termsInMonths)
+                TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, termsInMonths),
+                FirstName = order.FirstName ?? ""
             };
 
             await _kosePaymentsRepository.AddContractAsync(contract);
@@ -154,8 +168,19 @@ namespace Ranalo.Woocommece.Api.Services
 
         public async Task CreateContractSingle(ContractCreateDto order)
         {
-            var dailyRate = _calculatorService.CalculateDailyRate(order.TotalAmount);
-            var deposit = _calculatorService.CalculateDeposit(order.TotalAmount);
+            decimal dailyRate = 0;
+            decimal deposit = 0;
+            if (order.DailySalePrice != null)
+            {
+                dailyRate = (decimal)order.DailySalePrice;
+                deposit = _calculatorService.CalculateSalesDeposit(order.TotalAmount, (decimal)order.DailySalePrice);
+            }
+            else 
+            {
+                dailyRate = _calculatorService.CalculateDailyRate(order.TotalAmount);
+                deposit = _calculatorService.CalculateDeposit(order.TotalAmount);
+            }
+            
             var contract = new ContractInfo()
             {
                 ID = int.Parse(order.AccountNo),
@@ -272,7 +297,7 @@ namespace Ranalo.Woocommece.Api.Services
         public async Task<List<WooOrder>> SyncWooOrders()
         {
             // Start from last sync date or fallback to 3 days ago
-            var iso8601UtcDate = DateTime.UtcNow.AddDays(-2).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var iso8601UtcDate = DateTime.UtcNow.AddDays(-30).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
             var lastLog = await GetLastSycnLogDetails();
             if (lastLog != null)
@@ -767,6 +792,7 @@ namespace Ranalo.Woocommece.Api.Services
         }
         private WooOrder MapOrderFromWoo(JToken value)
         {
+            var products = MapOrderProducts(value);
             return new WooOrder
             {
                 //Id = value.Value<int>(),
@@ -788,11 +814,13 @@ namespace Ranalo.Woocommece.Api.Services
                 CustPhone = value["identity_verification"]?["owners_phone"]?.Value<string?>() ?? "",
                 CustEmail = value["billing"]?["billing_email_of_your_next_of_kin"]?.Value<string?>() ?? "",
                 MpesaDepositRef = value["identity_verification"]?["mpesa_deposit_reference"]?.Value<string?>() ?? value["meta_data"]?["mpesa_deposit_reference"]?.Value<string?>(),
-                Products = MapOrderProducts(value),
+                Products = products,
                 ImagesMetadata = ExtractDocumentMetadata(value["meta_data"].ToString()),
                 NextOfKin = ExtractNextKin(value["id"]?.Value<int?>() ?? 0, value["meta_data"].ToString()),
                 NextOfKin2 = ExtractNextKin2(value["id"]?.Value<int?>() ?? 0, value["meta_data"].ToString()),
-                MetaData = ExtractAllMetadata(value)
+                MetaData = ExtractAllMetadata(value),
+                DailySalePrice = products.Select(p => p.DailySalePrice).FirstOrDefault(p => p.HasValue),
+                DeviceAmount = products.Select(p => p.DeviceAmount).FirstOrDefault(p => p.HasValue)
             };
         }
 
@@ -971,7 +999,7 @@ namespace Ranalo.Woocommece.Api.Services
 
             foreach (var item in jarray)
             {
-                products.Add(new OrderProduct()
+                var productToAdd = new OrderProduct()
                 {
                     //OrderId = orderId,
                     ProductName = item["name"]?.Value<string?>() ?? "",
@@ -981,7 +1009,20 @@ namespace Ranalo.Woocommece.Api.Services
                     Quantity = item["quantity"]?.Value<int?>() ?? 0,
                     ProductId = item["product_id"]?.Value<long?>() ?? 0,
                     Sku = item["sku"]?.Value<string?>() ?? ""
-                });
+                };
+
+                if(productToAdd.ProductColor == null)
+                {
+                    var checkSaleDaily = item["meta_data"]?.FirstOrDefault(x => x["display_key"]?.ToString() == "_rc_daily")?["display_value"]?.Value<decimal>();
+                    var deviceAmount = item["meta_data"]?.FirstOrDefault(x => x["display_key"]?.ToString() == "_rc_line_total")?["display_value"]?.Value<decimal>();
+                    if (checkSaleDaily != null)
+                    {
+                        productToAdd.DailySalePrice = checkSaleDaily;
+                        productToAdd.DeviceAmount = deviceAmount;
+                    }
+                }
+
+                products.Add(productToAdd);
             }
 
             return products;

@@ -24,7 +24,14 @@ namespace Ranalo.Services
             {
                 await _userRepository.CreateUserAsync(user);
             }
-            else
+
+            return;
+        }
+
+        public async Task UpdateUserAsync(User user)
+        {
+            var existingUser = await GetUserByEmail(user.Email);
+            if (existingUser != null)
             {
                 // Update existing user
                 // You can copy properties from input 'user' to 'existingUser'

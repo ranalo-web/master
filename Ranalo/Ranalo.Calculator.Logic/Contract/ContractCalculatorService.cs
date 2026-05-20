@@ -67,6 +67,11 @@ namespace Ranalo.Calculator.Logic.Contract
             return deposit;
         }
 
+        public decimal CalculateSalesDeposit(decimal totalAmount, decimal dailyRate)
+        {
+            return totalAmount - (dailyRate * 365);
+        }
+
         public decimal CalculateDailyRate(decimal totalAmount)
         {
             return Math.Round((0.0066733m * totalAmount) + 8.1015m, 2);

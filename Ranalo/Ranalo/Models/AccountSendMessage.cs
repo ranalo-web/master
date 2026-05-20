@@ -8,5 +8,6 @@
         public decimal NewDaily { get; set; }
         public string? MessageText { get; set; }
         public DateTime AutoLockDatePmtR { get; set; }
+        public string? Imei { get; set; }
     }
 }

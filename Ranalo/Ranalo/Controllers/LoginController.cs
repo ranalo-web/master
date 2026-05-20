@@ -47,6 +47,8 @@ namespace Ranalo.Controllers
                     return RedirectToAction("Index", "Approver");
                 case UserRole.Collector:
                     return RedirectToAction("Index", "Collections");
+                case UserRole.Agent:
+                    return RedirectToAction("Index", "Agents");
                 default:
                     break;
             }
@@ -81,6 +83,7 @@ namespace Ranalo.Controllers
                     ViewBag.IsApprover = user.RoleId == UserRole.Approver;
                     ViewBag.IsDealer = user.RoleId == UserRole.Dealer;
                     ViewBag.IsCollector = user.RoleId == UserRole.Collector;
+                    ViewBag.IsAgent = user.RoleId == UserRole.Agent;
 
 
                     switch (user.RoleId)
@@ -93,6 +96,8 @@ namespace Ranalo.Controllers
                             return RedirectToAction("Index", "Approver");
                         case UserRole.Collector:
                             return RedirectToAction("Index", "Collections");
+                        case UserRole.Agent:
+                            return RedirectToAction("Index", "Agent");
                         default:
                             break;
                     }

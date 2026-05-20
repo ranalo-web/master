@@ -223,6 +223,7 @@ namespace Ranalo.Services
 
                 customerDetails.Arrears = _calculatorService.CalculateArears(customerDetails.Summary.TotalPaid, totalDue);
                 customerDetails.DaysLeft = _calculatorService.CalculateDaysContractEnd(customerDetails.Summary.FirstPaymentDate, (double)customerDetails.Summary.TermsInMonths);
+                customerDetails.Summary.ContractEndDate = _calculatorService.ContractEndDate(customerDetails.Summary.FirstPaymentDate, (double)customerDetails.Summary.TermsInMonths);
                 customerDetails.TotalDue = totalDue;
             }
 
@@ -334,14 +335,15 @@ namespace Ranalo.Services
                         Weekly = payment.Weekly,
                         LoanBalance = _calculatorService.CalculateOutstandingAmount(payment.Deposit, payment.Daily, payment.Weekly, payment.Monthly, payment.TotalPaid, payment.TermsInMonths),
                         TotalLoan = payment.Daily * 30 * payment.TermsInMonths,
-                        NumberDaysLifeTime = _calculatorService.CalculateNoDaysUnit(payment.FirstPaidDate),
+                        NumberDaysLifeTime = _calculatorService.CalculateNoDaysLeft(payment.FirstPaidDate, (double)payment.TermsInMonths),
                         NextLockDate = payment.NextLockDate,
                         Status = payment.Status,
                         LockType = payment.LockType,
                         NextLockDateIsoFormat = payment.NextLockDateIsoFormat,
                         NotPaying90D = _calculatorService.HasNotPaidInLast90Days(payment.LastPaidDate),
                         DebtCollectorUserId = payment.DebtCollectorUserId,
-                        LockGroup = payment.LockGroup
+                        LockGroup = payment.LockGroup,
+                        
 
                     };
                     if (statusRow.Arrears < 0)
@@ -571,41 +573,119 @@ namespace Ranalo.Services
             //pageSize = 1000; // We nned to use qualifying records logic here
             var allRestructuredRecords = await _applicationReportRepository.GetAllRestructured(searchTerm, page, pageSize);
 
+            var accountIds =
+            allRestructuredRecords.Records
+                .Select(r => r.AccountNo)
+                .Distinct()
+                .ToList();
+
+            var summaries =
+                await _applicationReportRepository
+                    .GetPaymentSummariesForAccounts(accountIds);
+
+            var summaryLookup =
+                summaries.ToDictionary(
+                    x => x.AccountId);
+
+
             foreach (var record in allRestructuredRecords.Records)
             {
-                var paymentSummary = await _applicationReportRepository.GetPaymentSummaryForAccountId(record.AccountNo.ToString());
+                if (!summaryLookup.TryGetValue(
+                        (int)record.AccountNo,
+                        out var paymentSummary))
+                    continue;
 
-                var daysRestructured = (DateTime.UtcNow.Date - (DateTime)record.DateAgreed.Date).TotalDays;
+                var daysRestructured =
+                    (DateTime.UtcNow.Date -
+                     record.DateAgreed.Date).TotalDays;
 
-                var due = _calculatorService.CalculateTotalDue(record.AmountRes, 0, 0, 0, record.DateAgreed, paymentSummary.TermsInMonths);
-                var arrears = (record.TotalPaidR - due);
-                record.Arrears = paymentSummary.Arrears;
-                record.Daily = paymentSummary.Daily;
-                record.NewDaily = record.AmountRes;
-                record.LastConnectedAt = paymentSummary.LastConnectedAt;
-                record.LastResPaymentDate = paymentSummary.LastPaymentDate;
-                record.LastPaidAmount = paymentSummary.LastPaidAmount;
-                record.NextLockDate = paymentSummary.NextLockDate;
-                record.PaidLast24Hours = paymentSummary.PaidLast24Hours;
-                record.LockGroup = paymentSummary.LockGroup;
+                var resDue =
+                    _calculatorService.CalculateTotalDue(
+                        record.AmountRes,
+                        0,
+                        0,
+                        0,
+                        record.DateAgreed,
+                        paymentSummary.TermsInMonths);
 
-                if (due <= 0)
+                var accountDue =
+                    _calculatorService.CalculateTotalDue(
+                        paymentSummary.Daily,
+                        paymentSummary.Weekly,
+                        paymentSummary.Monthly,
+                        paymentSummary.Deposit,
+                        paymentSummary.FirstPaymentDate,
+                        paymentSummary.TermsInMonths);
+
+                var arrears =
+                    record.TotalPaidR - resDue;
+
+                record.Arrears = _calculatorService.CalculateArears(paymentSummary.TotalPaid, accountDue);
+
+                record.Daily =
+                    paymentSummary.Daily;
+
+                record.NewDaily =
+                    record.AmountRes;
+
+                record.LastConnectedAt =
+                    paymentSummary.LastConnectedAt;
+
+                record.LastResPaymentDate =
+                    paymentSummary.LastPaymentDate;
+
+                record.LastPaidAmount =
+                    paymentSummary.LastPaidAmount;
+
+                record.NextLockDate =
+                    paymentSummary.NextLockDate;
+
+                record.PaidLast24Hours =
+                    paymentSummary.PaidLast24Hours;
+
+                record.LockGroup =
+                    paymentSummary.LockGroup;
+
+                record.ImeiNo = record.ImeiNo;
+
+                record.LoanBalance = _calculatorService.CalculateOutstandingAmount(paymentSummary.Deposit,
+                    paymentSummary.Daily, paymentSummary.Weekly, paymentSummary.Monthly, paymentSummary.TotalPaid, paymentSummary.TermsInMonths);
+
+                if (resDue <= 0)
                 {
-                    record.AutoLockDatePmtR = DateTime.UtcNow;
-                    record.TotalDueR = (decimal)due;
-                    record.ArrearsR = (decimal)arrears;
-                    record.DaysRestructured = (int)daysRestructured;
+                    record.AutoLockDatePmtR =
+                        DateTime.UtcNow;
+
+                    record.TotalDueR =
+                        (decimal)resDue;
+
+                    record.ArrearsR =
+                        (decimal)arrears;
+
+                    record.DaysRestructured =
+                        (int)daysRestructured;
                 }
                 else
                 {
-                    var unitsLeft = (arrears / record.AmountRes);
-                    var now = DateTime.UtcNow; // Or DateTime.Now depending on your context
-                    var autoLockDatePmt = now.AddSeconds(Convert.ToDouble(unitsLeft * 60 * 60 * 24)); // adds 4.5 days (4 days + 12 hours)
+                    var unitsLeft =
+                        arrears / record.AmountRes;
 
-                    record.AutoLockDatePmtR = autoLockDatePmt;
-                    record.TotalDueR = (decimal)due;
-                    record.ArrearsR = arrears;
-                    record.DaysRestructured = (int)daysRestructured;
+                    var autoLockDatePmt =
+                        DateTime.UtcNow.AddSeconds(
+                            Convert.ToDouble(
+                                unitsLeft * 86400));
+
+                    record.AutoLockDatePmtR =
+                        autoLockDatePmt;
+
+                    record.TotalDueR =
+                        (decimal)resDue;
+
+                    record.ArrearsR =
+                        arrears;
+
+                    record.DaysRestructured =
+                        (int)daysRestructured;
                 }
             }
 

@@ -4,7 +4,7 @@
     {
         public string DeviceGroup { get; set; }
         public int AccountNo { get; set; }
-        public string ImeiNo { get; set; }
+        public string? ImeiNo { get; set; }
         public string FirstName { get; set; }
         public decimal Deposit { get; set; }
         public string RePaymentIntervals { get; set; } = "Daily";

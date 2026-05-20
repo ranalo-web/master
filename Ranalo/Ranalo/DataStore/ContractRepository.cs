@@ -76,6 +76,7 @@ namespace Ranalo.DataStore
                           ,[Total_Cost] as TotalCost
                           ,[First_Name] as FirstName
                           ,TotalAmount
+                          ,[BuyingPrice]
                         FROM Contract_Info
                          WHERE (
                             @SearchTerm IS NULL
@@ -115,7 +116,8 @@ namespace Ranalo.DataStore
                 Total_Loan = @TotalLoan,
                 Total_Cost = @TotalCost,
                 First_Name = @FirstName,
-                [Term_in_Months] = @TermInMonths
+                [Term_in_Months] = @TermInMonths,
+                [BuyingPrice] = @BuyingPrice
             WHERE ID = @ID";
 
             return await _db.ExecuteAsync(sql, contract);

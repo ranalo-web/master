@@ -25,6 +25,7 @@
         public string? NextLockDate { get; set; }
         public string? LastConnectedAt { get; set; }
         public int? LockGroup { get; set; }
+        public string? ImeiNo { get; set; }
 
     }
 }

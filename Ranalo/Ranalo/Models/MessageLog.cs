@@ -10,5 +10,6 @@
         public string? MessageStatus { get; set; }
         public string? MessageError { get; set; }
         public string? PhoneNumber { get; set; }
+        
     }
 }

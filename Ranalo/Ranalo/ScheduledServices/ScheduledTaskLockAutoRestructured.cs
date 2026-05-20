@@ -138,7 +138,7 @@ namespace Ranalo.ScheduledServices
             DateTime nowUtc = DateTime.UtcNow;
 
             // Condition: older OR within next 2 hours
-            return eventUtc < nowUtc || eventUtc <= nowUtc.AddHours(2);
+            return eventUtc < nowUtc || eventUtc <= nowUtc.AddHours(3);
         }
     }
 }

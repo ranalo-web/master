@@ -21,6 +21,9 @@
         public string? DealerRef { get; set; }
         public string? CustPhone { get; set; }
         public string? CustEmail { get; set; }
+        public decimal? DailySalePrice { get; set; }
+        public decimal? DeviceAmount { get; set; }
+
         public DateTime DateSynced { get; set; }
         public string? MpesaDepositRef { get; set; }
         public List<OrderProduct>? Products { get; set; }

@@ -1,6 +1,8 @@
 ﻿using Ranalo.DataStore;
 using Ranalo.Models;
 using Ranalo.Services;
+using Ranalo.SumsungKnox;
+using Ranalo.SumsungKnox.Models;
 using Ranalo.Woocommece.Api.Services;
 
 namespace Ranalo.ScheduledServices
@@ -36,7 +38,8 @@ namespace Ranalo.ScheduledServices
                         //IPaymentsRepository
                         var reminderService = scope.ServiceProvider.GetRequiredService<IApplicationReportService>();
                         var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository);
+                        var knoxGuardClient = scope.ServiceProvider.GetRequiredService<IKnoxGuardClient>();
+                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, knoxGuardClient);
                         foreach (var order in inactiveUsers)
                         {
                             _logger.LogInformation("lock Reminder sent to: {user}", order.AccountId);
@@ -60,7 +63,7 @@ namespace Ranalo.ScheduledServices
             _logger.LogInformation("Live lock Reminder stopped at: {time}", DateTime.UtcNow);
         }
 
-        public async Task<List<AccountSendMessage>?> Process(IPaymentReminderService syncService, IApplicationReportService applicationReportsService, IPaymentsRepository paymentsRepository)
+        public async Task<List<AccountSendMessage>?> Process(IPaymentReminderService syncService, IApplicationReportService applicationReportsService, IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient)
         {
             var records = await applicationReportsService.GetStatusReportByDealer(null, null, 1, 1000, ""); ;
 
@@ -68,7 +71,8 @@ namespace Ranalo.ScheduledServices
             { return null; }
 
             var accountMessages = new List<AccountSendMessage>();
-            records.StatusReports.RemoveAll(a => a.Arrears > 0 && a.LoanBalance < 0);
+            var knoxReminders = new List<AccountSendMessage>();
+            records?.StatusReports?.RemoveAll(a => a.Arrears > 0 && a.LoanBalance < 0);
 
             foreach (var account in records.StatusReports)
             {
@@ -84,15 +88,31 @@ namespace Ranalo.ScheduledServices
                     AccountId = account.AccountNo,
                     FirstName = account.FirstName,
                     NewDaily = account.Daily,
-                    AutoLockDatePmtR = autoLockDatePmt
+                    AutoLockDatePmtR = autoLockDatePmt,
+                    Imei = account.ImeiNo,
                 };
 
-                accountMessages.Add(accountMessage);
+                if(account.LockGroup == 2)
+                {
+                    knoxReminders.Add(accountMessage);
+                }
+                else 
+                {
+                    accountMessages.Add(accountMessage);
+                }
+                    
+            }
+            if(accountMessages.Any())
+            {
+                var sentMessages = await syncService.RunRemindersAsync(accountMessages, paymentsRepository);
             }
 
-            var sentMessages = await syncService.RunRemindersAsync(accountMessages, paymentsRepository);
+            if (knoxReminders.Any())
+            {
+                await syncService.RunRemindersKnoxAsync(knoxReminders, paymentsRepository, knoxGuardClient);
+            }
 
-            return sentMessages;
+            return accountMessages;
         }
 
         private static decimal SafeDivide(decimal numerator, decimal denominator)

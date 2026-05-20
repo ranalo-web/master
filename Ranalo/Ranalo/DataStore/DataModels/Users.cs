@@ -20,5 +20,6 @@ namespace Ranalo.DataStore.DataModels
         public List<string>? OtherSelectedRoles { get; set; }
         public Role Role { get; set; }
         public ICollection<Dealer> Dealers { get; set; } = new List<Dealer>();
+        public int? ParentUserId { get; set; }
     }
 }

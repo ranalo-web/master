@@ -36,44 +36,44 @@ namespace Ranalo.Services
                         })
                     };
 
-                    string jsonBody = JsonSerializer.Serialize(payload);
+                        string jsonBody = JsonSerializer.Serialize(payload);
 
-                    // 3️⃣ Send PATCH request
-                    var request = new HttpRequestMessage(HttpMethod.Patch, "https://app.nuovopay.com/dm/api/v3/devices/unlock.json")
-                    {
-                        Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
-                    };
+                        // 3️⃣ Send PATCH request
+                        var request = new HttpRequestMessage(HttpMethod.Patch, "https://app.nuovopay.com/dm/api/v3/devices/unlock.json")
+                        {
+                            Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
+                        };
 
-                    HttpResponseMessage response = await client.SendAsync(request);
-                    string responseText = await response.Content.ReadAsStringAsync();
+                        HttpResponseMessage response = await client.SendAsync(request);
+                        string responseText = await response.Content.ReadAsStringAsync();
 
-                    // 4️⃣ Parse JSON result
-                    string message = null;
-                    bool? success = null;
+                        // 4️⃣ Parse JSON result
+                        string message = null;
+                        bool? success = null;
 
-                    try
-                    {
-                        using var doc = JsonDocument.Parse(responseText);
-                        var root = doc.RootElement;
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(responseText);
+                            var root = doc.RootElement;
 
-                        if (root.TryGetProperty("message", out var msgProp))
-                            message = msgProp.GetString();
-                        else if (root.TryGetProperty("errors", out var errProp))
-                            message = errProp.ToString();
+                            if (root.TryGetProperty("message", out var msgProp))
+                                message = msgProp.GetString();
+                            else if (root.TryGetProperty("errors", out var errProp))
+                                message = errProp.ToString();
 
-                        if (root.TryGetProperty("success", out var successProp))
-                            success = successProp.GetBoolean();
-                    }
-                    catch
-                    {
-                        message = "Invalid JSON response.";
-                    }
+                            if (root.TryGetProperty("success", out var successProp))
+                                success = successProp.GetBoolean();
+                        }
+                        catch
+                        {
+                            message = "Invalid JSON response.";
+                        }
 
-                    // 5️⃣ Store result in corresponding rows
-                    foreach (var d in slice)
-                        d.Result = message;
+                        // 5️⃣ Store result in corresponding rows
+                        foreach (var d in slice)
+                            d.Result = message;
 
-                    Console.WriteLine($"Batch {batchIdx + 1}/{numBatches}: success={success}, message={message}");
+                        Console.WriteLine($"Batch {batchIdx + 1}/{numBatches}: success={success}, message={message}");
                 }
 
             }

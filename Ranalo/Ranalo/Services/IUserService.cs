@@ -22,6 +22,7 @@ namespace Ranalo.Services
         Task<List<User>> GetAllUsersAsync();
 
         Task AddUserAsync(User user);
+        Task UpdateUserAsync(User user);
 
         Task<User?> GetUserByPasswordAsync(string password);
 

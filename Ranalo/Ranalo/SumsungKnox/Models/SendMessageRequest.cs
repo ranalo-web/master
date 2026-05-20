@@ -18,5 +18,6 @@ namespace Ranalo.SumsungKnox.Models
         public string? Message { get; set; }
         [JsonPropertyName("messageType")]
         public long? MessageType { get; set; }
+        
     }
 }

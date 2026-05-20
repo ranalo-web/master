@@ -48,6 +48,28 @@ namespace Ranalo.DataStore
 
         }
 
+        public async Task<List<PaymentMessage>?> GetAllPaymentsForMessagesAsync()
+        {
+
+            var sql = @"SELECT 
+	                        kp.Id,
+	                        MpesaCode, 
+	                        AccountNoBigint as AccountNo, 
+	                        AmountValue, 
+	                        PaymentDateValue,
+	                        d.ImeiNo as Imei,
+	                        d.LockGroup,
+	                        ISNULL(kp.FirstName, 'Customer') as FirstName
+                        FROM KosePayments kp
+                        LEFT JOIN Devices d on d.Id = kp.AccountNoBigint
+                        WHERE [MessageId] IS NULL 
+                        ORDER BY PaymentDateValue asc";
+
+            var payments = await _db.QueryAsync<PaymentMessage>(sql);
+
+            return payments.ToList();
+        }
+
         public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(int page = 1, int pageSize = 10)
         {
             var offset = (page - 1) * pageSize;

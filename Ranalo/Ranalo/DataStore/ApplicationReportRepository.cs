@@ -1589,8 +1589,8 @@ FROM
         OR ci.First_Name LIKE '%' + @searchParam + '%'
         OR kp.MpesaCode LIKE '%' + @searchParam + '%'
         OR (
-            ISNUMERIC(@searchParam) = 1
-            AND kp.AccountNoBigint = CAST(@searchParam AS BIGINT)
+            TRY_CAST(@searchParam AS bigint) IS NOT NULL
+            AND kp.AccountNoBigint = TRY_CAST(@searchParam AS BIGINT)
         )
     )
 
@@ -2315,6 +2315,130 @@ FROM
 
             var records = await _db.QueryAsync<RestructuredRecord>(sqlSelectAll);
             return records.ToList();
+        }
+
+        public async Task<List<AccountSummary>> GetPaymentSummariesForAccounts(List<long> accountIds)
+        {
+            var sql = @"WITH Payments AS (
+                            SELECT
+                                kp.MpesaCode,
+                                TRY_CAST(kp.Amount AS DECIMAL(18,2)) AS Amount,
+                                kp.AmountValue,
+                                kp.PaymentDateValue,
+                                kp.AccountNoBigint
+                            FROM KosePayments kp
+                            WHERE kp.AccountNoBigint IN @AccountIds
+
+                            UNION ALL
+
+                            SELECT
+                                kp.MpesaCode,
+                                TRY_CAST(kp.Amount AS DECIMAL(18,2)) AS Amount,
+                                kp.AmountValue,
+                                kp.PaymentDateValue,
+                                op.AccountNoBigint
+                            FROM KosePayments kp
+                            INNER JOIN OrphanedPayments op 
+                                ON op.MpesaCode = kp.MpesaCode
+                            WHERE op.AccountNoBigint IN @AccountIds
+                        ),
+
+                        AggregatedPayments AS (
+                            SELECT
+                                AccountNoBigint AS AccountNo,
+
+                                SUM(Amount) AS Total_Paid,
+
+                                MIN(PaymentDateValue) AS First_Payment_Date,
+
+                                MAX(PaymentDateValue) AS Last_Payment_Date,
+
+                                SUM(
+                                    CASE 
+                                        WHEN PaymentDateValue >= DATEADD(HOUR,-24,GETDATE())
+                                        THEN Amount
+                                        ELSE 0
+                                    END
+                                ) AS Total_Last24Hours
+
+                            FROM Payments
+                            GROUP BY AccountNoBigint
+                        ),
+
+                        LastPayment AS (
+                            SELECT p.*
+                            FROM Payments p
+                            INNER JOIN AggregatedPayments a
+                                ON p.AccountNoBigint = a.AccountNo
+                               AND p.PaymentDateValue = a.Last_Payment_Date
+                        ),
+
+                        FirstPayment AS (
+                            SELECT p.*
+                            FROM Payments p
+                            INNER JOIN AggregatedPayments a
+                                ON p.AccountNoBigint = a.AccountNo
+                               AND p.PaymentDateValue = a.First_Payment_Date
+                        )
+
+                        SELECT 
+                            d.Id AS AccountId,
+
+                            lp.PaymentDateValue AS LastPaymentDate,
+
+                            fp.PaymentDateValue AS FirstPaymentDate,
+
+                            fp.Amount AS FirstAmount,
+
+                            lp.AmountValue AS LastPaidAmount,
+
+                            ci.Daily,
+                            ci.Weekly,
+                            ci.Monthly,
+
+                            d.NextLockDateIsoFormat AS NextLockDate,
+
+                            ci.Deposit,
+
+                            ap.Total_Paid AS TotalPaid,
+
+                            ap.Total_Last24Hours AS PaidLast24Hours,
+
+                            ci.First_Name AS FirstName,
+
+                            ci.Term_in_Months AS TermsInMonths,
+
+                            d.LastConnectedAt,
+
+                            d.LockGroup,
+                            d.ImeiNo
+
+                        FROM Devices d
+
+                        INNER JOIN AggregatedPayments ap
+                            ON d.Id = ap.AccountNo
+
+                        LEFT JOIN LastPayment lp
+                            ON d.Id = lp.AccountNoBigint
+
+                        LEFT JOIN FirstPayment fp
+                            ON d.Id = fp.AccountNoBigint
+
+                        INNER JOIN Contract_Info ci
+                            ON d.Id = ci.ID
+                           AND ci.EndDate IS NULL
+
+                        WHERE d.Status = 'enrolled'
+
+                        ORDER BY lp.PaymentDateValue DESC";
+
+            var summaries =
+                await _db.QueryAsync<AccountSummary>(
+                sql,
+                new { AccountIds = accountIds },
+                commandTimeout: 180); // 3 minutes
+
+            return summaries.ToList();
         }
 
         #endregion

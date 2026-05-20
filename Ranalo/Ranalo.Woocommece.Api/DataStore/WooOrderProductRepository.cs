@@ -96,8 +96,6 @@ namespace Ranalo.Woocommece.Api.DataStore
             });
         }
 
-
-
         public async Task<OrderProduct?> GetByIdAsync(int id)
         {
             var sql = "SELECT * FROM [dbo].[Woo_OrderProduct] WHERE Id = @Id";
@@ -279,7 +277,8 @@ namespace Ranalo.Woocommece.Api.DataStore
                         	   wo.MpesaDepositRef, 
                         	   kp.AccountNo, 
                         	   wo.TotalAmount,
-	                           wo.FirstName
+	                           wo.FirstName,
+                               wo.DailySalePrice
                         FROM Woo_Orders wo
                         INNER JOIN KosePayments kp
                             ON kp.MpesaCode = wo.MpesaDepositRef

@@ -1,6 +1,9 @@
 ﻿using Newtonsoft.Json;
 using Ranalo.DataStore;
 using Ranalo.Models;
+using Ranalo.SumsungKnox;
+using Ranalo.SumsungKnox.Models;
+using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -11,7 +14,7 @@ namespace Ranalo.Services
     {
         public PaymentReminderService()
         {
-            
+
         }
 
         public async Task<List<AccountSendMessage>> RunRemindersAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository)
@@ -72,7 +75,7 @@ namespace Ranalo.Services
                 var authToken = Encoding.ASCII.GetBytes(consumerKey);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 client.DefaultRequestHeaders.Add("Authorization", consumerKey);
-                
+
                 foreach (var rec in block)
                 {
                     var name = string.IsNullOrWhiteSpace(rec.FirstName) ? "Customer" : rec.FirstName;
@@ -94,7 +97,7 @@ namespace Ranalo.Services
 
                     if (_sendLive)
                     {
-                        
+
                         // Send POST request (optional mock response)
                         var response = client.PostAsync("https://app.nuovopay.com/dm/api/v1/payment_reminders/send_message.json", content).Result;
                         var resText = response.IsSuccessStatusCode ? response.Content.ReadAsStringAsync().Result : "Response placeholder";
@@ -139,6 +142,68 @@ namespace Ranalo.Services
             }
 
             return records;
+        }
+
+        public async Task<List<AccountSendMessage>> RunKnoxPaymentsSummariesAsync(List<AccountSendMessage> records, 
+            IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient)
+        {
+            try
+            {
+                await ProcessKnoxSummaryBlock(records, paymentsRepository, knoxGuardClient);
+            }
+            catch (Exception)
+            {
+                return new List<AccountSendMessage>();
+            }
+
+            return records;
+        }
+
+        private async Task ProcessKnoxSummaryBlock(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient)
+        {
+            var messages = new List<SendMessageRequest>();
+            var df = new List<MessageLog>();
+
+            foreach (var rec in records)
+            {
+                var message = rec.MessageText;
+                messages.Add(new SendMessageRequest()
+                {
+                    DeviceUid = rec.Imei,
+                    Message = message,
+                    Tel = "0001112233444"
+                });
+            }
+
+            if (messages.Any())
+            {
+
+                foreach (var message in messages)
+                {
+                    var messageResponse = await knoxGuardClient.SendMessageAsync(message);
+                    var responseString = await messageResponse.Content.ReadAsStringAsync();
+
+                    df.Add(new MessageLog()
+                    {
+                        AccountNo = message.DeviceUid,
+                        DateSent = DateTime.UtcNow,
+                        Id = Guid.NewGuid(),
+                        Message = message.Message,
+                        MessageError = responseString,
+                        MessageStatus = "sent",
+                        MessageType = "Summary",
+                        PhoneNumber = ""
+                    });
+                }
+
+            }
+
+            // Print results
+            foreach (var record in df)
+            {
+                await paymentsRepository.CreateMessageLogAsync(record);
+            }
+
         }
 
         private async Task ProcessSummaryBlock(List<AccountSendMessage> block, IPaymentsRepository paymentsRepository)
@@ -228,6 +293,87 @@ namespace Ranalo.Services
             }
         }
 
+        public async Task RunRemindersKnoxAsync(List<AccountSendMessage> knoxReminders, IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient)
+        {
+            // 1️⃣ Use Africa/Nairobi timezone
+            var tz = TimeZoneInfo.FindSystemTimeZoneById("E. Africa Standard Time");
+            //var nairobiNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+            var nairobiNow = DateTime.Now;
+
+            // 2️⃣ Define reference times
+            var timeIn6Hrs = nairobiNow.AddHours(7);
+            var timeIn4Hrs = nairobiNow.AddHours(5);
+            var timeIn2Hrs = nairobiNow.AddHours(3);
+            var timeIn1Hrs = nairobiNow.AddHours(2);
+            var timeIn0Hrs = nairobiNow.AddHours(1);
+
+
+            // 3️⃣ Filter by lock intervals
+            var lock6h = knoxReminders.Where(r => r.AutoLockDatePmtR <= timeIn6Hrs && r.AutoLockDatePmtR >= timeIn4Hrs).ToList();
+            var lock4h = knoxReminders.Where(r => r.AutoLockDatePmtR <= timeIn4Hrs && r.AutoLockDatePmtR >= timeIn2Hrs).ToList();
+            var lock2h = knoxReminders.Where(r => r.AutoLockDatePmtR <= timeIn2Hrs && r.AutoLockDatePmtR >= timeIn1Hrs).ToList();
+            var lock1h = knoxReminders.Where(r => r.AutoLockDatePmtR <= timeIn1Hrs && r.AutoLockDatePmtR >= timeIn0Hrs).ToList();
+            var lock0h = knoxReminders.Where(r => r.AutoLockDatePmtR <= timeIn0Hrs && r.AutoLockDatePmtR >= nairobiNow).ToList();
+            //await ProcessKnoxBlock(knoxReminders, "Friendly reminder: Please ignore this test message. To pay ", paymentsRepository, knoxGuardClient);
+            // 4️⃣ Process blocks
+            await ProcessKnoxBlock(lock6h, "Friendly reminder: Your phone will lock in 6 hours if we don't receive your payment. To pay ", paymentsRepository, knoxGuardClient);
+            await ProcessKnoxBlock(lock4h, "Important reminder: Your phone will lock in 4 hours if we don't receive your payment. To pay ", paymentsRepository, knoxGuardClient);
+            await ProcessKnoxBlock(lock2h, "Urgent reminder: Your phone will lock in 2 hours if we don't receive your payment. To pay ", paymentsRepository, knoxGuardClient);
+            await ProcessKnoxBlock(lock1h, "Final notice: Your phone will lock in a few minutes if we don't receive your payment. To pay ", paymentsRepository, knoxGuardClient);
+            await ProcessKnoxBlock(lock0h, "Final notice: Your phone will lock in a few minutes if we don't receive your payment. To pay ", paymentsRepository, knoxGuardClient);
+        }
+
+        private async Task ProcessKnoxBlock(List<AccountSendMessage> block, string messageSubject, IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient)
+        {
+            var messages = new List<SendMessageRequest>();
+            var df = new List<MessageLog>();
+            foreach (var rec in block)
+            {
+                var name = string.IsNullOrWhiteSpace(rec.FirstName) ? "Customer" : rec.FirstName;
+                var message = $"Dear {name}: {messageSubject}<br>" +
+                              "Paybill 4090703 <br>" +
+                              $"Account No {rec.AccountId}<br>" +
+                              $"Amount to pay {rec.NewDaily}<br>" +
+                              "For assistance please contact us on: 0772 007 007. We're here to help. " +
+                              "If you've already paid, then no further action is needed. Thank you for being a valued customer!";
+
+                messages.Add(new SendMessageRequest()
+                {
+                    DeviceUid = rec.Imei,
+                    Message = message,
+                    Tel = "0001112233444"
+                });
+            }
+
+            if (messages.Any())
+            {
+
+                foreach (var message in messages)
+                {
+                    var messageResponse = await knoxGuardClient.SendMessageAsync(message);
+                    var responseString = await messageResponse.Content.ReadAsStringAsync();
+
+                    df.Add(new MessageLog()
+                    {
+                        AccountNo = message.DeviceUid,
+                        DateSent = DateTime.UtcNow,
+                        Id = Guid.NewGuid(),
+                        Message = message.Message,
+                        MessageError = responseString,
+                        MessageStatus = "sent",
+                        MessageType = "Reminder",
+                        PhoneNumber = ""
+                    });
+                }
+
+            }
+
+            // Print results
+            foreach (var record in df)
+            {
+                await paymentsRepository.CreateMessageLogAsync(record);
+            }
+        }
     }
 
 }

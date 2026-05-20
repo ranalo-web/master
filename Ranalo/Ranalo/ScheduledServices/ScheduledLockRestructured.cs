@@ -64,6 +64,10 @@ namespace Ranalo.ScheduledServices
         {
             var records = await reminderService.GetAllRestructured("", 1, 1000); ;
 
+            //Remove all fully paid
+            records.Records?.RemoveAll(x => x.Arrears > 0 && x.LoanBalance < 0);
+
+
             var qualifying = GetQualifyingRecords(records);
 
             var devicesToLock = new List<LockTransaction>();
@@ -96,7 +100,7 @@ namespace Ranalo.ScheduledServices
                 {
                     devicesToLockKnox.Add(lockDevice);
                 }
-                else
+                if (account.LockGroup == 1)
                 {
                     devicesToLock.Add(lockDevice);
                 }

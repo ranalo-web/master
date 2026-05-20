@@ -70,6 +70,42 @@
                                         </li>
                                     </ul>
                                 </li>
+                                @if (ViewBag.IsAdmin)
+                                {
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="commissions">
+                                            <span class="nk-menu-icon">
+                                                    <em class="icon ni ni-coins"></em>
+                                            </span>
+                                            <span class="nk-menu-text">Commissions</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/commissions">
+                                                    <span class="nk-menu-text">Commissions Summary</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/commissions-dealer-outstanding">
+                                                    <span class="nk-menu-text">Dealer Outstanding</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/commissions-dealer-ready">
+                                                    <span class="nk-menu-text">Dealer Ready To Pay</span>
+                                                </a>
+                                            </li>
+
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/agents-totals">
+                                                    <span class="nk-menu-text">Agents Totals</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+
+                                }
+                               
                                 @if (ViewBag.IsAdmin || ViewBag.IsApprover)
                                 {
                                     <li class="nk-menu-item ">
@@ -111,7 +147,7 @@
                                             </a>
                                         </li>
 
-                                            <li class="nk-menu-item">
+                                        <li class="nk-menu-item">
                                         <a class="nk-menu-link" href="/users">
                                             <span class="nk-menu-icon">
                                                 <em class="icon ni ni-user-list"></em>
@@ -127,6 +163,14 @@
                                         <a class="nk-menu-link " href="/statements">
                                             <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
                                             <span class="nk-menu-text">Statements</span>
+                                        </a>
+                                    </li>
+                                    <li class="nk-menu-item">
+                                        <a class="nk-menu-link" href="/users">
+                                            <span class="nk-menu-icon">
+                                                <em class="icon ni ni-user-list"></em>
+                                            </span>
+                                            <span class="nk-menu-text">Users</span>
                                         </a>
                                     </li>
                                 }

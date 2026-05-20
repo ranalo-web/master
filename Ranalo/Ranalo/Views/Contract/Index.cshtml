@@ -391,7 +391,8 @@
                                                                 data-loan="@report.TotalLoan"
                                                                data-cost="@report.TotalAmount"
                                                                data-term="@report.TermInMonths"
-                                                               data-totalcost="@report.TotalCost">
+                                                               data-totalcost="@report.TotalCost"
+                                                                data-buyingPrice="@report.BuyingPrice">
                                                             <em class="icon ni ni-eye"></em><span>Edit Contract</span></a></li>
                                                             <li><a type="button" href="#add-contract" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Add Contract</span></a></li>
                                                         @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
@@ -525,9 +526,17 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label" for="edit-device">Buying Price</label>
+                                <label class="form-label" for="edit-device">Total Price</label>
                                 <div class="form-control-wrap">
-                                    <input type="number" step="0.01" name="buyingPrice" class="form-control" id="edit-device" required>
+                                    <input type="number" step="0.01" name="totalAmount" class="form-control" id="edit-device" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-buying">Buying Price</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" step="0.01" name="buyingPrice" class="form-control" id="edit-buying" required>
                                 </div>
                             </div>
                         </div>
@@ -689,7 +698,7 @@
                 var name = button.getAttribute('data-name');
                 var deposit = button.getAttribute('data-deposit');
                 var daily = button.getAttribute('data-daily');
-                var interval = button.getAttribute('data-interval');
+                    var buyingPrice = button.getAttribute('data-buyingPrice');
                 var loan = button.getAttribute('data-loan');
                 var totalCost = button.getAttribute('data-totalcost');
                 var cost = button.getAttribute('data-cost');
@@ -708,7 +717,8 @@
                 document.getElementById('edit-daily').value = daily;
                 document.getElementById('edit-loan').value = loan;
                 document.getElementById('edit-device').value = cost;
-                document.getElementById('edit-totalcost').value = totalCost;
+                    document.getElementById('edit-totalcost').value = totalCost;
+                            document.getElementById('edit-buying').value = buyingPrice;
 
         });
 

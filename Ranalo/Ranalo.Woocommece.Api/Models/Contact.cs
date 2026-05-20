@@ -19,5 +19,6 @@
         public decimal TotalAmount { get; set; }
         public string FirstName { get; set; }
         public decimal TermInMonths { get; set; } = 12.00000m;
+        public decimal? DailySalePrice { get; set; }
     }
 }

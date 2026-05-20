@@ -10,5 +10,6 @@ namespace Ranalo.DataStore
         Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page = 1, int pageSize = 10);
 
         Task<List<AccountSummary>> GetLiveQualifyingLockAccounts();
+        Task<List<PaymentMessage>?> GetAllPaymentsForMessagesAsync();
     }
 }

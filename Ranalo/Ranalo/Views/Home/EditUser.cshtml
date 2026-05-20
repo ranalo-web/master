@@ -20,7 +20,7 @@
                 <div class="card-inner">
                     <div class="preview-block">
                         <span class="preview-title-lg overline-title">User Details</span>
-                        <form action="/adduser" class="form-validate" novalidate="novalidate" method="post">
+                        <form action="/updateuser" class="form-validate" novalidate="novalidate" method="post">
                             <div class="row gy-4">
                                 <div class="col-sm-6">
                                     <div class="form-group">
@@ -79,45 +79,57 @@
                                         <div class="form-control-wrap ">
                                             <div class="form-control-select">
                                                 <select name="roleId" class="form-control" id="default-06">
-                                                    <option value="0">Select Role</option>
-                                                    <option value="1">Admin</option>
-                                                    <option value="2">Dealer</option>
-                                                    <option value="3">Customer</option>
-                                                    <option value="4">Supplier</option>
-                                                    <option value="5">Approver</option>
-                                                    <option value="6">Collector</option>
+                                                    @if (ViewBag.IsAdmin)
+                                                    {
+                                                        <option value="1">Admin</option>
+                                                        <option value="2">Dealer</option>
+                                                        <option value="3">Customer</option>
+                                                        <option value="4">Supplier</option>
+                                                        <option value="5">Approver</option>
+                                                        <option value="6">Collector</option>
+                                                        <option value="7">Agent</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="6">Collector</option>
+                                                        <option value="7">Agent</option>
+                                                    }
 
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="form-group">
-                                        <label class="form-label" for="default-06">Select Other Roles</label>
-                                        <div class="form-control-wrap ">
-                                            <div class="custom-control custom-control-lg custom-checkbox">
-                                                <input type="checkbox" name="OtherSelectedRoles" value="Admin" class="custom-control-input" id="customAdmin">
-                                                <label class="custom-control-label" for="customAdmin">Admin </label>
+                                    @if (ViewBag.IsAdmin)
+                                    {
+                                        <div class="form-group">
+                                            <label class="form-label" for="default-06">Select Other Roles</label>
+                                            <div class="form-control-wrap ">
+                                                <div class="custom-control custom-control-lg custom-checkbox">
+                                                    <input type="checkbox" name="OtherSelectedRoles" value="Admin" class="custom-control-input" id="customAdmin">
+                                                    <label class="custom-control-label" for="customAdmin">Admin </label>
+                                                </div>
+                                                <div class="custom-control custom-control-lg custom-checkbox">
+                                                    <input type="checkbox" name="OtherSelectedRoles" value="Dealer" class="custom-control-input" id="customDealer">
+                                                    <label class="custom-control-label" for="customDealer">Dealer </label>
+                                                </div>
+                                                <div class="custom-control custom-control-lg custom-checkbox">
+                                                    <input type="checkbox" name="OtherSelectedRoles" value="Supplier" class="custom-control-input" id="customSupplier">
+                                                    <label class="custom-control-label" for="customSupplier">Supplier </label>
+                                                </div>
+                                                <div class="custom-control custom-control-lg custom-checkbox">
+                                                    <input type="checkbox" name="OtherSelectedRoles" value="Approver" class="custom-control-input" id="customApprover">
+                                                    <label class="custom-control-label" for="customApprover">Approver </label>
+                                                </div>
+                                                <div class="custom-control custom-control-lg custom-checkbox">
+                                                    <input type="checkbox" name="OtherSelectedRoles" value="Collector" class="custom-control-input" id="customCollector">
+                                                    <label class="custom-control-label" for="customCollector">Collector </label>
+                                                </div>
                                             </div>
-                                            <div class="custom-control custom-control-lg custom-checkbox">
-                                                <input type="checkbox" name="OtherSelectedRoles" value="Dealer" class="custom-control-input" id="customDealer">
-                                                <label class="custom-control-label" for="customDealer">Dealer </label>
-                                            </div>
-                                            <div class="custom-control custom-control-lg custom-checkbox">
-                                                <input type="checkbox" name="OtherSelectedRoles" value="Supplier" class="custom-control-input" id="customSupplier">
-                                                <label class="custom-control-label" for="customSupplier">Supplier </label>
-                                            </div>
-                                            <div class="custom-control custom-control-lg custom-checkbox">
-                                                <input type="checkbox" name="OtherSelectedRoles" value="Approver" class="custom-control-input" id="customApprover">
-                                                <label class="custom-control-label" for="customApprover">Approver </label>
-                                            </div>
-                                            <div class="custom-control custom-control-lg custom-checkbox">
-                                                <input type="checkbox" name="OtherSelectedRoles" value="Collector" class="custom-control-input" id="customCollector">
-                                                <label class="custom-control-label" for="customCollector">Collector </label>
-                                            </div>
-                                        </div>
 
-                                    </div>
+                                        </div>
+                                    }
+
                                 </div>
                                 <div class="col-sm-6">
                                     <div class="form-group">

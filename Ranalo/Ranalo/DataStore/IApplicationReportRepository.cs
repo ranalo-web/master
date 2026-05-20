@@ -32,6 +32,7 @@ namespace Ranalo.DataStore
         Task<IEnumerable<ImagesMetadata>> GetIdentityImagesForOrder(long orderId);
 
         Task<AccountSummary?> GetPaymentSummaryForAccountId(string accountNo);
+        Task<List<AccountSummary>>GetPaymentSummariesForAccounts(List<long> accountIds);
         Task<string?> GetCustomerAccountByMpesa(string mpesaDepositRef);
         Task<AccountSummary?> GetAccountSummary(string customerAccount);
         

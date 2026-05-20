@@ -31,7 +31,9 @@
         public decimal LastPaidAmount { get; set; }
         public string? NextLockDate { get; set; }
         public DateTime AutoLockDatePmtR { get; set; }
+        public decimal LoanBalance { get; set; }
 
         public int? LockGroup { get; set; }
+        public string? ImeiNo { get; internal set; }
     }
 }

@@ -1,0 +1,517 @@
+﻿@using Ranalo.Models.ViewModels
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model CommissionsMaster
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Commissions Overview</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Welcome to Commissions Dashboard.</p>
+                </div>
+            </div><!-- .nk-block-head-content -->
+            <div class="nk-block-head-content">
+                <div class="toggle-wrap nk-block-tools-toggle">
+                    <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu"><em class="icon ni ni-more-v"></em></a>
+                    <div class="toggle-expand-content" data-content="pageMenu">
+                        <ul class="nk-block-tools g-3">
+                            <li>
+                                <div class="drodown">
+                                    <a href="#" class="dropdown-toggle btn btn-white btn-dim btn-outline-light" data-bs-toggle="dropdown"><em class="d-none d-sm-inline icon ni ni-calender-date"></em><span><span class="d-none d-md-inline">Last</span> 30 Days</span><em class="dd-indc icon ni ni-chevron-right"></em></a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <ul class="link-list-opt no-bdr">
+                                            <li><a href="#"><span>Last 30 Days</span></a></li>
+                                            <li><a href="#"><span>Last 6 Months</span></a></li>
+                                            <li><a href="#"><span>Last 1 Years</span></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="nk-block-tools-opt"><a href="#" class="btn btn-primary"><em class="icon ni ni-reports"></em><span>Reports</span></a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div><!-- .nk-block-head-content -->
+        </div><!-- .nk-block-between -->
+    </div><!-- .nk-block-head -->
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-xxl-12">
+                <div class="card card-full">
+                    <div class="card-inner">
+                        <div class="card-title-group">
+                            <div class="card-title">
+                                <h6 class="title"><span class="me-2">Accounts</span> <a href="#" class="link d-none d-sm-inline">See All</a></h6>
+                            </div>
+                            <div class="card-tools">
+                                <ul class="card-tools-nav">
+                                    <li><a href="#"><span>Paid</span></a></li>
+                                    <li><a href="#"><span>Pending</span></a></li>
+                                    <li class="active"><a href="#"><span>All</span></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-inner p-0 border-top">
+                        <div class="nk-tb-list nk-tb-orders">
+                            <div class="nk-tb-item nk-tb-head">
+                                <div class="nk-tb-col"><span>Account No.</span></div>
+                                <div class="nk-tb-col tb-col-sm"><span>Customer</span></div>
+                                <div class="nk-tb-col tb-col-md"><span>Date</span></div>
+                                <div class="nk-tb-col tb-col-lg"><span>Dealer</span></div>
+                                <div class="nk-tb-col"><span>Amount</span></div>
+                                <div class="nk-tb-col"><span>Deposit</span></div>
+                                <div class="nk-tb-col"><span>Paid</span></div>
+                                <div class="nk-tb-col"><span>D Thresh</span></div>
+                                <div class="nk-tb-col"><span>D Commission</span></div>
+                                <div class="nk-tb-col"><span>A Commission</span></div>
+                                <div class="nk-tb-col"><span class="d-none d-sm-inline">Eligible</span></div>
+                                <div class="nk-tb-col"><span>&nbsp;</span></div>
+                            </div>
+
+                            @foreach (var commission in Model.FullCommissions.Items)
+                            {
+                                <div class="nk-tb-item">
+                                    <div class="nk-tb-col">
+                                            <span class="tb-lead"><a href="/account-details/@commission.AccountNo">#@commission.AccountNo</a></span>
+                                    </div>
+                                    <div class="nk-tb-col tb-col-sm">
+                                        <div class="user-card">
+                                            <div class="user-avatar user-avatar-sm bg-purple">
+                                                <span>AB</span>
+                                            </div>
+                                            <div class="user-name">
+                                                <span class="tb-lead">@commission.First_Name</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="nk-tb-col tb-col-md">
+                                        <span class="tb-sub">@commission.Created</span>
+                                    </div>
+                                    <div class="nk-tb-col tb-col-lg">
+                                        <span class="tb-sub text-primary">@commission.DeviceGroupId</span>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        <span class="tb-sub tb-amount">@commission.TotalAmount <span>KSE</span></span>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        <span class="tb-sub tb-amount">@commission.Deposit <span>KSE</span></span>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        <span class="tb-sub tb-amount">@commission.TotalPaid <span>KSE</span></span>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        <span class="tb-sub tb-amount">@commission.DealerThreshold <span>KSE</span></span>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        <span class="tb-sub tb-amount">@commission.DealerCommission <span>KSE</span></span>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        <span class="tb-sub tb-amount">@commission.AgentCommission <span>KSE</span></span>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        @if (commission.DealerEligible)
+                                        {
+                                            <span class="badge badge-dot badge-dot-xs bg-success">YES</span>
+                                        }else
+                                        {
+                                            <span class="badge badge-dot badge-dot-xs bg-warning">NO</span>
+                                        }
+
+                                    </div>
+                                    <div class="nk-tb-col nk-tb-col-action">
+                                        <div class="dropdown">
+                                            <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
+                                                <ul class="link-list-plain">
+                                                            <li><a href="#pay-commission"
+                                                               data-bs-toggle="modal"
+                                                                data-id="@commission.ContractID">Pay Commission</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                           
+                        </div>
+                    </div>
+                    <div class="card-inner-sm border-top text-center d-sm-none">
+                        <a href="#" class="btn btn-link btn-block">See History</a>
+                    </div>
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-md-6 col-xxl-4">
+                <div class="card card-full">
+                    <div class="card-inner border-bottom">
+                        <div class="card-title-group">
+                            <div class="card-title">
+                                <h6 class="title">Recent Activities</h6>
+                            </div>
+                            <div class="card-tools">
+                                <ul class="card-tools-nav">
+                                    <li><a href="#"><span>Cancel</span></a></li>
+                                    <li class="active"><a href="#"><span>All</span></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="nk-activity">
+                        <li class="nk-activity-item">
+                            <div class="nk-activity-media user-avatar bg-success"><img src="./images/avatar/c-sm.jpg" alt=""></div>
+                            <div class="nk-activity-data">
+                                <div class="label">Keith Jensen requested to Widthdrawl.</div>
+                                <span class="time">2 hours ago</span>
+                            </div>
+                        </li>
+                        <li class="nk-activity-item">
+                            <div class="nk-activity-media user-avatar bg-warning">HS</div>
+                            <div class="nk-activity-data">
+                                <div class="label">Harry Simpson placed a Order.</div>
+                                <span class="time">2 hours ago</span>
+                            </div>
+                        </li>
+                        <li class="nk-activity-item">
+                            <div class="nk-activity-media user-avatar bg-azure">SM</div>
+                            <div class="nk-activity-data">
+                                <div class="label">Stephanie Marshall got a huge bonus.</div>
+                                <span class="time">2 hours ago</span>
+                            </div>
+                        </li>
+                        <li class="nk-activity-item">
+                            <div class="nk-activity-media user-avatar bg-purple"><img src="./images/avatar/d-sm.jpg" alt=""></div>
+                            <div class="nk-activity-data">
+                                <div class="label">Nicholas Carr deposited funds.</div>
+                                <span class="time">2 hours ago</span>
+                            </div>
+                        </li>
+                        <li class="nk-activity-item">
+                            <div class="nk-activity-media user-avatar bg-pink">TM</div>
+                            <div class="nk-activity-data">
+                                <div class="label">Timothy Moreno placed a Order.</div>
+                                <span class="time">2 hours ago</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-md-6 col-xxl-4">
+                <div class="card card-full">
+                    <div class="card-inner-group">
+                        <div class="card-inner">
+                            <div class="card-title-group">
+                                <div class="card-title">
+                                    <h6 class="title">New Users</h6>
+                                </div>
+                                <div class="card-tools">
+                                    <a href="html/user-list-regular.html" class="link">View All</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner card-inner-md">
+                            <div class="user-card">
+                                <div class="user-avatar bg-primary-dim">
+                                    <span>AB</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="lead-text">Abu Bin Ishtiyak</span>
+                                    <span class="sub-text">info@softnio.com</span>
+                                </div>
+                                <div class="user-action">
+                                    <div class="drodown">
+                                        <a href="#" class="dropdown-toggle btn btn-icon btn-trigger me-n1" data-bs-toggle="dropdown" aria-expanded="false"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <ul class="link-list-opt no-bdr">
+                                                <li><a href="#"><em class="icon ni ni-setting"></em><span>Action Settings</span></a></li>
+                                                <li><a href="#"><em class="icon ni ni-notify"></em><span>Push Notification</span></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner card-inner-md">
+                            <div class="user-card">
+                                <div class="user-avatar bg-pink-dim">
+                                    <span>SW</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="lead-text">Sharon Walker</span>
+                                    <span class="sub-text">sharon-90@example.com</span>
+                                </div>
+                                <div class="user-action">
+                                    <div class="drodown">
+                                        <a href="#" class="dropdown-toggle btn btn-icon btn-trigger me-n1" data-bs-toggle="dropdown" aria-expanded="false"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <ul class="link-list-opt no-bdr">
+                                                <li><a href="#"><em class="icon ni ni-setting"></em><span>Action Settings</span></a></li>
+                                                <li><a href="#"><em class="icon ni ni-notify"></em><span>Push Notification</span></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner card-inner-md">
+                            <div class="user-card">
+                                <div class="user-avatar bg-warning-dim">
+                                    <span>GO</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="lead-text">Gloria Oliver</span>
+                                    <span class="sub-text">gloria_72@example.com</span>
+                                </div>
+                                <div class="user-action">
+                                    <div class="drodown">
+                                        <a href="#" class="dropdown-toggle btn btn-icon btn-trigger me-n1" data-bs-toggle="dropdown" aria-expanded="false"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <ul class="link-list-opt no-bdr">
+                                                <li><a href="#"><em class="icon ni ni-setting"></em><span>Action Settings</span></a></li>
+                                                <li><a href="#"><em class="icon ni ni-notify"></em><span>Push Notification</span></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner card-inner-md">
+                            <div class="user-card">
+                                <div class="user-avatar bg-success-dim">
+                                    <span>PS</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="lead-text">Phillip Sullivan</span>
+                                    <span class="sub-text">phillip-85@example.com</span>
+                                </div>
+                                <div class="user-action">
+                                    <div class="drodown">
+                                        <a href="#" class="dropdown-toggle btn btn-icon btn-trigger me-n1" data-bs-toggle="dropdown" aria-expanded="false"><em class="icon ni ni-more-h"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <ul class="link-list-opt no-bdr">
+                                                <li><a href="#"><em class="icon ni ni-setting"></em><span>Action Settings</span></a></li>
+                                                <li><a href="#"><em class="icon ni ni-notify"></em><span>Push Notification</span></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-lg-6 col-xxl-4">
+                <div class="card h-100">
+                    <div class="card-inner border-bottom">
+                        <div class="card-title-group">
+                            <div class="card-title">
+                                <h6 class="title">Support Requests</h6>
+                            </div>
+                            <div class="card-tools">
+                                <a href="#" class="link">All Tickets</a>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="nk-support">
+                        <li class="nk-support-item">
+                            <div class="user-avatar">
+                                <img src="./images/avatar/a-sm.jpg" alt="">
+                            </div>
+                            <div class="nk-support-content">
+                                <div class="title">
+                                    <span>Vincent Lopez</span><span class="badge badge-dot badge-dot-xs bg-warning ms-1">Pending</span>
+                                </div>
+                                <p>Thanks for contact us with your...</p>
+                                <span class="time">6 min ago</span>
+                            </div>
+                        </li>
+                        <li class="nk-support-item">
+                            <div class="user-avatar bg-purple">
+                                <span>DM</span>
+                            </div>
+                            <div class="nk-support-content">
+                                <div class="title">
+                                    <span>Daniel Moore</span><span class="badge badge-dot badge-dot-xs bg-info ms-1">Open</span>
+                                </div>
+                                <p>We have fixed your issues, please...</p>
+                                <span class="time">2 Hours ago</span>
+                            </div>
+                        </li>
+                        <li class="nk-support-item">
+                            <div class="user-avatar">
+                                <img src="./images/avatar/b-sm.jpg" alt="">
+                            </div>
+                            <div class="nk-support-content">
+                                <div class="title">
+                                    <span>Larry Henry</span><span class="badge badge-dot badge-dot-xs bg-success ms-1">Solved</span>
+                                </div>
+                                <p>Thank you to let me know...</p>
+                                <span class="time">3 Hours ago</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div><!-- .card -->
+            </div><!-- .col -->
+            <div class="col-lg-6 col-xxl-4">
+                <div class="card h-100">
+                    <div class="card-inner border-bottom">
+                        <div class="card-title-group">
+                            <div class="card-title">
+                                <h6 class="title">Notifications</h6>
+                            </div>
+                            <div class="card-tools">
+                                <a href="#" class="link">View All</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-inner">
+                        <div class="timeline">
+                            <h6 class="timeline-head">November, 2019</h6>
+                            <ul class="timeline-list">
+                                <li class="timeline-item">
+                                    <div class="timeline-status bg-primary is-outline"></div>
+                                    <div class="timeline-date">13 Nov <em class="icon ni ni-alarm-alt"></em></div>
+                                    <div class="timeline-data">
+                                        <h6 class="timeline-title">Submitted KYC Application</h6>
+                                        <div class="timeline-des">
+                                            <p>Re-submitted KYC form.</p>
+                                            <span class="time">09:30am</span>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="timeline-item">
+                                    <div class="timeline-status bg-primary"></div>
+                                    <div class="timeline-date">13 Nov <em class="icon ni ni-alarm-alt"></em></div>
+                                    <div class="timeline-data">
+                                        <h6 class="timeline-title">Submitted KYC Application</h6>
+                                        <div class="timeline-des">
+                                            <p>Ishtiyak submitted KYC form.</p>
+                                            <span class="time">09:30am</span>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="timeline-item">
+                                    <div class="timeline-status bg-pink"></div>
+                                    <div class="timeline-date">13 Nov <em class="icon ni ni-alarm-alt"></em></div>
+                                    <div class="timeline-data">
+                                        <h6 class="timeline-title">Submitted KYC Application</h6>
+                                        <div class="timeline-des">
+                                            <p>Re-submitted KYC form.</p>
+                                            <span class="time">09:30am</span>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div><!-- .card -->
+            </div><!-- .col -->
+        </div><!-- .row -->
+    </div><!-- .nk-block -->
+</div>
+
+<div class="modal fade" tabindex="-1" id="pay-commission">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Update Contract</h5>
+                <form action="/update-contract" method="post" class="mt-2">
+                    <input type="hidden" class="form-control" name="deviceId" id="hiddenDeviceId">
+                    <div class="row g-gs">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalFirstName">Customer Name</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" class="form-control" name="firstName" id="modalFirstName" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalDeviceId">Account No.</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" class="form-control" name="displayDeviceId" disabled id="modalDeviceId" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-deposit">Deposit</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" step="0.01" class="form-control" name="deposit" id="edit-deposit" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-device">Buying Price</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" step="0.01" name="buyingPrice" class="form-control" id="edit-device" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-daily">Daily</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" name="daily" step="0.01" class="form-control" id="edit-daily" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-term">Term</label>
+                                <div class="form-control-wrap">
+                                    <select class="form-control" name="term" value="term" id="edit-term">
+                                        <option name="term" value="">Select…</option>
+                                        @for (int i = 12; i <= 24; i++)
+                                        {
+                                                <option value="@i">@i</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-loan">Total Loan</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" name="loan" step="0.01" class="form-control" id="edit-loan" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-totalcost">Total Cost</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" step="0.01" name="cost" class="form-control" id="edit-totalcost" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                                <li>
+                                    <button type="submit" class="btn btn-lg btn-primary">Update Contract</button>
+                                </li>
+                                <li>
+                                    <button type="button" id="btn-calc" class="btn btn-lg btn-secondary">Calculate</button>
+                                </li>
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div><!-- .Edit Modal-Content -->

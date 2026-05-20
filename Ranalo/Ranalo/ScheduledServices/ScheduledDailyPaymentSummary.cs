@@ -3,6 +3,8 @@ using Newtonsoft.Json;
 using Ranalo.DataStore;
 using Ranalo.Models;
 using Ranalo.Services;
+using Ranalo.SumsungKnox;
+using Ranalo.Woocommece.Api.Services;
 using System.Data;
 using System.Globalization;
 using System.Net.Http.Headers;
@@ -63,8 +65,9 @@ namespace Ranalo.ScheduledServices
                     var syncService = scope.ServiceProvider.GetRequiredService<IPaymentReminderService>();
                     var reminderService = scope.ServiceProvider.GetRequiredService<IApplicationReportService>();
                     var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
+                    var knoxGuardClient = scope.ServiceProvider.GetRequiredService<IKnoxGuardClient>();
 
-                    var inactiveUsers = await Process(syncService, reminderService, paymentsRepository);
+                    var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, knoxGuardClient);
 
                     foreach (var order in inactiveUsers)
                     {
@@ -79,7 +82,10 @@ namespace Ranalo.ScheduledServices
 
             _logger.LogInformation("Daily Payment Summary service stopped at {time} (UTC)", DateTime.UtcNow);
         }
-        private async Task<List<AccountSendMessage>?> Process(IPaymentReminderService paymentReminder, IApplicationReportService applicationReportService, IPaymentsRepository paymentsRepository)
+        private async Task<List<AccountSendMessage>?> Process(IPaymentReminderService paymentReminder, 
+            IApplicationReportService applicationReportService, 
+            IPaymentsRepository paymentsRepository, 
+            IKnoxGuardClient knoxGuardClient)
         {
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); ;
 
@@ -97,6 +103,7 @@ namespace Ranalo.ScheduledServices
             autoRestructured?.RemoveAll(x => x.NotPaying90D == true);
 
             var accountMessages = new List<AccountSendMessage>();
+            var knoxReminders = new List<AccountSendMessage>();
             //Not sure why this removes negative arrears
             if (autoRestructured != null && autoRestructured.Any())
             {
@@ -110,15 +117,28 @@ namespace Ranalo.ScheduledServices
                         FirstName = account.FirstName,
                         NewDaily = account.NewDaily,
                         AutoLockDatePmtR = nextLock,
+                        Imei = account.ImeiNo,
                         MessageText = MessageText(account)
                     };
 
-                    accountMessages.Add(accountMessage);
+                    if (account.LockGroup == 2)
+                    {
+                        knoxReminders.Add(accountMessage);
+                    }
+                    else
+                    {
+                        accountMessages.Add(accountMessage);
+                    }
                 }
 
-                var sentMessages = await paymentReminder.RunPaymentsSummariesAsync(accountMessages, paymentsRepository);
-
-                return sentMessages;
+                if (accountMessages.Any())
+                {
+                    var sentMessages = await paymentReminder.RunPaymentsSummariesAsync(accountMessages, paymentsRepository);
+                }
+                if (knoxReminders.Any())
+                {
+                    await paymentReminder.RunKnoxPaymentsSummariesAsync(knoxReminders, paymentsRepository, knoxGuardClient);
+                }
             }
 
             return accountMessages;

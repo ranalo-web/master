@@ -16,6 +16,10 @@ namespace Ranalo.Calculator.Logic.Contract
         decimal CalculateMonthlyRate(decimal dailyRate);
         decimal CalculateWeekleyRate(decimal dailyRate);
 
+        decimal CalculateSalesDeposit(decimal totalAmount, decimal dailyRate);
+
+        DateTime ContractEndDate(DateTime firstPaymentDate, double termInMonths);
+
         decimal CalculateArears(decimal totalPaid, decimal totalDue);
         int CalculateLagDays(DateTime firstPaymentDate, string enrolleOnDate);
 

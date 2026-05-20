@@ -47,38 +47,38 @@ namespace Ranalo.DataStore
             var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerReference, searchTerm });
 
             var sql = @"SELECT DISTINCT 
-    d.Id AS DeviceId,
-    d.DeviceGroupId,
-    dealer.DealerReference AS DealerId,
-    dealer.CompanyName AS DealerName,
-	d.CreatedAt,
-    d.ImeiNo
-FROM Devices d
-LEFT JOIN Dealers dealer
-    ON dealer.DealerReference = d.DeviceGroupId
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM Woo_Orders wo
-	INNER JOIN KosePayments kp2 
-    ON wo.MpesaDepositRef = kp2.MpesaCode
-    WHERE kp2.AccountNoBigint = d.Id
-    AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending')
-)
-AND d.[Status] = 'enrolled'
-AND (
-    @DealerId = 0 OR dealer.DealerReference = @DealerId
-)
-AND d.[Status] = 'enrolled'
-AND (
-    @SearchTerm IS NULL
-    OR d.Id LIKE '%' + @SearchTerm + '%'
-    OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
-    OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
-    OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
-)
-order by d.CreatedAt
-OFFSET @Offset ROWS 
-FETCH NEXT @pageSize ROWS ONLY";
+                    d.Id AS DeviceId,
+                    d.DeviceGroupId,
+                    dealer.DealerReference AS DealerId,
+                    dealer.CompanyName AS DealerName,
+	                d.CreatedAt,
+                    d.ImeiNo
+                FROM Devices d
+                LEFT JOIN Dealers dealer
+                    ON dealer.DealerReference = d.DeviceGroupId
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM Woo_Orders wo
+	                INNER JOIN KosePayments kp2 
+                    ON wo.MpesaDepositRef = kp2.MpesaCode
+                    WHERE kp2.AccountNoBigint = d.Id
+                    AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending')
+                )
+                AND d.[Status] = 'enrolled'
+                AND (
+                    @DealerId = 0 OR dealer.DealerReference = @DealerId
+                )
+                AND d.[Status] = 'enrolled'
+                AND (
+                    @SearchTerm IS NULL
+                    OR d.Id LIKE '%' + @SearchTerm + '%'
+                    OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+                    OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
+                    OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
+                )
+                order by d.CreatedAt
+                OFFSET @Offset ROWS 
+                FETCH NEXT @pageSize ROWS ONLY";
             var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerReference, offset, pageSize, searchTerm });
 
             return new DevicesWithDealerViewModel()
@@ -94,8 +94,8 @@ FETCH NEXT @pageSize ROWS ONLY";
 
         public async Task<(string AccountNo, long? DeviceId)> GetOrderLinksAsync(
             long orderId)
-                {
-                    var sql = @"
+        {
+            var sql = @"
                 SELECT 
                     kp.AccountNo,
                     d.Id AS DeviceId
@@ -157,7 +157,7 @@ FETCH NEXT @pageSize ROWS ONLY";
 
                 return 0;
             }
-            
+
         }
 
         public async Task<long> GetMetaDataByKeyForOrderNumber(int orderNumber, string metadataKey)
@@ -429,6 +429,16 @@ FETCH NEXT @pageSize ROWS ONLY";
             return device;
         }
 
+        public async Task<Device?> GetDeviceByImei(string imei)
+        {
+            var sql = @"SELECT * FROM Devices
+                         WHERE [ImeiNo] = @ImeiNo"
+            ;
+            var device = await _db.QueryFirstOrDefaultAsync<Device>(sql, new { ImeiNo = imei });
+
+            return device;
+        }
+
         public async Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "")
         {
             var offset = (page - 1) * pageSize;
@@ -643,5 +653,24 @@ WHERE kp.AccountNoBigint IS NULL
                 PageSize = pageSize
             };
         }
+
+        public async Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords)
+        {
+            const string updateQuery = @"UPDATE [dbo].[Devices]
+                                            SET [Status] = @Status
+                                               ,[Locked] = @Locked
+                                               ,[LockType] = @LockType
+                                               ,[NextLockDate] = @NextLockDate
+                                               ,[NextLockDateIsoFormat] = @NextLockDateIsoFormat
+                                               ,[LastConnectedAt] = @LastConnectedAt
+                                               ,[EnrollmentStatus] = @EnrollmentStatus
+                                               ,[LastUpdatedDate] = GETDATE()
+                                          WHERE [ImeiNo] = @ImeiNo";
+
+            foreach (var record in groupedRecords)
+            {
+                await _db.ExecuteAsync(updateQuery, record);
+            }
+        }
     }
-}
+    }

@@ -20,5 +20,6 @@ namespace Ranalo.Calculator.Logic.Models
         public decimal TotalCost { get; set; }
         public string FirstName { get; set; }
         public decimal TotalAmount { get; set; }
+        public decimal? BuyingPrice { get; set; }
     }
 }

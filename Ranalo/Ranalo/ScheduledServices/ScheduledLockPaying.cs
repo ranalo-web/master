@@ -95,6 +95,7 @@ namespace Ranalo.ScheduledServices
             var devicesToLockKnox = new List<LockTransaction>();
             //Not sure why this removes negative arrears
             //records.Records.RemoveAll(a => a.ArrearsR > 0);
+            var currentYear = DateTime.UtcNow.Year;
 
             if (qualifying != null && qualifying.Any())
             {
@@ -110,7 +111,10 @@ namespace Ranalo.ScheduledServices
                     {
                         AccountId = account.AccountNo,
                         FirstName = account.FirstName,
-                        AutoLockDate = account.LoanBalance < 1 ? DateTime.MaxValue : autoLockDatePmt
+                        AutoLockDate = (account.Arrears > 0 
+                                        && account.LoanBalance < 0 &&
+                        DateTimeFormat(account.NextLockDate).HasValue &&
+                        DateTimeFormat(account.NextLockDate).Value.Year == currentYear) ? DateTime.MaxValue : autoLockDatePmt
                     };
 
                     if(account.LockGroup == 2)
@@ -139,6 +143,35 @@ namespace Ranalo.ScheduledServices
         private static decimal SafeDivide(decimal numerator, decimal denominator)
         {
             return denominator == 0 ? 0 : numerator / denominator;
+        }
+
+        private static DateTime? DateTimeFormat(string? firstPaidDate)
+        {
+            if (string.IsNullOrEmpty(firstPaidDate)) return null;
+            // Try both formats (with and without fractional seconds: %OS in R)
+            string[] formats =
+            {
+                 "dd/MM/yyyy HH:mm:ss",
+                "dd/MM/yyyy HH:mm:ss.FFFFFFF",
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy-MM-dd HH:mm:ss.FFFFFFF",
+                "dd/MM/yyyy'T'HH:mm:ss",          // <-- NEW FORMAT
+                "dd/MM/yyyy'T'HH:mm:ss.FFFFFFF",   // if fractional seconds appear
+                "d/M/yyyy h:mm:ss tt",
+                "dd/MM/yyyy h:mm:ss tt",   // also allow 2-digit day
+                "d/M/yyyy hh:mm:ss tt",    // padded hour
+                "dd/MM/yyyy hh:mm:ss tt"
+            };
+
+            DateTime parsedDate = DateTime.ParseExact(
+                firstPaidDate,
+                formats,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None
+            );
+
+            // R adds term_in_months * 30 days (fixed)
+            return parsedDate;
         }
 
         bool NeedsUpdate(string? kenyanTimestamp)

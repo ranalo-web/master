@@ -146,7 +146,9 @@ namespace Ranalo.Woocommece.Api.DataStore
            ,[AdditionalSetupDone]
            ,[BatteryOptimizationGranted]
            ,[EnrolledOn]
-           ,[DlcStatus])
+           ,[DlcStatus]
+            ,[LastUpdatedDate]
+            ,[LockGroup])
         VALUES (@Id, 
                 @Name, 
                 @ImeiNo, 
@@ -188,7 +190,9 @@ namespace Ranalo.Woocommece.Api.DataStore
                 @AdditionalSetupDone, 
                 @BatteryOptimizationGranted, 
                 @EnrolledOn, 
-                @DlcStatus)";
+                @DlcStatus,
+                GETDATE(),
+                1)";
 
                 foreach (var record in groupedRecords)
                 {
@@ -250,6 +254,7 @@ namespace Ranalo.Woocommece.Api.DataStore
                     [EnrolledOn],
                     [DlcStatus],
                     [LockGroup]
+                    ,[LastUpdatedDate]
                 )
                 VALUES (
                     @Id,
@@ -294,7 +299,8 @@ namespace Ranalo.Woocommece.Api.DataStore
                     @BatteryOptimizationGranted,
                     @EnrolledOn,
                     @DlcStatus,
-                    @LockGroup
+                    @LockGroup,
+                    GETDATE()
                 );
             END";
 
@@ -342,8 +348,11 @@ namespace Ranalo.Woocommece.Api.DataStore
                                                ,[EnrollmentFailureReason] = @EnrollmentFailureReason
                                                ,[AdditionalSetupDone] = @AdditionalSetupDone
                                                ,[BatteryOptimizationGranted] = @BatteryOptimizationGranted
+                                               ,[DeviceGroupId] = @DeviceGroupId
                                                ,[EnrolledOn] = @EnrolledOn
                                                ,[DlcStatus] = @DlcStatus
+                                               ,[LastUpdatedDate] = GETDATE()
+                                               , [LockGroup] = 1
                                           WHERE [Id] = @Id";
 
             foreach (var record in groupedRecords)
@@ -395,6 +404,7 @@ namespace Ranalo.Woocommece.Api.DataStore
                                                ,[BatteryOptimizationGranted] = @BatteryOptimizationGranted
                                                ,[EnrolledOn] = @EnrolledOn
                                                ,[DlcStatus] = @DlcStatus
+                                                ,[LastUpdatedDate] = GETDATE()
                                           WHERE [Id] = @Id";
 
             
@@ -403,7 +413,7 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         public async Task<int> AddContractAsync(ContractInfo contract)
         {
-            var existingSql = @"SELECT ID FROM Contract_Info 
+            var existingSql = @"SELECT ContractID FROM Contract_Info 
                                 WHERE ID = @Id
                                 AND EndDate IS NULL";
             int? existingContractId = await _db.QueryFirstOrDefaultAsync<int?>(existingSql, new { Id = contract.ID });
@@ -416,10 +426,10 @@ namespace Ranalo.Woocommece.Api.DataStore
             var sql = @"
             INSERT INTO Contract_Info
             (ID, Deposit, Daily, Weekly, Monthly, 
-             rePayment_Intervals, Term_in_Months, Total_Loan, Total_Cost, First_Name, StartDate)
+             rePayment_Intervals, Term_in_Months, Total_Loan, Total_Cost, First_Name, StartDate, BuyingPrice)
             VALUES
             (@ID, @Deposit, @Daily, @Weekly, @Monthly, 
-             @RePaymentIntervals, @TermInMonths, @TotalLoan, @TotalCost, @FirstName, GETDATE());
+             @RePaymentIntervals, @TermInMonths, @TotalLoan, @TotalCost, @FirstName, GETDATE(), @BuyingPrice);
             SELECT CAST(SCOPE_IDENTITY() as int);";
 
             return await _db.ExecuteScalarAsync<int>(sql, contract);

@@ -53,8 +53,9 @@ namespace Ranalo.Controllers
             int term, 
             decimal loan,
             decimal cost,
-            decimal buyingPrice,
-            string firstName)
+            decimal totalAmount,
+            string firstName,
+            decimal? buyingPrice)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -70,9 +71,10 @@ namespace Ranalo.Controllers
                 TermInMonths = term,
                 TotalCost = cost,
                 TotalLoan = loan,
-                TotalAmount = buyingPrice,
+                TotalAmount = totalAmount,
                 FirstName = firstName,
-                RePaymentIntervals = "Daily"
+                RePaymentIntervals = "Daily",
+                BuyingPrice = buyingPrice
             };
 
             var update = await _contractService.UpdateContractAsync(contractToUpdate);

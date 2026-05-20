@@ -363,21 +363,21 @@
                                                     <ul class="link-list-opt no-bdr">
                                                         <li>
                                                             <a href="#edit-user"
-                                                               data-bs-toggle="modal"
-                                                               data-id="@user.UserId"
-                                                               data-email="@user.Email"
-                                                               data-password="@user.PasswordHash"
-                                                               data-roleId="@((int)user.RoleId)"
-                                                               data-dealerId="@user.DealerId"
-                                                               data-known="@user.KnownAs"
-                                                               data-name="@user.Name"
-                                                               data-active="@user.IsActive"
-                                                               data-lastName="@user.LastName"
-                                                               data-status="@user.Status"
-                                                               data-city="@user.City"
-                                                               data-phone="@user.Phone"
-                                                               data-otherroles='@Html.Raw(JsonSerializer.Serialize(user.OtherSelectedRoles))'
-                                                               data-lastlog="@user.LastLogin">
+                                                            data-bs-toggle="modal"
+                                                            data-id="@user.UserId"
+                                                            data-email="@user.Email"
+                                                            data-password="@user.PasswordHash"
+                                                            data-roleId="@((int)user.RoleId)"
+                                                            data-dealerId="@user.DealerId"
+                                                            data-known="@user.KnownAs"
+                                                            data-name="@user.Name"
+                                                            data-active="@user.IsActive"
+                                                            data-lastName="@user.LastName"
+                                                            data-status="@user.Status"
+                                                            data-city="@user.City"
+                                                            data-phone="@user.Phone"
+                                                            data-otherroles='@Html.Raw(JsonSerializer.Serialize(user.OtherSelectedRoles))'
+                                                            data-lastlog="@user.LastLogin">
                                                                 <em class="icon ni ni-eye"></em><span>Edit User</span>
                                                             </a>
                                                         </li>
@@ -392,7 +392,7 @@
 
                             <!-- .nk-tb-item -->
                         }
-                        
+
 
                     </div><!-- .nk-tb-list -->
                 </div><!-- .card-inner -->
@@ -446,7 +446,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label class="form-label" for="edit-known">Nick Name</label>
@@ -457,7 +457,7 @@
                                     <input type="text" name="knownas" class="form-control" id="edit-known" placeholder="Enter a known as name">
                                 </div>
                             </div>
-                            </div>
+                        </div>
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label class="form-label" for="edit-email">Email Address</label>
@@ -497,20 +497,31 @@
                                 <div class="form-control-wrap ">
                                     <div class="form-control-select">
                                         <select name="roleId" class="form-control" id="edit-roleId">
-                                            <option value="0">Select Role</option>
-                                            <option value="1">Admin</option>
-                                            <option value="2">Dealer</option>
-                                            <option value="3">Customer</option>
-                                            <option value="4">Supplier</option>
-                                            <option value="5">Approver</option>
-                                            <option value="6">Collector</option>
+                                            @if (ViewBag.IsAdmin)
+                                            {
+                                                <option value="1">Admin</option>
+                                                <option value="2">Dealer</option>
+                                                <option value="3">Customer</option>
+                                                <option value="4">Supplier</option>
+                                                <option value="5">Approver</option>
+                                                <option value="6">Collector</option>
+                                                <option value="7">Agent</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="6">Collector</option>
+                                                <option value="7">Agent</option>
+                                            }
 
                                         </select>
                                     </div>
                                 </div>
                             </div>
-                            </div>
-                                <div class="col-sm-12">
+                        </div>
+                        @if (ViewBag.IsAdmin)
+                        {
+                            
+                             <div class="col-sm-12">
                             <div class="form-group">
                                 <label class="form-label" for="default-06">Select Other Roles</label>
                                 <div class="form-control-wrap ">
@@ -542,6 +553,8 @@
 
                             </div>
                         </div>
+                        }
+                       
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <div class="form-control-wrap">

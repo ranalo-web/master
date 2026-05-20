@@ -458,8 +458,10 @@ namespace Ranalo.Controllers
 
             try
             {
+
                 userDetails.Status = UserStatus.Active;
                 userDetails.DealerId = settings.DealerId;
+                userDetails.ParentUserId = settings.DealerId;
                 userDetails.IsActive = true;
                 await _userService.AddUserAsync(userDetails);
             }
@@ -471,6 +473,37 @@ namespace Ranalo.Controllers
 
             return RedirectToAction("Users");
         }
+
+        [HttpPost]
+        [Route("updateuser")]
+        public async Task<IActionResult> UpdateUserSubmit(User userDetails)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            await SetViewBags(settings, "index");
+
+            try
+            {
+
+                userDetails.Status = UserStatus.Active;
+                userDetails.DealerId = settings.DealerId;
+                userDetails.ParentUserId = settings.DealerId;
+                userDetails.IsActive = true;
+                await _userService.UpdateUserAsync(userDetails);
+            }
+            catch (Exception)
+            {
+
+                return View("EditUser", userDetails);
+            }
+
+            return RedirectToAction("Users");
+        }
+
 
         [Route("suspenduser/{userId:int}")]
         public async Task<IActionResult> SuspendUserSubmit(int userId)
@@ -548,6 +581,7 @@ namespace Ranalo.Controllers
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
                 ViewBag.UserName = dealer.CompanyName;
                 settings.DealerId = dealer.DealerId;
+                ViewBag.DealerId = dealer.DealerId;
             }
         }
 
