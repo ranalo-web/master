@@ -58,42 +58,37 @@
         return statusClass;
     }
 
-    private string FormartUtcDate(string date)
+    private string FormartUtcDate(string date, string format = "dd/MM/yyyy HH:mm:ss")
     {
         if (string.IsNullOrEmpty(date))
         {
             return "Not set";
         }
-        // Parse using exact format and culture
         DateTime parsedDate = DateTime.ParseExact(
-            date.Replace(" UTC", ""),   // remove UTC label before parsing
+            date.Replace(" UTC", ""),
         "dd-MM-yy HH:mm:ss",
         System.Globalization.CultureInfo.InvariantCulture,
         System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal
     );
-
-        // Format to desired output
-        return parsedDate.ToString("dd/MM/yyyy HH:mm:ss");
+        return parsedDate.ToString(format);
     }
 
-    public string FormartDateWithT(string input)
+    public string FormartDateWithT(string input, string format = "dd/MM/yyyy HH:mm:ss")
     {
         if(input == null)
         {
-            return DateTime.MinValue.ToString("dd/MM/yyyy HH:mm:ss");
+            return DateTime.MinValue.ToString(format);
         }
 
         input = input.Replace("T", " ");
 
-        // Parse it
         DateTime parsedDate = DateTime.ParseExact(
             input,
             "dd/MM/yyyy HH:mm:ss",
             System.Globalization.CultureInfo.InvariantCulture
         );
 
-        // Format to desired string
-        return parsedDate.ToString("dd/MM/yyyy HH:mm:ss");
+        return parsedDate.ToString(format);
     }
 
 }
@@ -288,7 +283,7 @@
                                     <div class="profile-balance-group gx-4">
                                         <div class="profile-balance-sub">
                                             <div class="profile-balance-amount">
-                                                <div class="number">@Model?.Arrears <small class="currency currency-usd">KES</small></div>
+                                                <div class="number @(Model.Arrears >= 0 ? "text-success" : "text-danger")">@Model?.Arrears?.ToString("N0") <small class="currency currency-usd">KES</small></div>
                                             </div>
                                             <div class="profile-balance-subtitle">Balance</div>
                                         </div>
@@ -311,19 +306,27 @@
                                                 @if (Model.Summary != null)
                                                 {
                                                     <div class="nk-block">
+                                                        @{
+                                                            decimal outstandingBalance = Math.Round(
+                                                                Model.Summary.Deposit
+                                                                + (Model.Summary.Daily * 30 * Model.Summary.TermsInMonths)
+                                                                + (Model.Summary.Weekly * (30m / 7m) * Model.Summary.TermsInMonths)
+                                                                + (Model.Summary.Monthly * Model.Summary.TermsInMonths)
+                                                                - Model.Summary.TotalPaid, 0);
+                                                        }
                                                         <div class="nk-block-head nk-block-head-sm nk-block-between">
                                                             <h5 class="title">Loan Details</h5>
                                                         </div>
 
                                                         <div class="row gy-5">
                                                             <div class="col-md-3 col-lg-2 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Loan Balance</span><span> KES @Model.Summary.LoanBalance.ToString("F2") </span></div>
+                                                                <div class="profile-stats"><span class="profile-ud-label">Balance</span><span>@outstandingBalance.ToString("N0")</span></div>
                                                             </div>
                                                             <div class="col-md-3 col-lg-2 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Total Due</span><span> KES @Model?.TotalDue.Value.ToString("F2") </span></div>
+                                                                <div class="profile-stats"><span class="profile-ud-label">Total Due</span><span>@Model?.TotalDue?.ToString("N0")</span></div>
                                                             </div>
                                                             <div class="col-md-3 col-lg-2 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Deposit</span><span>KES @Model.Summary.Deposit.ToString("F2") </span></div>
+                                                                <div class="profile-stats"><span class="profile-ud-label">Total Paid</span><span>@Model.Summary.TotalPaid.ToString("N0")</span></div>
                                                             </div>
                                                             <div class="col-md-3 col-lg-2  col-6">
                                                                 <div class="profile-stats"><span class="profile-ud-label">Frequency</span><span>Daily</span></div>
@@ -357,11 +360,11 @@
                                                             <div class="col-md-2 col-sm-4 col-12">
                                                                 <div class="profile-stats"><span class="profile-ud-label">Days Left</span><span class="amount text-warning">@Math.Round(Model.DaysLeft)</span></div>
                                                             </div>
-                                                                    <div class="col-md-3 col-lg-2  col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">First Amount</span><span>@Model.Summary.FirstAmount.ToString("F2")</span></div>
+                                                                    <div class="col-md-3 col-lg-2 col-sm-4 col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">First Amount</span><span>@Model.Summary.FirstAmount.ToString("N0")</span></div>
                                                             </div>
-                                                                    <div class="col-md-3 col-lg-2  col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Total Paid</span><span>@Model.Summary.TotalPaid.ToString("F2")</span></div>
+                                                                    <div class="col-md-3 col-lg-2 col-sm-4 col-6">
+                                                                <div class="profile-stats"><span class="profile-ud-label">Deposit</span><span>@Model.Summary.Deposit.ToString("N0")</span></div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -375,25 +378,11 @@
                                                                 <div class="profile-stats">
                                                                     <div class="progress progress-lg">
                                                                         @{
-                                                                            int percentagePaid = 0;
-                                                                            DateTime today = DateTime.Today;
-
-                                                                            if (today <= Model.Summary.FirstPaymentDate)
-                                                                            {
-                                                                                percentagePaid = 0;
-                                                                            }
-                                                                            else if (today >= Model.Summary.ContractEndDate)
-                                                                            {
-                                                                                percentagePaid = 100;
-                                                                            }
-                                                                            else
-                                                                            {
-                                                                                double totalDays = (Model.Summary.ContractEndDate - Model.Summary.FirstPaymentDate).TotalDays;
-                                                                                double elapsedDays = (today - Model.Summary.FirstPaymentDate).TotalDays;
-                                                                                percentagePaid = (int)Math.Round((elapsedDays / totalDays) * 100);
-
-                                                                            }
-                                                                            <div class="progress-bar progress-bar-striped bg-success" data-progress="@percentagePaid" style="width: @percentagePaid %;">@percentagePaid %</div>
+                                                                            decimal totalLoanValue = outstandingBalance + Model.Summary.TotalPaid;
+                                                                            int percentagePaid = totalLoanValue > 0
+                                                                                ? (int)Math.Min(100, Math.Round((double)(Model.Summary.TotalPaid / totalLoanValue * 100)))
+                                                                                : 0;
+                                                                            <div class="progress-bar progress-bar-striped bg-success" data-progress="@percentagePaid" style="width: @percentagePaid%;">@percentagePaid%</div>
                                                                         }
 
                                                                     </div>
@@ -409,41 +398,41 @@
                                                     </div><!-- .nk-block-head -->
                                                     @if (Model.DeviceDetails != null)
                                                     {
-                                                        <div class="row gy-5">
-                                                            <div class="col-md-3 col-lg-2 col-6">
-                                                                <div class="profile-stats">
+                                                        <div class="profile-ud-list">
+                                                            <div class="profile-ud-item">
+                                                                <div class="profile-ud wider">
                                                                     <span class="profile-ud-label">Make</span>
-                                                                    <span>@Model.DeviceDetails.Make </span>
+                                                                    <span class="profile-ud-value">@Model.DeviceDetails.Make</span>
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-3 col-lg-2 col-6">
-                                                                <div class="profile-stats">
+                                                            <div class="profile-ud-item">
+                                                                <div class="profile-ud wider">
                                                                     <span class="profile-ud-label">Model</span>
-                                                                    <span>@Model.DeviceDetails.Model </span>
+                                                                    <span class="profile-ud-value">@Model.DeviceDetails.Model</span>
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-3 col-lg-2  col-6">
-                                                                <div class="profile-stats">
+                                                            <div class="profile-ud-item">
+                                                                <div class="profile-ud wider">
                                                                     <span class="profile-ud-label">Lock Status</span>
-                                                                    <span class="@SetLockStatusBadge(Model.DeviceDetails.LockType)">@Model.DeviceDetails.LockType</span>
+                                                                    <span class="profile-ud-value @SetLockStatusBadge(Model.DeviceDetails.LockType)">@Model.DeviceDetails.LockType</span>
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-3 col-lg-2  col-6">
-                                                                <div class="profile-stats">
+                                                            <div class="profile-ud-item">
+                                                                <div class="profile-ud wider">
                                                                     <span class="profile-ud-label">Enrolled</span>
-                                                                    <span>@FormartUtcDate(Model.DeviceDetails.EnrolledOn)</span>
+                                                                    <span class="profile-ud-value">@FormartUtcDate(Model.DeviceDetails.EnrolledOn, "dd/MMM/yy")</span>
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-3 col-lg-2  col-6">
-                                                                <div class="profile-stats">
-                                                                    <span class="profile-ud-label">Connected</span>
-                                                                    <span>@FormartUtcDate(Model.DeviceDetails.LastConnectedAt)</span>
+                                                            <div class="profile-ud-item">
+                                                                <div class="profile-ud wider">
+                                                                    <span class="profile-ud-label">Last Connected</span>
+                                                                    <span class="profile-ud-value">@FormartUtcDate(Model.DeviceDetails.LastConnectedAt, "dd MMM yyyy HH:mm")</span>
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-3 col-lg-2  col-6">
-                                                                <div class="profile-stats">
+                                                            <div class="profile-ud-item">
+                                                                <div class="profile-ud wider">
                                                                     <span class="profile-ud-label">Next Lock</span>
-                                                                    <span>@(FormartDateWithT(Model.DeviceDetails.NextLockDateIsoFormat)) </span>
+                                                                    <span class="profile-ud-value">@FormartDateWithT(Model.DeviceDetails.NextLockDateIsoFormat, "dd MMM yyyy HH:mm")</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -470,21 +459,21 @@
                            
 
                             <div class="nk-block">
-                                <h6 class="lead-text mb-3">Recent Payments</h6>
+                                <h5 class="title">Recent Payments</h5>
                                 <div class="table-responsive">
                                 <div class="nk-tb-list nk-tb-ulist is-compact card">
                                     <div class="nk-tb-item nk-tb-head">
                                         <div class="nk-tb-col">
-                                            <span class="sub-text">Account Number</span>
+                                            <span class="overline-title">Account#</span>
                                         </div>
                                         <div class="nk-tb-col tb-col-sm">
-                                            <span class="sub-text">Mpesa Code</span>
-                                        </div>
-                                        <div class="nk-tb-col tb-col-xxl">
-                                            <span class="sub-text">Payment Date</span>
+                                            <span class="overline-title">Mpesa Code</span>
                                         </div>
                                         <div class="nk-tb-col">
-                                            <span class="sub-text">Amount</span>
+                                            <span class="overline-title">Payment Date</span>
+                                        </div>
+                                        <div class="nk-tb-col">
+                                            <span class="overline-title">Amount</span>
                                         </div>
                                     </div>
 
@@ -494,18 +483,16 @@
                                         {
                                             <div class="nk-tb-item">
                                                 <div class="nk-tb-col">
-                                                    <a href="#"><span class="fw-bold">#@payment.AccountNo</span></a>
+                                                    <span>@payment.AccountNo</span>
                                                 </div>
                                                 <div class="nk-tb-col tb-col-sm">
-                                                    <span class="tb-product">
-                                                        <span class="title">@payment.MpesaCode</span>
-                                                    </span>
-                                                </div>
-                                                <div class="nk-tb-col tb-col-xxl">
-                                                    <span class="sub-text">@payment.PaymentDateValue.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                                                    <span class="sub-text">@payment.MpesaCode</span>
                                                 </div>
                                                 <div class="nk-tb-col">
-                                                    <span class="sub-text">@payment.AmountValue</span>
+                                                    <span class="sub-text">@payment.PaymentDateValue.ToString("dd MMM yyyy HH:mm")</span>
+                                                </div>
+                                                <div class="nk-tb-col">
+                                                    <span class="sub-text">@payment.AmountValue.ToString("N0")</span>
                                                 </div>
                                             </div>
                                         }
