@@ -52,9 +52,9 @@ namespace Ranalo.Woocommece.Api.Services
                 foreach (var order in orders)
                 {
                     //We need to remap the Sale Price and Total amount
-                    if (order.DailySalePrice != null && order.DeviceAmount != null)
+                    if (order.DailySalePrice != null && order.BuyingPrice != null)
                     {
-                        order.TotalAmount = (decimal)order.DeviceAmount;
+                        order.TotalAmount = (decimal)order.BuyingPrice;
                         //deposit = _calculatorService.CalculateSalesDeposit(order.TotalAmount, (decimal)order.DailySalePrice);
                     }
                     //Check if recor exists
@@ -141,7 +141,8 @@ namespace Ranalo.Woocommece.Api.Services
                 RePaymentIntervals = "Daily",
                 TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, termsInMonths),
                 TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, termsInMonths),
-                FirstName = order.FirstName ?? ""
+                FirstName = order.FirstName ?? "",
+                BuyingPrice = order.DeviceAmount,
             };
 
             await _kosePaymentsRepository.AddContractAsync(contract);
@@ -297,7 +298,7 @@ namespace Ranalo.Woocommece.Api.Services
         public async Task<List<WooOrder>> SyncWooOrders()
         {
             // Start from last sync date or fallback to 3 days ago
-            var iso8601UtcDate = DateTime.UtcNow.AddDays(-30).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var iso8601UtcDate = DateTime.UtcNow.AddDays(-300).Date.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
             var lastLog = await GetLastSycnLogDetails();
             if (lastLog != null)
@@ -820,7 +821,8 @@ namespace Ranalo.Woocommece.Api.Services
                 NextOfKin2 = ExtractNextKin2(value["id"]?.Value<int?>() ?? 0, value["meta_data"].ToString()),
                 MetaData = ExtractAllMetadata(value),
                 DailySalePrice = products.Select(p => p.DailySalePrice).FirstOrDefault(p => p.HasValue),
-                DeviceAmount = products.Select(p => p.DeviceAmount).FirstOrDefault(p => p.HasValue)
+                BuyingPrice = products.Select(p => p.SalePrice).FirstOrDefault(p => p.HasValue),
+                DeviceAmount = value["cost_of_goods_sold"]?["total_value"]?.Value<decimal>() ?? 0
             };
         }
 
@@ -1018,7 +1020,7 @@ namespace Ranalo.Woocommece.Api.Services
                     if (checkSaleDaily != null)
                     {
                         productToAdd.DailySalePrice = checkSaleDaily;
-                        productToAdd.DeviceAmount = deviceAmount;
+                        productToAdd.SalePrice = deviceAmount;
                     }
                 }
 

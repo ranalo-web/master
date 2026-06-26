@@ -20,12 +20,12 @@ namespace Ranalo.Woocommece.Api.DataStore
             INSERT INTO [dbo].[Woo_Orders] (
                 OrderID, Status, DateCreated, DateModified, TotalAmount,
                 CustomerId, FirstName, LastName, Address1, Email, Phone,
-                IMEI, NationalId, DOB, DealerRef, CustPhone, CustEmail, MpesaDepositRef, DailySalePrice
+                IMEI, NationalId, DOB, DealerRef, CustPhone, CustEmail, MpesaDepositRef, DailySalePrice, DeviceAmount
             )
             VALUES (
                 @OrderID, @Status, @DateCreated, @DateModified, @TotalAmount,
                 @CustomerId, @FirstName, @LastName, @Address1, @Email, @Phone,
-                @IMEI, @NationalId, @DOB, @DealerRef, @CustPhone, @CustEmail, @MpesaDepositRef, @DailySalePrice
+                @IMEI, @NationalId, @DOB, @DealerRef, @CustPhone, @CustEmail, @MpesaDepositRef, @DailySalePrice, @DeviceAmount
             );
 
             SELECT CAST(SCOPE_IDENTITY() as bigint);
@@ -74,7 +74,8 @@ namespace Ranalo.Woocommece.Api.DataStore
             [IMEI] = @IMEI,
             [DealerRef] = @DealerRef,
             [MpesaDepositRef] = @MpesaDepositRef,
-            [DailySalePrice] = @DailySalePrice
+            [DailySalePrice] = @DailySalePrice,
+            [DeviceAmount] = @DeviceAmount
         WHERE OrderID = @OrderID";
 
             var parameters = new
@@ -85,7 +86,8 @@ namespace Ranalo.Woocommece.Api.DataStore
                 DealerRef = order.DealerRef,
                 MpesaDepositRef = order.MpesaDepositRef,
                 OrderID = order.OrderID,
-                DailySalePrice = order.DailySalePrice
+                DailySalePrice = order.DailySalePrice,
+                DeviceAmount = order.DeviceAmount
             };
 
             await _db.ExecuteAsync(query, parameters);

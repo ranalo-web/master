@@ -66,14 +66,14 @@ namespace Ranalo.DataStore
                             c.Total_Cost
                                 AS TotalAmount,
 
-                            ISNULL(wo.TotalAmount, 0)
+                            ISNULL(wo.DeviceAmount, 0)
                                 AS DeviceAmount,
 
                             ISNULL(p.TotalPaid, 0)
                                 AS TotalPaid,
 
                             (
-                                ISNULL(c.BuyingPrice, 0)
+                                ISNULL(wo.DeviceAmount, 0)
                                 + (ISNULL(c.Deposit, 0) * 0.75)
                                 + 2000.00
                             ) AS DealerThreshold,
@@ -94,7 +94,7 @@ namespace Ranalo.DataStore
                                     ISNULL(p.TotalPaid, 0)
                                     >=
                                     (
-                                        ISNULL(c.BuyingPrice, 0)
+                                        ISNULL(wo.DeviceAmount, 0)
                                         + (ISNULL(c.Deposit, 0) * 0.75)
                                         + 2000.00
                                     )
@@ -112,7 +112,7 @@ namespace Ranalo.DataStore
                                             NULLIF
                                             (
                                                 (
-                                                    ISNULL(c.BuyingPrice, 0)
+                                                    ISNULL(wo.DeviceAmount, 0)
                                                     + (ISNULL(c.Deposit, 0) * 0.75)
                                                     + 2000.00
                                                 ),
@@ -141,7 +141,7 @@ namespace Ranalo.DataStore
                                         ISNULL(p.TotalPaid, 0)
                                         >=
                                         (
-                                            ISNULL(c.BuyingPrice, 0)
+                                            ISNULL(wo.DeviceAmount, 0)
                                             + (ISNULL(c.Deposit, 0) * 0.75)
                                             + 2000.00
                                         )
@@ -159,7 +159,7 @@ namespace Ranalo.DataStore
                                                 NULLIF
                                                 (
                                                     (
-                                                        ISNULL(c.BuyingPrice, 0)
+                                                        ISNULL(wo.DeviceAmount, 0)
                                                         + (ISNULL(c.Deposit, 0) * 0.75)
                                                         + 2000.00
                                                     ),
@@ -184,7 +184,7 @@ namespace Ranalo.DataStore
                                     ISNULL(p.TotalPaid, 0)
                                     >=
                                     (
-                                        ISNULL(c.BuyingPrice, 0)
+                                        ISNULL(wo.DeviceAmount, 0)
                                         + (ISNULL(c.Deposit, 0) * 0.75)
                                         + 2000.00
                                     )
@@ -220,7 +220,7 @@ namespace Ranalo.DataStore
                                                 ISNULL(p.TotalPaid, 0)
                                                 >=
                                                 (
-                                                    ISNULL(c.BuyingPrice, 0)
+                                                    ISNULL(wo.DeviceAmount, 0)
                                                     + (ISNULL(c.Deposit, 0) * 0.75)
                                                     + 2000.00
                                                 )
@@ -238,7 +238,7 @@ namespace Ranalo.DataStore
                                                         NULLIF
                                                         (
                                                             (
-                                                                ISNULL(c.BuyingPrice, 0)
+                                                                ISNULL(wo.DeviceAmount, 0)
                                                                 + (ISNULL(c.Deposit, 0) * 0.75)
                                                                 + 2000.00
                                                             ),
@@ -398,7 +398,7 @@ OutstandingDealerCommissions(
 
                         c.Total_Cost AS TotalAmount,
 
-                        ISNULL(wo.TotalAmount, 0)
+                        ISNULL(wo.DeviceAmount, 0)
                             AS DeviceAmount,
 
                         ISNULL(c.Deposit, 0)
@@ -411,7 +411,7 @@ OutstandingDealerCommissions(
 
                         -- Dealer threshold
                         (
-                            ISNULL(c.BuyingPrice, 0)
+                            ISNULL(wo.DeviceAmount, 0)
                             + (ISNULL(c.Deposit, 0) * 0.75)
                             + 2000.00
                         ) AS DealerThreshold,
@@ -432,7 +432,7 @@ OutstandingDealerCommissions(
                                 ISNULL(p.TotalPaid, 0)
                                 >=
                                 (
-                                    ISNULL(c.BuyingPrice, 0)
+                                    ISNULL(wo.DeviceAmount, 0)
                                     + (ISNULL(c.Deposit, 0) * 0.75)
                                     + 2000.00
                                 )
@@ -450,7 +450,7 @@ OutstandingDealerCommissions(
                                         NULLIF
                                         (
                                             (
-                                                ISNULL(c.BuyingPrice, 0)
+                                                ISNULL(wo.DeviceAmount, 0)
                                                 + (ISNULL(c.Deposit, 0) * 0.75)
                                                 + 2000.00
                                             ),
@@ -481,7 +481,7 @@ OutstandingDealerCommissions(
                                     ISNULL(p.TotalPaid, 0)
                                     >=
                                     (
-                                        ISNULL(c.BuyingPrice, 0)
+                                        ISNULL(wo.DeviceAmount, 0)
                                         + (ISNULL(c.Deposit, 0) * 0.75)
                                         + 2000.00
                                     )
@@ -499,7 +499,7 @@ OutstandingDealerCommissions(
                                             NULLIF
                                             (
                                                 (
-                                                    ISNULL(c.BuyingPrice, 0)
+                                                    ISNULL(wo.DeviceAmount, 0)
                                                     + (ISNULL(c.Deposit, 0) * 0.75)
                                                     + 2000.00
                                                 ),
@@ -578,7 +578,7 @@ OutstandingDealerCommissions(
                                         ISNULL(p.TotalPaid, 0)
                                         >=
                                         (
-                                            ISNULL(c.BuyingPrice, 0)
+                                            ISNULL(wo.DeviceAmount, 0)
                                             + (ISNULL(c.Deposit, 0) * 0.75)
                                             + 2000.00
                                         )
@@ -596,7 +596,7 @@ OutstandingDealerCommissions(
                                                 NULLIF
                                                 (
                                                     (
-                                                        ISNULL(c.BuyingPrice, 0)
+                                                        ISNULL(wo.DeviceAmount, 0)
                                                         + (ISNULL(c.Deposit, 0) * 0.75)
                                                         + 2000.00
                                                     ),
@@ -711,7 +711,7 @@ DealerCommissionsReadyToPay(
 
                     c.Total_Cost,
 
-                    ISNULL(wo.TotalAmount, 0)
+                    ISNULL(wo.DeviceAmount, 0)
                         AS DeviceAmount,
 
                     ISNULL(c.Deposit, 0)
@@ -724,7 +724,7 @@ DealerCommissionsReadyToPay(
 
                     -- Dealer threshold
                     (
-                        ISNULL(c.BuyingPrice, 0)
+                        ISNULL(wo.DeviceAmount, 0)
                         + (ISNULL(c.Deposit, 0) * 0.75)
                         + 2000.00
                     ) AS DealerThreshold,
@@ -745,7 +745,7 @@ DealerCommissionsReadyToPay(
                             ISNULL(p.TotalPaid, 0)
                             >=
                             (
-                                ISNULL(c.BuyingPrice, 0)
+                                ISNULL(wo.DeviceAmount, 0)
                                 + (ISNULL(c.Deposit, 0) * 0.75)
                                 + 2000.00
                             )
@@ -763,7 +763,7 @@ DealerCommissionsReadyToPay(
                                     NULLIF
                                     (
                                         (
-                                            ISNULL(c.BuyingPrice, 0)
+                                            ISNULL(wo.DeviceAmount, 0)
                                             + (ISNULL(c.Deposit, 0) * 0.75)
                                             + 2000.00
                                         ),
@@ -794,7 +794,7 @@ DealerCommissionsReadyToPay(
                                 ISNULL(p.TotalPaid, 0)
                                 >=
                                 (
-                                    ISNULL(c.BuyingPrice, 0)
+                                    ISNULL(wo.DeviceAmount, 0)
                                     + (ISNULL(c.Deposit, 0) * 0.75)
                                     + 2000.00
                                 )
@@ -812,7 +812,7 @@ DealerCommissionsReadyToPay(
                                         NULLIF
                                         (
                                             (
-                                                ISNULL(c.BuyingPrice, 0)
+                                                ISNULL(wo.DeviceAmount, 0)
                                                 + (ISNULL(c.Deposit, 0) * 0.75)
                                                 + 2000.00
                                             ),
@@ -891,7 +891,7 @@ DealerCommissionsReadyToPay(
                                     ISNULL(p.TotalPaid, 0)
                                     >=
                                     (
-                                        ISNULL(c.BuyingPrice, 0)
+                                        ISNULL(wo.DeviceAmount, 0)
                                         + (ISNULL(c.Deposit, 0) * 0.75)
                                         + 2000.00
                                     )
@@ -909,7 +909,7 @@ DealerCommissionsReadyToPay(
                                             NULLIF
                                             (
                                                 (
-                                                    ISNULL(c.BuyingPrice, 0)
+                                                    ISNULL(wo.DeviceAmount, 0)
                                                     + (ISNULL(c.Deposit, 0) * 0.75)
                                                     + 2000.00
                                                 ),

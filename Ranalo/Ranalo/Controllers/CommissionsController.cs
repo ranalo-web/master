@@ -30,6 +30,11 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
             var filter = new CommissionsFilter();
+            if(settings.RoleId == UserRole.Dealer)
+            {
+                var dealer = await _userService.GetDealerByUserId(settings.UserId);
+                filter.DealerId = dealer?.DealerId;
+            }
 
             var fullCommissions = await _commissionsService.FullCommissionsReportAsync(filter);
 
@@ -51,6 +56,11 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
             var filter = new CommissionsFilter();
+            if (settings.RoleId == UserRole.Dealer)
+            {
+                var dealer = await _userService.GetDealerByUserId(settings.UserId);
+                filter.DealerId = dealer?.DealerId;
+            }
 
             var fullCommissions = await _commissionsService.DealerCommissionsReadyToPayAsync(filter);
 
@@ -72,6 +82,11 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
             var filter = new CommissionsFilter();
+            if (settings.RoleId == UserRole.Dealer)
+            {
+                var dealer = await _userService.GetDealerByUserId(settings.UserId);
+                filter.DealerId = dealer?.DealerId;
+            }
 
             var fullCommissions = await _commissionsService.OutstandingDealerCommissionsAsync(filter);
 

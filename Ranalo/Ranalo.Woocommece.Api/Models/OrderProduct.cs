@@ -12,7 +12,8 @@
         public string? Sku { get; set; }
         public int Quantity { get; set; }
         public decimal? DailySalePrice { get; set; }
-        public decimal? DeviceAmount { get; set; }
+        public decimal? SalePrice { get; set; }
         public decimal? BuyingPrice { get; set; }
+        public decimal? DeviceAmount { get; set; }
     }
 }

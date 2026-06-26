@@ -109,7 +109,7 @@ if (runWooTask)
     //builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
     //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
     //builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
-    //builder.Services.AddHostedService<ScheduledLockPaying>();
+    builder.Services.AddHostedService<ScheduledLockPaying>();
     //builder.Services.AddHostedService<ScheduledLockRestructured>();
     //builder.Services.AddHostedService<ScheduledLockFullyPaid>();
     //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
