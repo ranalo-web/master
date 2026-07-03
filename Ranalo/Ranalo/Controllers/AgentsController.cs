@@ -101,6 +101,7 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
             ViewBag.PageOrigin = "unassigned";
+
             await SetViewBags(settings, "approver");
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
