@@ -164,6 +164,22 @@ namespace Ranalo.DataStore
 
         }
 
+        public async Task<IEnumerable<User>> GetAgentsByDealerIdAsync(int dealerId)
+        {
+            try
+            {
+                return await _context.Users
+                .Where(x => x.ParentUserId == dealerId)
+                .ToListAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+
+        }
+
         public async Task<IEnumerable<User>> GetUsersByDealerIdAsync(int dealerId)
         {
             try
@@ -310,6 +326,21 @@ namespace Ranalo.DataStore
             catch (Exception ex)
             {
                 // log exception if needed
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<User>> GetAgentsAsync()
+        {
+            try
+            {
+                return await _context.Users
+                .Where(x => x.ParentUserId != null)
+                .ToListAsync();
+            }
+            catch (Exception)
+            {
+
                 throw;
             }
         }

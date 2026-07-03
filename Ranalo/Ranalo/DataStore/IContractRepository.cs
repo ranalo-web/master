@@ -14,5 +14,6 @@ namespace Ranalo.DataStore
         Task<int> CreateRecoveredAccount(ContractInfo newContract);
         Task AssignContractToCollector(int contractId, int collectorUserId);
         Task<PaymentsViewModel> GetCollectorsContractSummaryAsync(int userId, int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "");
+        Task<ContractViewModel> GetAccountsByDealerAsync(int dealerId, int page, int pageSize, string searchTerm);
     }
 }

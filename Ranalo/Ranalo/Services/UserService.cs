@@ -151,6 +151,20 @@ namespace Ranalo.Services
         {
             return await _userRepository.GetDealerByDealerRefAsync(dealerReference);
         }
+
+        public async Task<IEnumerable<User>> GetAgentsByDealer(int dealerId)
+        {
+            var users = await _userRepository.GetAgentsByDealerIdAsync(dealerId);
+
+            return users;
+        }
+
+        public async Task<IEnumerable<User>> GetAgents()
+        {
+            var users = await _userRepository.GetAgentsAsync();
+
+            return users;
+        }
         // similarly: GetById, Update, Delete
     }
 }

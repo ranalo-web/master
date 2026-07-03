@@ -1,0 +1,674 @@
+﻿@using Ranalo.Models
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model ContractViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+@functions
+{
+    private string SetStatusBadge(int notPaid)
+    {
+        var statusClass = "";
+
+        if (notPaid == 1)
+        {
+            return "badge badge-dim bg-danger";
+        }
+        else
+        {
+            return "badge badge-dim bg-success";
+        }
+
+        return statusClass;
+    }
+
+    private string SetArrearsStatusBadge(decimal arrears)
+    {
+        var statusClass = "";
+
+        if (arrears < 0)
+        {
+            return "badge badge-dim bg-danger";
+        }
+
+        if (arrears > 0)
+        {
+            return "badge badge-dim bg-success";
+        }
+
+        return statusClass;
+    }
+
+    private string SetSearchTerm()
+    {
+        if (!string.IsNullOrEmpty(Model.SearchTerm))
+        {
+            return Model.SearchTerm;
+        }
+
+        return "Search...";
+    }
+
+    private string GetInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "string.Empty";
+
+        // Split by spaces and take first character of each word
+        var initials = fullName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => char.ToUpper(word[0]))
+            .Take(2) // only take first 2 initials
+            .ToArray();
+
+        return new string(initials);
+    }
+}
+
+<div class="nk-content-body">
+
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Accounts for Agents</h3>
+                <div class="nk-block-des text-soft">
+                    <p>You have @Model.TotalRecords Collections in this report</p>
+                </div>
+            </div><!-- .nk-block-head-content -->
+            <div class="nk-block-head-content">
+                <div class="toggle-wrap nk-block-tools-toggle">
+                    <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu"><em class="icon ni ni-menu-alt-r"></em></a>
+                    <div class="toggle-expand-content" data-content="pageMenu">
+                        <ul class="nk-block-tools g-3">
+                            <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
+                            <li class="nk-block-tools-opt">
+                                <div class="drodown">
+                                    <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <ul class="link-list-opt no-bdr">
+                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#add-loan"><span>Add Loan</span></a></li>
+                                            <li><a href="#"><span>Import Loan</span></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div><!-- .toggle-wrap -->
+            </div><!-- .nk-block-head-content -->
+        </div><!-- .nk-block-between -->
+    </div><!-- .nk-block-head -->
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner position-relative card-tools-toggle">
+                    <div class="card-title-group">
+                        <div class="card-tools">
+                            <div class="form-inline flex-nowrap gx-3">
+                                <div class="form-wrap w-150px">
+                                    <select class="form-select form-select-sm js-select2" data-search="off" data-placeholder="Bulk Action">
+                                        <option value="">Bulk Action</option>
+                                        <option value="email">Send Email</option>
+                                        <option value="group">Disbursed Loan</option>
+                                        <option value="delete">Delete User</option>
+                                    </select>
+                                </div>
+                                <div class="btn-wrap">
+                                    <span class="d-none d-md-block"><button class="btn btn-dim btn-outline-light disabled">Apply</button></span>
+                                    <span class="d-md-none"><button class="btn btn-dim btn-outline-light btn-icon disabled"><em class="icon ni ni-arrow-right"></em></button></span>
+                                </div>
+                            </div><!-- .form-inline -->
+                        </div><!-- .card-tools -->
+                        <div class="card-tools me-n1">
+                            <ul class="btn-toolbar gx-1">
+                                <li>
+                                    <a href="#" class="btn btn-icon search-toggle toggle-search" data-target="search"><em class="icon ni ni-search"></em></a>
+                                </li><!-- li -->
+                                <li class="btn-toolbar-sep"></li><!-- li -->
+                                <li>
+                                    <div class="toggle-wrap">
+                                        <a href="#" class="btn btn-icon btn-trigger toggle" data-target="cardTools"><em class="icon ni ni-menu-right"></em></a>
+                                        <div class="toggle-content" data-content="cardTools">
+                                            <ul class="btn-toolbar gx-1">
+                                                <li class="toggle-close">
+                                                    <a href="#" class="btn btn-icon btn-trigger toggle" data-target="cardTools"><em class="icon ni ni-arrow-left"></em></a>
+                                                </li><!-- li -->
+                                                <li>
+                                                    <div class="dropdown">
+                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
+                                                            <div class="dot dot-primary"></div>
+                                                            <em class="icon ni ni-filter-alt"></em>
+                                                        </a>
+                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
+                                                            <div class="dropdown-head">
+                                                                <span class="sub-title dropdown-title">Filter Borrower</span>
+                                                                <div class="dropdown">
+                                                                    <a href="#" class="btn btn-sm btn-icon">
+                                                                        <em class="icon ni ni-more-h"></em>
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                            <div class="dropdown-body dropdown-body-rg">
+                                                                <div class="row gx-6 gy-3">
+                                                                    <div class="col-12">
+                                                                        <div class="form-group">
+                                                                            <label class="overline-title overline-title-alt">Category</label>
+                                                                            <select class="form-select form-select-sm js-select2">
+                                                                                <option value="education">Education</option>
+                                                                                <option value="emergency">Emergency</option>
+                                                                                <option value="daily">Daily</option>
+                                                                                <option value="kibaba">Kibaba</option>
+                                                                                <option value="bilashi">Bilashi</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-6">
+                                                                        <div class="form-group">
+                                                                            <label class="overline-title overline-title-alt">Interest</label>
+                                                                            <select class="form-select form-select-sm js-select2">
+                                                                                <option value="5">5%</option>
+                                                                                <option value="7">7%</option>
+                                                                                <option value="10">10%</option>
+                                                                                <option value="15">15%</option>
+                                                                                <option value="20">20%</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-6">
+                                                                        <div class="form-group">
+                                                                            <label class="overline-title overline-title-alt">Status</label>
+                                                                            <select class="form-select form-select-sm js-select2">
+                                                                                <option value="approved">Approved</option>
+                                                                                <option value="pending">Pending</option>
+                                                                                <option value="rejected">Rejected</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12">
+                                                                        <div class="form-group">
+                                                                            <button type="button" class="btn btn-secondary">Filter</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="dropdown-foot between">
+                                                                <a class="clickable" href="#">Reset Filter</a>
+                                                                <a href="#">Save Filter</a>
+                                                            </div>
+                                                        </div><!-- .filter-wg -->
+                                                    </div><!-- .dropdown -->
+                                                </li><!-- li -->
+                                                <li>
+                                                    <div class="dropdown">
+                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
+                                                            <em class="icon ni ni-setting"></em>
+                                                        </a>
+                                                        <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
+                                                            <ul class="link-check">
+                                                                <li><span>Show</span></li>
+                                                                <li class="active"><a href="#">10</a></li>
+                                                                <li><a href="#">20</a></li>
+                                                                <li><a href="#">50</a></li>
+                                                            </ul>
+                                                            <ul class="link-check">
+                                                                <li><span>Order</span></li>
+                                                                <li class="active"><a href="#">DESC</a></li>
+                                                                <li><a href="#">ASC</a></li>
+                                                            </ul>
+                                                        </div>
+                                                    </div><!-- .dropdown -->
+                                                </li><!-- li -->
+                                            </ul><!-- .btn-toolbar -->
+                                        </div><!-- .toggle-content -->
+                                    </div><!-- .toggle-wrap -->
+                                </li><!-- li -->
+                            </ul><!-- .btn-toolbar -->
+                        </div><!-- .card-tools -->
+                    </div><!-- .card-title-group -->
+                    <div class="card-search search-wrap" data-search="search">
+                        <div class="card-body">
+                            <div class="search-content">
+                                <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
+                                <form action="/accounts" method="get">
+                                    <input type="text" name="searchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by borrower or category">
+                                    <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div><!-- .card-search -->
+                </div><!-- .card-inner -->
+                <div class="card-inner p-0">
+                    <div class="nk-tb-list nk-tb-ulist">
+                        <div class="nk-tb-item nk-tb-head">
+                            <div class="nk-tb-col nk-tb-col-check">
+                                <div class="custom-control custom-control-sm custom-checkbox notext">
+                                    <input type="checkbox" class="custom-control-input" id="uid">
+                                    <label class="custom-control-label" for="uid"></label>
+                                </div>
+                            </div>
+                            <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Daily Rate</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Deposit</span></div>
+                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Total Paid</span></div>
+                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Arrears</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Due</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Balance</span></div>
+
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Status</span></div>
+                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Enrolled On</span></div>
+                            <div class="nk-tb-col nk-tb-col-tools text-end">
+                                <div class="dropdown">
+                                    <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-offset="0,5"><em class="icon ni ni-plus"></em></a>
+                                    <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
+                                        <ul class="link-tidy sm no-bdr">
+                                            <li>
+                                                <div class="custom-control custom-control-sm custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" checked="" id="bl">
+                                                    <label class="custom-control-label" for="bl">Category</label>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="custom-control custom-control-sm custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" checked="" id="ph">
+                                                    <label class="custom-control-label" for="ph">Amount</label>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="custom-control custom-control-sm custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" id="vri">
+                                                    <label class="custom-control-label" for="vri">Interest</label>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- .nk-tb-item -->
+                        @foreach (var record in Model?.Contracts)
+                        {
+                            <div class="nk-tb-item">
+                                <div class="nk-tb-col nk-tb-col-check">
+                                    <div class="custom-control custom-control-sm custom-checkbox notext">
+                                        <input type="checkbox" class="custom-control-input" id="uid1">
+                                        <label class="custom-control-label" for="uid1"></label>
+                                    </div>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <a href="/account-details/@record.ID">
+                                        <div class="user-card">
+                                            <div class="user-avatar bg-primary">
+                                                <span>AB</span>
+                                            </div>
+                                            <div class="user-info">
+                                                <span class="tb-lead">@record.FirstName</span>
+                                                <span>AC: @record.ID</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    <span>@record.Daily</span>
+                                </div>
+                                <div class="nk-tb-col">
+                                    <span>@record.Deposit </span>
+                                </div>
+                                <div class="nk-tb-col tb-col-xxl">
+                                    <span>@record.StartDate?.ToString("dd MMM yyyy")</span>
+                                </div>
+                                <div class="nk-tb-col nk-tb-col-tools">
+                                    <ul class="nk-tb-actions gx-2">
+                                        <li class="nk-tb-action-hidden">
+                                            <a href="#edit-contract"
+                                               class="btn btn-sm btn-icon btn-trigger"
+                                               data-bs-toggle="modal"
+                                               data-id="@record.ID"
+                                               data-name="@record.FirstName"
+                                               data-deposit="@record.Deposit"
+                                               data-interval="@record.RePaymentIntervals"
+                                               data-daily="@record.Daily"
+                                               data-weekly="@record.Weekly"
+                                               data-monthly="@record.Monthly"
+                                               data-loan="@record.TotalLoan"
+                                               data-bs-placement="top"
+                                               title="Recover Device">
+                                                <em class="icon ni ni-user-check-fill"></em>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <div class="drodown">
+                                                <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                                <div class="dropdown-menu dropdown-menu-end">
+                                                    <ul class="link-list-opt no-bdr">
+                                                        <li><a href="/account-details/@record.ID"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
+                                                        <li>
+                                                            <a href="#assign-collector"
+                                                               data-id="@record.ID"
+                                                               data-name="@record.FirstName"
+                                                               data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Assign Agent</span></a>
+                                                        </li>
+                                                        @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        }
+
+
+
+                    </div><!-- .nk-tb-list -->
+                </div><!-- .card-inner -->
+                <div class="card-inner">
+                    <div class="nk-block-between-md g-3">
+                        <div class="g">
+                            <ul class="pagination justify-content-center justify-content-md-start">
+                                @if (Model.CurrentPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="/@(ViewBag.PageOrigin)-collections?page=@(Model.CurrentPage - 1)">Prev</a>
+                                    </li>
+                                }
+
+                                @{
+                                    var maxVisiblePages = 5;
+                                    var startPage = Math.Max(1, Model.CurrentPage - 2);
+                                    var endPage = Math.Min(Model.TotalPages, startPage + maxVisiblePages - 1);
+                                    if (endPage - startPage < maxVisiblePages - 1)
+                                    {
+                                        startPage = Math.Max(1, endPage - maxVisiblePages + 1);
+                                    }
+                                }
+
+                                @if (startPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="/@(ViewBag.PageOrigin)-collections?page=1">1</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <span class="page-link"><em class="icon ni ni-more-h"></em></span>
+                                    </li>
+                                }
+
+                                @for (int i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                        <a class="page-link" href="/@(ViewBag.PageOrigin)-collections?page=@i">@i</a>
+                                    </li>
+                                }
+
+                                @if (endPage < Model.TotalPages)
+                                {
+                                    <li class="page-item">
+                                        <span class="page-link"><em class="icon ni ni-more-h"></em></span>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="/@(ViewBag.PageOrigin)-collections?page=@Model.TotalPages">@Model.TotalPages</a>
+                                    </li>
+                                }
+
+                                @if (Model.CurrentPage < Model.TotalPages)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="/@(ViewBag.PageOrigin)-collections?page=@(Model.CurrentPage + 1)">Next</a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="g">
+                            <div class="pagination-goto d-flex justify-content-center justify-content-md-start gx-3">
+                                <div>Page</div>
+                                <div>
+                                    <select class="form-select js-select2"
+                                            data-search="on"
+                                            data-dropdown="xs center"
+                                            onchange="location.href='/' + @(ViewBag.PageOrigin) + '-collections?page=' + this.value">
+                                        @for (int i = 1; i <= Model.TotalPages; i++)
+                                        {
+                                            <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>
+                                                @i
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                                <div>OF @Model.TotalPages</div>
+                            </div>
+                        </div><!-- .pagination-goto -->
+                    </div><!-- .nk-block-between --><!-- .pagination -->
+                </div><!-- .card-inner -->
+            </div><!-- .card-inner-group -->
+        </div><!-- .card -->
+    </div><!-- .nk-block -->
+</div>
+
+<div class="modal fade" tabindex="-1" id="edit-contract">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Recover Device</h5>
+                <form action="/collection-device" method="post" class="mt-2">
+                    <div class="row g-gs">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalFirstName">Customer Name</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="oldName" class="form-control" readonly id="modalFirstName" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalDeviceId">Account No.</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" class="form-control" name="displayDeviceId" readonly id="modalDeviceId" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-amount">New Customer Name</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="newName" class="form-control" id="edit-amount" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-month">Phone Number</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="Phone Number" class="form-control" id="edit-month" value="6" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-income">Total Cost</label>
+                                <div class="form-control-wrap">
+                                    <input type="number" step="0.01" name="totalCost" class="form-control" id="edit-income" value="10000" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-date">Start Date</label>
+                                <div class="form-control-wrap">
+                                    <div class="form-icon form-icon-left">
+                                        <em class="icon ni ni-calendar"></em>
+                                    </div>
+                                    <input type="text" name="startDate" id="edit-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                                <li>
+                                    <button type="submit" class="btn btn-lg btn-primary">Recover Account</button>
+                                </li>
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div><!-- .Edit Modal-Content -->
+<!--Assign Contract to debt collector-->
+<div class="modal fade" tabindex="-1" id="assign-collector">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Assign to Agent</h5>
+                <form action="/assign-collector" method="post" class="mt-2">
+                    <div class="row g-gs">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalFirstName1">Customer Name</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="oldName" class="form-control" readonly id="modalFirstName1" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalDeviceId1">Account No.</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" class="form-control" name="displayDeviceId" readonly id="modalDeviceId1" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="overline-title overline-title-alt">Select Agent</label>
+                                <select class="form-select js-select2" name="debtCollectorUserId">
+                                    @foreach (var item in ViewBag.Collectors)
+                                    {
+                                        <option value="@item.Value">@item.Text</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                                <li>
+                                    <button type="submit" class="btn btn-lg btn-primary">Assign Agent</button>
+                                </li>
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div><!-- .Edit Modal-Content -->
+<!-- Lock Device-->
+<div class="modal fade" tabindex="-1" id="lock-device">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross-sm"></em>
+            </a>
+            <div class="modal-body modal-body-md">
+                <h5 class="modal-title">Lock Device</h5>
+                <form action="/lock-device" method="post" class="mt-2">
+                    <div class="row g-gs">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalFirstName1">Customer Name</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" name="customerName" class="form-control" readonly id="modalFirstName2" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label" for="modalDeviceId1">Account No.</label>
+                                <div class="form-control-wrap">
+                                    <input type="text" class="form-control" name="displayDeviceId" readonly id="modalDeviceId2" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-date">Lock Date</label>
+                                <div class="form-control-wrap">
+                                    <div class="form-icon form-icon-left">
+                                        <em class="icon ni ni-calendar"></em>
+                                    </div>
+                                    <input type="text" name="lockDate" id="lock-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                                <li>
+                                    <button type="submit" class="btn btn-lg btn-primary">Lock Device</button>
+                                </li>
+                                <li>
+                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div><!-- .Edit Modal-Content -->
+@section Scripts
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+                var modal = document.getElementById('edit-contract');
+            modal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget; // Button that triggered the modal
+                var deviceId = button.getAttribute('data-id');
+                    var name = button.getAttribute('data-name');
+                    document.getElementById('modalDeviceId').value = deviceId;
+                    document.getElementById('modalFirstName').value = name;
+            });
+        });
+
+        //Assign contract
+        document.addEventListener("DOMContentLoaded", function () {
+                        var modal1 = document.getElementById('assign-collector');
+        modal1.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget; // Button that triggered the modal
+            var deviceId = button.getAttribute('data-id');
+                var name = button.getAttribute('data-name');
+                document.getElementById('modalDeviceId1').value = deviceId;
+                document.getElementById('modalFirstName1').value = name;
+        });
+        });
+
+        //Lock Device
+            document.addEventListener("DOMContentLoaded", function () {
+                            var modal1 = document.getElementById('lock-device');
+            modal1.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget; // Button that triggered the modal
+                var deviceId = button.getAttribute('data-id');
+                    var name = button.getAttribute('data-name');
+                    document.getElementById('modalDeviceId2').value = deviceId;
+                    document.getElementById('modalFirstName2').value = name;
+            });
+            });
+    </script>
+ }

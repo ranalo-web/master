@@ -16,6 +16,6 @@ namespace Ranalo.Services
         Task AssignContractToCollector(int contractId, int collectorUserId);
 
         Task<StatusReportViewModel> GetCollectorsContractSummaryAsync(int userId, int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "");
-
+        Task<ContractViewModel> GetAccountsByDealer(int dealerId, int page, int pageSize, string searchTerm);
     }
 }

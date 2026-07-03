@@ -4,6 +4,7 @@ using Ranalo.Calculator.Logic.Models;
 using Ranalo.DataStore;
 using Ranalo.Models;
 using Ranalo.Woocommece.Api.Models;
+using System.Diagnostics.Contracts;
 using MobileStatusReport = Ranalo.Models.MobileStatusReport;
 
 namespace Ranalo.Services
@@ -166,6 +167,11 @@ namespace Ranalo.Services
                 TotalPages = result.TotalPages,
                 TotalRecords = result.TotalRecords
             };
+        }
+
+        public async Task<ContractViewModel> GetAccountsByDealer(int dealerId, int page, int pageSize, string searchTerm)
+        {
+            return await _contractRepository.GetAccountsByDealerAsync(dealerId, page, pageSize, searchTerm);
         }
     }
 }

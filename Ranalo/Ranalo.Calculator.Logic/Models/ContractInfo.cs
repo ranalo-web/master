@@ -21,5 +21,8 @@ namespace Ranalo.Calculator.Logic.Models
         public string FirstName { get; set; }
         public decimal TotalAmount { get; set; }
         public decimal? BuyingPrice { get; set; }
+        public int? AssignedAgentId { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
     }
 }

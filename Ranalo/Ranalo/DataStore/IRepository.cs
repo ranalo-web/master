@@ -30,5 +30,9 @@ namespace Ranalo.DataStore
         Task<IEnumerable<Dealer>> GetAllDealersAsync();
         Task<Dealer?> GetDealerByDealerRefAsync(string dealerReference);
         Task CreateDealerAsync(Dealer dealerDetails);
+
+        Task<IEnumerable<User>> GetAgentsByDealerIdAsync(int dealerId);
+
+        Task<IEnumerable<User>> GetAgentsAsync();
     }
 }

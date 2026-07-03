@@ -28,6 +28,9 @@ namespace Ranalo.Services
 
         Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash);
         Task<IEnumerable<User>> GetDebtCollectors();
+        Task<IEnumerable<User>> GetAgentsByDealer(int dealerId);
+        //GetAgents
+        Task<IEnumerable<User>> GetAgents();
 
         Task<List<Dealer>?> GetAllDealers();
         Task AddDealerAsync(Dealer dealerDetails);

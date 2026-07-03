@@ -424,5 +424,49 @@ WHERE kp.AccountNoBigint IS NOT NULL
       );";
         }
 
+        public async Task<ContractViewModel> GetAccountsByDealerAsync(int dealerId, int page, int pageSize, string searchTerm)
+        {
+            var offset = (page - 1) * pageSize;
+
+            var countSql = @"SELECT COUNT(*) FROM Contract_Info  
+                            WHERE (
+                            @SearchTerm IS NULL
+                            OR First_Name LIKE '%' + @SearchTerm + '%'
+                            OR ID LIKE '%' + @SearchTerm + '%'
+                            )
+                            AND EndDate IS NULL";
+
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchTerm });
+
+            var sql = @"SELECT [ContractID]
+                      ,CI.[ID]
+	                  ,First_Name As FirstName
+	                  ,Daily
+                      ,[StartDate]
+                      ,[EndDate]
+	                  ,[AssignedAgentId]
+	                  ,Deposit
+                  FROM [dbo].[Contract_Info] CI
+                  INNER JOIN Devices D on D.Id = CI.ID
+                  WHERE D.DeviceGroupId = 9085
+                  AND [AssignedAgentId] IS NULL
+                   ORDER BY [ContractID] DESC
+                        OFFSET @Offset ROWS 
+                        FETCH NEXT @pageSize ROWS ONLY";
+
+            var contracts = await _db.QueryAsync<ContractInfo>(sql, new { Offset = offset, pageSize = pageSize, SearchTerm = searchTerm });
+
+            var result = new ContractViewModel()
+            {
+                Contracts = contracts.ToList(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                SearchTerm = searchTerm,
+                TotalRecords = totalRecords,
+                TotalPages = totalRecords / pageSize,
+            };
+
+            return result;
+        }
     }
 }
