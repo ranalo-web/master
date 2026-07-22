@@ -20,5 +20,6 @@ namespace Ranalo.DataStore
         Task<DevicesWithDealerViewModel> GetAllDevicesAsync(int? dealerId, int page, int pageSize, string searchTerm);
 
         Task<DevicesWithDealerViewModel> GetDevicesWithNoPayments(int? dealerId, int page, int pageSize, string searchTerm);
+        Task<DevicesWithDealerViewModel> GetAllDevicesByUserAccountIdAsync(int userId, int page, int pageSize, string searchTerm);
     }
 }

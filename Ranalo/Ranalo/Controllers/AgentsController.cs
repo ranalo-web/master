@@ -58,9 +58,9 @@ namespace Ranalo.Controllers
             await SetViewBags(settings, "approver");
 
             //Set debt collectors
-            var collectors = await _userService.GetDebtCollectors();
+            var assigned = await _userService.GetDebtCollectors();
 
-            ViewBag.Collectors = collectors
+            ViewBag.Collectors = assigned
                 .Select(x => new SelectListItem
                 {
                     Value = x.UserId.ToString(),
@@ -82,11 +82,25 @@ namespace Ranalo.Controllers
 
             var dealer = await _userService.GetDealerByUserId(settings.UserId);
 
-            var dealerId = Convert.ToInt32(dealer.DealerReference);
+            if (dealer != null)
+            {
+                var dealerId = Convert.ToInt32(dealer.DealerReference);
+                //Set debt collectors
+                var agents = await _userService.GetAgentsByDealer(dealer.DealerId);
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, true, null, dealerId, page, pageSize, searchTerm.Trim());
+                ViewBag.Collectors = agents
+                    .Select(x => new SelectListItem
+                    {
+                        Value = x.UserId.ToString(),
+                        Text = $"{x.Name} {x.LastName}"
+                    })
+                    .ToList();
+                var records = await _contractService.GetAssignedAccountsByDealer(dealerId, page, pageSize, searchTerm.Trim());
 
-            return View(allDelaerStatusReport);
+                return View("Assigned", records);
+            }
+
+            return View("Index");
 
         }
 
@@ -152,7 +166,7 @@ namespace Ranalo.Controllers
         }
 
         [HttpPost]
-        [Route("assign-collector")]
+        [Route("assign-agent")]
         public async Task<IActionResult> AssignAccountCollector(long displayDeviceId,
             string deposit,
             string oldName,
@@ -166,9 +180,9 @@ namespace Ranalo.Controllers
 
             await SetViewBags(settings, "collector");
 
-            //await _contractorService.AssignContractToCollector((int)displayDeviceId, debtCollectorUserId);
+            await _contractService.AssignAccountToAgent((int)displayDeviceId, debtCollectorUserId);
 
-            return RedirectToAction("Collections", "Reports");
+            return RedirectToAction("UnAssignedCollections", "Agents");
         }
 
         [HttpPost]

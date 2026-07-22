@@ -58,5 +58,7 @@ namespace Ranalo.Services
         Task<List<RestructuredRecord>> GetAllRestructuredNoCalculation();
 
         Task<CustomerDetails?> GetOrderByOrderIdAsync(long orderId);
+
+        Task<KosePaymentsViewModel> GetAllPaymentAccountsByUserIdAsync(int userId, string searchTerm = "", int page = 1, int pageSize = 10);
     }
 }

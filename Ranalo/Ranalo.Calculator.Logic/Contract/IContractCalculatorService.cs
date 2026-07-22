@@ -13,6 +13,7 @@ namespace Ranalo.Calculator.Logic.Contract
         decimal CalculateDeposit(decimal totalAmount);
         decimal CalculateTotalDue(decimal dailyRate, decimal weekly, decimal monthly, decimal deposit, DateTime firstPaymentDate, decimal termInMonths);
         decimal CalculateDailyRate(decimal totalAmount);
+        decimal CalculateDailyRate365(decimal totalAmount, decimal deposit);
         decimal CalculateMonthlyRate(decimal dailyRate);
         decimal CalculateWeekleyRate(decimal dailyRate);
 

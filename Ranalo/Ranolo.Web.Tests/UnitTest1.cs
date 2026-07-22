@@ -1,4 +1,5 @@
 ﻿using MySqlX.XDevAPI;
+using Ranalo.Calculator.Logic.Contract;
 using Ranalo.Services;
 using Ranalo.SumsungKnox.Models;
 using System.Globalization;
@@ -11,8 +12,21 @@ namespace Ranolo.Web.Tests
         public void Setup()
         {
         }
-
         [Test]
+        public void Calculator_TotalAmount_Test()
+        {
+            decimal totalAmount = 37516.48m;
+            var caluculatorService = new ContractCalculatorService();
+
+            var deposit = caluculatorService.CalculateDeposit(totalAmount);
+
+            var dailyRate = caluculatorService.CalculateDailyRate365(totalAmount, deposit);
+
+            Assert.That(totalAmount, Is.EqualTo(0));
+
+        }
+
+         [Test]
         public void VeriTech_Upload_Test()
         {
 

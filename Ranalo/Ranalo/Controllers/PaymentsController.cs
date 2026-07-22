@@ -63,7 +63,7 @@ namespace Ranalo.Controllers
                 return View(allPayments);
             }
 
-            var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, page: page, pageSize: pageSize);
+            var allPaymentsByUser = await _applicationReportService.GetAllPaymentAccountsByUserIdAsync(settings.UserId, page: page, pageSize: pageSize);
 
             return View(allPaymentsByUser);
         }

@@ -15,7 +15,11 @@ namespace Ranalo.Services
         Task<int> CreateRecoveredAccountAsync(ContractCreateDto newContract);
         Task AssignContractToCollector(int contractId, int collectorUserId);
 
+        Task AssignAccountToAgent(int contractId, int agentId);
+
         Task<StatusReportViewModel> GetCollectorsContractSummaryAsync(int userId, int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "");
         Task<ContractViewModel> GetAccountsByDealer(int dealerId, int page, int pageSize, string searchTerm);
+
+        Task<ContractViewModel> GetAssignedAccountsByDealer(int dealerId, int page, int pageSize, string searchTerm);
     }
 }

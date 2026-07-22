@@ -17,5 +17,6 @@ namespace Ranalo.Services
         Task<DevicesWithDealerViewModel> GetAllDevicesAsync(int? dealerId, string searchTerm, int page, int pageSize);
 
         Task<DevicesWithDealerViewModel> GetAllDevicesWithNoPaymentsAsync(int? dealerId, string searchTerm, int page, int pageSize);
+        Task<DevicesWithDealerViewModel> GetAllDevicesByUserAccountIdAsync(int userId, string searchTerm, int page, int pageSize);
     }
 }

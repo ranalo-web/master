@@ -73,6 +73,7 @@ namespace Ranalo.DataStore
         Task<KosePaymentsViewModel> GetAssignedPaymentsAsync(string searchTerm, int page, int pageSize);
         Task CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo);
         Task<List<RestructuredRecord>> GetAllRestructuredFlat();
+        Task<KosePaymentsViewModel> GetAllPaymentAccountsByUserIdAsync(int userId, string searchTerm, int page, int pageSize);
         #endregion
     }
 }

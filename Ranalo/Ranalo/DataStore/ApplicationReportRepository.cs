@@ -909,6 +909,7 @@ namespace Ranalo.DataStore
         }
 
 
+
         public async Task<IEnumerable<Models.ImagesMetadata>> GetIdentityImagesForOrder(long orderId)
         {
             var sql = @" SELECT woi.[Id]
@@ -2441,7 +2442,60 @@ FROM
             return summaries.ToList();
         }
 
-        #endregion
+        public async Task<KosePaymentsViewModel> GetAllPaymentAccountsByUserIdAsync(int userId, string searchTerm, int page, int pageSize)
+        {
+            var offset = (page - 1) * pageSize;
 
+            var countsql = @" SELECT COUNT(*) 
+                            FROM [dbo].[KosePayments] kp
+                            INNER JOIN Devices d on kp.AccountNoBigint = d.Id
+                            INNER JOIN Contract_Info ci on d.Id = ci.ID
+                            WHERE ci.AssignedAgentId = @userId
+                            AND d.[Status] = 'enrolled'
+                            AND (
+                            @SearchTerm IS NULL
+                            OR AccountNo LIKE '%' + @SearchTerm + '%'
+                            OR AmountValue LIKE '%' + @SearchTerm + '%'
+                            OR PaymentDateValue LIKE '%' + @SearchTerm + '%'
+                            OR MpesaCode LIKE '%' + @SearchTerm + '%')";
+
+            var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
+            var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { userId, SearchTerm = searchParam });
+
+            var sql = @"SELECT kp.[Id]
+                                ,[AccountNo]
+                                ,[MpesaCode]
+                                ,[Amount]
+                                ,[PaymentDate]
+                                ,[AmountValue]
+                                ,[PaymentDateValue]
+                                ,kp.[Created]
+                        FROM [dbo].[KosePayments] kp
+                        INNER JOIN Devices d on kp.AccountNoBigint = d.Id
+                        INNER JOIN Contract_Info ci on d.Id = ci.ID
+                        WHERE ci.AssignedAgentId = @userId
+                        AND d.[Status] = 'enrolled'
+                        AND (
+                        @SearchTerm IS NULL
+                        OR AccountNo LIKE '%' + @SearchTerm + '%'
+                        OR AmountValue LIKE '%' + @SearchTerm + '%'
+                        OR PaymentDateValue LIKE '%' + @SearchTerm + '%'
+                        OR MpesaCode LIKE '%' + @SearchTerm + '%')
+                        ORDER BY PaymentDateValue desc
+                        OFFSET @Offset ROWS 
+                        FETCH NEXT @pageSize ROWS ONLY";
+
+            var payments = await _db.QueryAsync<KosePayments>(sql, new { userId, offset, pageSize, SearchTerm = searchParam });
+
+            return new KosePaymentsViewModel()
+            {
+                CurrentPage = page,
+                Payments = payments.ToList(),
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+            };
     }
+
+    #endregion
+
+}
 }

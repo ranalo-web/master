@@ -72,7 +72,7 @@
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">Accounts for Agents</h3>
+                <h3 class="nk-block-title page-title">Accounts</h3>
                 <div class="nk-block-des text-soft">
                     <p>You have @Model.TotalRecords Collections in this report</p>
                 </div>
@@ -343,7 +343,7 @@
                                                     <ul class="link-list-opt no-bdr">
                                                         <li><a href="/account-details/@record.ID"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
                                                         <li>
-                                                            <a href="#assign-collector"
+                                                            <a href="#assign-agent"
                                                                data-id="@record.ID"
                                                                data-name="@record.FirstName"
                                                                data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Assign Agent</span></a>
@@ -522,7 +522,7 @@
     </div>
 </div><!-- .Edit Modal-Content -->
 <!--Assign Contract to debt collector-->
-<div class="modal fade" tabindex="-1" id="assign-collector">
+<div class="modal fade" tabindex="-1" id="assign-agent">
     <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
             <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
@@ -530,7 +530,7 @@
             </a>
             <div class="modal-body modal-body-md">
                 <h5 class="modal-title">Assign to Agent</h5>
-                <form action="/assign-collector" method="post" class="mt-2">
+                <form action="/assign-agent" method="post" class="mt-2">
                     <div class="row g-gs">
                         <div class="col-12">
                             <div class="form-group">
@@ -649,7 +649,7 @@
 
         //Assign contract
         document.addEventListener("DOMContentLoaded", function () {
-                        var modal1 = document.getElementById('assign-collector');
+                        var modal1 = document.getElementById('assign-agent');
         modal1.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget; // Button that triggered the modal
             var deviceId = button.getAttribute('data-id');

@@ -2,9 +2,9 @@
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
-@model StatusReportViewModel
+@model ContractViewModel
 @{
-    Layout = "~/Pages/Shared/_LayoutAgent.cshtml";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 @functions
 {
@@ -72,7 +72,7 @@
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">@(ViewBag.PageOrigin) - Collection Report</h3>
+                <h3 class="nk-block-title page-title">Accounts</h3>
                 <div class="nk-block-des text-soft">
                     <p>You have @Model.TotalRecords Collections in this report</p>
                 </div>
@@ -231,7 +231,7 @@
                         <div class="card-body">
                             <div class="search-content">
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <form action="/collections" method="get">
+                                <form action="/accounts" method="get">
                                     <input type="text" name="searchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by borrower or category">
                                     <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
                                 </form>
@@ -251,7 +251,7 @@
                             <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
                             <div class="nk-tb-col tb-col-md"><span class="sub-text">Daily Rate</span></div>
                             <div class="nk-tb-col"><span class="sub-text">Deposit</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Total Paid</span></div>
+                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Agent Name</span></div>
                             <div class="nk-tb-col tb-col-lg"><span class="sub-text">Arrears</span></div>
                             <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Due</span></div>
                             <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Balance</span></div>
@@ -286,7 +286,7 @@
                                 </div>
                             </div>
                         </div><!-- .nk-tb-item -->
-                        @foreach (var report in Model.StatusReports)
+                        @foreach (var record in Model?.Contracts)
                         {
                             <div class="nk-tb-item">
                                 <div class="nk-tb-col nk-tb-col-check">
@@ -296,41 +296,26 @@
                                     </div>
                                 </div>
                                 <div class="nk-tb-col">
-                                    <a href="/account-details/@report.AccountNo">
+                                    <a href="/account-details/@record.ID">
                                         <div class="user-card">
                                             <div class="user-avatar bg-primary">
                                                 <span>AB</span>
                                             </div>
                                             <div class="user-info">
-                                                <span class="tb-lead">@report.FirstName</span>
-                                                <span>AC: @report.AccountNo</span>
+                                                <span class="tb-lead">@record.FirstName</span>
+                                                <span>AC: @record.ID</span>
                                             </div>
                                         </div>
                                     </a>
                                 </div>
                                 <div class="nk-tb-col tb-col-md">
-                                    <span>@report.Daily</span>
+                                    <span>@record.Daily</span>
                                 </div>
                                 <div class="nk-tb-col">
-                                    <span>@report.Deposit </span>
-                                </div>
-                                <div class="nk-tb-col tb-col">
-                                    <span>@report.TotalPaid</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-lg">
-                                    <span class="@SetArrearsStatusBadge(report.Arrears)">@report.Arrears</span>
+                                    <span>@record.Deposit </span>
                                 </div>
                                 <div class="nk-tb-col tb-col-xxl">
-                                    <span>@report.TotalDue</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-xxl">
-                                    <span>@report.LoanBalance</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-md">
-                                    <span class="@SetStatusBadge(report.NotPaying7D)">Arrears</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-xxl">
-                                    <span>@report.EnrolledOn?.ToString("dd MMM yyyy")</span>
+                                    <span>@record.AssignedAgentName</span>
                                 </div>
                                 <div class="nk-tb-col nk-tb-col-tools">
                                     <ul class="nk-tb-actions gx-2">
@@ -338,14 +323,14 @@
                                             <a href="#edit-contract"
                                                class="btn btn-sm btn-icon btn-trigger"
                                                data-bs-toggle="modal"
-                                               data-id="@report.AccountNo"
-                                               data-name="@report.FirstName"
-                                               data-deposit="@report.Deposit"
-                                               data-interval="@report.RePaymentIntervals"
-                                               data-daily="@report.Daily"
-                                               data-weekly="@report.Weekly"
-                                               data-monthly="@report.Monthly"
-                                               data-loan="@report.TotalLoan"
+                                               data-id="@record.ID"
+                                               data-name="@record.FirstName"
+                                               data-deposit="@record.Deposit"
+                                               data-interval="@record.RePaymentIntervals"
+                                               data-daily="@record.Daily"
+                                               data-weekly="@record.Weekly"
+                                               data-monthly="@record.Monthly"
+                                               data-loan="@record.TotalLoan"
                                                data-bs-placement="top"
                                                title="Recover Device">
                                                 <em class="icon ni ni-user-check-fill"></em>
@@ -356,21 +341,14 @@
                                                 <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
                                                 <div class="dropdown-menu dropdown-menu-end">
                                                     <ul class="link-list-opt no-bdr">
-                                                        <li><a href="/account-details/@report.AccountNo"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
+                                                        <li><a href="/account-details/@record.ID"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
                                                         <li>
-                                                            <a href="#assign-collector"
-                                                               data-id="@report.AccountNo"
-                                                               data-name="@report.FirstName"
-                                                               data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Debt Collection</span></a>
+                                                            <a href="#assign-agent"
+                                                               data-id="@record.ID"
+                                                               data-name="@record.FirstName"
+                                                               data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Assign Agent</span></a>
                                                         </li>
                                                         @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
-
-                                                        <li>
-                                                            <a href="#lock-device"
-                                                               data-id="@report.AccountNo"
-                                                               data-name="@report.FirstName"
-                                                               data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Lock Device</span></a>
-                                                        </li>
                                                     </ul>
                                                 </div>
                                             </div>
@@ -544,15 +522,15 @@
     </div>
 </div><!-- .Edit Modal-Content -->
 <!--Assign Contract to debt collector-->
-<div class="modal fade" tabindex="-1" id="assign-collector">
+<div class="modal fade" tabindex="-1" id="assign-agent">
     <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
             <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <em class="icon ni ni-cross-sm"></em>
             </a>
             <div class="modal-body modal-body-md">
-                <h5 class="modal-title">Send to Collector</h5>
-                <form action="/assign-collector" method="post" class="mt-2">
+                <h5 class="modal-title">Assign to Agent</h5>
+                <form action="/assign-agent" method="post" class="mt-2">
                     <div class="row g-gs">
                         <div class="col-12">
                             <div class="form-group">
@@ -573,7 +551,7 @@
 
                         <div class="col-6">
                             <div class="form-group">
-                                <label class="overline-title overline-title-alt">Select Collector</label>
+                                <label class="overline-title overline-title-alt">Select Agent</label>
                                 <select class="form-select js-select2" name="debtCollectorUserId">
                                     @foreach (var item in ViewBag.Collectors)
                                     {
@@ -586,7 +564,7 @@
                         <div class="col-12">
                             <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
                                 <li>
-                                    <button type="submit" class="btn btn-lg btn-primary">Assign Collector</button>
+                                    <button type="submit" class="btn btn-lg btn-primary">Assign Agent</button>
                                 </li>
                                 <li>
                                     <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
@@ -671,7 +649,7 @@
 
         //Assign contract
         document.addEventListener("DOMContentLoaded", function () {
-                        var modal1 = document.getElementById('assign-collector');
+                        var modal1 = document.getElementById('assign-agent');
         modal1.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget; // Button that triggered the modal
             var deviceId = button.getAttribute('data-id');

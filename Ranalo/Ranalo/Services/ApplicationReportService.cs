@@ -92,6 +92,14 @@ namespace Ranalo.Services
             return dealerPayments;
         }
 
+        public async Task<KosePaymentsViewModel> GetAllPaymentAccountsByUserIdAsync(int userId, string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+
+            var paymentAccounts = await _applicationReportRepository.GetAllPaymentAccountsByUserIdAsync(userId, searchTerm, page, pageSize);
+
+            return paymentAccounts;
+        }
+
         public async Task<PaymentsSummaryTotalsViewModel> PaymentsSummary(string searchTerm = "", int page = 1, int pageSize = 10)
         {
             var payments = await GetPaymentsSummaryAsync(searchTerm, page, pageSize);

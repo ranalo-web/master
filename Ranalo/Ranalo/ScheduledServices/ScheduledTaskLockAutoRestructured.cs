@@ -63,7 +63,7 @@ namespace Ranalo.ScheduledServices
 
         public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, IApplicationReportService applicationReportService, IPaymentsRepository paymentsRepository)
         {
-            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); ;
+            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); 
 
             // Get all restructured records to remove from the auto restructure list
 

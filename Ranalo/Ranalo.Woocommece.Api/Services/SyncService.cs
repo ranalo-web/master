@@ -177,8 +177,9 @@ namespace Ranalo.Woocommece.Api.Services
             }
             else 
             {
-                dailyRate = _calculatorService.CalculateDailyRate(order.TotalAmount);
                 deposit = _calculatorService.CalculateDeposit(order.TotalAmount);
+                dailyRate = _calculatorService.CalculateDailyRate365(order.TotalAmount, deposit);
+                
             }
             
             var contract = new ContractInfo()

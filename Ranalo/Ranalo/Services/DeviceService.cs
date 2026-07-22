@@ -75,5 +75,10 @@ namespace Ranalo.Services
         {
             return await _devicesRepository.GetDevicesWithNoPayments(dealerId, page, pageSize, searchTerm);
         }
+
+        public async Task<DevicesWithDealerViewModel> GetAllDevicesByUserAccountIdAsync(int userId, string searchTerm, int page, int pageSize)
+        {
+            return await _devicesRepository.GetAllDevicesByUserAccountIdAsync(userId, page, pageSize, searchTerm);
+        }
     }
 }

@@ -171,11 +171,18 @@ namespace Ranalo.Controllers
                 return View(accounts);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            if (settings.RoleId == UserRole.Dealer)
+            {
+                var dealer = await _userService.GetDealerByUserId(settings.UserId);
 
-            var dealerId = Convert.ToInt32(dealer.DealerReference);
+                var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            accounts = await _devicesService.GetAllDevicesAsync(dealerId, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
+                accounts = await _devicesService.GetAllDevicesAsync(dealerId, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
+
+                return View(accounts);
+            }
+
+                accounts = await _devicesService.GetAllDevicesByUserAccountIdAsync(settings.UserId, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
 
             return View(accounts);
         }
