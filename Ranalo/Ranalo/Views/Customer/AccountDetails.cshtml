@@ -120,32 +120,9 @@
         </div><!-- .nk-block-head -->
         <div class="nk-block">
             <div class="row g-gs">
-                <div class="col-xl-4">
+                <div class="col-xl-4 order-last">
                     <div class="card">
                         <div class="card-inner-group">
-                            <div class="card-inner">
-                                <div class="user-card user-card-s2">
-                                    <div class="user-avatar lg bg-primary">
-                                        @if (Model.IdentityImages.Any())
-                                        {
-                                            <img src="@Model.IdentityImages.FirstOrDefault(x=>x.Key == "photo_of_applicant").Url" alt="">
-                                        }
-                                    </div>
-                                    <div class="user-info">
-                                        @if (Model.Payments.Any())
-                                        {
-                                            <div class="badge bg-light rounded-pill ucap">@Model?.Payments?.FirstOrDefault().AccountNo</div>
-                                        }
-                                        else
-                                        {
-                                            <div class="badge bg-light rounded-pill ucap">@Model?.OrderID</div>
-                                        }
-
-                                        <h5>@Model.FirstName @Model.LastName</h5>
-                                        <span class="sub-text">@Model.Email</span>
-                                    </div>
-                                </div>
-                            </div>
                             <div class="card-inner card-inner-sm">
                                 <ul class="btn-toolbar justify-center gx-1">
                                     <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-shield-off"></em></a></li>
@@ -177,7 +154,11 @@
                                 </div>
                             </div><!-- .card-inner -->
                             <div class="card-inner">
-                                <h6 class="overline-title mb-2">Short Details</h6>
+                                <h6 class="overline-title mb-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#shortDetailsCollapse" role="button" aria-expanded="false" aria-controls="shortDetailsCollapse" style="cursor:pointer;">
+                                    Short Details
+                                    <em class="icon ni ni-chevron-down d-md-none"></em>
+                                </h6>
+                                <div class="collapse d-md-block" id="shortDetailsCollapse">
                                 <div class="row g-3">
                                     <div class="col-sm-6 col-md-4 col-xl-12">
                                         <span class="sub-text">User ID:</span>
@@ -221,9 +202,14 @@
                                         <span>@Model.MpesaDepositRef</span>
                                     </div>
                                 </div>
+                                </div><!-- .collapse -->
                             </div><!-- .card-inner -->
                             <div class="card-inner">
-                                <h6 class="overline-title mb-2">Next of Kin</h6>
+                                <h6 class="overline-title mb-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#nextOfKinCollapse" role="button" aria-expanded="false" aria-controls="nextOfKinCollapse" style="cursor:pointer;">
+                                    Next of Kin
+                                    <em class="icon ni ni-chevron-down d-md-none"></em>
+                                </h6>
+                                <div class="collapse d-md-block" id="nextOfKinCollapse">
                                 @if (Model.NextOfKin != null)
                                 {
                                     <div class="row g-3">
@@ -245,10 +231,15 @@
                                         </div>
                                     </div>
                                 }
+                                </div><!-- .collapse -->
                             </div><!-- .card-inner -->
 
                             <div class="card-inner">
-                                <h6 class="overline-title mb-2">Second Next of Kin</h6>
+                                <h6 class="overline-title mb-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#secondNextOfKinCollapse" role="button" aria-expanded="false" aria-controls="secondNextOfKinCollapse" style="cursor:pointer;">
+                                    Second Next of Kin
+                                    <em class="icon ni ni-chevron-down d-md-none"></em>
+                                </h6>
+                                <div class="collapse d-md-block" id="secondNextOfKinCollapse">
                                 @if (Model.NextOfKin2 != null)
                                 {
                                     <div class="row g-3">
@@ -270,12 +261,36 @@
                                         </div>
                                     </div>
                                 }
+                                </div><!-- .collapse -->
                             </div><!-- .card-inner -->
                         </div>
                     </div>
                 </div><!-- .col -->
-                <div class="col-xl-8">
+                <div class="col-xl-8 order-first">
                     <div class="card">
+                        <div class="card-inner">
+                            <div class="user-card user-card-s2">
+                                <div class="user-avatar lg bg-primary">
+                                    @if (Model.IdentityImages.Any())
+                                    {
+                                        <img src="@Model.IdentityImages.FirstOrDefault(x=>x.Key == "photo_of_applicant").Url" alt="">
+                                    }
+                                </div>
+                                <div class="user-info">
+                                    @if (Model.Payments.Any())
+                                    {
+                                        <div class="badge bg-light rounded-pill ucap">@Model?.Payments?.FirstOrDefault().AccountNo</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="badge bg-light rounded-pill ucap">@Model?.OrderID</div>
+                                    }
+
+                                    <h5>@Model.FirstName @Model.LastName</h5>
+                                    <span class="sub-text">@Model.Email</span>
+                                </div>
+                            </div>
+                        </div>
                         <div class="card-inner">
                             <div class="nk-block">
                                 <div class="overline-title-alt mb-2 mt-2">In Account</div>
@@ -354,10 +369,10 @@
                                                             <div class="col-md-2 col-sm-4 col-6">
                                                                 <div class="profile-stats"><span class="profile-ud-label">Weekely</span><span class="amount text-success">@Model.Summary.Weekly.ToString("F2")</span></div>
                                                             </div>
-                                                            <div class="col-md-2 col-sm-4 col-12">
+                                                            <div class="col-md-2 col-sm-4 col-6">
                                                                 <div class="profile-stats"><span class="profile-ud-label">Monthly</span><span class="amount text-warning">@Model.Summary.Monthly.ToString("F2")</span></div>
                                                             </div>
-                                                            <div class="col-md-2 col-sm-4 col-12">
+                                                            <div class="col-md-2 col-sm-4 col-6">
                                                                 <div class="profile-stats"><span class="profile-ud-label">Days Left</span><span class="amount text-warning">@Math.Round(Model.DaysLeft)</span></div>
                                                             </div>
                                                                     <div class="col-md-3 col-lg-2 col-sm-4 col-6">
@@ -463,10 +478,10 @@
                                 <div class="table-responsive">
                                 <div class="nk-tb-list nk-tb-ulist is-compact card">
                                     <div class="nk-tb-item nk-tb-head">
-                                        <div class="nk-tb-col">
+                                        <div class="nk-tb-col tb-col-sm">
                                             <span class="overline-title">Account#</span>
                                         </div>
-                                        <div class="nk-tb-col tb-col-sm">
+                                        <div class="nk-tb-col">
                                             <span class="overline-title">Mpesa Code</span>
                                         </div>
                                         <div class="nk-tb-col">
@@ -482,10 +497,10 @@
                                         foreach (var payment in Model.Payments)
                                         {
                                             <div class="nk-tb-item">
-                                                <div class="nk-tb-col">
+                                                <div class="nk-tb-col tb-col-sm">
                                                     <span>@payment.AccountNo</span>
                                                 </div>
-                                                <div class="nk-tb-col tb-col-sm">
+                                                <div class="nk-tb-col">
                                                     <span class="sub-text">@payment.MpesaCode</span>
                                                 </div>
                                                 <div class="nk-tb-col">
