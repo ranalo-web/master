@@ -67,7 +67,6 @@ namespace Ranalo.ScheduledServices
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); ;
 
             // Get all restructured records to remove from the auto restructure list
-
             if (records == null && records?.StatusReports?.Any() == false)
             { return null; }
 
