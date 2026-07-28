@@ -9,132 +9,488 @@ namespace Ranalo.Services
     {
         private readonly string consumerKey = "Token 8efccf09d4874f88ba2a62f5db8d8efc";
 
-        public async Task<List<LockTransaction>> ProcessBatchesAsync(List<LockTransaction> devices)
+        public async Task<List<LockTransaction>> ProcessBatchesAsync(
+     List<LockTransaction> devices,
+     ILogger logger)
         {
+            const int batchSize = 100;
+            const string endpoint =
+                "https://app.nuovopay.com/dm/api/v3/devices/unlock.json";
 
-            using (var client = new HttpClient())
+            if (devices == null)
             {
-                const int batchSize = 100;
-                int nDevices = devices.Count;
-                int numBatches = (int)Math.Ceiling((double)nDevices / batchSize);
-                var authToken = Encoding.ASCII.GetBytes(consumerKey);
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                client.DefaultRequestHeaders.Add("Authorization", consumerKey);
+                logger.LogError(
+                    "ProcessBatchesAsync was called with a null device list.");
 
-                for (int batchIdx = 0; batchIdx < numBatches; batchIdx++)
+                throw new ArgumentNullException(nameof(devices));
+            }
+
+            var totalDevices =
+                devices.Count;
+
+            var numBatches =
+                (int)Math.Ceiling(
+                    (double)totalDevices / batchSize);
+
+            logger.LogInformation(
+                "Starting device batch processing. " +
+                "Devices={DeviceCount}, BatchSize={BatchSize}, Batches={BatchCount}",
+                totalDevices,
+                batchSize,
+                numBatches);
+
+            using var client =
+                new HttpClient();
+
+            client.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue(
+                    "application/json"));
+
+            client.DefaultRequestHeaders.Add(
+                "Authorization",
+                consumerKey);
+
+            for (var batchIdx = 0;
+                 batchIdx < numBatches;
+                 batchIdx++)
+            {
+                var batchNumber =
+                    batchIdx + 1;
+
+                var slice =
+                    devices
+                        .Skip(batchIdx * batchSize)
+                        .Take(batchSize)
+                        .ToList();
+
+                logger.LogInformation(
+                    "Starting batch {BatchNumber}/{BatchCount}. " +
+                    "DeviceCount={DeviceCount}",
+                    batchNumber,
+                    numBatches,
+                    slice.Count);
+
+                try
                 {
-                    // 1️⃣ Get current slice
-                    var slice = devices.Skip(batchIdx * batchSize).Take(batchSize).ToList();
-
-                    // 2️⃣ Build payload
-                    var payload = new
-                    {
-                        data = slice.Select(d => new
+                    var payload =
+                        new
                         {
-                            device_id = d.AccountId,
-                            auto_lock_date = d.AutoLockDate.ToString("dd/MM/yyyy'T'HH:mm:ss")  // "dd/MM/yyyy"
-                        })
-                    };
+                            data =
+                                slice.Select(
+                                    d => new
+                                    {
+                                        device_id =
+                                            d.AccountId,
 
-                        string jsonBody = JsonSerializer.Serialize(payload);
-
-                        // 3️⃣ Send PATCH request
-                        var request = new HttpRequestMessage(HttpMethod.Patch, "https://app.nuovopay.com/dm/api/v3/devices/unlock.json")
-                        {
-                            Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
+                                        auto_lock_date =
+                                            d.AutoLockDate.ToString(
+                                                "dd/MM/yyyy'T'HH:mm:ss")
+                                    })
                         };
 
-                        HttpResponseMessage response = await client.SendAsync(request);
-                        string responseText = await response.Content.ReadAsStringAsync();
+                    var jsonBody =
+                        JsonSerializer.Serialize(
+                            payload);
 
-                        // 4️⃣ Parse JSON result
-                        string message = null;
-                        bool? success = null;
+                    logger.LogDebug(
+                        "Built payload for batch {BatchNumber}/{BatchCount}. " +
+                        "PayloadLength={PayloadLength}",
+                        batchNumber,
+                        numBatches,
+                        jsonBody.Length);
 
-                        try
+                    using var request =
+                        new HttpRequestMessage(
+                            HttpMethod.Patch,
+                            endpoint)
                         {
-                            using var doc = JsonDocument.Parse(responseText);
-                            var root = doc.RootElement;
+                            Content =
+                                new StringContent(
+                                    jsonBody,
+                                    Encoding.UTF8,
+                                    "application/json")
+                        };
 
-                            if (root.TryGetProperty("message", out var msgProp))
-                                message = msgProp.GetString();
-                            else if (root.TryGetProperty("errors", out var errProp))
-                                message = errProp.ToString();
+                    logger.LogInformation(
+                        "Sending PATCH request for batch " +
+                        "{BatchNumber}/{BatchCount} to {Endpoint}",
+                        batchNumber,
+                        numBatches,
+                        endpoint);
 
-                            if (root.TryGetProperty("success", out var successProp))
-                                success = successProp.GetBoolean();
-                        }
-                        catch
-                        {
-                            message = "Invalid JSON response.";
-                        }
+                    using var response =
+                        await client.SendAsync(
+                            request);
 
-                        // 5️⃣ Store result in corresponding rows
-                        foreach (var d in slice)
-                            d.Result = message;
+                    var responseText =
+                        await response.Content.ReadAsStringAsync();
 
-                        Console.WriteLine($"Batch {batchIdx + 1}/{numBatches}: success={success}, message={message}");
-                }
+                    logger.LogInformation(
+                        "Received response for batch " +
+                        "{BatchNumber}/{BatchCount}. " +
+                        "StatusCode={StatusCode}, ReasonPhrase={ReasonPhrase}",
+                        batchNumber,
+                        numBatches,
+                        (int)response.StatusCode,
+                        response.ReasonPhrase);
 
-            }
-            return devices;
-        }
-
-        public async Task<LockTransaction> ProcessSingleAsync(LockTransaction device)
-        {
-
-            using (var client = new HttpClient())
-            {
-                var authToken = Encoding.ASCII.GetBytes(consumerKey);
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                client.DefaultRequestHeaders.Add("Authorization", consumerKey);
-
-                    // 2️⃣ Build payload
-                    var payload = new
-                    {
-                        data = new
-                        {
-                            device_id = device.AccountId,
-                            auto_lock_date = device.AutoLockDate.ToString("dd/MM/yyyy'T'HH:mm:ss")  // "dd/MM/yyyy"
-                        }
-                    };
-
-                    string jsonBody = JsonSerializer.Serialize(payload);
-
-                    // 3️⃣ Send PATCH request
-                    var request = new HttpRequestMessage(HttpMethod.Patch, "https://app.nuovopay.com/dm/api/v3/devices/unlock.json")
-                    {
-                        Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
-                    };
-
-                    HttpResponseMessage response = await client.SendAsync(request);
-                    string responseText = await response.Content.ReadAsStringAsync();
-
-                    // 4️⃣ Parse JSON result
-                    string message = null;
+                    string? message = null;
                     bool? success = null;
 
                     try
                     {
-                        using var doc = JsonDocument.Parse(responseText);
-                        var root = doc.RootElement;
+                        using var doc =
+                            JsonDocument.Parse(
+                                responseText);
 
-                        if (root.TryGetProperty("message", out var msgProp))
-                            message = msgProp.GetString();
-                        else if (root.TryGetProperty("errors", out var errProp))
-                            message = errProp.ToString();
+                        var root =
+                            doc.RootElement;
 
-                        if (root.TryGetProperty("success", out var successProp))
-                            success = successProp.GetBoolean();
+                        if (root.TryGetProperty(
+                                "message",
+                                out var msgProp))
+                        {
+                            message =
+                                msgProp.GetString();
+                        }
+                        else if (root.TryGetProperty(
+                                     "errors",
+                                     out var errProp))
+                        {
+                            message =
+                                errProp.ToString();
+                        }
+
+                        if (root.TryGetProperty(
+                                "success",
+                                out var successProp))
+                        {
+                            success =
+                                successProp.ValueKind ==
+                                JsonValueKind.True
+                                ? true
+                                : successProp.ValueKind ==
+                                  JsonValueKind.False
+                                    ? false
+                                    : null;
+                        }
                     }
-                    catch
+                    catch (JsonException ex)
                     {
-                        message = "Invalid JSON response.";
+                        message =
+                            "Invalid JSON response.";
+
+                        logger.LogWarning(
+                            ex,
+                            "Could not parse API response for batch " +
+                            "{BatchNumber}/{BatchCount}. " +
+                            "StatusCode={StatusCode}, ResponseLength={ResponseLength}",
+                            batchNumber,
+                            numBatches,
+                            (int)response.StatusCode,
+                            responseText?.Length ?? 0);
                     }
 
-                    // 5️⃣ Store result in corresponding rows
-                    device.Result = message;
+                    foreach (var device in slice)
+                    {
+                        device.Result =
+                            message;
+                    }
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        logger.LogInformation(
+                            "Completed batch {BatchNumber}/{BatchCount}. " +
+                            "Success={Success}, Message={Message}, Devices={DeviceCount}",
+                            batchNumber,
+                            numBatches,
+                            success,
+                            message,
+                            slice.Count);
+                    }
+                    else
+                    {
+                        logger.LogWarning(
+                            "Batch {BatchNumber}/{BatchCount} returned " +
+                            "an unsuccessful HTTP response. " +
+                            "StatusCode={StatusCode}, Success={Success}, " +
+                            "Message={Message}",
+                            batchNumber,
+                            numBatches,
+                            (int)response.StatusCode,
+                            success,
+                            message);
+                    }
                 }
+                catch (HttpRequestException ex)
+                {
+                    logger.LogError(
+                        ex,
+                        "HTTP request failed for batch " +
+                        "{BatchNumber}/{BatchCount}. Devices={DeviceCount}",
+                        batchNumber,
+                        numBatches,
+                        slice.Count);
+
+                    foreach (var device in slice)
+                    {
+                        device.Result =
+                            $"HTTP request failed: {ex.Message}";
+                    }
+                }
+                catch (TaskCanceledException ex)
+                {
+                    logger.LogError(
+                        ex,
+                        "Request timed out or was cancelled for batch " +
+                        "{BatchNumber}/{BatchCount}.",
+                        batchNumber,
+                        numBatches);
+
+                    foreach (var device in slice)
+                    {
+                        device.Result =
+                            "Request timed out or was cancelled.";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(
+                        ex,
+                        "Unexpected error processing batch " +
+                        "{BatchNumber}/{BatchCount}. Devices={DeviceCount}",
+                        batchNumber,
+                        numBatches,
+                        slice.Count);
+
+                    foreach (var device in slice)
+                    {
+                        device.Result =
+                            $"Unexpected error: {ex.Message}";
+                    }
+                }
+            }
+
+            var successful =
+                devices.Count(x =>
+                    !string.IsNullOrWhiteSpace(x.Result) &&
+                    !x.Result.Contains(
+                        "failed",
+                        StringComparison.OrdinalIgnoreCase) &&
+                    !x.Result.Contains(
+                        "error",
+                        StringComparison.OrdinalIgnoreCase));
+
+            logger.LogInformation(
+                "Finished device batch processing. " +
+                "TotalDevices={TotalDevices}, Batches={BatchCount}, " +
+                "Processed={ProcessedCount}",
+                totalDevices,
+                numBatches,
+                devices.Count);
+
+            return devices;
+        }
+
+        public async Task<LockTransaction> ProcessSingleAsync(
+    LockTransaction device,
+    ILogger logger)
+        {
+            const string endpoint =
+                "https://app.nuovopay.com/dm/api/v3/devices/unlock.json";
+
+            if (device == null)
+            {
+                logger.LogError(
+                    "ProcessSingleAsync was called with a null device.");
+
+                throw new ArgumentNullException(nameof(device));
+            }
+
+            logger.LogInformation(
+                "Starting single device processing. AccountId={AccountId}, AutoLockDate={AutoLockDate}",
+                device.AccountId,
+                device.AutoLockDate);
+
+            try
+            {
+                using var client =
+                    new HttpClient();
+
+                client.DefaultRequestHeaders.Accept.Add(
+                    new MediaTypeWithQualityHeaderValue(
+                        "application/json"));
+
+                client.DefaultRequestHeaders.Add(
+                    "Authorization",
+                    consumerKey);
+
+                var payload =
+                    new
+                    {
+                        data =
+                            new
+                            {
+                                device_id =
+                                    device.AccountId,
+
+                                auto_lock_date =
+                                    device.AutoLockDate.ToString(
+                                        "dd/MM/yyyy'T'HH:mm:ss")
+                            }
+                    };
+
+                var jsonBody =
+                    JsonSerializer.Serialize(
+                        payload);
+
+                logger.LogDebug(
+                    "Built request payload for AccountId={AccountId}. PayloadLength={PayloadLength}",
+                    device.AccountId,
+                    jsonBody.Length);
+
+                using var request =
+                    new HttpRequestMessage(
+                        HttpMethod.Patch,
+                        endpoint)
+                    {
+                        Content =
+                            new StringContent(
+                                jsonBody,
+                                Encoding.UTF8,
+                                "application/json")
+                    };
+
+                logger.LogInformation(
+                    "Sending PATCH request for AccountId={AccountId} to {Endpoint}",
+                    device.AccountId,
+                    endpoint);
+
+                using var response =
+                    await client.SendAsync(
+                        request);
+
+                var responseText =
+                    await response.Content.ReadAsStringAsync();
+
+                logger.LogInformation(
+                    "Received response for AccountId={AccountId}. StatusCode={StatusCode}, ReasonPhrase={ReasonPhrase}",
+                    device.AccountId,
+                    (int)response.StatusCode,
+                    response.ReasonPhrase);
+
+                string? message = null;
+                bool? success = null;
+
+                try
+                {
+                    using var doc =
+                        JsonDocument.Parse(
+                            responseText);
+
+                    var root =
+                        doc.RootElement;
+
+                    if (root.TryGetProperty(
+                            "message",
+                            out var msgProp))
+                    {
+                        message =
+                            msgProp.GetString();
+                    }
+                    else if (root.TryGetProperty(
+                                 "errors",
+                                 out var errProp))
+                    {
+                        message =
+                            errProp.ToString();
+                    }
+
+                    if (root.TryGetProperty(
+                            "success",
+                            out var successProp))
+                    {
+                        success =
+                            successProp.ValueKind switch
+                            {
+                                JsonValueKind.True => true,
+                                JsonValueKind.False => false,
+                                _ => null
+                            };
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    message =
+                        "Invalid JSON response.";
+
+                    logger.LogWarning(
+                        ex,
+                        "Could not parse API response for AccountId={AccountId}. " +
+                        "StatusCode={StatusCode}, ResponseLength={ResponseLength}",
+                        device.AccountId,
+                        (int)response.StatusCode,
+                        responseText?.Length ?? 0);
+                }
+
+                device.Result =
+                    message;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    logger.LogInformation(
+                        "Completed device processing. AccountId={AccountId}, Success={Success}, Message={Message}",
+                        device.AccountId,
+                        success,
+                        message);
+                }
+                else
+                {
+                    logger.LogWarning(
+                        "Device processing returned unsuccessful HTTP response. " +
+                        "AccountId={AccountId}, StatusCode={StatusCode}, Success={Success}, Message={Message}",
+                        device.AccountId,
+                        (int)response.StatusCode,
+                        success,
+                        message);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                device.Result =
+                    $"HTTP request failed: {ex.Message}";
+
+                logger.LogError(
+                    ex,
+                    "HTTP request failed while processing AccountId={AccountId}",
+                    device.AccountId);
+            }
+            catch (TaskCanceledException ex)
+            {
+                device.Result =
+                    "Request timed out or was cancelled.";
+
+                logger.LogError(
+                    ex,
+                    "Request timed out or was cancelled while processing AccountId={AccountId}",
+                    device.AccountId);
+            }
+            catch (Exception ex)
+            {
+                device.Result =
+                    $"Unexpected error: {ex.Message}";
+
+                logger.LogError(
+                    ex,
+                    "Unexpected error while processing AccountId={AccountId}",
+                    device.AccountId);
+            }
+
+            logger.LogInformation(
+                "Finished ProcessSingleAsync for AccountId={AccountId}. Result={Result}",
+                device.AccountId,
+                device.Result);
+
             return device;
         }
     }

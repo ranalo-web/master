@@ -4,7 +4,8 @@ namespace Ranalo.Services
 {
     public interface IDeviceProcessor
     {
-        Task<List<LockTransaction>> ProcessBatchesAsync(List<LockTransaction> devices);
-        Task<LockTransaction> ProcessSingleAsync(LockTransaction device);
+        Task<List<LockTransaction>> ProcessBatchesAsync(List<LockTransaction> devices, ILogger logger);
+        Task<LockTransaction> ProcessSingleAsync(LockTransaction device,
+    ILogger logger);
     }
 }

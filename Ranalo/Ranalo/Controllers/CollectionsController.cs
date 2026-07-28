@@ -4,6 +4,7 @@ using Ranalo.Calculator.Logic.Models;
 using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
+using Ranalo.ScheduledServices;
 using Ranalo.Services;
 using Ranalo.Woocommece.Api.Models;
 
@@ -16,16 +17,18 @@ namespace Ranalo.Controllers
         private readonly IUserService _userService;
         private readonly IContractService _contractorService;
         private readonly IDeviceProcessor _deviceProcessor;
+        private readonly ILogger<CollectionsController> _logger;
 
         public CollectionsController(IApplicationReportService applicationReportService,
             IUserService userService,
             IContractService contractorService,
-            IDeviceProcessor deviceProcessor)
+            IDeviceProcessor deviceProcessor, ILogger<CollectionsController> logger)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
             _contractorService = contractorService;
             _deviceProcessor = deviceProcessor;
+            _logger = logger;
         }
 
         [Route("collections-home/{page:int?}")]
@@ -279,7 +282,7 @@ namespace Ranalo.Controllers
                 AutoLockDate = finalDate
             };
 
-            await _deviceProcessor.ProcessSingleAsync(lockTransaction);
+            await _deviceProcessor.ProcessSingleAsync(lockTransaction, _logger);
 
             return RedirectToAction("Collections", "Collections");
         }

@@ -52,9 +52,9 @@ namespace Ranalo.Services
         }
 
 
-        public async Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize)
+        public async Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize, string searchTerm = "")
         {
-            var result = await _applicationReportRepository.GetOrphanedPaymentsAsync(page, pageSize);
+            var result = await _applicationReportRepository.GetOrphanedPaymentsAsync(page, pageSize, searchTerm);
             return result;
 
         }

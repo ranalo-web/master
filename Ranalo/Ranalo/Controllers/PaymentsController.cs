@@ -113,7 +113,7 @@ namespace Ranalo.Controllers
         }
 
         [Route("orphanedpayments/{page:int?}")]
-        public async Task<IActionResult> OrphanedPayments(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> OrphanedPayments(string searchTerm = "",  int page = 1, int pageSize = 10)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -122,9 +122,25 @@ namespace Ranalo.Controllers
             }
             await SetViewBags(settings, "index");
 
-            var orphanedPayments = await _applicationReportService.GetOrphanedPaymentsAsync(page, pageSize);
+            var orphanedPayments = await _applicationReportService.GetOrphanedPaymentsAsync(page, pageSize, searchTerm);
 
             return View(orphanedPayments);
+        }
+
+        [HttpPost]
+        [Route("orphanedpayments")]
+        public async Task<IActionResult> OrphanedPaymentsSearch(string searchTerm = "", int page = 1, int pageSize = 10)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            await SetViewBags(settings, "index");
+
+            var orphanedPayments = await _applicationReportService.GetOrphanedPaymentsAsync(page, pageSize, searchTerm);
+
+            return View("OrphanedPayments", orphanedPayments);
         }
 
         [Route("assignedpayments/{page:int?}")]

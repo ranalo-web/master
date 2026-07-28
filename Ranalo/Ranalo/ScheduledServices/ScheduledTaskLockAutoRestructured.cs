@@ -61,7 +61,10 @@ namespace Ranalo.ScheduledServices
             _logger.LogInformation("Live lock Reminder stopped at: {time}", DateTime.UtcNow);
         }
 
-        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, IApplicationReportService applicationReportService, IPaymentsRepository paymentsRepository)
+        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, 
+            IApplicationReportService applicationReportService, 
+            IPaymentsRepository paymentsRepository
+            )
         {
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); 
 
@@ -109,7 +112,7 @@ namespace Ranalo.ScheduledServices
                     devicesToLock.Add(lockDevice);
                 }
 
-                var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock);
+                var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock, _logger);
 
                 return lockedDevices;
             }

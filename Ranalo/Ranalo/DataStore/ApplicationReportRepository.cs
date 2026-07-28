@@ -546,7 +546,7 @@ namespace Ranalo.DataStore
             return await _db.QueryAsync<AwaitingApprovalDto>(sql);
         }
 
-        public async Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize)
+        public async Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize, string searchTearm = "")
         {
             var offset = (page - 1) * pageSize;
 
@@ -568,8 +568,16 @@ namespace Ranalo.DataStore
                         SELECT COUNT(*)
                         FROM PaymentsLinkedToOrphaned plo
                         LEFT JOIN Devices d 
-                            ON d.Id = plo.OrphanedAccountNoBigint
-                        WHERE d.Id IS NULL;";
+                            ON d.Id = plo.AccountNoBigint
+                        WHERE d.Id IS NULL
+                        AND (
+                        @SearchTerm IS NULL
+                         OR plo.FirstName LIKE '%' + @SearchTerm + '%'
+                         OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+                         OR plo.AccountNoBigint LIKE '%' + @SearchTerm + '%'
+                         OR plo.OrphanedAccountNoBigint LIKE '%' + @SearchTerm + '%'
+                         OR plo.MpesaCode LIKE '%' + @SearchTerm + '%'
+                        );";
 
             var sql = @"WITH PaymentsNoDevice AS (
                             -- Step 1: payments with no matching device
@@ -592,14 +600,22 @@ namespace Ranalo.DataStore
                         SELECT plo.*
                         FROM PaymentsLinkedToOrphaned plo
                         LEFT JOIN Devices d 
-                            on d.Id = plo.OrphanedAccountNoBigint
-	                        WHERE d.Id IS NULL
+                        on d.Id = plo.AccountNoBigint
+	                    WHERE d.Id IS NULL
+                        AND (
+                        @SearchTerm IS NULL
+                         OR plo.FirstName LIKE '%' + @SearchTerm + '%'
+                         OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
+                         OR plo.AccountNoBigint LIKE '%' + @SearchTerm + '%'
+                         OR plo.OrphanedAccountNoBigint LIKE '%' + @SearchTerm + '%'
+                         OR plo.MpesaCode LIKE '%' + @SearchTerm + '%'
+                        )
                         ORDER BY plo.PaymentDateValue DESC
                         OFFSET @Offset ROWS 
                         FETCH NEXT @pageSize ROWS ONLY";
 
-            var payments = await _db.QueryAsync<KosePayments>(sql, new { offset, pageSize });
-            var totalRecords = await _db.QuerySingleAsync<int>(countSql);
+            var payments = await _db.QueryAsync<KosePayments>(sql, new { SearchTerm = searchTearm, offset, pageSize });
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchTearm });
 
             return new KosePaymentsViewModel()
             {

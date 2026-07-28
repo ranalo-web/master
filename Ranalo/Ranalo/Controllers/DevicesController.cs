@@ -17,13 +17,19 @@ namespace Ranalo.Controllers
         private readonly IUserService _userService;
         private readonly IApplicationReportService _applicationReportService;
         private readonly IDeviceProcessor _deviceProcessor;
+        private readonly ILogger<DevicesController> _logger;
 
-        public DevicesController(IDeviceService devicesService, IUserService userService, IApplicationReportService applicationReportService, IDeviceProcessor deviceProcessor)
+        public DevicesController(IDeviceService devicesService, 
+            IUserService userService, 
+            IApplicationReportService applicationReportService, 
+            IDeviceProcessor deviceProcessor,
+            ILogger<DevicesController> logger)
         {
             _devicesService = devicesService;
             _userService = userService;
             _applicationReportService = applicationReportService;
             _deviceProcessor = deviceProcessor;
+            _logger = logger;
         }
 
         [Route("devices-with-no-orders/{page:int?}/{pageSize:int?}")]
@@ -210,7 +216,7 @@ namespace Ranalo.Controllers
                 AutoLockDate = finalDate
             };
 
-            await _deviceProcessor.ProcessSingleAsync(lockTransaction);
+            await _deviceProcessor.ProcessSingleAsync(lockTransaction, _logger);
 
             return RedirectToAction("AllDevices", "Devices");
         }
