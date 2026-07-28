@@ -37,7 +37,8 @@ namespace Ranalo.ScheduledServices
                         //IPaymentsRepository
                         var reminderService = scope.ServiceProvider.GetRequiredService<IApplicationReportService>();
                         var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository);
+                        var enrolmentService = scope.ServiceProvider.GetRequiredService<IEnrolmentService>();
+                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService);
                         foreach (var order in inactiveUsers)
                         {
                             _logger.LogInformation("lock Auto restructured for: {user}", order.AccountId);
@@ -63,7 +64,8 @@ namespace Ranalo.ScheduledServices
 
         public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, 
             IApplicationReportService applicationReportService, 
-            IPaymentsRepository paymentsRepository
+            IPaymentsRepository paymentsRepository,
+            IEnrolmentService enrolmentService
             )
         {
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); 
@@ -94,6 +96,7 @@ namespace Ranalo.ScheduledServices
             .ToList();
 
             var devicesToLock = new List<LockTransaction>();
+            var devicesToLockKnox = new List<LockTransaction>();
             //Not sure why this removes negative arrears
             //records.Records.RemoveAll(a => a.ArrearsR > 0);
 
@@ -109,10 +112,22 @@ namespace Ranalo.ScheduledServices
                         AutoLockDate = account.LastPaymentDate != null ? account.LastPaymentDate.Value.AddHours(30) : DateTime.UtcNow
                     };
 
-                    devicesToLock.Add(lockDevice);
+                    if (account.LockGroup == 2)
+                    {
+                        devicesToLockKnox.Add(lockDevice);
+                    }
+                    if (account.LockGroup == 1)
+                    {
+                        devicesToLock.Add(lockDevice);
+                    }
                 }
 
                 var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock, _logger);
+
+                if (devicesToLockKnox.Any())
+                {
+                    await enrolmentService.LockDevicesKnox(devicesToLockKnox);
+                }
 
                 return lockedDevices;
             }
