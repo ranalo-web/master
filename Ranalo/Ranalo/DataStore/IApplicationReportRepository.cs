@@ -18,7 +18,7 @@ namespace Ranalo.DataStore
         Task<AwaitingApprovalViewModel> GetAllWaitingApprovalAsync(string searchTerm = "", int page = 1, int pageSize = 10);
         Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int dealerId, string searchTerm, int page, int pageSize);
 
-        Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize);
+        Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize, string searchTerm = "");
 
         Task<IEnumerable<AwaitingApprovalDto>> GetAllOrdersAsync();
         Task<IEnumerable<Dealer>> GetAllDealersAsync();

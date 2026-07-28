@@ -60,12 +60,13 @@ namespace Ranalo.ScheduledServices
             _logger.LogInformation("Unlock fully paid stopped at: {time}", DateTime.UtcNow);
         }
 
-        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, IApplicationReportService applicationReportService, IPaymentsRepository paymentsRepository)
+        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, 
+            IApplicationReportService applicationReportService, 
+            IPaymentsRepository paymentsRepository)
         {
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); ;
 
             // Get all restructured records to remove from the auto restructure list
-
             if (records == null && records?.StatusReports?.Any() == false)
             { return null; }
 
@@ -100,7 +101,7 @@ namespace Ranalo.ScheduledServices
                     devicesToLock.Add(lockDevice);
                 }
 
-                var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock);
+                var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock, _logger);
 
                 return lockedDevices;
             }

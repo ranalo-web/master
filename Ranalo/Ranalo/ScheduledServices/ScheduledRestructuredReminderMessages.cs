@@ -114,9 +114,9 @@ namespace Ranalo.ScheduledServices
             return accountMessages;
         }
 
-        private static decimal SafeDivide(decimal numerator, decimal denominator)
-        {
-            return denominator == 0 ? 0 : numerator / denominator;
-        }
+        //private static decimal SafeDivide(decimal numerator, decimal denominator)
+        //{
+        //    return denominator == 0 ? 0 : numerator / denominator;
+        //}
     }
 }

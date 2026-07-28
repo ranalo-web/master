@@ -127,7 +127,7 @@ namespace Ranalo.ScheduledServices
                     }
                 }
 
-                var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock);
+                var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock, _logger);
 
                 if(devicesToLockKnox.Any())
                 {
