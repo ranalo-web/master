@@ -214,12 +214,14 @@ namespace Ranalo.Services
                             "Batch {BatchNumber}/{BatchCount} returned " +
                             "an unsuccessful HTTP response. " +
                             "StatusCode={StatusCode}, Success={Success}, " +
-                            "Message={Message}",
+                            "Message={Message}," +
+                            "Body={jsonBody}",
                             batchNumber,
                             numBatches,
                             (int)response.StatusCode,
                             success,
-                            message);
+                            message,
+                            jsonBody);
                     }
                 }
                 catch (HttpRequestException ex)
