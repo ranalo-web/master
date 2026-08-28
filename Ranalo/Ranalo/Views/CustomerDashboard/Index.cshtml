@@ -1,0 +1,242 @@
+@model Ranalo.Models.CustomerDashboardViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">My Device</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Welcome back, @Model.CustomerName.Split(' ')[0] &mdash; here's your device and payment progress.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="#" class="btn btn-primary"><em class="icon ni ni-tranx"></em><span>Make a Payment</span></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="row g-0">
+                <div class="col-md-3">
+                    <div class="d-flex align-items-center justify-content-center h-100 p-4" style="background:linear-gradient(160deg, #eef0ff 0%, #f7f8ff 100%); border-right:1px solid #ebeef2;">
+                        <svg width="120" height="240" viewBox="0 0 140 280">
+                            <defs>
+                                <linearGradient id="phoneBody" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#4b5160" />
+                                    <stop offset="100%" stop-color="#2b2e38" />
+                                </linearGradient>
+                                <linearGradient id="phoneScreen" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#3d4a7a" />
+                                    <stop offset="55%" stop-color="#232a44" />
+                                    <stop offset="100%" stop-color="#171b2c" />
+                                </linearGradient>
+                            </defs>
+                            <rect x="4" y="4" width="132" height="272" rx="26" fill="url(#phoneBody)" stroke="#1b1d24" stroke-width="1.5" />
+                            <rect x="12" y="26" width="116" height="228" rx="6" fill="url(#phoneScreen)" />
+                            <circle cx="70" cy="15" r="2.6" fill="#0e1018" />
+                            <rect x="54" y="264" width="32" height="4" rx="2" fill="#565b6b" />
+                            <circle cx="70" cy="100" r="22" fill="none" stroke="#5f6bb0" stroke-width="1.5" opacity="0.5" />
+                            <text x="70" y="106" text-anchor="middle" font-weight="800" font-size="13" fill="#8fa0ff" opacity="0.85">Ranalo</text>
+                            <rect x="26" y="150" width="88" height="6" rx="3" fill="#333a55" />
+                            <rect x="26" y="164" width="60" height="6" rx="3" fill="#333a55" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="card-inner">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="mb-1">@Model.DeviceModel &mdash; Contract #@Model.ContractNumber</h5>
+                                <p class="text-soft mb-0">Hire purchase agreement</p>
+                            </div>
+                            <span class="badge badge-dim bg-success">@Model.Status</span>
+                        </div>
+                        <div class="row g-3 border-top pt-3">
+                            <div class="col-md-4">
+                                <div class="text-soft" style="font-size:11px;">Total Loan Amount</div>
+                                <div class="fw-medium">KES @Model.TotalLoanAmount.ToString("N0")</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-soft" style="font-size:11px;">Contract Start</div>
+                                <div class="fw-medium">@Model.ContractStart</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-soft" style="font-size:11px;">Contract End Date</div>
+                                <div class="fw-medium">@Model.ContractEnd</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-soft" style="font-size:11px;">Restructure Date</div>
+                                <div class="fw-medium">@Model.RestructureDate</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-soft" style="font-size:11px;">Dealer</div>
+                                <div class="fw-medium">@Model.DealerName</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-soft" style="font-size:11px;">Agent</div>
+                                <div class="fw-medium">@Model.AgentName</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <h6 class="title mb-1">Schedule Details</h6>
+                <p class="text-soft mb-3" style="font-size:12px;">Payment cadence and device lock status &mdash; useful when a customer calls in</p>
+                <div class="row g-3">
+                    <div class="col-md">
+                        <div class="text-soft" style="font-size:11px;">Daily Payment</div>
+                        <div class="fw-bold">KES @Model.DailyPayment.ToString("N0")</div>
+                    </div>
+                    <div class="col-md">
+                        <div class="text-soft" style="font-size:11px;">Monthly Installment</div>
+                        <div class="fw-bold">KES @Model.MonthlyInstallment.ToString("N0")</div>
+                    </div>
+                    <div class="col-md">
+                        <div class="text-soft" style="font-size:11px;">Next Payment Due</div>
+                        <div class="fw-bold">@Model.NextPaymentDue</div>
+                        <div class="text-primary" style="font-size:10.5px;">@Model.NextPaymentDaysAway</div>
+                    </div>
+                    <div class="col-md">
+                        <div class="text-soft" style="font-size:11px;">Last Lock Date</div>
+                        <div class="fw-bold text-soft">@Model.LastLockDate</div>
+                    </div>
+                    <div class="col-md">
+                        <div class="text-soft" style="font-size:11px;">Next Lock Date</div>
+                        <div class="fw-bold text-danger" style="font-size:12.5px;">@Model.NextLockDate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                    <div>
+                        <h6 class="title mb-1">Loan Status</h6>
+                        <p class="text-soft mb-0" style="font-size:12px;">@Model.InstallmentsPaid of @Model.InstallmentsTotal installments paid</p>
+                    </div>
+                    <div class="d-flex gap-4">
+                        <div>
+                            <div class="text-soft" style="font-size:11px;">Paid to Date</div>
+                            <div class="text-success fw-bold">KES @Model.PaidToDate.ToString("N0")</div>
+                        </div>
+                        <div>
+                            <div class="text-soft" style="font-size:11px;">Balance Remaining</div>
+                            <div class="fw-bold">KES @Model.BalanceRemaining.ToString("N0")</div>
+                        </div>
+                        <div>
+                            <div class="text-soft" style="font-size:11px;">Complete</div>
+                            <div class="fw-bold">@Model.PercentComplete.ToString("0")%</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress" style="height:10px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width:@Model.PercentComplete.ToString("0")%;"></div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title"><h6 class="title">Recent Payments</h6><p class="text-soft">Every installment you've made on this device, most recent first</p></div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    <table class="table table-tranx">
+                        <thead>
+                            <tr class="tb-tnx-head">
+                                <th class="tb-tnx-info"><span>Date Paid</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Amount</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Method</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Status</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Balance After</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model.RecentPayments)
+                            {
+                                <tr class="tb-tnx-item">
+                                    <td class="tb-tnx-info"><span class="fw-medium">@p.DatePaid</span></td>
+                                    <td class="tb-tnx-info is-alt">KES @p.Amount.ToString("N0")</td>
+                                    <td class="tb-tnx-info is-alt">@p.Method</td>
+                                    <td class="tb-tnx-info is-alt"><span class="badge badge-dim bg-success">@p.Status</span></td>
+                                    <td class="tb-tnx-info is-alt">KES @p.BalanceAfter.ToString("N0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title"><h6 class="title">Device Information</h6><p class="text-soft">Specs and identifiers for the financed device</p></div>
+                    </div>
+                </div>
+                <div class="card-inner">
+                    <div class="row g-3">
+                        <div class="col-md">
+                            <div class="text-soft" style="font-size:11px;">Model</div>
+                            <div class="fw-medium">@Model.DeviceModel</div>
+                        </div>
+                        <div class="col-md">
+                            <div class="text-soft" style="font-size:11px;">Storage</div>
+                            <div class="fw-medium">@Model.DeviceStorage</div>
+                        </div>
+                        <div class="col-md">
+                            <div class="text-soft" style="font-size:11px;">Color</div>
+                            <div class="fw-medium">@Model.DeviceColor</div>
+                        </div>
+                        <div class="col-md">
+                            <div class="text-soft" style="font-size:11px;">IMEI</div>
+                            <div class="fw-medium">@Model.Imei</div>
+                        </div>
+                        <div class="col-md">
+                            <div class="text-soft" style="font-size:11px;">Device ID</div>
+                            <div class="fw-medium">@Model.DeviceId</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:46px; height:46px; background:#e7e9ff;">
+                        <em class="icon ni ni-help-fill text-primary" style="font-size:20px;"></em>
+                    </div>
+                    <div>
+                        <h6 class="mb-0">Need help with your account?</h6>
+                        <p class="text-soft mb-0" style="font-size:13px;">Our support team can help with payments, device issues or your contract</p>
+                    </div>
+                </div>
+                <a href="#" class="btn btn-primary">Contact Support</a>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+</div>
