@@ -44,6 +44,15 @@
                                         <span class="nk-menu-text">Home</span>
                                     </a>
                                 </li><!-- .nk-menu-item -->
+                                @if (ViewBag.IsDealer)
+                                {
+                                    <li class="nk-menu-item">
+                                        <a href="/dealer-dashboard" class="nk-menu-link">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-dashboard"></em></span>
+                                            <span class="nk-menu-text">Dealer Dashboard</span>
+                                        </a>
+                                    </li>
+                                }
                                 <li class="nk-menu-item">
                                     <a href="/orders" class="nk-menu-link">
                                         <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
