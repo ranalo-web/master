@@ -1,0 +1,213 @@
+@model Ranalo.Models.CustomerCareDashboardViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Customer Care Dashboard</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Welcome back, @Model.StaffName &mdash; here to help customers, dealers and agents with their accounts.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <ul class="nk-block-tools g-3">
+                    <li><a href="#" class="btn btn-outline-light btn-white"><em class="icon ni ni-call"></em><span>Log a Call</span></a></li>
+                    <li><a href="#" class="btn btn-primary"><em class="icon ni ni-plus"></em><span>New Enrolment</span></a></li>
+                </ul>
+            </div>
+        </div>
+        <p class="text-soft mt-2 mb-0" style="font-size:11.5px;">New enrolments made here are recorded as direct company sales &mdash; separate from dealer and agent enrolments.</p>
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-md-6 col-xxl-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2"><div class="card-title"><h6 class="title">Calls Due Today</h6></div></div>
+                        <div class="nk-sale-data">
+                            <span class="amount">@Model.CallsDueToday</span>
+                            <span class="sub-title">@Model.CallsCritical critical &middot; @Model.CallsBehind behind schedule</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xxl-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2"><div class="card-title"><h6 class="title">Overdue Accounts</h6></div></div>
+                        <div class="nk-sale-data">
+                            <span class="amount">@Model.OverdueAccounts</span>
+                            <span class="sub-title text-danger">KES @Model.TotalArrears.ToString("N0") total arrears</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xxl-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2"><div class="card-title"><h6 class="title">Devices Locked</h6></div></div>
+                        <div class="nk-sale-data">
+                            <span class="amount">@Model.DevicesLocked</span>
+                            <span class="sub-title text-success">@Model.UnlockedToday unlocked today</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xxl-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2"><div class="card-title"><h6 class="title">Tickets Today</h6></div></div>
+                        <div class="nk-sale-data">
+                            <span class="amount text-success">@Model.TicketsResolvedToday / @Model.TicketsOpenToday</span>
+                            <span class="sub-title">resolved of open today</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <div class="text-soft mb-2" style="font-size:11px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase;">Search Accounts</div>
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent"><em class="icon ni ni-search"></em></span>
+                    <input type="text" class="form-control" placeholder="Search by customer, dealer or agent name, phone, IMEI or contract #...">
+                    <button class="btn btn-primary" type="button">Search</button>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner-group">
+                <div class="card-inner bg-lighter">
+                    <span class="badge badge-dim bg-primary"><em class="icon ni ni-search"></em> RESULT &middot; example of an opened account</span>
+                </div>
+                <div class="card-inner">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-1">
+                            <svg width="44" height="88" viewBox="0 0 140 280">
+                                <rect x="4" y="4" width="132" height="272" rx="26" fill="#3a3f4b" stroke="#1b1d24" stroke-width="1.5" />
+                                <rect x="12" y="26" width="116" height="228" rx="6" fill="#232a44" />
+                                <rect x="54" y="264" width="32" height="4" rx="2" fill="#565b6b" />
+                            </svg>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <h6 class="mb-0">@Model.ExampleLookup.CustomerName</h6>
+                                <span class="badge badge-dim bg-success">@Model.ExampleLookup.Status</span>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col"><div class="text-soft" style="font-size:11px;">Device</div><div class="fw-medium">@Model.ExampleLookup.Device</div></div>
+                                <div class="col"><div class="text-soft" style="font-size:11px;">Contract #</div><div class="fw-medium">@Model.ExampleLookup.ContractNumber</div></div>
+                                <div class="col"><div class="text-soft" style="font-size:11px;">Balance</div><div class="fw-medium">KES @Model.ExampleLookup.Balance.ToString("N0")</div></div>
+                                <div class="col"><div class="text-soft" style="font-size:11px;">Next Due</div><div class="fw-medium">@Model.ExampleLookup.NextDue</div></div>
+                                <div class="col"><div class="text-soft" style="font-size:11px;">Agent / Dealer</div><div class="fw-medium">@Model.ExampleLookup.AgentName &middot; @Model.ExampleLookup.DealerName</div></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 d-flex flex-column gap-2">
+                            <a href="#" class="btn btn-primary btn-sm">Log a Call</a>
+                            <a href="#" class="btn btn-outline-light btn-sm">Send Reminder</a>
+                            <a href="#" class="btn btn-outline-light btn-sm disabled">Lock Device</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title"><h6 class="title">Call Queue</h6><p class="text-soft">Top priority accounts across the network, most overdue first</p></div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    <table class="table table-tranx">
+                        <thead>
+                            <tr class="tb-tnx-head">
+                                <th class="tb-tnx-info"><span>Priority</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Customer</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Phone</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Days Late</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Arrears</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Balance</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Agent</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Dealer</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Action</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var q in Model.CallQueue)
+                            {
+                                var isCritical = q.Priority == "Critical";
+                                <tr class="tb-tnx-item @(isCritical ? "" : "")" style="@(isCritical ? "background:#fdf3f2;" : "")">
+                                    <td class="tb-tnx-info"><span class="badge @(isCritical ? "badge-dim bg-danger" : "badge-dim bg-warning")">@q.Priority</span></td>
+                                    <td class="tb-tnx-info is-alt"><span class="fw-medium">@q.CustomerName</span></td>
+                                    <td class="tb-tnx-info is-alt">@q.Phone</td>
+                                    <td class="tb-tnx-info is-alt @(isCritical ? "text-danger" : "")" style="@(isCritical ? "" : "color:#b8860b;")">@q.DaysLate</td>
+                                    <td class="tb-tnx-info is-alt">@q.Arrears.ToString("N0")</td>
+                                    <td class="tb-tnx-info is-alt">@q.Balance.ToString("N0")</td>
+                                    <td class="tb-tnx-info is-alt">@q.AgentName</td>
+                                    <td class="tb-tnx-info is-alt">@q.DealerName</td>
+                                    <td class="tb-tnx-info is-alt"><a href="#" class="btn btn-primary btn-sm">Call</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-xxl-5">
+                <div class="card card-bordered card-stretch h-100">
+                    <div class="card-inner">
+                        <h6 class="title">Locked Devices</h6>
+                        <p class="text-soft" style="font-size:12px;">Remotely locked for non-payment</p>
+                        @foreach (var d in Model.LockedDevices)
+                        {
+                            <div class="d-flex justify-content-between align-items-center border-top py-2">
+                                <div>
+                                    <div class="fw-medium">@d.CustomerName</div>
+                                    <div class="text-soft" style="font-size:11px;">@d.Device &middot; locked @d.LockedAgo &middot; balance @d.Balance.ToString("N0")</div>
+                                </div>
+                                <a href="#" class="btn btn-outline-light btn-sm">Unlock</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xxl-7">
+                <div class="card card-bordered card-stretch h-100">
+                    <div class="card-inner">
+                        <h6 class="title">Recent Tickets</h6>
+                        <p class="text-soft" style="font-size:12px;">Latest interactions logged by the team</p>
+                        @foreach (var t in Model.RecentTickets)
+                        {
+                            <div class="d-flex justify-content-between align-items-start border-top py-2">
+                                <div>
+                                    <div class="fw-medium">@t.CustomerName <span class="text-soft fw-normal">&middot; @t.Type</span></div>
+                                    <div class="text-soft" style="font-size:11.5px;">@t.Note</div>
+                                </div>
+                                <div class="text-end text-soft" style="font-size:11px;">@t.StaffName<br>@t.Time</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+</div>

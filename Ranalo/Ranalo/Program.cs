@@ -101,36 +101,39 @@ builder.Services.AddScoped<IMySqlPaymentsRepository, MySqlPaymentsRepository>();
 
 bool runWooTask = builder.Configuration.GetValue<bool>("RunWooTask");
 
-if (runWooTask)
+if (!builder.Environment.IsDevelopment())
 {
+    if (runWooTask)
+    {
 
-    //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
-    //builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
-    //builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
-    //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
-    builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
-    builder.Services.AddHostedService<ScheduledLockPaying>();
-    builder.Services.AddHostedService<ScheduledLockRestructured>();
-    builder.Services.AddHostedService<ScheduledLockFullyPaid>();
-    //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
-}
-else
-{
-    builder.Services.AddHostedService<ScheduledTaskKnoxDevicesPull>();
-    builder.Services.AddHostedService<ScheduledLockFullyPaid>();
-    builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
-    builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
-    ////builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
-    builder.Services.AddHostedService<ScheduledTaskCreateContractOrders>();
-    builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
-    builder.Services.AddHostedService<ScheduledActiveLockReminderMessages>();
-    builder.Services.AddHostedService<ScheduledRestructuredReminderMessages>();
-    builder.Services.AddHostedService<ScheduledAutoRestructureMessages>();
-    builder.Services.AddHostedService<ScheduledLockRestructured>();
-    builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
-    builder.Services.AddHostedService<ScheduledLockPaying>();
-    builder.Services.AddHostedService<ScheduledDailyPaymentSummary>();
-   
+        //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+        //builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
+        //builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
+        //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+        builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
+        builder.Services.AddHostedService<ScheduledLockPaying>();
+        builder.Services.AddHostedService<ScheduledLockRestructured>();
+        builder.Services.AddHostedService<ScheduledLockFullyPaid>();
+        //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+    }
+    else
+    {
+        builder.Services.AddHostedService<ScheduledTaskKnoxDevicesPull>();
+        builder.Services.AddHostedService<ScheduledLockFullyPaid>();
+        builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+        builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
+        ////builder.Services.AddHostedService<ScheduledTaskPaymentsService>();
+        builder.Services.AddHostedService<ScheduledTaskCreateContractOrders>();
+        builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
+        builder.Services.AddHostedService<ScheduledActiveLockReminderMessages>();
+        builder.Services.AddHostedService<ScheduledRestructuredReminderMessages>();
+        builder.Services.AddHostedService<ScheduledAutoRestructureMessages>();
+        builder.Services.AddHostedService<ScheduledLockRestructured>();
+        builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
+        builder.Services.AddHostedService<ScheduledLockPaying>();
+        builder.Services.AddHostedService<ScheduledDailyPaymentSummary>();
+
+    }
 }
 
 
