@@ -1,0 +1,323 @@
+@model Ranalo.Models.AdminDashboardViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Admin Dashboard</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Welcome back, @ViewBag.UserName &mdash; here's how Ranalo Credit is performing.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <ul class="nk-block-tools g-3">
+                    <li>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-light btn-white dropdown-toggle" data-bs-toggle="dropdown">
+                                <em class="icon ni ni-calendar"></em><span>This Month</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <ul class="link-list-opt no-bdr">
+                                    <li><a href="#"><span>Week</span></a></li>
+                                    <li><a href="#"><span>Month</span></a></li>
+                                    <li><a href="#"><span>Year to Date</span></a></li>
+                                    <li><a href="#"><span>Year</span></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div><!-- .nk-block-head -->
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-md-6 col-xxl-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title">
+                                <h6 class="title">Revenue <span class="badge badge-dim bg-primary ms-1">Live</span></h6>
+                            </div>
+                        </div>
+                        <div class="align-end flex-sm-wrap g-4 flex-md-nowrap">
+                            <div class="nk-sale-data">
+                                <span class="amount">KES @Model.RevenueThisMonth.ToString("N0")</span>
+                                <span class="sub-title"><span class="change up text-success"><em class="icon ni ni-arrow-long-up"></em>@Model.RevenueGrowthPct.ToString("0.0")%</span> this month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xxl-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title"><h6 class="title">Total Accounts</h6></div>
+                        </div>
+                        <div class="nk-sale-data">
+                            <span class="amount">@Model.TotalAccounts.ToString("N0")</span>
+                            <span class="sub-title"><span class="text-success">@Model.GoodAccounts.ToString("N0") good</span> &middot; <span class="text-danger">@Model.BadAccounts.ToString("N0") bad</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xxl-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title"><h6 class="title">Paying vs Non-Paying</h6></div>
+                        </div>
+                        <div class="nk-sale-data">
+                            <span class="amount">@Model.PayingAccounts.ToString("N0")</span>
+                            <span class="sub-title"><span class="text-danger">@Model.NonPayingAccounts.ToString("N0") not paying</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xxl-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title"><h6 class="title">Total Arrears</h6></div>
+                        </div>
+                        <div class="nk-sale-data">
+                            <span class="amount text-danger">KES @Model.ArrearsTotal.ToString("N0")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- .row -->
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-xxl-8">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group mb-3">
+                            <div class="card-title">
+                                <h6 class="title">Revenue &amp; Accounts Growth</h6>
+                                <p class="text-soft">Last 8 months</p>
+                            </div>
+                        </div>
+                        <svg width="100%" height="220" viewBox="0 0 620 220" preserveAspectRatio="none" style="display:block; overflow:visible;">
+                            @{
+                                var maxRev = Model.RevenueByMonth.Count > 0 ? Model.RevenueByMonth.Max() : 1;
+                                var minRev = Model.RevenueByMonth.Count > 0 ? Model.RevenueByMonth.Min() : 0;
+                                var n = Model.RevenueByMonth.Count;
+                                var xStep = n > 1 ? 560m / (n - 1) : 0;
+                                var pts = new List<(decimal x, decimal y)>();
+                                for (var i = 0; i < n; i++)
+                                {
+                                    var x = 30 + i * xStep;
+                                    var norm = maxRev > minRev ? (Model.RevenueByMonth[i] - minRev) / (maxRev - minRev) : 0;
+                                    var y = 190 - (norm * 150);
+                                    pts.Add((x, y));
+                                }
+                                var pathD = "M" + string.Join(" L", pts.Select(p => $"{p.x:0},{p.y:0}"));
+                            }
+                            <line x1="30" y1="190" x2="590" y2="190" stroke="#e5e9f2" stroke-width="1" />
+                            <path d="@pathD" fill="none" stroke="#6576ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                            @foreach (var p in pts)
+                            {
+                                <circle cx="@p.x" cy="@p.y" r="4" fill="#6576ff" />
+                            }
+                        </svg>
+                        <div class="d-flex justify-content-between px-4 mt-1">
+                            @foreach (var m in Model.GrowthMonths)
+                            {
+                                <span class="text-soft" style="font-size:11px;">@m</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xxl-4">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group mb-3">
+                            <div class="card-title"><h6 class="title">Portfolio Composition</h6></div>
+                        </div>
+                        @{
+                            var circumference = 2 * Math.PI * 70;
+                            var good = (double)Model.PortfolioGoodPct / 100 * circumference;
+                            var slow = (double)Model.PortfolioSlowPct / 100 * circumference;
+                            var arrears = (double)Model.PortfolioArrearsPct / 100 * circumference;
+                            var nonPay = (double)Model.PortfolioNonPayingPct / 100 * circumference;
+                        }
+                        <div class="d-flex justify-content-center mb-3">
+                            <svg width="150" height="150" viewBox="0 0 180 180">
+                                <circle cx="90" cy="90" r="70" fill="none" stroke="#ebeef2" stroke-width="22" />
+                                <circle cx="90" cy="90" r="70" fill="none" stroke="#1ee0ac" stroke-width="22" stroke-dasharray="@good.ToString("0.00") @circumference.ToString("0.00")" stroke-dashoffset="0" transform="rotate(-90 90 90)" />
+                                <circle cx="90" cy="90" r="70" fill="none" stroke="#f4bd0e" stroke-width="22" stroke-dasharray="@slow.ToString("0.00") @circumference.ToString("0.00")" stroke-dashoffset="-@good.ToString("0.00")" transform="rotate(-90 90 90)" />
+                                <circle cx="90" cy="90" r="70" fill="none" stroke="#e85347" stroke-width="22" stroke-dasharray="@arrears.ToString("0.00") @circumference.ToString("0.00")" stroke-dashoffset="-@((good + slow).ToString("0.00"))" transform="rotate(-90 90 90)" />
+                                <circle cx="90" cy="90" r="70" fill="none" stroke="#364a63" stroke-width="22" stroke-dasharray="@nonPay.ToString("0.00") @circumference.ToString("0.00")" stroke-dashoffset="-@((good + slow + arrears).ToString("0.00"))" transform="rotate(-90 90 90)" />
+                                <text x="90" y="86" text-anchor="middle" font-weight="800" font-size="24" fill="#364a63">@Model.PortfolioGoodPct.ToString("0")%</text>
+                                <text x="90" y="104" text-anchor="middle" font-size="11" fill="#8091a7">good customers</text>
+                            </svg>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            <div class="d-flex justify-content-between"><span><span class="dot bg-success me-1"></span>Good Customers</span><span class="fw-bold">@Model.PortfolioGoodPct%</span></div>
+                            <div class="d-flex justify-content-between"><span><span class="dot bg-warning me-1"></span>Slow Payers</span><span class="fw-bold">@Model.PortfolioSlowPct%</span></div>
+                            <div class="d-flex justify-content-between"><span><span class="dot bg-danger me-1"></span>In Arrears</span><span class="fw-bold">@Model.PortfolioArrearsPct%</span></div>
+                            <div class="d-flex justify-content-between"><span><span class="dot bg-dark me-1"></span>Non-Payers</span><span class="fw-bold">@Model.PortfolioNonPayingPct%</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-md-4">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title"><span class="dot dot-lg bg-dark me-1"></span>Non-Payers</h6>
+                        <p class="text-soft" style="font-size:12px;">No payment in 30+ days</p>
+                        @foreach (var e in Model.NonPayers)
+                        {
+                            <div class="d-flex justify-content-between align-items-center border-top py-2">
+                                <div>
+                                    <div class="fw-medium">@e.CustomerName</div>
+                                    <div class="text-soft" style="font-size:11px;">@e.DealerName &middot; <span class="text-danger">@e.Detail</span></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title"><span class="dot dot-lg bg-warning me-1"></span>Slow Payers</h6>
+                        <p class="text-soft" style="font-size:12px;">Behind schedule, still paying</p>
+                        @foreach (var e in Model.SlowPayers)
+                        {
+                            <div class="d-flex justify-content-between align-items-center border-top py-2">
+                                <div>
+                                    <div class="fw-medium">@e.CustomerName</div>
+                                    <div class="text-soft" style="font-size:11px;">@e.DealerName &middot; <span style="color:#b8860b;">@e.Detail</span></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title"><span class="dot dot-lg bg-success me-1"></span>Good Paying Customers</h6>
+                        <p class="text-soft" style="font-size:12px;">Ahead of schedule</p>
+                        @foreach (var e in Model.GoodPayers)
+                        {
+                            <div class="d-flex justify-content-between align-items-center border-top py-2">
+                                <div>
+                                    <div class="fw-medium">@e.CustomerName</div>
+                                    <div class="text-soft" style="font-size:11px;">@e.DealerName</div>
+                                </div>
+                                <span class="text-success" style="font-size:12px;">@e.Detail</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title">Dealer Performance</h6>
+                            <p class="text-soft">Ranked by active rate this month, vs. an 80% active-rate target</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    <table class="table table-tranx">
+                        <thead>
+                            <tr class="tb-tnx-head">
+                                <th class="tb-tnx-id"><span>Rank</span></th>
+                                <th class="tb-tnx-info"><span>Dealer</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Accounts</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Active %</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Revenue</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Commission Paid / Due</span></th>
+                                <th class="tb-tnx-info is-alt"><span>vs. Target</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var d in Model.DealerPerformance)
+                            {
+                                <tr class="tb-tnx-item">
+                                    <td class="tb-tnx-id"><span>@d.Rank</span></td>
+                                    <td class="tb-tnx-info"><span class="fw-medium">@d.DealerName</span></td>
+                                    <td class="tb-tnx-info is-alt">@d.Accounts</td>
+                                    <td class="tb-tnx-info is-alt">@d.ActivePct.ToString("0")%</td>
+                                    <td class="tb-tnx-info is-alt">KES @d.Revenue.ToString("N0")</td>
+                                    <td class="tb-tnx-info is-alt">@d.CommissionPaid.ToString("N0") / @d.CommissionDue.ToString("N0")</td>
+                                    <td class="tb-tnx-info is-alt">
+                                        <span class="badge @(d.PctOfTarget >= 100 ? "badge-dim bg-success" : "badge-dim bg-warning")">@d.PctOfTarget.ToString("0")% of target</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title">Agent Performance</h6>
+                            <p class="text-soft">Ranked by active rate this month, vs. an 80% active-rate target</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    <table class="table table-tranx">
+                        <thead>
+                            <tr class="tb-tnx-head">
+                                <th class="tb-tnx-id"><span>Rank</span></th>
+                                <th class="tb-tnx-info"><span>Agent</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Dealer</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Accounts</span></th>
+                                <th class="tb-tnx-info is-alt"><span>Active %</span></th>
+                                <th class="tb-tnx-info is-alt"><span>vs. Target</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in Model.AgentPerformance)
+                            {
+                                <tr class="tb-tnx-item">
+                                    <td class="tb-tnx-id"><span>@a.Rank</span></td>
+                                    <td class="tb-tnx-info"><span class="fw-medium">@a.AgentName</span></td>
+                                    <td class="tb-tnx-info is-alt">@a.DealerName</td>
+                                    <td class="tb-tnx-info is-alt">@a.Accounts</td>
+                                    <td class="tb-tnx-info is-alt">@a.ActivePct.ToString("0")%</td>
+                                    <td class="tb-tnx-info is-alt">
+                                        <span class="badge @(a.PctOfTarget >= 100 ? "badge-dim bg-success" : "badge-dim bg-warning")">@a.PctOfTarget.ToString("0")% of target</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+</div>
