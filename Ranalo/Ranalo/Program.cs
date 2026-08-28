@@ -118,7 +118,7 @@ if (runWooTask)
     //builder.Services.AddHostedService<ScheduledLockRestructured>();
     //builder.Services.AddHostedService<ScheduledLockFullyPaid>();
     //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
-    builder.Services.AddHostedService<ScheduledTaskCreateContractOrders>();
+    //builder.Services.AddHostedService<ScheduledTaskCreateContractOrders>();
 }
 else
 {
