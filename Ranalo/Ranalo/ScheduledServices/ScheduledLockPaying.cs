@@ -82,7 +82,10 @@ namespace Ranalo.ScheduledServices
             var autoLockRecords = records?.StatusReports;
 
             //Remove all fully paid
-            autoLockRecords?.RemoveAll(x => x.Arrears > 0 && x.LoanBalance < 0);
+           // autoLockRecords?.RemoveAll(x => x.Arrears > 0 && x.LoanBalance < 0);
+            autoLockRecords?.RemoveAll(
+                x => x.Arrears >= 0 &&
+                x.LoanBalance <= 0);
 
             // Remove positive arrears
             autoLockRecords?.RemoveAll(x => x.Arrears < 0);
