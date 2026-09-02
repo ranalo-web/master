@@ -4,6 +4,7 @@ namespace Ranalo.Models
     {
         public decimal RevenueThisMonth { get; set; }
         public decimal RevenueGrowthPct { get; set; }
+        public decimal RevenueTargetThisMonth { get; set; }
 
         public int TotalAccounts { get; set; }
         public int GoodAccounts { get; set; }
@@ -11,7 +12,9 @@ namespace Ranalo.Models
 
         public int PayingAccounts { get; set; }
         public int NonPayingAccounts { get; set; }
+        public int NonPayingAccountsChange { get; set; }
         public decimal ArrearsTotal { get; set; }
+        public decimal ArrearsChangePct { get; set; }
 
         public List<string> GrowthMonths { get; set; } = new();
         public List<decimal> RevenueByMonth { get; set; } = new();
@@ -21,6 +24,14 @@ namespace Ranalo.Models
         public decimal PortfolioSlowPct { get; set; }
         public decimal PortfolioArrearsPct { get; set; }
         public decimal PortfolioNonPayingPct { get; set; }
+
+        public decimal CollectionRatePct { get; set; }
+        public decimal PortfolioAtRiskPct { get; set; }
+
+        // Percentage-point change vs. the prior month.
+        public decimal PortfolioGoodPctChange { get; set; }
+        public decimal CollectionRateChangePct { get; set; }
+        public decimal PortfolioAtRiskChangePct { get; set; }
 
         public List<AdminWatchlistEntry> NonPayers { get; set; } = new();
         public List<AdminWatchlistEntry> SlowPayers { get; set; } = new();
@@ -34,6 +45,7 @@ namespace Ranalo.Models
     {
         public string CustomerName { get; set; } = "";
         public string DealerName { get; set; } = "";
+        public string Phone { get; set; } = "";
         public string Detail { get; set; } = "";
     }
 
