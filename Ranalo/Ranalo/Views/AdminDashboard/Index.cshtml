@@ -68,7 +68,7 @@
                     ? Model.RevenueThisMonth / Model.PayingAccounts
                     : 0;
             }
-            <div class="col-12 col-md-6 col-xxl-3">
+            <div class="col-12 col-md-6 col-lg-3">
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group align-start mb-2">
@@ -78,13 +78,13 @@
                         </div>
                         <div class="align-end flex-sm-wrap g-4 flex-md-nowrap">
                             <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                                <div class="d-flex justify-content-between align-items-baseline flex-wrap" style="column-gap:8px;">
+                                <div class="d-flex flex-column">
                                     <span class="amount">KES @Model.RevenueThisMonth.ToString("N0")</span>
-                                    <span class="sub-title"><span class="change up text-success"><em class="icon ni ni-arrow-long-up"></em>@Model.RevenueGrowthPct.ToString("0.0")%</span> this month</span>
+                                    <span class="sub-title d-block mt-1"><span class="change up text-success"><em class="icon ni ni-arrow-long-up"></em>@Model.RevenueGrowthPct.ToString("0.0")%</span> this month</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-3 d-flex justify-content-between flex-wrap" style="font-size:11px; column-gap:8px;">
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft">@revenueTargetPct.ToString("0")% of KES @Model.RevenueTargetThisMonth.ToString("N0") target</span>
                             <span class="text-soft">KES @revenuePerPayingAccount.ToString("N0") avg / paying account</span>
                         </div>
@@ -109,57 +109,57 @@
                 var arrearsPerNonPaying = Model.NonPayingAccounts > 0 ? Model.ArrearsTotal / Model.NonPayingAccounts : 0;
                 var arrearsPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(Model.ArrearsTotal / Model.RevenueThisMonth * 100, 1) : 0;
             }
-            <div class="col-12 col-md-6 col-xxl-3">
+            <div class="col-12 col-md-6 col-lg-3">
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group align-start mb-2">
                             <div class="card-title"><h6 class="title">Total Accounts</h6></div>
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex justify-content-between align-items-baseline flex-wrap" style="column-gap:8px;">
+                            <div class="d-flex flex-column">
                                 <span class="amount">@Model.TotalAccounts.ToString("N0")</span>
-                                <span class="sub-title"><span class="change @(accountsUp ? "up text-success" : "down text-danger")"><em class="icon ni ni-arrow-long-@(accountsUp ? "up" : "down")"></em>@Math.Abs(accountsDelta).ToString("N0")</span> vs last month</span>
+                                <span class="sub-title d-block mt-1"><span class="change @(accountsUp ? "up text-success" : "down text-danger")"><em class="icon ni ni-arrow-long-@(accountsUp ? "up" : "down")"></em>@Math.Abs(accountsDelta).ToString("N0")</span> vs last month</span>
                             </div>
                         </div>
-                        <div class="mt-3 d-flex justify-content-between flex-wrap" style="font-size:11px; column-gap:8px;">
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft">@goodAccountsPct.ToString("0")% good standing</span>
                             <span><span class="text-success">@Model.GoodAccounts.ToString("N0") good</span> &middot; <span class="text-danger">@Model.BadAccounts.ToString("N0") bad</span> &middot; <span class="text-soft">@accountsPerDealer.ToString("N0") avg / dealer</span></span>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xxl-3">
+            <div class="col-12 col-md-6 col-lg-3">
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group align-start mb-2">
                             <div class="card-title"><h6 class="title">Paying vs Non-Paying</h6></div>
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex justify-content-between align-items-baseline flex-wrap" style="column-gap:8px;">
+                            <div class="d-flex flex-column">
                                 <span class="amount">@Model.PayingAccounts.ToString("N0")</span>
-                                <span class="sub-title"><span class="@(nonPayingImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(nonPayingImproved ? "down" : "up")"></em>@Math.Abs(Model.NonPayingAccountsChange).ToString("N0")</span> non-paying vs last month</span>
+                                <span class="sub-title d-block mt-1"><span class="@(nonPayingImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(nonPayingImproved ? "down" : "up")"></em>@Math.Abs(Model.NonPayingAccountsChange).ToString("N0")</span> non-paying vs last month</span>
                             </div>
                         </div>
-                        <div class="mt-3 d-flex justify-content-between flex-wrap" style="font-size:11px; column-gap:8px;">
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft">@payingPct.ToString("0")% of accounts paying</span>
                             <span class="text-danger">@Model.NonPayingAccounts.ToString("N0") not paying</span>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xxl-3">
+            <div class="col-12 col-md-6 col-lg-3">
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group align-start mb-2">
                             <div class="card-title"><h6 class="title">Total Arrears</h6></div>
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex justify-content-between align-items-baseline flex-wrap" style="column-gap:8px;">
+                            <div class="d-flex flex-column">
                                 <span class="amount text-danger">KES @Model.ArrearsTotal.ToString("N0")</span>
-                                <span class="sub-title"><span class="@(arrearsUp ? "text-danger" : "text-success")"><em class="icon ni ni-arrow-long-@(arrearsUp ? "up" : "down")"></em>@Math.Abs(Model.ArrearsChangePct).ToString("0.0")%</span> vs last month</span>
+                                <span class="sub-title d-block mt-1"><span class="@(arrearsUp ? "text-danger" : "text-success")"><em class="icon ni ni-arrow-long-@(arrearsUp ? "up" : "down")"></em>@Math.Abs(Model.ArrearsChangePct).ToString("0.0")%</span> vs last month</span>
                             </div>
                         </div>
-                        <div class="mt-3 d-flex justify-content-between flex-wrap" style="font-size:11px; column-gap:8px;">
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft">@arrearsPctOfRevenue.ToString("0")% of this month's revenue</span>
                             <span class="text-soft">KES @arrearsPerNonPaying.ToString("N0") avg / non-paying account</span>
                         </div>
@@ -169,9 +169,251 @@
         </div><!-- .row -->
     </div><!-- .nk-block -->
 
+    @{
+        var totalCommissionsPaid = Model.DealerPerformance.Sum(d => d.CommissionPaid);
+        var netProfitThisMonth = Model.RevenueThisMonth - Model.CostOfDevicesThisMonth - totalCommissionsPaid - Model.BadDebtThisMonth;
+        var profitMarginPct = Model.RevenueThisMonth > 0 ? Math.Round(netProfitThisMonth / Model.RevenueThisMonth * 100, 1) : 0;
+        var netProfitUp = Model.NetProfitChangePct >= 0;
+        var marginUp = Model.ProfitMarginChangePct >= 0;
+        var marginVsTarget = profitMarginPct - Model.ProfitMarginTargetPct;
+        var commissionsUp = Model.CommissionsChangePct >= 0;
+        var commissionsPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(totalCommissionsPaid / Model.RevenueThisMonth * 100, 1) : 0;
+        var commissionsPerDealer = Model.DealerPerformance.Count > 0 ? totalCommissionsPaid / Model.DealerPerformance.Count : 0;
+        var badDebtImproved = Model.BadDebtChangePct <= 0;
+        var badDebtPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(Model.BadDebtThisMonth / Model.RevenueThisMonth * 100, 1) : 0;
+        var badDebtPerBadAccount = Model.BadAccounts > 0 ? Model.BadDebtThisMonth / Model.BadAccounts : 0;
+        var netProfitPerPayingAccount = Model.PayingAccounts > 0 ? netProfitThisMonth / Model.PayingAccounts : 0;
+    }
     <div class="nk-block">
         <div class="row g-gs">
-            <div class="col-12 col-xxl-8">
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title"><h6 class="title">Net Profit</h6></div>
+                        </div>
+                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
+                            <div class="d-flex flex-column">
+                                <span class="amount">KES @netProfitThisMonth.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1"><span class="@(netProfitUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(netProfitUp ? "up" : "down")"></em>@Math.Abs(Model.NetProfitChangePct).ToString("0.0")%</span> vs last month</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
+                            <span class="text-soft">@profitMarginPct.ToString("0.0")% margin</span>
+                            <span class="text-soft">KES @netProfitPerPayingAccount.ToString("N0") avg / paying account</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title"><h6 class="title">Profit Margin</h6></div>
+                        </div>
+                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
+                            <div class="d-flex flex-column">
+                                <span class="amount">@profitMarginPct.ToString("0.0")%</span>
+                                <span class="sub-title d-block mt-1"><span class="@(marginUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(marginUp ? "up" : "down")"></em>@Math.Abs(Model.ProfitMarginChangePct).ToString("0.0")pp</span> vs last month</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
+                            <span class="text-soft">vs @Model.ProfitMarginTargetPct.ToString("0")% target</span>
+                            <span class="@(marginVsTarget >= 0 ? "text-success" : "text-danger")">@(marginVsTarget >= 0 ? "+" : "")@marginVsTarget.ToString("0.0")pp @(marginVsTarget >= 0 ? "above" : "below")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title"><h6 class="title">Commissions Paid</h6></div>
+                        </div>
+                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
+                            <div class="d-flex flex-column">
+                                <span class="amount">KES @totalCommissionsPaid.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1"><span class="@(commissionsUp ? "text-danger" : "text-success")"><em class="icon ni ni-arrow-long-@(commissionsUp ? "up" : "down")"></em>@Math.Abs(Model.CommissionsChangePct).ToString("0.0")%</span> vs last month</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
+                            <span class="text-soft">@commissionsPctOfRevenue.ToString("0")% of revenue</span>
+                            <span class="text-soft">KES @commissionsPerDealer.ToString("N0") avg / dealer</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title"><h6 class="title">Bad Debt / Write-offs</h6></div>
+                        </div>
+                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
+                            <div class="d-flex flex-column">
+                                <span class="amount text-danger">KES @Model.BadDebtThisMonth.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1"><span class="@(badDebtImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(badDebtImproved ? "down" : "up")"></em>@Math.Abs(Model.BadDebtChangePct).ToString("0.0")%</span> vs last month</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
+                            <span class="text-soft">@badDebtPctOfRevenue.ToString("0")% of revenue</span>
+                            <span class="text-soft">KES @badDebtPerBadAccount.ToString("N0") avg / bad account</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- .row -->
+    </div><!-- .nk-block -->
+
+    @{
+        var grossProfit = Model.RevenueThisMonth - Model.CostOfDevicesThisMonth - totalCommissionsPaid;
+        var operatingProfit = grossProfit - Model.BadDebtThisMonth;
+        var ebt = operatingProfit - Model.OperatingExpensesThisMonth;
+        var taxThisMonth = Math.Max(0, ebt) * Model.TaxRatePct / 100;
+        var netProfitAfterTax = ebt - taxThisMonth;
+        var retainedEarnings = netProfitAfterTax - Model.DividendsPaidThisMonth;
+
+        var grossMarginPct = Model.RevenueThisMonth > 0 ? grossProfit / Model.RevenueThisMonth * 100 : 0;
+        var operatingMarginPct = Model.RevenueThisMonth > 0 ? operatingProfit / Model.RevenueThisMonth * 100 : 0;
+        var netMarginPct = Model.RevenueThisMonth > 0 ? netProfitAfterTax / Model.RevenueThisMonth * 100 : 0;
+        var costToIncomeRatio = Model.RevenueThisMonth > 0 ? (Model.CostOfDevicesThisMonth + totalCommissionsPaid + Model.OperatingExpensesThisMonth) / Model.RevenueThisMonth * 100 : 0;
+        var badDebtRatio = Model.RevenueThisMonth > 0 ? Model.BadDebtThisMonth / Model.RevenueThisMonth * 100 : 0;
+        var dividendPayoutRatio = netProfitAfterTax > 0 ? Model.DividendsPaidThisMonth / netProfitAfterTax * 100 : 0;
+        var retentionRatio = 100 - dividendPayoutRatio;
+    }
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-12 col-lg-7">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group mb-3">
+                            <div class="card-title">
+                                <h6 class="title">Income Statement</h6>
+                                <p class="text-soft">Revenue to retained earnings, this month</p>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column" style="font-size:13px;">
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="fw-medium">Revenue</span>
+                                <span class="fw-medium">KES @Model.RevenueThisMonth.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="text-soft">Less: Cost of devices (incl. licence &amp; transport)</span>
+                                <span class="text-danger">(@Model.CostOfDevicesThisMonth.ToString("N0"))</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="text-soft">Less: Commissions paid to dealers</span>
+                                <span class="text-danger">(@totalCommissionsPaid.ToString("N0"))</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="fw-medium">Gross Profit</span>
+                                <span class="fw-medium">KES @grossProfit.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="text-soft">Less: Bad debt / write-offs</span>
+                                <span class="text-danger">(@Model.BadDebtThisMonth.ToString("N0"))</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="fw-medium">Operating Profit (EBIT)</span>
+                                <span class="fw-medium">KES @operatingProfit.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="text-soft">Less: Operating expenses</span>
+                                <span class="text-danger">(@Model.OperatingExpensesThisMonth.ToString("N0"))</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="fw-medium">Profit Before Tax (EBT)</span>
+                                <span class="fw-medium">KES @ebt.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="text-soft">Less: Tax (@Model.TaxRatePct.ToString("0")%)</span>
+                                <span class="text-danger">(@taxThisMonth.ToString("N0"))</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom" style="font-size:15px;">
+                                <span class="fw-bold">Net Profit After Tax</span>
+                                <span class="fw-bold text-success">KES @netProfitAfterTax.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="text-soft">Less: Dividends paid</span>
+                                <span class="text-danger">(@Model.DividendsPaidThisMonth.ToString("N0"))</span>
+                            </div>
+                            <div class="d-flex justify-content-between pt-2" style="font-size:15px;">
+                                <span class="fw-bold">Retained Earnings</span>
+                                <span class="fw-bold">KES @retainedEarnings.ToString("N0")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-5">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group mb-3">
+                            <div class="card-title">
+                                <h6 class="title">Key Financial Ratios</h6>
+                                <p class="text-soft">Profitability &amp; operational efficiency</p>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">Gross Margin</div>
+                                    <div class="text-soft" style="font-size:11px;">Gross profit &divide; revenue</div>
+                                </div>
+                                <span class="fw-bold">@grossMarginPct.ToString("0.0")%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">Operating Margin</div>
+                                    <div class="text-soft" style="font-size:11px;">EBIT &divide; revenue</div>
+                                </div>
+                                <span class="fw-bold">@operatingMarginPct.ToString("0.0")%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">Net Margin</div>
+                                    <div class="text-soft" style="font-size:11px;">Net profit after tax &divide; revenue</div>
+                                </div>
+                                <span class="fw-bold">@netMarginPct.ToString("0.0")%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">Cost-to-Income Ratio</div>
+                                    <div class="text-soft" style="font-size:11px;">Commissions + opex &divide; revenue</div>
+                                </div>
+                                <span class="fw-bold @(costToIncomeRatio <= 50 ? "text-success" : "text-danger")">@costToIncomeRatio.ToString("0.0")%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">Bad Debt Ratio</div>
+                                    <div class="text-soft" style="font-size:11px;">Write-offs &divide; revenue</div>
+                                </div>
+                                <span class="fw-bold @(badDebtRatio <= 10 ? "text-success" : "text-danger")">@badDebtRatio.ToString("0.0")%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">Dividend Payout Ratio</div>
+                                    <div class="text-soft" style="font-size:11px;">Dividends &divide; net profit</div>
+                                </div>
+                                <span class="fw-bold">@dividendPayoutRatio.ToString("0.0")%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <div class="fw-medium">Retention Ratio</div>
+                                    <div class="text-soft" style="font-size:11px;">Retained earnings &divide; net profit</div>
+                                </div>
+                                <span class="fw-bold">@retentionRatio.ToString("0.0")%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- .row -->
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-12 col-lg-8">
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group mb-3">
@@ -186,7 +428,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-xxl-4">
+            <div class="col-12 col-lg-4">
                 <div class="card card-bordered">
                     <div class="card-inner">
                         <div class="card-title-group mb-3">
@@ -282,6 +524,8 @@
         int GoodPayersMoreCount = Math.Max(0, Model.GoodPayers.Count - tablePageSize);
         int DealerMoreCount = Math.Max(0, Model.DealerPerformance.Count - tablePageSize);
         int AgentMoreCount = Math.Max(0, Model.AgentPerformance.Count - tablePageSize);
+        int ProductMoreCount = Math.Max(0, Model.ProductPerformance.Count - tablePageSize);
+        int CompletedMoreCount = Math.Max(0, Model.CompletedContracts.Count - tablePageSize);
     }
 
     <div class="nk-block">
@@ -322,7 +566,7 @@
                     </div>
                     @if (NonPayersMoreCount > 0)
                     {
-                        <div class="card-inner d-flex gap-3">
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
                             <a href="#" class="link link-primary" data-more-for="nonpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'nonpayers', @tablePageSize);">Show @Math.Min(tablePageSize, NonPayersMoreCount) more</a>
                             <a href="#" class="link link-primary" data-less-for="nonpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'nonpayers', @tablePageSize);">Show less</a>
                         </div>
@@ -370,7 +614,7 @@
                     </div>
                     @if (SlowPayersMoreCount > 0)
                     {
-                        <div class="card-inner d-flex gap-3">
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
                             <a href="#" class="link link-primary" data-more-for="slowpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'slowpayers', @tablePageSize);">Show @Math.Min(tablePageSize, SlowPayersMoreCount) more</a>
                             <a href="#" class="link link-primary" data-less-for="slowpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'slowpayers', @tablePageSize);">Show less</a>
                         </div>
@@ -418,7 +662,7 @@
                     </div>
                     @if (GoodPayersMoreCount > 0)
                     {
-                        <div class="card-inner d-flex gap-3">
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
                             <a href="#" class="link link-primary" data-more-for="goodpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'goodpayers', @tablePageSize);">Show @Math.Min(tablePageSize, GoodPayersMoreCount) more</a>
                             <a href="#" class="link link-primary" data-less-for="goodpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'goodpayers', @tablePageSize);">Show less</a>
                         </div>
@@ -474,7 +718,7 @@
                     </div>
                     @if (DealerMoreCount > 0)
                     {
-                        <div class="card-inner d-flex gap-3">
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
                             <a href="#" class="link link-primary" data-more-for="dealers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'dealers', @tablePageSize);">Show @Math.Min(tablePageSize, DealerMoreCount) more</a>
                             <a href="#" class="link link-primary" data-less-for="dealers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'dealers', @tablePageSize);">Show less</a>
                         </div>
@@ -528,7 +772,7 @@
                     </div>
                     @if (AgentMoreCount > 0)
                     {
-                        <div class="card-inner d-flex gap-3">
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
                             <a href="#" class="link link-primary" data-more-for="agents" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'agents', @tablePageSize);">Show @Math.Min(tablePageSize, AgentMoreCount) more</a>
                             <a href="#" class="link link-primary" data-less-for="agents" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'agents', @tablePageSize);">Show less</a>
                         </div>
@@ -536,6 +780,217 @@
                 </div>
             </div>
         </div>
+    </div><!-- .nk-block -->
+
+    @{
+        var totalUnitsFinanced = Model.ProductPerformance.Sum(p => p.UnitsFinanced);
+        var blendedDefaultRate = totalUnitsFinanced > 0
+            ? Model.ProductPerformance.Sum(p => p.UnitsFinanced * p.DefaultRatePct) / totalUnitsFinanced
+            : 0;
+    }
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-12 col-lg-7">
+                <div class="card card-bordered card-stretch h-100">
+                    <div class="card-inner-group">
+                        <div class="card-inner">
+                            <div class="card-title-group">
+                                <div class="card-title">
+                                    <h6 class="title">Product Performance</h6>
+                                    <p class="text-soft">Devices financed this month, ranked by units</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner p-0">
+                            <div class="table-responsive">
+                            <table class="table mb-0" style="white-space:nowrap;" data-key="products" data-page-size="@tablePageSize">
+                                <thead>
+                                    <tr>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Rank</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Product</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Units Financed</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Avg Value</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Revenue</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Default Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var i = 0; i < Model.ProductPerformance.Count; i++)
+                                    {
+                                        var p = Model.ProductPerformance[i];
+                                        <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="products">
+                                            <td>@p.Rank</td>
+                                            <td><span class="fw-medium">@p.ProductName</span></td>
+                                            <td>@p.UnitsFinanced</td>
+                                            <td>KES @p.AvgValue.ToString("N0")</td>
+                                            <td>KES @p.Revenue.ToString("N0")</td>
+                                            <td>
+                                                <span class="badge @(p.DefaultRatePct <= 5 ? "badge-dim bg-success" : "badge-dim bg-warning")">@p.DefaultRatePct.ToString("0.0")%</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            </div>
+                            @if (ProductMoreCount > 0)
+                            {
+                                <div class="card-inner d-flex" style="column-gap:1rem;">
+                                    <a href="#" class="link link-primary" data-more-for="products" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'products', @tablePageSize);">Show @Math.Min(tablePageSize, ProductMoreCount) more</a>
+                                    <a href="#" class="link link-primary" data-less-for="products" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'products', @tablePageSize);">Show less</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-5">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group mb-3">
+                            <div class="card-title">
+                                <h6 class="title">Customer Performance</h6>
+                                <p class="text-soft">Customer base health, this month</p>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">Total Customers</div>
+                                    <div class="text-soft" style="font-size:11px;">Across @Model.TotalAccounts.ToString("N0") accounts</div>
+                                </div>
+                                <span class="fw-bold">@Model.TotalCustomers.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">New Customers</div>
+                                    <div class="text-soft" style="font-size:11px;">Acquired this month</div>
+                                </div>
+                                <span class="fw-bold text-success">+@Model.NewCustomersThisMonth.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">Repeat Customer Rate</div>
+                                    <div class="text-soft" style="font-size:11px;">Financed more than one device</div>
+                                </div>
+                                <span class="fw-bold">@Model.RepeatCustomerRatePct.ToString("0.0")%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">Avg Customer Lifetime Value</div>
+                                    <div class="text-soft" style="font-size:11px;">Revenue per customer, all time</div>
+                                </div>
+                                <span class="fw-bold">KES @Model.AvgCustomerLifetimeValue.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <div class="fw-medium">Churn Rate</div>
+                                    <div class="text-soft" style="font-size:11px;">Stopped paying, no contact</div>
+                                </div>
+                                <span class="fw-bold @(Model.ChurnRatePct <= 5 ? "text-success" : "text-danger")">@Model.ChurnRatePct.ToString("0.0")%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <div class="fw-medium">Blended Device Default Rate</div>
+                                    <div class="text-soft" style="font-size:11px;">Weighted across @totalUnitsFinanced.ToString("N0") units financed</div>
+                                </div>
+                                <span class="fw-bold @(blendedDefaultRate <= 5 ? "text-success" : "text-danger")">@blendedDefaultRate.ToString("0.0")%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- .row -->
+    </div><!-- .nk-block -->
+
+    @{
+        var completedUp = Model.CompletedContractsChangePct >= 0;
+        var completionRateUp = Model.ContractCompletionRateChangePct >= 0;
+    }
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-12 col-lg-7">
+                <div class="card card-bordered card-stretch h-100">
+                    <div class="card-inner-group">
+                        <div class="card-inner">
+                            <div class="card-title-group">
+                                <div class="card-title">
+                                    <h6 class="title"><span class="dot dot-lg bg-success me-1"></span>Completed Contracts</h6>
+                                    <p class="text-soft">Fully paid off, most recent first</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner p-0">
+                            <div class="table-responsive">
+                            <table class="table mb-0" style="white-space:nowrap;" data-key="completed" data-page-size="@tablePageSize">
+                                <thead>
+                                    <tr>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Product</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Completed</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Paid</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var i = 0; i < Model.CompletedContracts.Count; i++)
+                                    {
+                                        var c = Model.CompletedContracts[i];
+                                        <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="completed">
+                                            <td><span class="fw-medium">@c.CustomerName</span></td>
+                                            <td>@c.DealerName</td>
+                                            <td>@c.ProductName</td>
+                                            <td>@c.CompletedDate</td>
+                                            <td>KES @c.TotalPaid.ToString("N0")</td>
+                                            <td>@c.DurationMonths mo</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            </div>
+                            @if (CompletedMoreCount > 0)
+                            {
+                                <div class="card-inner d-flex" style="column-gap:1rem;">
+                                    <a href="#" class="link link-primary" data-more-for="completed" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'completed', @tablePageSize);">Show @Math.Min(tablePageSize, CompletedMoreCount) more</a>
+                                    <a href="#" class="link link-primary" data-less-for="completed" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'completed', @tablePageSize);">Show less</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-5">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title"><h6 class="title">Contract Completion</h6></div>
+                        </div>
+                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
+                            <div class="d-flex flex-column">
+                                <span class="amount">@Model.CompletedContractsThisMonth.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1"><span class="@(completedUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(completedUp ? "up" : "down")"></em>@Math.Abs(Model.CompletedContractsChangePct).ToString("0.0")%</span> vs last month</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
+                            <span class="text-soft">KES @Model.TotalValueCompletedThisMonth.ToString("N0") total value completed</span>
+                            <span class="text-soft">@Model.AvgTimeToCompletionMonths.ToString("0.0") months avg. time to pay off</span>
+                        </div>
+                        <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-medium">Completion Rate</div>
+                                <div class="text-soft" style="font-size:11px;">Contracts reaching full payoff, not written off</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold">@Model.ContractCompletionRatePct.ToString("0.0")%</div>
+                                <div class="@(completionRateUp ? "text-success" : "text-danger")" style="font-size:11px;">
+                                    <em class="icon ni ni-arrow-long-@(completionRateUp ? "up" : "down")"></em>@Math.Abs(Model.ContractCompletionRateChangePct).ToString("0.0")pp
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- .row -->
     </div><!-- .nk-block -->
 
 </div>

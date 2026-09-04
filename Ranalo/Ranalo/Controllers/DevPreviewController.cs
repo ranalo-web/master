@@ -92,6 +92,31 @@ namespace Ranalo.Controllers
                 PortfolioGoodPctChange = 1.5m,
                 CollectionRateChangePct = 2.3m,
                 PortfolioAtRiskChangePct = -0.9m,
+
+                CostOfDevicesThisMonth = 38000m,
+                BadDebtThisMonth = 28500m,
+                NetProfitChangePct = 9.2m,
+                ProfitMarginChangePct = 1.8m,
+                ProfitMarginTargetPct = 65m,
+                CommissionsChangePct = 6.1m,
+                BadDebtChangePct = -12.4m,
+
+                OperatingExpensesThisMonth = 45000m,
+                TaxRatePct = 30m,
+                DividendsPaidThisMonth = 60000m,
+
+                TotalCustomers = 1798,
+                NewCustomersThisMonth = 187,
+                RepeatCustomerRatePct = 23.4m,
+                AvgCustomerLifetimeValue = 34200m,
+                ChurnRatePct = 3.2m,
+
+                CompletedContractsThisMonth = 156,
+                CompletedContractsChangePct = 12.6m,
+                ContractCompletionRatePct = 84.7m,
+                ContractCompletionRateChangePct = 1.2m,
+                AvgTimeToCompletionMonths = 7.8m,
+                TotalValueCompletedThisMonth = 2340000m,
                 NonPayers = new List<AdminWatchlistEntry>
                 {
                     new() { CustomerName = "Peter Wanjohi", DealerName = "Nairobi Mobile Hub", Phone = "0712 345 678", Detail = "60 days" },
@@ -196,6 +221,46 @@ namespace Ranalo.Controllers
                     new() { Rank = 13, AgentName = "Winnie Cheruto", DealerName = "Machakos Mobile Center", Accounts = 22, ActivePct = 73, PctOfTarget = 91 },
                     new() { Rank = 14, AgentName = "Dennis Wafula", DealerName = "Kericho Phone Palace", Accounts = 19, ActivePct = 80, PctOfTarget = 100 },
                     new() { Rank = 15, AgentName = "Grace Auma", DealerName = "Nyeri Digital Hub", Accounts = 17, ActivePct = 68, PctOfTarget = 85 },
+                },
+
+                ProductPerformance = new List<AdminProductPerformance>
+                {
+                    new() { Rank = 1, ProductName = "Samsung Galaxy A14", UnitsFinanced = 312, AvgValue = 18500, Revenue = 187400, DefaultRatePct = 4.2m },
+                    new() { Rank = 2, ProductName = "Tecno Spark 10", UnitsFinanced = 268, AvgValue = 14200, Revenue = 142600, DefaultRatePct = 5.1m },
+                    new() { Rank = 3, ProductName = "Infinix Hot 30", UnitsFinanced = 201, AvgValue = 13800, Revenue = 108300, DefaultRatePct = 6.3m },
+                    new() { Rank = 4, ProductName = "iPhone 12", UnitsFinanced = 89, AvgValue = 42000, Revenue = 96800, DefaultRatePct = 2.1m },
+                    new() { Rank = 5, ProductName = "Samsung Galaxy A54", UnitsFinanced = 156, AvgValue = 24600, Revenue = 89400, DefaultRatePct = 3.8m },
+                    new() { Rank = 6, ProductName = "Xiaomi Redmi Note 12", UnitsFinanced = 134, AvgValue = 16900, Revenue = 71200, DefaultRatePct = 5.7m },
+                    new() { Rank = 7, ProductName = "Oppo A78", UnitsFinanced = 98, AvgValue = 19300, Revenue = 52100, DefaultRatePct = 4.9m },
+                    new() { Rank = 8, ProductName = "Tecno Camon 20", UnitsFinanced = 87, AvgValue = 17400, Revenue = 44800, DefaultRatePct = 6.8m },
+                    new() { Rank = 9, ProductName = "iPhone 13", UnitsFinanced = 42, AvgValue = 58000, Revenue = 68900, DefaultRatePct = 1.8m },
+                    new() { Rank = 10, ProductName = "Infinix Note 30", UnitsFinanced = 65, AvgValue = 15600, Revenue = 33400, DefaultRatePct = 5.9m },
+                    new() { Rank = 11, ProductName = "Samsung Galaxy A05", UnitsFinanced = 76, AvgValue = 11200, Revenue = 31200, DefaultRatePct = 7.4m },
+                    new() { Rank = 12, ProductName = "Vivo Y36", UnitsFinanced = 54, AvgValue = 16800, Revenue = 27900, DefaultRatePct = 6.1m },
+                },
+
+                CompletedContracts = new List<AdminCompletedContract>
+                {
+                    new() { CustomerName = "Peterson Kamau", DealerName = "Nairobi Mobile Hub", ProductName = "Samsung Galaxy A14", CompletedDate = "Aug 28", TotalPaid = 19200, DurationMonths = 8 },
+                    new() { CustomerName = "Lydia Wanjiku", DealerName = "Kisumu Electronics", ProductName = "Tecno Spark 10", CompletedDate = "Aug 26", TotalPaid = 14800, DurationMonths = 6 },
+                    new() { CustomerName = "Moses Otieno", DealerName = "Mombasa Devices Ltd", ProductName = "iPhone 12", CompletedDate = "Aug 25", TotalPaid = 43500, DurationMonths = 12 },
+                    new() { CustomerName = "Catherine Njoki", DealerName = "Nakuru Phone Shop", ProductName = "Infinix Hot 30", CompletedDate = "Aug 24", TotalPaid = 14100, DurationMonths = 7 },
+                    new() { CustomerName = "Julius Mutiso", DealerName = "Eldoret Tech", ProductName = "Samsung Galaxy A54", CompletedDate = "Aug 22", TotalPaid = 25300, DurationMonths = 9 },
+                    new() { CustomerName = "Faith Nekesa", DealerName = "Thika Gadget World", ProductName = "Xiaomi Redmi Note 12", CompletedDate = "Aug 21", TotalPaid = 17400, DurationMonths = 8 },
+                    new() { CustomerName = "Dennis Ochieng", DealerName = "Machakos Mobile Center", ProductName = "Oppo A78", CompletedDate = "Aug 19", TotalPaid = 19900, DurationMonths = 6 },
+                    new() { CustomerName = "Grace Wambui", DealerName = "Kericho Phone Palace", ProductName = "Tecno Camon 20", CompletedDate = "Aug 18", TotalPaid = 17900, DurationMonths = 7 },
+                    new() { CustomerName = "Samuel Njogu", DealerName = "Nyeri Digital Hub", ProductName = "iPhone 13", CompletedDate = "Aug 17", TotalPaid = 59200, DurationMonths = 12 },
+                    new() { CustomerName = "Esther Kiplagat", DealerName = "Kitale Communications", ProductName = "Infinix Note 30", CompletedDate = "Aug 15", TotalPaid = 16000, DurationMonths = 8 },
+                    new() { CustomerName = "Bernard Owino", DealerName = "Malindi Mobile Zone", ProductName = "Samsung Galaxy A05", CompletedDate = "Aug 14", TotalPaid = 11600, DurationMonths = 6 },
+                    new() { CustomerName = "Winnie Achieng", DealerName = "Kakamega Phone Store", ProductName = "Vivo Y36", CompletedDate = "Aug 12", TotalPaid = 17300, DurationMonths = 7 },
+                    new() { CustomerName = "Robert Kamotho", DealerName = "Garissa Tech Point", ProductName = "Samsung Galaxy A14", CompletedDate = "Aug 10", TotalPaid = 19000, DurationMonths = 8 },
+                    new() { CustomerName = "Purity Chebet", DealerName = "Meru Mobile World", ProductName = "Tecno Spark 10", CompletedDate = "Aug 9", TotalPaid = 14600, DurationMonths = 6 },
+                    new() { CustomerName = "Charles Wekesa", DealerName = "Eldama Ravine Communications", ProductName = "Infinix Hot 30", CompletedDate = "Aug 7", TotalPaid = 13900, DurationMonths = 7 },
+                    new() { CustomerName = "Alice Muthee", DealerName = "Nairobi Mobile Hub", ProductName = "iPhone 12", CompletedDate = "Aug 5", TotalPaid = 44000, DurationMonths = 12 },
+                    new() { CustomerName = "Kevin Simiyu", DealerName = "Kisumu Electronics", ProductName = "Samsung Galaxy A54", CompletedDate = "Aug 3", TotalPaid = 25800, DurationMonths = 9 },
+                    new() { CustomerName = "Nancy Auma", DealerName = "Mombasa Devices Ltd", ProductName = "Xiaomi Redmi Note 12", CompletedDate = "Aug 2", TotalPaid = 17200, DurationMonths = 8 },
+                    new() { CustomerName = "Timothy Karanja", DealerName = "Nakuru Phone Shop", ProductName = "Oppo A78", CompletedDate = "Jul 31", TotalPaid = 20100, DurationMonths = 6 },
+                    new() { CustomerName = "Ruth Nyambura", DealerName = "Eldoret Tech", ProductName = "Tecno Camon 20", CompletedDate = "Jul 29", TotalPaid = 18100, DurationMonths = 7 },
                 },
             };
 
