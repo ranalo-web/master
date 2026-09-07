@@ -132,58 +132,26 @@
                                                             <div class="dot dot-primary"></div>
                                                             <em class="icon ni ni-filter-alt"></em>
                                                         </a>
-                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
-                                                            <div class="dropdown-head">
-                                                                <span class="sub-title dropdown-title">Filter Customers</span>
+                                                        <div class="filter-wg dropdown-menu p-3" style="background-color:#fff; width: 220px; max-width: calc(100vw - 24px);">
+                                                            <div class="mb-2" style="font-weight:600; color:#364a63;">Filter Orders</div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label" for="statusFilter" style="color:#526484;">Status</label>
+                                                                <select class="form-select" id="statusFilter" style="color:#364a63;">
+                                                                    <option value="any">Any Status</option>
+                                                                    <option value="approval-waiting">Approval Waiting</option>
+                                                                    <option value="approved">Approved</option>
+                                                                </select>
                                                             </div>
-                                                            <div class="dropdown-body dropdown-body-rg">
-                                                                <div class="row gx-6 gy-3">
-                                                                    <div class="col-6">
-                                                                        <div class="custom-control custom-control-sm custom-checkbox">
-                                                                            <input type="checkbox" class="custom-control-input" id="hasBalance">
-                                                                            <label class="custom-control-label" for="hasBalance"> Have Balance</label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="custom-control custom-control-sm custom-checkbox">
-                                                                            <input type="checkbox" class="custom-control-input" id="hasKYC">
-                                                                            <label class="custom-control-label" for="hasKYC"> KYC Verified</label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Card Type</label>
-                                                                            <select class="form-select js-select2">
-                                                                                <option value="any">Any Card</option>
-                                                                                <option value="Visa">Visa</option>
-                                                                                <option value="Mastercard">Mastercard</option>
-                                                                                <option value="AmericanExpress">American Express</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Status</label>
-                                                                            <select class="form-select js-select2">
-                                                                                <option value="any">Any Status</option>
-                                                                                <option value="new">New</option>
-                                                                                <option value="active">Active</option>
-                                                                                <option value="suspend">Suspend</option>
-                                                                                <option value="deleted">Deleted</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <button type="button" class="btn btn-secondary">Filter</button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label" for="joinedFrom" style="color:#526484;">Joined From</label>
+                                                                <input type="date" class="form-control" id="joinedFrom" style="color:#364a63;">
                                                             </div>
-                                                            <div class="dropdown-foot between">
-                                                                <a class="clickable" href="#">Reset Filter</a>
-                                                                <a href="#">Save Filter</a>
+                                                            <div class="mb-3">
+                                                                <label class="form-label" for="joinedTo" style="color:#526484;">Joined To</label>
+                                                                <input type="date" class="form-control" id="joinedTo" style="color:#364a63;">
                                                             </div>
+                                                            <button type="button" class="btn btn-primary w-100 mb-2" id="applyStatusFilter">Filter</button>
+                                                            <a href="#" class="d-block text-center" id="resetStatusFilter">Reset Filter</a>
                                                         </div><!-- .filter-wg -->
                                                     </div><!-- .dropdown -->
                                                 </li><!-- li -->
@@ -195,14 +163,9 @@
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
                                                             <ul class="link-check">
                                                                 <li><span>Show</span></li>
-                                                                <li class="active"><a href="#">10</a></li>
-                                                                <li><a href="#">20</a></li>
-                                                                <li><a href="#">50</a></li>
-                                                            </ul>
-                                                            <ul class="link-check">
-                                                                <li><span>Order</span></li>
-                                                                <li class="active"><a href="#">DESC</a></li>
-                                                                <li><a href="#">ASC</a></li>
+                                                                <li class="@(Model.PageSize == 50 ? "active" : "")"><a href="/orders?pageSize=50">50</a></li>
+                                                                <li class="@(Model.PageSize == 100 ? "active" : "")"><a href="/orders?pageSize=100">100</a></li>
+                                                                <li class="@(Model.PageSize == 200 ? "active" : "")"><a href="/orders?pageSize=200">200</a></li>
                                                             </ul>
                                                         </div>
                                                     </div><!-- .dropdown -->
@@ -238,13 +201,14 @@
                                 </div>
                             </div>
 
-                            <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Email</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Phone</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Dealer Name</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Mpesa Code</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Joined</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Status</span></div>
+                            <div class="nk-tb-col wl-th" data-sort-key="orderid" data-sort-type="number"><span class="sub-text">Order #</span><span class="wl-sort-indicator"></span></div>
+                            <div class="nk-tb-col wl-th" data-sort-key="customer"><span class="sub-text">Customer</span><span class="wl-sort-indicator"></span></div>
+                            <div class="nk-tb-col wl-th" data-sort-key="email"><span class="sub-text">Email</span><span class="wl-sort-indicator"></span></div>
+                            <div class="nk-tb-col wl-th" data-sort-key="phone"><span class="sub-text">Phone</span><span class="wl-sort-indicator"></span></div>
+                            <div class="nk-tb-col wl-th" data-sort-key="dealer"><span class="sub-text">Dealer Name</span><span class="wl-sort-indicator"></span></div>
+                            <div class="nk-tb-col wl-th" data-sort-key="mpesa"><span class="sub-text">Mpesa Code</span><span class="wl-sort-indicator"></span></div>
+                            <div class="nk-tb-col wl-th" data-sort-key="joined" data-sort-type="date"><span class="sub-text">Joined</span><span class="wl-sort-indicator"></span></div>
+                            <div class="nk-tb-col wl-th" data-sort-key="status"><span class="sub-text">Status</span><span class="wl-sort-indicator"></span></div>
                             <div class="nk-tb-col text-end"><span class="sub-text">Actions</span></div>
                         </div><!-- .nk-tb-item -->
                         @{
@@ -257,6 +221,9 @@
                                             <input type="checkbox" class="custom-control-input" id="cid1">
                                             <label class="custom-control-label" for="cid1"></label>
                                         </div>
+                                    </div>
+                                    <div class="nk-tb-col">
+                                        <span class="sub-text">@order.OrderId</span>
                                     </div>
                                     <div class="nk-tb-col">
                                         <a href="/account-details/@order.OrderId">
@@ -286,7 +253,7 @@
                                         </div>
                                     </div>
                                     <div class="nk-tb-col">
-                                        <span class="sub-text">@order.DateCreated</span>
+                                        <span class="sub-text" data-sort-value="@order.DateCreated.ToString("o")">@order.DateCreated</span>
                                     </div>
                                     <div class="nk-tb-col">
                                         <span class="@SetStatusBadge(order.Status)">@order.Status</span>
@@ -338,7 +305,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                                <a class="page-link" href="/orders?page=@(Model.CurrentPage - 1)">Prev</a>
+                                                <a class="page-link" href="/orders?page=@(Model.CurrentPage - 1)&pageSize=@Model.PageSize">Prev</a>
                                     </li>
                                 }
 
@@ -355,7 +322,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/orders?page=1">1</a>
+                                        <a class="page-link" href="/orders?page=1&pageSize=@Model.PageSize">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -365,7 +332,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/orders?page=@i">@i</a>
+                                        <a class="page-link" href="/orders?page=@i&pageSize=@Model.PageSize">@i</a>
                                     </li>
                                 }
 
@@ -375,14 +342,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/orders?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/orders?page=@Model.TotalPages&pageSize=@Model.PageSize">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/orders?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/orders?page=@(Model.CurrentPage + 1)&pageSize=@Model.PageSize">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -394,7 +361,7 @@
                                     <select class="form-select js-select2" 
                                             data-search="on" 
                                             data-dropdown="xs center"
-                                            onchange="location.href='/orders?page=' + this.value">
+                                            onchange="location.href='/orders?page=' + this.value + '&pageSize=@Model.PageSize'"
                                         >
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
@@ -413,3 +380,122 @@
         </div><!-- .card -->
     </div><!-- .nk-block -->
 </div>
+
+@section Scripts
+{
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var table = document.querySelector('.nk-tb-list');
+        if (!table) return;
+        var headerRow = table.querySelector('.nk-tb-item.nk-tb-head');
+        if (!headerRow) return;
+        var headers = Array.prototype.slice.call(headerRow.querySelectorAll('.wl-th'));
+        var activeHeader = null;
+        var activeDir = 1;
+
+        function cellValue(row, index, type) {
+            var cell = row.children[index];
+            if (!cell) return '';
+            var valueEl = cell.querySelector('[data-sort-value]');
+            var raw = valueEl ? valueEl.getAttribute('data-sort-value') : cell.textContent.trim();
+            if (type === 'date') {
+                return new Date(raw).getTime();
+            }
+            if (type === 'number') {
+                return parseFloat(raw.replace(/[^0-9.\-]/g, '')) || 0;
+            }
+            return raw.toLowerCase();
+        }
+
+        headers.forEach(function (th) {
+            th.addEventListener('click', function () {
+                var index = Array.prototype.indexOf.call(headerRow.children, th);
+                var type = th.getAttribute('data-sort-type') || 'text';
+                var dir = (activeHeader === th) ? -activeDir : 1;
+                activeHeader = th;
+                activeDir = dir;
+
+                headers.forEach(function (h) {
+                    h.classList.remove('wl-sort-asc', 'wl-sort-desc');
+                    var indicator = h.querySelector('.wl-sort-indicator');
+                    if (indicator) indicator.textContent = '';
+                });
+                th.classList.add(dir === 1 ? 'wl-sort-asc' : 'wl-sort-desc');
+                var indicator = th.querySelector('.wl-sort-indicator');
+                if (indicator) indicator.textContent = dir === 1 ? '▲' : '▼';
+
+                var rows = Array.prototype.slice.call(table.querySelectorAll('.nk-tb-item:not(.nk-tb-head)'));
+                rows.sort(function (a, b) {
+                    var va = cellValue(a, index, type);
+                    var vb = cellValue(b, index, type);
+                    if (va < vb) return -1 * dir;
+                    if (va > vb) return 1 * dir;
+                    return 0;
+                });
+                rows.forEach(function (row) { table.appendChild(row); });
+            });
+        });
+
+        var statusHeader = headerRow.querySelector('[data-sort-key="status"]');
+        var statusIndex = statusHeader ? Array.prototype.indexOf.call(headerRow.children, statusHeader) : -1;
+        var joinedHeader = headerRow.querySelector('[data-sort-key="joined"]');
+        var joinedIndex = joinedHeader ? Array.prototype.indexOf.call(headerRow.children, joinedHeader) : -1;
+        var statusFilter = document.getElementById('statusFilter');
+        var joinedFrom = document.getElementById('joinedFrom');
+        var joinedTo = document.getElementById('joinedTo');
+        var applyFilterBtn = document.getElementById('applyStatusFilter');
+        var resetFilterBtn = document.getElementById('resetStatusFilter');
+
+        function joinedDate(row) {
+            if (joinedIndex === -1) return null;
+            var cell = row.children[joinedIndex];
+            if (!cell) return null;
+            var valueEl = cell.querySelector('[data-sort-value]');
+            var raw = valueEl ? valueEl.getAttribute('data-sort-value') : cell.textContent.trim();
+            var time = new Date(raw).getTime();
+            return isNaN(time) ? null : time;
+        }
+
+        function applyFilters() {
+            var statusValue = statusFilter.value;
+            var fromValue = joinedFrom.value ? new Date(joinedFrom.value + 'T00:00:00').getTime() : null;
+            var toValue = joinedTo.value ? new Date(joinedTo.value + 'T23:59:59').getTime() : null;
+            var rows = table.querySelectorAll('.nk-tb-item:not(.nk-tb-head)');
+            rows.forEach(function (row) {
+                var visible = true;
+
+                if (statusValue !== 'any' && statusIndex !== -1) {
+                    var cell = row.children[statusIndex];
+                    var text = cell ? cell.textContent.trim() : '';
+                    if (text !== statusValue) visible = false;
+                }
+
+                if (visible && (fromValue || toValue)) {
+                    var joined = joinedDate(row);
+                    if (joined === null) {
+                        visible = false;
+                    } else {
+                        if (fromValue && joined < fromValue) visible = false;
+                        if (toValue && joined > toValue) visible = false;
+                    }
+                }
+
+                row.style.display = visible ? '' : 'none';
+            });
+        }
+
+        if (applyFilterBtn) {
+            applyFilterBtn.addEventListener('click', applyFilters);
+        }
+        if (resetFilterBtn) {
+            resetFilterBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                statusFilter.value = 'any';
+                joinedFrom.value = '';
+                joinedTo.value = '';
+                applyFilters();
+            });
+        }
+    });
+</script>
+}

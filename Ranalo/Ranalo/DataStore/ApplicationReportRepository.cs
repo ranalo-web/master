@@ -35,6 +35,7 @@ namespace Ranalo.DataStore
                         OR WO.DealerRef LIKE '%' + @SearchTerm + '%'
                         OR WO.Email LIKE '%' + @SearchTerm + '%'
                         OR WO.MpesaDepositRef LIKE '%' + @SearchTerm + '%'
+                        OR CAST(WO.[OrderID] AS VARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                     )";
 
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
@@ -63,6 +64,7 @@ namespace Ranalo.DataStore
                         OR WO.DealerRef LIKE '%' + @SearchTerm + '%'
                         OR WO.Email LIKE '%' + @SearchTerm + '%'
                         OR WO.MpesaDepositRef LIKE '%' + @SearchTerm + '%'
+                        OR CAST(WO.[OrderID] AS VARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                     )
                 ORDER BY [DateCreated] DESC
                 OFFSET @Offset ROWS 
@@ -73,7 +75,8 @@ namespace Ranalo.DataStore
             {
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                PageSize = pageSize
             };
         }
 
@@ -125,7 +128,8 @@ namespace Ranalo.DataStore
             {
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                PageSize = pageSize
             };
         }
 
@@ -147,6 +151,7 @@ namespace Ranalo.DataStore
                         OR WO.DealerRef LIKE '%' + @SearchTerm + '%'
                         OR WO.Email LIKE '%' + @SearchTerm + '%'
                         OR KP.MpesaCode LIKE '%' + @SearchTerm + '%'
+                        OR CAST(WO.[OrderID] AS VARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                     )";
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
             var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchParam, dealerId });
@@ -176,6 +181,7 @@ namespace Ranalo.DataStore
                         OR WO.DealerRef LIKE '%' + @SearchTerm + '%'
                         OR WO.Email LIKE '%' + @SearchTerm + '%'
                         OR KP.MpesaCode LIKE '%' + @SearchTerm + '%'
+                        OR CAST(WO.[OrderID] AS VARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                     )
                         ORDER BY [DateCreated] DESC
                         OFFSET @Offset ROWS 
@@ -187,7 +193,8 @@ namespace Ranalo.DataStore
             {
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                PageSize = pageSize
             };
         }
 
@@ -522,7 +529,8 @@ namespace Ranalo.DataStore
             {
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                PageSize = pageSize
             };
         }
 
@@ -1762,7 +1770,8 @@ FROM
             {
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                PageSize = pageSize
             };
         }
 
