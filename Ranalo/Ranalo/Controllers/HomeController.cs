@@ -355,7 +355,7 @@ namespace Ranalo.Controllers
             var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, searchTerm.Trim());
             ViewData["OrdersStatus"] = "All Orders";
             waitingApprovalByUser.SearchTerm = searchTerm.Trim();
-            return View(waitingApprovalByUser);
+            return View("~/Views/Home/Index.cshtml", waitingApprovalByUser);
         }
 
         [Route("users")]
