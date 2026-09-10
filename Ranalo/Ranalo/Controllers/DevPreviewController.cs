@@ -17,6 +17,26 @@ namespace Ranalo.Controllers
         }
 
         [HttpGet]
+        [Route("dev-preview/dealer-dashboard")]
+        public IActionResult DealerDashboard()
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            ViewBag.BackLink = "dealer-dashboard";
+            ViewBag.IsAdmin = false;
+            ViewBag.IsApprover = false;
+            ViewBag.IsDealer = true;
+            ViewBag.UserName = "Preview Dealer";
+
+            var model = DealerDashboardSampleData.Build();
+
+            return View("~/Views/DealerDashboard/Index.cshtml", model);
+        }
+
+        [HttpGet]
         [Route("dev-preview/admin-dashboard")]
         public IActionResult AdminDashboard()
         {
