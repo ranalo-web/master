@@ -104,6 +104,25 @@
                                 </div>
                                 <div class="col-sm-6">
                                     <div class="form-group">
+                                        <label class="form-label" for="deviceBrand">Device Brand</label>
+                                        <div class="form-control-wrap">
+                                            <div class="form-icon form-icon-left">
+                                                <em class="icon ni ni-mobile"></em>
+                                            </div>
+                                            <select name="deviceBrand"
+                                                    class="form-select"
+                                                    id="deviceBrand" required>
+                                                <option value="" disabled selected="@(string.IsNullOrEmpty(enrolment?.DeviceBrand))">Select a brand&hellip;</option>
+                                                <option value="Samsung" selected="@(enrolment?.DeviceBrand == "Samsung")">Samsung</option>
+                                                <option value="itel" selected="@(enrolment?.DeviceBrand == "itel")">itel</option>
+                                                <option value="TECNO" selected="@(enrolment?.DeviceBrand == "TECNO")">TECNO</option>
+                                                <option value="Infinix" selected="@(enrolment?.DeviceBrand == "Infinix")">Infinix</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group">
                                         <label class="form-label" for="imeiNumber">Order ID</label>
                                         <div class="form-control-wrap">
                                             <div class="form-icon form-icon-left">

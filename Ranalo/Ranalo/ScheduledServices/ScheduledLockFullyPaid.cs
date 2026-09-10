@@ -36,7 +36,8 @@ namespace Ranalo.ScheduledServices
                         //IPaymentsRepository
                         var reminderService = scope.ServiceProvider.GetRequiredService<IApplicationReportService>();
                         var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository);
+                        var enrolmentService = scope.ServiceProvider.GetRequiredService<IEnrolmentService>();
+                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService);
                         foreach (var order in inactiveUsers)
                         {
                             _logger.LogInformation("Unlock fully paid lock Auto for: {user}", order.AccountId);
@@ -60,9 +61,10 @@ namespace Ranalo.ScheduledServices
             _logger.LogInformation("Unlock fully paid stopped at: {time}", DateTime.UtcNow);
         }
 
-        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, 
-            IApplicationReportService applicationReportService, 
-            IPaymentsRepository paymentsRepository)
+        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor,
+            IApplicationReportService applicationReportService,
+            IPaymentsRepository paymentsRepository,
+            IEnrolmentService enrolmentService)
         {
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); ;
 
@@ -84,7 +86,18 @@ namespace Ranalo.ScheduledServices
                 DateTimeFormat(x.NextLockDate).Value.Year == currentYear)
             .ToList();
 
+            // NOTE: this loop has never branched on LockGroup -- every fully-paid
+            // account, Knox (LockGroup==2) included, falls into devicesToLock
+            // and is only ever sent to deviceProcessor.ProcessBatchesAsync
+            // (Nuovo-only), so Knox devices are never actually unlocked here.
+            // Not fixing that pre-existing gap as part of this task -- but
+            // LockGroup==3 (Transsion) devices ARE now correctly routed to
+            // PayTrigger's dedicated removeLock endpoint below (via
+            // RemoveDevicesPayTrigger), which releases the device from
+            // PayTrigger's management entirely rather than reusing the
+            // payment-cycle lock-extension call with a far-future date.
             var devicesToLock = new List<LockTransaction>();
+            var devicesToRemovePayTrigger = new List<LockTransaction>();
 
             if (fullyPaidRecords != null && fullyPaidRecords.Any())
             {
@@ -98,10 +111,22 @@ namespace Ranalo.ScheduledServices
                         AutoLockDate = DateTime.MaxValue
                     };
 
-                    devicesToLock.Add(lockDevice);
+                    if (account.LockGroup == 3)
+                    {
+                        devicesToRemovePayTrigger.Add(lockDevice);
+                    }
+                    else
+                    {
+                        devicesToLock.Add(lockDevice);
+                    }
                 }
 
                 var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock, _logger);
+
+                if (devicesToRemovePayTrigger.Any())
+                {
+                    await enrolmentService.RemoveDevicesPayTrigger(devicesToRemovePayTrigger);
+                }
 
                 return lockedDevices;
             }
