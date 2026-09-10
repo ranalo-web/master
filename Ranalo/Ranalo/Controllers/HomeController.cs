@@ -41,7 +41,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("orders/{page:int?}")]
-        public async Task<IActionResult> Index(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(int page = 1, int pageSize = 50)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -355,7 +355,7 @@ namespace Ranalo.Controllers
             var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, searchTerm.Trim());
             ViewData["OrdersStatus"] = "All Orders";
             waitingApprovalByUser.SearchTerm = searchTerm.Trim();
-            return View(waitingApprovalByUser);
+            return View("~/Views/Home/Index.cshtml", waitingApprovalByUser);
         }
 
         [Route("users")]

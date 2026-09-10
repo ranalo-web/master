@@ -77,7 +77,7 @@ namespace Ranalo.Controllers
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
-                return View(allPaymentSummaries);
+                return View("~/Views/Collections/AssignedCollections.cshtml", allPaymentSummaries);
             }
 
             var dealer = await _userService.GetDealerByUserId(settings.UserId);
@@ -138,7 +138,7 @@ namespace Ranalo.Controllers
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
-                return View("AssignedCollections", allPaymentSummaries);
+                return View("~/Views/Collections/AssignedCollections.cshtml", allPaymentSummaries);
             }
 
             var dealer = await _userService.GetDealerByUserId(settings.UserId);

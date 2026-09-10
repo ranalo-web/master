@@ -1,106 +1,56 @@
 using Microsoft.AspNetCore.Mvc;
+using Ranalo.Configuration;
+using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 
 namespace Ranalo.Controllers
 {
-    // Local-only helper for previewing dashboard layouts with mock data, bypassing
-    // login and the database. Not wired to any real service/repository. Only
-    // responds when running in Development, and should be removed before this
-    // branch merges to main.
-    public class DevPreviewController : Controller
+    [LoadUserSettingsFromCookie]
+    public class AdminDashboardController : Controller
     {
-        private readonly IWebHostEnvironment _env;
-
-        public DevPreviewController(IWebHostEnvironment env)
-        {
-            _env = env;
-        }
-
         [HttpGet]
-        [Route("dev-preview/dealer-dashboard")]
-        public IActionResult DealerDashboard()
+        [Route("admin-dashboard")]
+        public IActionResult Index()
         {
-            if (!_env.IsDevelopment())
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
             {
-                return NotFound();
+                return RedirectToAction("Index", "Login");
             }
 
-            ViewBag.BackLink = "dealer-dashboard";
-            ViewBag.IsAdmin = false;
-            ViewBag.IsApprover = false;
-            ViewBag.IsDealer = true;
-            ViewBag.UserName = "Preview Dealer";
-
-            var model = DealerDashboardSampleData.Build();
-
-            return View("~/Views/DealerDashboard/Index.cshtml", model);
-        }
-
-        [HttpGet]
-        [Route("dev-preview/admin-dashboard")]
-        public IActionResult AdminDashboard()
-        {
-            if (!_env.IsDevelopment())
+            if (settings.RoleId != UserRole.Admin)
             {
-                return NotFound();
-            }
-
-            ViewBag.BackLink = "index";
-            ViewBag.IsAdmin = true;
-            ViewBag.IsApprover = false;
-            ViewBag.IsDealer = false;
-            ViewBag.UserName = "Preview Admin";
-            ViewData["IsAdmin"] = true;
-
-            var model = new AwaitingApprovalViewModel
-            {
-                CurrentPage = 1,
-                TotalPages = 3,
-                SearchTerm = "",
-                AwaitingApprovals = new List<AwaitingApprovalDto>
-                {
-                    new AwaitingApprovalDto { Id = 1, OrderId = 10231, Status = "approval-waiting", FirstName = "Jane", LastName = "Wanjiru", Email = "jane.wanjiru@example.com", Phone = "0712 345 678", DealerRef = "Nairobi Mobile Hub", MpesaDepositRef = "QGH7XJ2K", DateCreated = DateTime.Now.AddHours(-3), DaysUnpaid = 0 },
-                    new AwaitingApprovalDto { Id = 2, OrderId = 10232, Status = "approved", FirstName = "Brian", LastName = "Otieno", Email = "brian.otieno@example.com", Phone = "0722 456 789", DealerRef = "Kisumu Electronics", MpesaDepositRef = "QGH8YK3L", DateCreated = DateTime.Now.AddHours(-6), DaysUnpaid = 0 },
-                    new AwaitingApprovalDto { Id = 3, OrderId = 10233, Status = "cancelled", FirstName = "Amina", LastName = "Hassan", Email = "amina.hassan@example.com", Phone = "0733 567 890", DealerRef = "Mombasa Devices Ltd", MpesaDepositRef = "QGH9ZM4N", DateCreated = DateTime.Now.AddDays(-1), DaysUnpaid = 2 },
-                    new AwaitingApprovalDto { Id = 4, OrderId = 10234, Status = "rejected", FirstName = "Peter", LastName = "Kamau", Email = "peter.kamau@example.com", Phone = "0744 678 901", DealerRef = "Nakuru Phone Shop", MpesaDepositRef = "QGH1AB5P", DateCreated = DateTime.Now.AddDays(-2), DaysUnpaid = 5 },
-                    new AwaitingApprovalDto { Id = 5, OrderId = 10235, Status = "approval-waiting", FirstName = "Grace", LastName = "Njeri", Email = "grace.njeri@example.com", Phone = "0755 789 012", DealerRef = "Eldoret Tech", MpesaDepositRef = "QGH2CD6Q", DateCreated = DateTime.Now.AddHours(-1), DaysUnpaid = 0 },
-                }
-            };
-
-            return View("~/Views/Home/Index.cshtml", model);
-        }
-
-        [HttpGet]
-        [Route("dev-preview/admin-dashboard-live")]
-        public IActionResult AdminDashboardLive()
-        {
-            if (!_env.IsDevelopment())
-            {
-                return NotFound();
+                return RedirectToAction("Index", "Home");
             }
 
             ViewBag.BackLink = "admin-dashboard";
             ViewBag.IsAdmin = true;
             ViewBag.IsApprover = false;
             ViewBag.IsDealer = false;
-            ViewBag.UserName = "Preview Admin";
+            ViewBag.UserName = settings.KnownAs;
 
+            // Sample data matching the agreed design mockup. Wiring to
+            // IApplicationReportService and friends is a follow-up step.
             var model = new AdminDashboardViewModel
             {
                 RevenueThisMonth = 412300m,
                 RevenueGrowthPct = 14.8m,
                 RevenueTargetThisMonth = 490000m,
+
                 TotalAccounts = 1842,
                 GoodAccounts = 1583,
                 BadAccounts = 259,
+
                 PayingAccounts = 1691,
                 NonPayingAccounts = 151,
                 NonPayingAccountsChange = -18,
                 ArrearsTotal = 618400m,
                 ArrearsChangePct = 6.5m,
+
                 GrowthMonths = new List<string> { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug" },
                 RevenueByMonth = new List<decimal> { 298000, 312000, 305000, 334000, 356000, 372000, 391000, 412300 },
                 AccountsByMonth = new List<int> { 1520, 1568, 1601, 1640, 1685, 1722, 1780, 1842 },
+
                 PortfolioGoodPct = 82,
                 PortfolioSlowPct = 10,
                 PortfolioArrearsPct = 6,
@@ -137,6 +87,7 @@ namespace Ranalo.Controllers
                 ContractCompletionRateChangePct = 1.2m,
                 AvgTimeToCompletionMonths = 7.8m,
                 TotalValueCompletedThisMonth = 2340000m,
+
                 NonPayers = new List<AdminWatchlistEntry>
                 {
                     new() { CustomerName = "Peter Wanjohi", DealerName = "Nairobi Mobile Hub", Phone = "0712 345 678", Detail = "60 days" },
@@ -206,6 +157,7 @@ namespace Ranalo.Controllers
                     new() { CustomerName = "Timothy Gitau", DealerName = "Eldoret Tech", Phone = "0733 109 876", Detail = "1 pmt ahead" },
                     new() { CustomerName = "Mildred Auma", DealerName = "Nairobi Mobile Hub", Phone = "0744 098 765", Detail = "1 pmt ahead" },
                 },
+
                 DealerPerformance = new List<AdminDealerPerformance>
                 {
                     new() { Rank = 1, DealerName = "Nairobi Mobile Hub", Accounts = 142, ActivePct = 91, Revenue = 412300, CommissionPaid = 18600, CommissionDue = 18600, PctOfTarget = 114 },
@@ -224,6 +176,7 @@ namespace Ranalo.Controllers
                     new() { Rank = 14, DealerName = "Meru Mobile World", Accounts = 21, ActivePct = 82, Revenue = 58100, CommissionPaid = 2400, CommissionDue = 2400, PctOfTarget = 103 },
                     new() { Rank = 15, DealerName = "Eldama Ravine Communications", Accounts = 17, ActivePct = 70, Revenue = 45200, CommissionPaid = 1900, CommissionDue = 2100, PctOfTarget = 88 },
                 },
+
                 AgentPerformance = new List<AdminAgentPerformance>
                 {
                     new() { Rank = 1, AgentName = "Faith Wangari", DealerName = "Nairobi Mobile Hub", Accounts = 58, ActivePct = 95, PctOfTarget = 119 },
@@ -284,7 +237,7 @@ namespace Ranalo.Controllers
                 },
             };
 
-            return View("~/Views/AdminDashboard/Index.cshtml", model);
+            return View(model);
         }
     }
 }

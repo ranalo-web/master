@@ -814,7 +814,7 @@ namespace Ranalo.Woocommece.Api.Services
                 DealerRef = value["billing"]?["billing_referral_code"]?.Value<string?>() ?? "",
                 CustPhone = value["identity_verification"]?["owners_phone"]?.Value<string?>() ?? "",
                 CustEmail = value["billing"]?["billing_email_of_your_next_of_kin"]?.Value<string?>() ?? "",
-                MpesaDepositRef = value["identity_verification"]?["mpesa_deposit_reference"]?.Value<string?>() ?? value["meta_data"]?["mpesa_deposit_reference"]?.Value<string?>(),
+                MpesaDepositRef = (value["identity_verification"]?["mpesa_deposit_reference"]?.Value<string?>() ?? value["meta_data"]?["mpesa_deposit_reference"]?.Value<string?>())?.Trim(),
                 Products = products,
                 ImagesMetadata = ExtractDocumentMetadata(value["meta_data"].ToString()),
                 NextOfKin = ExtractNextKin(value["id"]?.Value<int?>() ?? 0, value["meta_data"].ToString()),

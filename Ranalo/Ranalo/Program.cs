@@ -101,6 +101,9 @@ builder.Services.AddScoped<IMySqlPaymentsRepository, MySqlPaymentsRepository>();
 
 bool runWooTask = builder.Configuration.GetValue<bool>("RunWooTask");
 
+// Local dev safety: these hosted services send real customer SMS and issue real
+// Samsung Knox device lock/unlock calls against production. Never run them from a
+// local `dotnet run` — only in real (non-Development) deployments.
 if (!builder.Environment.IsDevelopment())
 {
     if (runWooTask)
@@ -110,11 +113,12 @@ if (!builder.Environment.IsDevelopment())
         //builder.Services.AddHostedService<ScheduledSendPaymentMessages>();
         //builder.Services.AddHostedService<ScheduledTaskDeviceUnlockService>();
         //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
-        builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
-        builder.Services.AddHostedService<ScheduledLockPaying>();
-        builder.Services.AddHostedService<ScheduledLockRestructured>();
-        builder.Services.AddHostedService<ScheduledLockFullyPaid>();
+        //builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
+        //builder.Services.AddHostedService<ScheduledLockPaying>();
+        //builder.Services.AddHostedService<ScheduledLockRestructured>();
+        //builder.Services.AddHostedService<ScheduledLockFullyPaid>();
         //builder.Services.AddHostedService<ScheduledTaskWooOrdersService>();
+        //builder.Services.AddHostedService<ScheduledTaskCreateContractOrders>();
     }
     else
     {
