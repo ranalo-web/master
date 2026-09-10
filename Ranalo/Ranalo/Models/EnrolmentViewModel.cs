@@ -23,6 +23,7 @@ namespace Ranalo.Models
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public required string IMEI { get; set; }
+        public string? DeviceBrand { get; set; }
         public DateTime Created { get; set; }
         public DateTime Updated { get; set; }
         public DateTime ApprovedDate { get; set; }
@@ -34,6 +35,8 @@ namespace Ranalo.Models
         public string? VeriTechMessage { get; set; }
         public long? VeriTechCode { get; set; }
         public string? KnoxResponse { get; set; }
+        public string? PayTriggerStatus { get; set; }
+        public string? PayTriggerResponse { get; set; }
         //public string? DepositMpesa { get; set; }
     }
 

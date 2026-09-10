@@ -20,6 +20,8 @@ namespace Ranalo.Services
 
         Task CreateDeviceFromKnox(Enrolment newEnrolment);
         Task LockDevicesKnox(List<LockTransaction> devicesToLockKnox);
+        Task LockDevicesPayTrigger(List<LockTransaction> devicesToLockPayTrigger);
+        Task RemoveDevicesPayTrigger(List<LockTransaction> devicesToRemovePayTrigger);
 
         Task<Enrolment> StartEnrolmentasync(Enrolment newEnrolment, CustomerDetails? order);
 

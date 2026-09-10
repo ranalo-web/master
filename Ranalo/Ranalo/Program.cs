@@ -17,6 +17,8 @@ using Ranalo.VeriTechClient;
 using Ranalo.SumsungKnox;
 using Microsoft.Extensions.Options;
 using Ranalo.SumsungKnox.Models;
+using Ranalo.PayTrigger;
+using Ranalo.PayTrigger.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +63,23 @@ builder.Services.AddHttpClient<IKnoxTokenProvider, KnoxJwtTokenProvider>(
             sp.GetRequiredService<IOptions<KnoxSettings>>().Value;
 
         client.BaseAddress = new Uri(settings.RegionBaseUrl);
+    });
+
+//Transsion PayTrigger -- 3rd lock provider (itel/TECNO/Infinix), alongside
+//Nuovo and Knox. Auth is per-request HMAC-SHA256 signing (PayTriggerSigner),
+//not a token exchange like Knox -- see Ranalo/PayTrigger/PayTriggerClient.cs.
+//BaseUrl must end with a trailing slash (e.g. ".../PayTrigger/") so relative
+//request paths combine correctly via HttpClient.BaseAddress.
+builder.Services.Configure<PayTriggerSettings>(
+    builder.Configuration.GetSection("PayTrigger"));
+
+builder.Services.AddHttpClient<IPayTriggerClient, PayTriggerClient>(
+    (sp, client) =>
+    {
+        var settings =
+            sp.GetRequiredService<IOptions<PayTriggerSettings>>().Value;
+
+        client.BaseAddress = new Uri(settings.BaseUrl);
     });
 
 // Register your repository
