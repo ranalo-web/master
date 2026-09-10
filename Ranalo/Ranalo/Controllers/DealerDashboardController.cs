@@ -54,31 +54,54 @@ namespace Ranalo.Controllers
                 NewThisMonth = 12,
                 InDefault = 3,
                 DefaultRatePct = 2.1m,
+                NonPayingChange = -1,
+
+                ArrearsTotal = 21400m,
+                ArrearsChangePct = -4.2m,
 
                 CommissionReceived = 18600m,
                 CommissionPaidToAgents = 12200m,
                 CommissionOutstanding = 2000m,
+                CommissionsChangePct = 8.3m,
+
+                BadDebtThisMonth = 3100m,
+                BadDebtChangePct = -9.6m,
 
                 ActiveRateVsTargetPct = 114,
 
                 GrowthMonths = new List<string> { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug" },
                 RevenueByMonth = new List<decimal> { 258000, 264000, 271000, 296000, 322000, 348000, 371000, 412300 },
+                AccountsByMonth = new List<int> { 98, 104, 111, 118, 124, 131, 137, 142 },
 
                 PortfolioGoodPct = 82,
                 PortfolioSlowPct = 10,
                 PortfolioArrearsPct = 6,
                 PortfolioNonPayingPct = 2,
+                PortfolioGoodPctChange = 1.2m,
+
+                CollectionRatePct = 93.6m,
+                CollectionRateChangePct = 1.8m,
+                PortfolioAtRiskPct = 6.4m,
+                PortfolioAtRiskChangePct = -0.7m,
 
                 NonPayers = new List<DealerWatchlistEntry>
                 {
                     new() { CustomerName = "Peter Wanjohi", AgentName = "Brian Kiplangat", Detail = "45 days" },
                     new() { CustomerName = "Alice Mumbi", AgentName = "Nancy Cherop", Detail = "38 days" },
+                    new() { CustomerName = "Dennis Kiptoo", AgentName = "Faith Wangari", Detail = "36 days" },
+                    new() { CustomerName = "Josephine Wafula", AgentName = "Brian Kiplangat", Detail = "33 days" },
+                    new() { CustomerName = "Samuel Kariuki", AgentName = "Nancy Cherop", Detail = "31 days" },
+                    new() { CustomerName = "Mercy Adhiambo", AgentName = "Faith Wangari", Detail = "30 days" },
                 },
                 SlowPayers = new List<DealerWatchlistEntry>
                 {
                     new() { CustomerName = "Collins Mwas", AgentName = "Brian Kiplangat", Detail = "KES 4,800" },
                     new() { CustomerName = "Faith Achieng", AgentName = "Nancy Cherop", Detail = "KES 3,900" },
                     new() { CustomerName = "Esther Nyambura", AgentName = "Brian Kiplangat", Detail = "KES 2,200" },
+                    new() { CustomerName = "Kevin Otieno", AgentName = "Faith Wangari", Detail = "KES 2,100" },
+                    new() { CustomerName = "Ruth Chebet", AgentName = "Nancy Cherop", Detail = "KES 1,850" },
+                    new() { CustomerName = "Victor Mutua", AgentName = "Brian Kiplangat", Detail = "KES 1,600" },
+                    new() { CustomerName = "Irene Nafula", AgentName = "Faith Wangari", Detail = "KES 1,400" },
                 },
                 GoodPayers = new List<DealerWatchlistEntry>
                 {
@@ -86,6 +109,10 @@ namespace Ranalo.Controllers
                     new() { CustomerName = "Susan Wanjala", AgentName = "Faith Wangari", Detail = "3 pmts ahead" },
                     new() { CustomerName = "Michael Otieno", AgentName = "Brian Kiplangat", Detail = "2 pmts ahead" },
                     new() { CustomerName = "Daniel Kiprotich", AgentName = "Nancy Cherop", Detail = "2 pmts ahead" },
+                    new() { CustomerName = "Grace Otieno", AgentName = "Faith Wangari", Detail = "2 pmts ahead" },
+                    new() { CustomerName = "Kevin Mwangi", AgentName = "Nancy Cherop", Detail = "1 pmt ahead" },
+                    new() { CustomerName = "Beatrice Auma", AgentName = "Brian Kiplangat", Detail = "1 pmt ahead" },
+                    new() { CustomerName = "Charles Kimutai", AgentName = "Faith Wangari", Detail = "1 pmt ahead" },
                 },
 
                 Contracts = new List<DealerContract>
@@ -133,6 +160,28 @@ namespace Ranalo.Controllers
                     new() { Device = "Redmi Note 13", Units = 34, AvgValue = 28000, GoodPct = 90, ArrearsPct = 10 },
                     new() { Device = "Tecno Spark 20", Units = 38, AvgValue = 19000, GoodPct = 93, ArrearsPct = 7 },
                 },
+
+                RepeatCustomerRatePct = 19.5m,
+                AvgCustomerLifetimeValue = 31800m,
+                ChurnRatePct = 2.8m,
+
+                CompletedContracts = new List<DealerCompletedContract>
+                {
+                    new() { CustomerName = "Peterson Kamau", ProductName = "Samsung A15", CompletedDate = "Aug 28", TotalPaid = 21000, DurationMonths = 8 },
+                    new() { CustomerName = "Lydia Wanjiku", ProductName = "Tecno Spark 20", CompletedDate = "Aug 24", TotalPaid = 15200, DurationMonths = 7 },
+                    new() { CustomerName = "Moses Otieno", ProductName = "iPhone 12", CompletedDate = "Aug 20", TotalPaid = 62400, DurationMonths = 12 },
+                    new() { CustomerName = "Catherine Njoki", ProductName = "Redmi Note 13", CompletedDate = "Aug 17", TotalPaid = 16800, DurationMonths = 6 },
+                    new() { CustomerName = "Julius Mutiso", ProductName = "Samsung A15", CompletedDate = "Aug 12", TotalPaid = 21500, DurationMonths = 8 },
+                    new() { CustomerName = "Faith Nekesa", ProductName = "Tecno Spark 20", CompletedDate = "Aug 9", TotalPaid = 15900, DurationMonths = 7 },
+                    new() { CustomerName = "Dennis Ochieng", ProductName = "Redmi Note 13", CompletedDate = "Aug 4", TotalPaid = 17100, DurationMonths = 6 },
+                },
+
+                CompletedContractsThisMonth = 7,
+                CompletedContractsChangePct = 9.4m,
+                ContractCompletionRatePct = 88.2m,
+                ContractCompletionRateChangePct = 1.1m,
+                AvgTimeToCompletionMonths = 7.4m,
+                TotalValueCompletedThisMonth = 169900m,
             };
         }
     }

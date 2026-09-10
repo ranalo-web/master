@@ -68,7 +68,7 @@
                                         <span class="nk-menu-text">Home</span>
                                     </a>
                                 </li><!-- .nk-menu-item -->
-                                @if (ViewBag.IsDealer)
+                                @if (ViewBag.IsDealer is true)
                                 {
                                     <li class="nk-menu-item">
                                         <a href="/dealer-dashboard" class="nk-menu-link">
@@ -77,7 +77,7 @@
                                         </a>
                                     </li>
                                 }
-                                @if (ViewBag.IsAdmin)
+                                @if (ViewBag.IsAdmin is true)
                                 {
                                     <li class="nk-menu-item">
                                         <a href="/admin-dashboard" class="nk-menu-link">

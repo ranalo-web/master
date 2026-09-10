@@ -13,20 +13,35 @@ namespace Ranalo.Models
         public int NewThisMonth { get; set; }
         public int InDefault { get; set; }
         public decimal DefaultRatePct { get; set; }
+        public int NonPayingChange { get; set; }
+
+        public decimal ArrearsTotal { get; set; }
+        public decimal ArrearsChangePct { get; set; }
 
         public decimal CommissionReceived { get; set; }
         public decimal CommissionPaidToAgents { get; set; }
         public decimal CommissionOutstanding { get; set; }
+        public decimal CommissionsChangePct { get; set; }
+
+        public decimal BadDebtThisMonth { get; set; }
+        public decimal BadDebtChangePct { get; set; }
 
         public decimal ActiveRateVsTargetPct { get; set; }
 
         public List<string> GrowthMonths { get; set; } = new();
         public List<decimal> RevenueByMonth { get; set; } = new();
+        public List<int> AccountsByMonth { get; set; } = new();
 
         public decimal PortfolioGoodPct { get; set; }
         public decimal PortfolioSlowPct { get; set; }
         public decimal PortfolioArrearsPct { get; set; }
         public decimal PortfolioNonPayingPct { get; set; }
+        public decimal PortfolioGoodPctChange { get; set; }
+
+        public decimal CollectionRatePct { get; set; }
+        public decimal CollectionRateChangePct { get; set; }
+        public decimal PortfolioAtRiskPct { get; set; }
+        public decimal PortfolioAtRiskChangePct { get; set; }
 
         public List<DealerWatchlistEntry> NonPayers { get; set; } = new();
         public List<DealerWatchlistEntry> SlowPayers { get; set; } = new();
@@ -39,6 +54,21 @@ namespace Ranalo.Models
         public List<DealerCommissionReceived> CommissionsReceived { get; set; } = new();
         public List<DealerCommissionPaid> CommissionsPaid { get; set; } = new();
         public List<DealerDeviceStock> DeviceStock { get; set; } = new();
+
+        // Customer Performance card. "Customers" here is this dealer's own
+        // TotalAccounts/NewThisMonth above (its own accounts), plus these.
+        public decimal RepeatCustomerRatePct { get; set; }
+        public decimal AvgCustomerLifetimeValue { get; set; }
+        public decimal ChurnRatePct { get; set; }
+
+        public List<DealerCompletedContract> CompletedContracts { get; set; } = new();
+
+        public int CompletedContractsThisMonth { get; set; }
+        public decimal CompletedContractsChangePct { get; set; }
+        public decimal ContractCompletionRatePct { get; set; }
+        public decimal ContractCompletionRateChangePct { get; set; }
+        public decimal AvgTimeToCompletionMonths { get; set; }
+        public decimal TotalValueCompletedThisMonth { get; set; }
     }
 
     public class DealerWatchlistEntry
@@ -93,5 +123,14 @@ namespace Ranalo.Models
         public decimal AvgValue { get; set; }
         public decimal GoodPct { get; set; }
         public decimal ArrearsPct { get; set; }
+    }
+
+    public class DealerCompletedContract
+    {
+        public string CustomerName { get; set; } = "";
+        public string ProductName { get; set; } = "";
+        public string CompletedDate { get; set; } = "";
+        public decimal TotalPaid { get; set; }
+        public int DurationMonths { get; set; }
     }
 }
