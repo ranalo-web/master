@@ -17,6 +17,13 @@ namespace Ranalo.ScheduledServices
     //    ComputePortfolioClassificationRollupAsync -- see
     //    DashboardPortfolioRollupRow for the exact tier definitions. Both are
     //    single set-based queries (GROUPING SETS), not a per-dealer loop.
+    //    The same pass also derives InDefault/DefaultRatePct/ActivePct (the
+    //    Total Accounts card) from the Arrears tier, and ArrearsChangePct
+    //    from a real historical recompute of the whole Arrears formula "as
+    //    of" one calendar month ago (not a stored snapshot diff -- see
+    //    AccountClassificationLastMonth). Deferred: NonPayingChange (no
+    //    historical comparison point yet, same reason as CommissionsChangePct
+    //    below).
     //  - the completed-contracts / upsell-target list via
     //    RefreshCompletedContractsAsync -- a full delete+replace of the ranked
     //    top-N list (per dealer + company-wide), not a per-scope upsert like
@@ -154,13 +161,33 @@ namespace Ranalo.ScheduledServices
                     ? DashboardScope.ForDealer(row.DealerId.Value)
                     : DashboardScope.Admin;
 
+                // "In default" = the Arrears tier, rated against TotalAccounts
+                // (the same unfiltered count the KPI card shows), not the
+                // narrower payment-plan-only population GoodPct/SlowPct/
+                // ArrearsPct are percentages of. Null (not 0%) when there are
+                // no accounts to rate, same reasoning as CalculateGrowthPct.
+                decimal? defaultRatePct = row.TotalAccounts > 0
+                    ? Math.Round((decimal)row.ArrearsCount / row.TotalAccounts * 100m, 2)
+                    : null;
+                decimal? activePct = defaultRatePct.HasValue ? 100m - defaultRatePct.Value : null;
+
+                // Same "positive = worse, null when there's no baseline"
+                // formula as revenue growth -- here a positive number means
+                // arrears grew, which the view already renders as a bad
+                // (red/up) change, not a good one.
+                decimal? arrearsChangePct = CalculateGrowthPct(row.ArrearsTotal, row.ArrearsTotalLastMonth);
+
                 await repository.UpsertSnapshotPortfolioAsync(
                     scope,
                     portfolioGoodPct: row.GoodPct,
                     portfolioSlowPct: row.SlowPct,
                     portfolioArrearsPct: row.ArrearsPct,
                     portfolioNonPayingPct: row.NonPayingPct,
-                    arrearsTotal: row.ArrearsTotal);
+                    arrearsTotal: row.ArrearsTotal,
+                    arrearsChangePct: arrearsChangePct,
+                    inDefault: row.ArrearsCount,
+                    defaultRatePct: defaultRatePct,
+                    activePct: activePct);
             }
 
             return rollupRows.Count;
@@ -174,11 +201,15 @@ namespace Ranalo.ScheduledServices
 
             foreach (var row in rollupRows)
             {
+                var scope = DashboardScope.ForDealer(row.DealerId);
+
                 await repository.UpsertSnapshotCommissionAsync(
-                    DashboardScope.ForDealer(row.DealerId),
+                    scope,
                     commissionReceived: row.CommissionReceived,
                     commissionPaidToAgents: row.CommissionPaidToAgents,
                     commissionOutstanding: row.CommissionOutstanding);
+
+                await repository.UpsertDealerCommissionOutstandingAsync(scope, row.DealerCommissionOutstanding);
             }
 
             return rollupRows.Count;

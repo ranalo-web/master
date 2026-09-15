@@ -37,7 +37,26 @@
                 </div>
             </div>
             <div class="nk-block-head-content">
-                <a href="#" class="btn btn-primary"><em class="icon ni ni-plus"></em><span>New Enrolment</span></a>
+                <ul class="nk-block-tools g-3">
+                    <li>
+                        <div class="btn-group">
+                            <button type="button" id="revenuePeriodToggle" class="btn btn-outline-light btn-white dropdown-toggle" data-bs-toggle="dropdown">
+                                <em class="icon ni ni-calendar"></em><span>Month</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <ul class="link-list-opt no-bdr">
+                                    <li><a href="#" class="revenue-period-opt" data-period="week"><span>Week</span></a></li>
+                                    <li><a href="#" class="revenue-period-opt" data-period="month"><span>Month</span></a></li>
+                                    <li><a href="#" class="revenue-period-opt" data-period="ytd"><span>Year to Date</span></a></li>
+                                    <li><a href="#" class="revenue-period-opt" data-period="year"><span>Year</span></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <a href="#" class="btn btn-primary"><em class="icon ni ni-plus"></em><span>New Enrolment</span></a>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
@@ -50,16 +69,43 @@
                 var nonPayingImproved = Model.NonPayingChange <= 0;
 
                 var arrearsUp = Model.ArrearsChangePct >= 0;
-                var arrearsPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(Model.ArrearsTotal / Model.RevenueThisMonth * 100, 1) : 0;
+                // Not "% of this month's revenue" -- ArrearsTotal is a
+                // lifetime accumulated balance across every account, while
+                // RevenueThisMonth is a single month's collections, so that
+                // ratio blows past 100% for any dealer with a meaningful
+                // default rate (e.g. 2000%+), reading as broken rather than
+                // informative. "Days of revenue" (arrears / avg daily
+                // revenue, smoothed over the trend months with revenue) is
+                // the standard collections framing and stays meaningful at
+                // any scale.
+                var monthsWithRevenue = Model.RevenueByMonth.Where(r => r > 0).ToList();
+                var avgMonthlyRevenue = monthsWithRevenue.Count > 0 ? monthsWithRevenue.Average() : Model.RevenueThisMonth;
+                var avgDailyRevenue = avgMonthlyRevenue / 30m;
+                var arrearsDaysOfRevenue = avgDailyRevenue > 0 ? Math.Round(Model.ArrearsTotal / avgDailyRevenue) : 0;
                 var arrearsPerNonPaying = Model.InDefault > 0 ? Model.ArrearsTotal / Model.InDefault : 0;
 
-                var commissionsUp = Model.CommissionsChangePct >= 0;
-                var commissionsPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(Model.CommissionPaidToAgents / Model.RevenueThisMonth * 100, 1) : 0;
-                var commissionsPerAgent = Model.AgentPerformance.Count > 0 ? Model.CommissionPaidToAgents / Model.AgentPerformance.Count : 0;
+                // Commissions are a lifetime calculation, not "this month" --
+                // no trend/vs-last-month line for either commission card
+                // (unlike Revenue/Arrears/Bad Debt above, which are genuinely
+                // periodic). Agent-facing and dealer-facing figures split
+                // into their own card below rather than one combined
+                // "Commissions Paid" card, since they're two different
+                // audiences' numbers (what the dealer owes agents vs. what
+                // Ranalo owes the dealer).
+                var agentCommissionOutstandingPerAgent = Model.AgentPerformance.Count > 0
+                    ? Model.CommissionOutstanding / Model.AgentPerformance.Count
+                    : 0;
+                var dealerCommissionPaidToDate = Model.CommissionReceived - Model.DealerCommissionOutstanding;
 
                 var badDebtImproved = Model.BadDebtChangePct <= 0;
                 var badDebtPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(Model.BadDebtThisMonth / Model.RevenueThisMonth * 100, 1) : 0;
                 var badDebtPerBadAccount = Model.InDefault > 0 ? Model.BadDebtThisMonth / Model.InDefault : 0;
+            }
+            @{
+                var revenueGrowthUp = Model.RevenueGrowthPct >= 0;
+                var revenueTargetPct = Model.RevenueTarget > 0
+                    ? Math.Min(100m, Math.Round(Model.RevenueThisMonth / Model.RevenueTarget * 100, 1))
+                    : 0;
             }
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="card card-bordered h-100">
@@ -71,12 +117,17 @@
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
-                                <span class="amount">KES @Model.RevenueThisMonth.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="change up text-success"><em class="icon ni ni-arrow-long-up"></em>@Model.RevenueGrowthPct.ToString("0.0")%</span> this month</span>
+                                <span class="amount" id="revenueAmount">KES @Model.RevenueThisMonth.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1">
+                                    <span id="revenueGrowth" class="change @(revenueGrowthUp ? "up text-success" : "down text-danger")">
+                                        <em id="revenueGrowthIcon" class="icon ni ni-arrow-long-@(revenueGrowthUp ? "up" : "down")"></em><span id="revenueGrowthPct">@Model.RevenueGrowthPct.ToString("0.0")</span>%
+                                    </span> <span id="revenuePeriodLabel">this month</span>
+                                </span>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">KES @Model.AvgPerAccount.ToString("N0") avg / account</span>
+                            <span class="text-soft"><span id="revenueTargetPct">@revenueTargetPct.ToString("0")</span>% of KES <span id="revenueTargetAmount">@Model.RevenueTarget.ToString("N0")</span> target</span>
+                            <span class="text-soft"><span id="revenueAvgPerAccount">KES @Model.AvgPerAccount.ToString("N0")</span> avg / account</span>
                         </div>
                     </div>
                 </div>
@@ -132,27 +183,8 @@
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@arrearsPctOfRevenue.ToString("0")% of this month's revenue</span>
+                            <span class="text-soft">@arrearsDaysOfRevenue.ToString("N0") days of revenue</span>
                             <span class="text-soft">KES @arrearsPerNonPaying.ToString("N0") avg / non-paying account</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Commissions Paid</h6></div>
-                        </div>
-                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex flex-column">
-                                <span class="amount">KES @Model.CommissionPaidToAgents.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="@(commissionsUp ? "text-danger" : "text-success")"><em class="icon ni ni-arrow-long-@(commissionsUp ? "up" : "down")"></em>@Math.Abs(Model.CommissionsChangePct).ToString("0.0")%</span> vs last month</span>
-                            </div>
-                        </div>
-                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@commissionsPctOfRevenue.ToString("0")% of revenue</span>
-                            <span class="text-soft">KES @commissionsPerAgent.ToString("N0") avg / agent</span>
                         </div>
                     </div>
                 </div>
@@ -172,6 +204,48 @@
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft">@badDebtPctOfRevenue.ToString("0")% of revenue</span>
                             <span class="text-soft">KES @badDebtPerBadAccount.ToString("N0") avg / bad account</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title">
+                                <h6 class="title">Agent Commissions</h6>
+                            </div>
+                        </div>
+                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
+                            <div class="d-flex flex-column">
+                                <span class="amount">KES @Model.CommissionOutstanding.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1">still owed to your agents</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
+                            <span class="text-soft">KES @Model.CommissionPaidToAgents.ToString("N0") paid to date</span>
+                            <span class="text-soft">KES @agentCommissionOutstandingPerAgent.ToString("N0") avg outstanding / agent</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title">
+                                <h6 class="title">Dealer Commissions</h6>
+                            </div>
+                        </div>
+                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
+                            <div class="d-flex flex-column">
+                                <span class="amount">KES @Model.DealerCommissionOutstanding.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1">still owed to you by Ranalo</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
+                            <span class="text-soft">KES @Model.CommissionReceived.ToString("N0") earned to date</span>
+                            <span class="text-soft">KES @dealerCommissionPaidToDate.ToString("N0") paid to date</span>
                         </div>
                     </div>
                 </div>
@@ -293,8 +367,6 @@
         int AgentMoreCount = Math.Max(0, Model.AgentPerformance.Count - tablePageSize);
         int ContractsMoreCount = Math.Max(0, Model.Contracts.Count - tablePageSize);
         int EndingSoonMoreCount = Math.Max(0, Model.ContractsEndingSoon.Count - tablePageSize);
-        int CommissionsReceivedMoreCount = Math.Max(0, Model.CommissionsReceived.Count - tablePageSize);
-        int CommissionsPaidMoreCount = Math.Max(0, Model.CommissionsPaid.Count - tablePageSize);
         int DeviceMoreCount = Math.Max(0, Model.DeviceStock.Count - tablePageSize);
         int CompletedMoreCount = Math.Max(0, Model.CompletedContracts.Count - tablePageSize);
     }
@@ -586,105 +658,6 @@
                             <a href="#" class="link link-primary" data-less-for="dealer-endingsoon" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'dealer-endingsoon', @tablePageSize);">Show less</a>
                         </div>
                     }
-                </div>
-            </div>
-        </div>
-    </div><!-- .nk-block -->
-
-    <div class="nk-block">
-        <div class="row g-gs">
-            <div class="col-xxl-7">
-                <div class="card card-bordered card-stretch h-100">
-                    <div class="card-inner-group">
-                        <div class="card-inner">
-                            <div class="card-title-group">
-                                <div class="card-title">
-                                    <h6 class="title">Commissions I Receive from Ranalo</h6>
-                                    <p class="text-soft">This month &middot; KES @Model.CommissionReceived.ToString("N0") earned, all paid &middot; paid in 2 parts</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-inner p-0">
-                            <div class="table-responsive">
-                            <table class="table mb-0" style="white-space:nowrap;" data-key="dealer-commissions-received" data-page-size="@tablePageSize">
-                                <thead>
-                                    <tr>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Date</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Amount</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @for (var i = 0; i < Model.CommissionsReceived.Count; i++)
-                                    {
-                                        var c = Model.CommissionsReceived[i];
-                                        <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealer-commissions-received">
-                                            <td>@c.Date</td>
-                                            <td>@c.CustomerName</td>
-                                            <td><span class="fw-medium">KES @c.Amount.ToString("N0")</span></td>
-                                            <td><span class="badge badge-dim bg-success">@c.Status</span></td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                            </div>
-                            @if (CommissionsReceivedMoreCount > 0)
-                            {
-                                <div class="card-inner d-flex" style="column-gap:1rem;">
-                                    <a href="#" class="link link-primary" data-more-for="dealer-commissions-received" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'dealer-commissions-received', @tablePageSize);">Show @Math.Min(tablePageSize, CommissionsReceivedMoreCount) more</a>
-                                    <a href="#" class="link link-primary" data-less-for="dealer-commissions-received" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'dealer-commissions-received', @tablePageSize);">Show less</a>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xxl-5">
-                <div class="card card-bordered card-stretch h-100">
-                    <div class="card-inner-group">
-                        <div class="card-inner">
-                            <div class="card-title-group">
-                                <div class="card-title">
-                                    <h6 class="title">Commissions I Pay to Agents</h6>
-                                    <p class="text-soft">This month &middot; separate from Ranalo &middot; paid in 2 parts</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-inner p-0">
-                            <div class="table-responsive">
-                            <table class="table mb-0" style="white-space:nowrap;" data-key="dealer-commissions-paid" data-page-size="@tablePageSize">
-                                <thead>
-                                    <tr>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Due</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @for (var i = 0; i < Model.CommissionsPaid.Count; i++)
-                                    {
-                                        var c = Model.CommissionsPaid[i];
-                                        <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealer-commissions-paid">
-                                            <td><span class="fw-medium">@c.AgentName</span></td>
-                                            <td>KES @c.Due.ToString("N0")</td>
-                                            <td><span class="fw-medium">KES @c.Paid.ToString("N0")</span></td>
-                                            <td><span class="badge @(c.Outstanding > 0 ? "badge-dim bg-warning" : "badge-dim bg-success")">@c.Status</span></td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                            </div>
-                            @if (CommissionsPaidMoreCount > 0)
-                            {
-                                <div class="card-inner d-flex" style="column-gap:1rem;">
-                                    <a href="#" class="link link-primary" data-more-for="dealer-commissions-paid" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'dealer-commissions-paid', @tablePageSize);">Show @Math.Min(tablePageSize, CommissionsPaidMoreCount) more</a>
-                                    <a href="#" class="link link-primary" data-less-for="dealer-commissions-paid" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'dealer-commissions-paid', @tablePageSize);">Show less</a>
-                                </div>
-                            }
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1137,6 +1110,77 @@
                         }
                     }
                 });
+            }
+        })();
+    </script>
+    <script>
+        (function () {
+            var toggle = document.getElementById('revenuePeriodToggle');
+            var opts = document.querySelectorAll('.revenue-period-opt');
+            if (!toggle || opts.length === 0) return;
+
+            var amountEl = document.getElementById('revenueAmount');
+            var growthEl = document.getElementById('revenueGrowth');
+            var growthIconEl = document.getElementById('revenueGrowthIcon');
+            var growthPctEl = document.getElementById('revenueGrowthPct');
+            var periodLabelEl = document.getElementById('revenuePeriodLabel');
+            var avgPerAccountEl = document.getElementById('revenueAvgPerAccount');
+            var targetPctEl = document.getElementById('revenueTargetPct');
+            var targetAmountEl = document.getElementById('revenueTargetAmount');
+            var toggleLabel = toggle.querySelector('span');
+
+            var periodNames = { week: 'Week', month: 'Month', ytd: 'Year to Date', year: 'Year' };
+
+            opts.forEach(function (opt) {
+                opt.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var period = opt.getAttribute('data-period');
+                    loadRevenueForPeriod(period);
+                });
+            });
+
+            function loadRevenueForPeriod(period) {
+                toggle.disabled = true;
+                fetch('/dealer-dashboard/revenue?period=' + encodeURIComponent(period), {
+                    headers: { 'Accept': 'application/json' }
+                })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error('Request failed: ' + res.status);
+                        return res.json();
+                    })
+                    .then(function (data) {
+                        amountEl.textContent = 'KES ' + Math.round(data.revenue).toLocaleString();
+                        avgPerAccountEl.textContent = 'KES ' + Math.round(data.avgPerAccount).toLocaleString();
+                        periodLabelEl.textContent = data.label;
+
+                        targetAmountEl.textContent = Math.round(data.targetRevenue).toLocaleString();
+                        var targetPct = data.targetRevenue > 0 ? Math.min(100, Math.round(data.revenue / data.targetRevenue * 100)) : 0;
+                        targetPctEl.textContent = targetPct;
+
+                        if (data.growthPct === null || data.growthPct === undefined) {
+                            growthEl.classList.remove('up', 'text-success', 'down', 'text-danger');
+                            growthEl.classList.add('text-soft');
+                            growthIconEl.className = 'icon ni ni-minus';
+                            growthPctEl.textContent = '—';
+                        } else {
+                            var up = data.growthPct >= 0;
+                            growthEl.classList.remove('text-soft');
+                            growthEl.classList.toggle('up', up);
+                            growthEl.classList.toggle('text-success', up);
+                            growthEl.classList.toggle('down', !up);
+                            growthEl.classList.toggle('text-danger', !up);
+                            growthIconEl.className = 'icon ni ni-arrow-long-' + (up ? 'up' : 'down');
+                            growthPctEl.textContent = Math.abs(data.growthPct).toFixed(1);
+                        }
+
+                        toggleLabel.textContent = periodNames[period] || periodNames.month;
+                    })
+                    .catch(function (err) {
+                        console.error('Failed to load revenue for period ' + period, err);
+                    })
+                    .finally(function () {
+                        toggle.disabled = false;
+                    });
             }
         })();
     </script>

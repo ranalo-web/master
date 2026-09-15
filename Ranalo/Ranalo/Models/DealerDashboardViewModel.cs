@@ -8,6 +8,11 @@ namespace Ranalo.Models
         public decimal RevenueGrowthPct { get; set; }
         public decimal AvgPerAccount { get; set; }
 
+        // Expected revenue for the period if every account paid exactly on
+        // schedule -- see DashboardRevenuePeriodRow.TargetRevenue. Live-computed,
+        // not rollup-backed.
+        public decimal RevenueTarget { get; set; }
+
         public int TotalAccounts { get; set; }
         public decimal ActivePct { get; set; }
         public int NewThisMonth { get; set; }
@@ -20,7 +25,17 @@ namespace Ranalo.Models
 
         public decimal CommissionReceived { get; set; }
         public decimal CommissionPaidToAgents { get; set; }
+
+        // Still owed TO the dealer's agents -- lifetime, floored at 0 (an
+        // agent whose arrears wiped out their earned commission contributes
+        // 0, not a negative offset against other agents).
         public decimal CommissionOutstanding { get; set; }
+
+        // Still owed TO the dealer BY Ranalo: CommissionReceived (earned)
+        // minus DealerCommissionPayments actually paid out, floored at 0.
+        // Distinct from CommissionOutstanding above (agent-facing).
+        public decimal DealerCommissionOutstanding { get; set; }
+
         public decimal CommissionsChangePct { get; set; }
 
         public decimal BadDebtThisMonth { get; set; }

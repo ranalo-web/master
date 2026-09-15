@@ -1,6 +1,7 @@
 using Ranalo.Controllers;
 using Ranalo.DataStore;
 using Ranalo.Models;
+using Ranalo.ScheduledServices;
 
 namespace Ranalo.Services
 {
@@ -107,13 +108,35 @@ namespace Ranalo.Services
 
         public async Task<DealerDashboardViewModel> GetDealerDashboardAsync(int dealerId)
         {
-            var model = DealerDashboardSampleData.Build();
+            // Zero/empty defaults, not DealerDashboardSampleData.Build() -- a
+            // dealer with no rollup data yet should see 0s, not a fabricated
+            // "Nairobi Mobile Hub" business making KES 412,300/month. Every
+            // block below already only overwrites a field when it found real
+            // rows, so this only changes what's shown when nothing was found.
+            var model = new DealerDashboardViewModel();
             var scope = DashboardScope.ForDealer(dealerId);
+
+            var dealerName = await _repository.GetDealerNameAsync(dealerId);
+            if (!string.IsNullOrWhiteSpace(dealerName))
+            {
+                model.DealerName = dealerName;
+            }
 
             var snapshot = await _repository.GetSnapshotAsync(scope);
             if (snapshot != null)
             {
                 ApplyDealerSnapshot(model, snapshot);
+            }
+
+            // Target isn't part of the nightly rollup (see
+            // DashboardRevenuePeriodRow.TargetRevenue) -- computed live here,
+            // same as the date-range filter, just always for "this month"
+            // since that's what the page loads with by default.
+            if (TryResolvePeriodWindow("month", out var monthWindow))
+            {
+                var monthRow = await _repository.GetDealerRevenueForPeriodAsync(
+                    dealerId, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive, monthWindow.PriorPeriodStart, monthWindow.PriorPeriodEndExclusive);
+                model.RevenueTarget = monthRow.TargetRevenue;
             }
 
             var trend = await _repository.GetMonthlyTrendAsync(scope);
@@ -197,6 +220,67 @@ namespace Ranalo.Services
             return model;
         }
 
+        public async Task<DealerRevenuePeriodResult?> GetDealerRevenueForPeriodAsync(int dealerId, string period)
+        {
+            if (!TryResolvePeriodWindow(period, out var window))
+            {
+                return null;
+            }
+
+            var row = await _repository.GetDealerRevenueForPeriodAsync(
+                dealerId, window.PeriodStart, window.PeriodEndExclusive, window.PriorPeriodStart, window.PriorPeriodEndExclusive);
+
+            return new DealerRevenuePeriodResult
+            {
+                Revenue = row.RevenueThisPeriod,
+                GrowthPct = ScheduledDashboardRollup.CalculateGrowthPct(row.RevenueThisPeriod, row.RevenueLastPeriod),
+                AvgPerAccount = row.TotalAccounts > 0 ? row.RevenueThisPeriod / row.TotalAccounts : 0,
+                TargetRevenue = row.TargetRevenue,
+                Label = window.Label,
+            };
+        }
+
+        private readonly record struct PeriodWindow(
+            DateTime PeriodStart, DateTime PeriodEndExclusive,
+            DateTime PriorPeriodStart, DateTime PriorPeriodEndExclusive, string Label);
+
+        // "week"/"month" are rolling/calendar windows compared against the
+        // immediately preceding window of the same length; "ytd"/"year" are
+        // compared against the same window one year earlier, since a
+        // week-ago comparison isn't meaningful for either.
+        private static bool TryResolvePeriodWindow(string period, out PeriodWindow window)
+        {
+            var today = DateTime.Now.Date;
+            var tomorrow = today.AddDays(1);
+
+            switch (period?.ToLowerInvariant())
+            {
+                case "week":
+                    var weekStart = today.AddDays(-6);
+                    window = new PeriodWindow(weekStart, tomorrow, weekStart.AddDays(-7), weekStart, "this week");
+                    return true;
+
+                case "month":
+                    var monthStart = new DateTime(today.Year, today.Month, 1);
+                    window = new PeriodWindow(monthStart, monthStart.AddMonths(1), monthStart.AddMonths(-1), monthStart, "this month");
+                    return true;
+
+                case "ytd":
+                    var yearStart = new DateTime(today.Year, 1, 1);
+                    window = new PeriodWindow(yearStart, tomorrow, yearStart.AddYears(-1), tomorrow.AddYears(-1), "year to date");
+                    return true;
+
+                case "year":
+                    var yearWindowStart = tomorrow.AddYears(-1);
+                    window = new PeriodWindow(yearWindowStart, tomorrow, yearWindowStart.AddYears(-1), yearWindowStart, "trailing year");
+                    return true;
+
+                default:
+                    window = default;
+                    return false;
+            }
+        }
+
         private static AdminWatchlistEntry ToAdminWatchlistEntry(DashboardWatchlistEntryRow row) => new()
         {
             CustomerName = row.CustomerName,
@@ -269,9 +353,16 @@ namespace Ranalo.Services
         {
             model.RevenueThisMonth = snapshot.RevenueThisMonth ?? model.RevenueThisMonth;
             model.RevenueGrowthPct = snapshot.RevenueGrowthPct ?? model.RevenueGrowthPct;
-            model.AvgPerAccount = snapshot.AvgPerAccount ?? model.AvgPerAccount;
 
             model.TotalAccounts = snapshot.TotalAccounts ?? model.TotalAccounts;
+
+            // Not sourced from snapshot.AvgPerAccount -- ScheduledDashboardRollup
+            // never computes that column, so it would be permanently null and
+            // this would silently stay on sample data. Derived instead from the
+            // (now-updated) revenue/account figures above, the same way the
+            // date-range filter computes it in GetDealerRevenueForPeriodAsync.
+            model.AvgPerAccount = model.TotalAccounts > 0 ? model.RevenueThisMonth / model.TotalAccounts : model.AvgPerAccount;
+
             model.ActivePct = snapshot.ActivePct ?? model.ActivePct;
             model.NewThisMonth = snapshot.NewThisMonth ?? model.NewThisMonth;
             model.InDefault = snapshot.InDefault ?? model.InDefault;
@@ -284,6 +375,7 @@ namespace Ranalo.Services
             model.CommissionReceived = snapshot.CommissionReceived ?? model.CommissionReceived;
             model.CommissionPaidToAgents = snapshot.CommissionPaidToAgents ?? model.CommissionPaidToAgents;
             model.CommissionOutstanding = snapshot.CommissionOutstanding ?? model.CommissionOutstanding;
+            model.DealerCommissionOutstanding = snapshot.DealerCommissionOutstanding ?? model.DealerCommissionOutstanding;
             // CommissionsChangePct and the CommissionsReceived transaction-level
             // list intentionally left on sample data -- deferred (see
             // ScheduledDashboardRollup's class comment).

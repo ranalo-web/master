@@ -6,6 +6,11 @@ namespace Ranalo.DataStore
     {
         Task<DashboardSnapshotRow?> GetSnapshotAsync(DashboardScope scope);
 
+        // Real business name for the Dealer Dashboard header/greeting
+        // ("Welcome back, {DealerName}") -- not part of DashboardSnapshot,
+        // so it's not subject to the nightly rollup at all.
+        Task<string?> GetDealerNameAsync(int dealerId);
+
         Task<List<DashboardMonthlyTrendPoint>> GetMonthlyTrendAsync(DashboardScope scope, int months = 8);
 
         Task<List<DashboardWatchlistEntryRow>> GetWatchlistAsync(DashboardScope scope, string watchlistType, int take = 20);
@@ -39,13 +44,21 @@ namespace Ranalo.DataStore
             int? totalAccounts);
 
         // Same "update only these columns" contract as UpsertSnapshotKpiAsync.
+        // inDefault/defaultRatePct/activePct are derived from the Arrears
+        // tier -- see DashboardPortfolioRollupRow. arrearsChangePct compares
+        // against DashboardPortfolioRollupRow.ArrearsTotalLastMonth (a real
+        // historical recompute, not a stored snapshot diff).
         Task UpsertSnapshotPortfolioAsync(
             DashboardScope scope,
             decimal? portfolioGoodPct,
             decimal? portfolioSlowPct,
             decimal? portfolioArrearsPct,
             decimal? portfolioNonPayingPct,
-            decimal? arrearsTotal);
+            decimal? arrearsTotal,
+            decimal? arrearsChangePct,
+            int? inDefault,
+            decimal? defaultRatePct,
+            decimal? activePct);
 
         // Unlike the snapshot upserts above, this is a full replace, not a
         // per-scope upsert: DashboardCompletedContract is a ranked top-N
@@ -62,8 +75,9 @@ namespace Ranalo.DataStore
         Task<int> RefreshDeviceStockAsync(int topNPerScope = 20);
 
         // Per-dealer commission scalars (CommissionReceived/CommissionPaidToAgents/
-        // CommissionOutstanding) -- see DashboardCommissionRollupRow for the
-        // exact formula. Read/compute side; paired with UpsertSnapshotCommissionAsync.
+        // CommissionOutstanding/DealerCommissionOutstanding) -- see
+        // DashboardCommissionRollupRow for the exact formula. Read/compute
+        // side; paired with UpsertSnapshotCommissionAsync.
         Task<List<DashboardCommissionRollupRow>> ComputeCommissionSnapshotRollupAsync();
 
         Task UpsertSnapshotCommissionAsync(
@@ -72,10 +86,27 @@ namespace Ranalo.DataStore
             decimal? commissionPaidToAgents,
             decimal? commissionOutstanding);
 
+        // Separate upsert so a not-yet-applied
+        // 004_add_dealer_commission_outstanding.sql migration only affects
+        // this one field -- see the implementation's comment.
+        Task UpsertDealerCommissionOutstandingAsync(DashboardScope scope, decimal? dealerCommissionOutstanding);
+
         // Same full-replace pattern as RefreshCompletedContractsAsync/
         // RefreshDeviceStockAsync, writing DashboardPerformanceEntry rows with
         // EntryType = AgentCommission (deliberately not "Agent" -- see that
         // constant's doc comment). Dealer-only.
         Task<int> RefreshAgentCommissionListAsync(int topNPerScope = 20);
+
+        // Live (not rollup-backed) revenue query for the Dealer Dashboard's
+        // date-range filter -- the nightly rollup only knows "this month" /
+        // "last month", so an arbitrary period window has to hit
+        // KosePayments/Devices/Dealers directly. periodEndExclusive and
+        // priorPeriodEndExclusive are exclusive upper bounds.
+        Task<DashboardRevenuePeriodRow> GetDealerRevenueForPeriodAsync(
+            int dealerId,
+            DateTime periodStart,
+            DateTime periodEndExclusive,
+            DateTime priorPeriodStart,
+            DateTime priorPeriodEndExclusive);
     }
 }

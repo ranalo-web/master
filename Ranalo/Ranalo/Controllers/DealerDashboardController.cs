@@ -41,6 +41,38 @@ namespace Ranalo.Controllers
 
             return View(model);
         }
+
+        // Backs the Revenue card's date-range filter (see
+        // Views/DealerDashboard/Index.cshtml) -- returns figures for an
+        // arbitrary period on demand instead of the nightly-rollup-backed
+        // "this month" the page loads with.
+        [HttpGet]
+        [Route("dealer-dashboard/revenue")]
+        public async Task<IActionResult> Revenue(string period)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return Unauthorized();
+            }
+
+            if (settings.RoleId != UserRole.Dealer && settings.RoleId != UserRole.Admin)
+            {
+                // Not Forbid() -- this app has no ASP.NET Core authentication
+                // scheme registered (auth is the custom cookie-based
+                // LoadUserSettingsFromCookie filter), so ForbidResult would
+                // throw trying to resolve IAuthenticationService.
+                return StatusCode(403);
+            }
+
+            var result = await _dashboardReportService.GetDealerRevenueForPeriodAsync(settings.DealerId, period);
+            if (result == null)
+            {
+                return BadRequest("Unrecognized period. Expected one of: week, month, ytd, year.");
+            }
+
+            return Json(result);
+        }
     }
 
     // Sample data matching the agreed design mockup. Wiring to
@@ -56,6 +88,7 @@ namespace Ranalo.Controllers
                 RevenueThisMonth = 412300m,
                 RevenueGrowthPct = 14.8m,
                 AvgPerAccount = 2904m,
+                RevenueTarget = 490000m,
 
                 TotalAccounts = 142,
                 ActivePct = 91,
@@ -70,6 +103,7 @@ namespace Ranalo.Controllers
                 CommissionReceived = 18600m,
                 CommissionPaidToAgents = 12200m,
                 CommissionOutstanding = 2000m,
+                DealerCommissionOutstanding = 3200m,
                 CommissionsChangePct = 8.3m,
 
                 BadDebtThisMonth = 3100m,

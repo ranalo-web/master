@@ -40,6 +40,21 @@ namespace Ranalo.DataStore
             }
         }
 
+        public async Task<string?> GetDealerNameAsync(int dealerId)
+        {
+            const string sql = "SELECT CompanyName FROM Dealers WHERE DealerId = @DealerId";
+
+            try
+            {
+                return await _db.QueryFirstOrDefaultAsync<string>(sql, new { DealerId = dealerId });
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Dealer name lookup failed for dealer {DealerId}", dealerId);
+                return null;
+            }
+        }
+
         public async Task<List<DashboardMonthlyTrendPoint>> GetMonthlyTrendAsync(DashboardScope scope, int months = 8)
         {
             const string sql = @"
@@ -209,6 +224,82 @@ namespace Ranalo.DataStore
             }
         }
 
+        public async Task<DashboardRevenuePeriodRow> GetDealerRevenueForPeriodAsync(
+            int dealerId,
+            DateTime periodStart,
+            DateTime periodEndExclusive,
+            DateTime priorPeriodStart,
+            DateTime priorPeriodEndExclusive)
+        {
+            // Same Dealer linkage as ComputeKpiRollupAsync (KosePayments ->
+            // Devices -> Dealers), but filtered to one dealer and an arbitrary
+            // date window instead of the hardcoded "this/last calendar month"
+            // the nightly rollup uses. TotalAccounts mirrors
+            // ComputeKpiRollupAsync's AccountsByDealer definition (Contract_Info
+            // rows with a StartDate) so AvgPerAccount stays comparable to the
+            // page's default (rollup-backed) figure.
+            //
+            // TargetRevenue ("if everyone paid as expected"): each account's
+            // daily-blended rate (Daily + Weekly/7 + Monthly/30 -- same
+            // formula as ComputePortfolioClassificationRollupAsync's Arrears
+            // calc) times however many days its accrual window (StartDate
+            // through contract completion, capped like
+            // ContractCalculatorService.CalculateTotalDue) overlaps the
+            // requested period. Not what was actually paid -- what should
+            // have been paid.
+            const string sql = @"
+                SELECT
+                    ISNULL(SUM(CASE WHEN kp.PaymentDateValue >= @PeriodStart AND kp.PaymentDateValue < @PeriodEnd
+                             THEN kp.AmountValue ELSE 0 END), 0) AS RevenueThisPeriod,
+                    ISNULL(SUM(CASE WHEN kp.PaymentDateValue >= @PriorPeriodStart AND kp.PaymentDateValue < @PriorPeriodEnd
+                             THEN kp.AmountValue ELSE 0 END), 0) AS RevenueLastPeriod,
+                    (SELECT COUNT(*)
+                     FROM Contract_Info ci
+                     INNER JOIN Devices d2 ON d2.Id = ci.ID
+                     INNER JOIN Dealers dl2 ON dl2.DealerReference = d2.DeviceGroupId
+                     WHERE dl2.DealerId = @DealerId AND ci.StartDate IS NOT NULL) AS TotalAccounts,
+                    (SELECT ISNULL(SUM(
+                            ca.DailyBlendedRate *
+                            CASE WHEN ca.OverlapEnd > ca.OverlapStart THEN DATEDIFF(DAY, ca.OverlapStart, ca.OverlapEnd) ELSE 0 END
+                        ), 0)
+                     FROM (
+                         SELECT
+                             (ci3.Daily + (ci3.Weekly / 7.0) + (ci3.Monthly / 30.0)) AS DailyBlendedRate,
+                             CASE WHEN ci3.StartDate > @PeriodStart THEN ci3.StartDate ELSE @PeriodStart END AS OverlapStart,
+                             CASE
+                                 WHEN DATEADD(DAY, CAST(ci3.Term_in_Months * 30 AS INT), ci3.StartDate) < @PeriodEnd
+                                 THEN DATEADD(DAY, CAST(ci3.Term_in_Months * 30 AS INT), ci3.StartDate)
+                                 ELSE @PeriodEnd
+                             END AS OverlapEnd
+                         FROM Contract_Info ci3
+                         INNER JOIN Devices d3 ON d3.Id = ci3.ID
+                         INNER JOIN Dealers dl3 ON dl3.DealerReference = d3.DeviceGroupId
+                         WHERE dl3.DealerId = @DealerId AND ci3.StartDate IS NOT NULL
+                     ) ca) AS TargetRevenue
+                FROM KosePayments kp
+                INNER JOIN Devices d ON d.Id = kp.AccountNoBigint
+                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                WHERE dl.DealerId = @DealerId";
+
+            try
+            {
+                var row = await _db.QueryFirstOrDefaultAsync<DashboardRevenuePeriodRow>(sql, new
+                {
+                    DealerId = dealerId,
+                    PeriodStart = periodStart,
+                    PeriodEnd = periodEndExclusive,
+                    PriorPeriodStart = priorPeriodStart,
+                    PriorPeriodEnd = priorPeriodEndExclusive,
+                });
+                return row ?? new DashboardRevenuePeriodRow();
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Dealer revenue-for-period query failed for dealer {DealerId}", dealerId);
+                return new DashboardRevenuePeriodRow();
+            }
+        }
+
         public async Task<List<DashboardPortfolioRollupRow>> ComputePortfolioClassificationRollupAsync()
         {
             // TotalPaid per account mirrors the existing ValidPayments/OrphanedPayments
@@ -230,13 +321,20 @@ namespace Ranalo.DataStore
                 ;WITH ValidPayments AS (
                     SELECT
                         COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
-                        kp.AmountValue
+                        kp.AmountValue,
+                        kp.PaymentDateValue
                     FROM KosePayments kp
                     LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
                 ),
                 PaymentTotals AS (
                     SELECT AccountNo, SUM(AmountValue) AS TotalPaid
                     FROM ValidPayments
+                    GROUP BY AccountNo
+                ),
+                PaymentTotalsAsOfLastMonth AS (
+                    SELECT AccountNo, SUM(AmountValue) AS TotalPaid
+                    FROM ValidPayments
+                    WHERE PaymentDateValue < DATEADD(MONTH, -1, GETDATE())
                     GROUP BY AccountNo
                 ),
                 AccountClassification AS (
@@ -263,6 +361,43 @@ namespace Ranalo.DataStore
                     ) DaysAccrued
                     WHERE ci.StartDate IS NOT NULL
                 ),
+                -- Same Arrears formula as AccountClassification, but ""as of""
+                -- one calendar month ago: only payments received by then
+                -- (PaymentTotalsAsOfLastMonth), accrual days measured up to
+                -- then (still capped at the contract's full term), and only
+                -- accounts that already existed then. Lets ArrearsChangePct
+                -- compare like-for-like instead of diffing today's balance
+                -- against a number nobody actually computed a month ago.
+                AccountClassificationLastMonth AS (
+                    SELECT
+                        dl.DealerId,
+                        ISNULL(pt.TotalPaid, 0)
+                            - (
+                                ci.Deposit
+                                + ci.Daily * DaysAccruedLM.Days
+                                + ci.Weekly * (DaysAccruedLM.Days / 7.0)
+                                + ci.Monthly * (DaysAccruedLM.Days / 30.0)
+                              ) AS Arrears
+                    FROM Contract_Info ci
+                    INNER JOIN Devices d ON d.Id = ci.ID
+                    INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                    LEFT JOIN PaymentTotalsAsOfLastMonth pt ON pt.AccountNo = ci.ID
+                    CROSS APPLY (
+                        SELECT CASE
+                            WHEN DATEDIFF(DAY, ci.StartDate, DATEADD(MONTH, -1, GETDATE())) < CAST(ci.Term_in_Months * 30 AS INT)
+                                THEN DATEDIFF(DAY, ci.StartDate, DATEADD(MONTH, -1, GETDATE()))
+                            ELSE CAST(ci.Term_in_Months * 30 AS INT)
+                        END AS Days
+                    ) DaysAccruedLM
+                    WHERE ci.StartDate IS NOT NULL AND ci.StartDate < DATEADD(MONTH, -1, GETDATE())
+                ),
+                ArrearsLastMonth AS (
+                    SELECT
+                        DealerId,
+                        SUM(CASE WHEN Arrears < 0 THEN -Arrears ELSE 0 END) AS ArrearsTotalLastMonth
+                    FROM AccountClassificationLastMonth
+                    GROUP BY GROUPING SETS ((DealerId), ())
+                ),
                 Tiered AS (
                     SELECT
                         DealerId,
@@ -270,16 +405,47 @@ namespace Ranalo.DataStore
                         CASE WHEN DailyBlendedRate = 0 THEN NULL ELSE -(Arrears / DailyBlendedRate) END AS DaysOverdue
                     FROM AccountClassification
                     WHERE DailyBlendedRate <> 0 -- accounts with no payment plan can't be classified
+                ),
+                -- Unfiltered count (same population as ComputeKpiRollupAsync's
+                -- AccountsByDealer -- every Contract_Info row with a
+                -- StartDate) so ArrearsCount / TotalAccounts gives a rate
+                -- against the same ""Total Accounts"" figure the KPI card
+                -- shows, not just the subset with a payment plan.
+                TotalCounts AS (
+                    SELECT DealerId, COUNT(*) AS TotalAccounts
+                    FROM AccountClassification
+                    GROUP BY GROUPING SETS ((DealerId), ())
+                ),
+                Classified AS (
+                    SELECT
+                        DealerId,
+                        100.0 * SUM(CASE WHEN DaysOverdue <= 0 THEN 1 ELSE 0 END) / COUNT(*) AS GoodPct,
+                        100.0 * SUM(CASE WHEN DaysOverdue > 0 AND DaysOverdue <= 7 THEN 1 ELSE 0 END) / COUNT(*) AS SlowPct,
+                        100.0 * SUM(CASE WHEN DaysOverdue > 7 THEN 1 ELSE 0 END) / COUNT(*) AS ArrearsPct,
+                        100.0 * SUM(CASE WHEN DaysOverdue > 90 THEN 1 ELSE 0 END) / COUNT(*) AS NonPayingPct,
+                        SUM(CASE WHEN Arrears < 0 THEN -Arrears ELSE 0 END) AS ArrearsTotal,
+                        -- ""In default"" = the Arrears tier (>7 days overdue),
+                        -- not the narrower NonPaying subset -- see
+                        -- DashboardPortfolioRollupRow for why.
+                        SUM(CASE WHEN DaysOverdue > 7 THEN 1 ELSE 0 END) AS ArrearsCount
+                    FROM Tiered
+                    GROUP BY GROUPING SETS ((DealerId), ())
                 )
                 SELECT
-                    DealerId,
-                    100.0 * SUM(CASE WHEN DaysOverdue <= 0 THEN 1 ELSE 0 END) / COUNT(*) AS GoodPct,
-                    100.0 * SUM(CASE WHEN DaysOverdue > 0 AND DaysOverdue <= 7 THEN 1 ELSE 0 END) / COUNT(*) AS SlowPct,
-                    100.0 * SUM(CASE WHEN DaysOverdue > 7 THEN 1 ELSE 0 END) / COUNT(*) AS ArrearsPct,
-                    100.0 * SUM(CASE WHEN DaysOverdue > 90 THEN 1 ELSE 0 END) / COUNT(*) AS NonPayingPct,
-                    SUM(CASE WHEN Arrears < 0 THEN -Arrears ELSE 0 END) AS ArrearsTotal
-                FROM Tiered
-                GROUP BY GROUPING SETS ((DealerId), ())";
+                    COALESCE(c.DealerId, tc.DealerId) AS DealerId,
+                    ISNULL(c.GoodPct, 0) AS GoodPct,
+                    ISNULL(c.SlowPct, 0) AS SlowPct,
+                    ISNULL(c.ArrearsPct, 0) AS ArrearsPct,
+                    ISNULL(c.NonPayingPct, 0) AS NonPayingPct,
+                    ISNULL(c.ArrearsTotal, 0) AS ArrearsTotal,
+                    ISNULL(c.ArrearsCount, 0) AS ArrearsCount,
+                    ISNULL(tc.TotalAccounts, 0) AS TotalAccounts,
+                    ISNULL(alm.ArrearsTotalLastMonth, 0) AS ArrearsTotalLastMonth
+                FROM Classified c
+                FULL OUTER JOIN TotalCounts tc
+                    ON tc.DealerId = c.DealerId OR (tc.DealerId IS NULL AND c.DealerId IS NULL)
+                LEFT JOIN ArrearsLastMonth alm
+                    ON alm.DealerId = COALESCE(c.DealerId, tc.DealerId) OR (alm.DealerId IS NULL AND COALESCE(c.DealerId, tc.DealerId) IS NULL)";
 
             try
             {
@@ -299,7 +465,11 @@ namespace Ranalo.DataStore
             decimal? portfolioSlowPct,
             decimal? portfolioArrearsPct,
             decimal? portfolioNonPayingPct,
-            decimal? arrearsTotal)
+            decimal? arrearsTotal,
+            decimal? arrearsChangePct,
+            int? inDefault,
+            decimal? defaultRatePct,
+            decimal? activePct)
         {
             const string sql = @"
                 MERGE DashboardSnapshot AS target
@@ -313,10 +483,14 @@ namespace Ranalo.DataStore
                         PortfolioArrearsPct = @PortfolioArrearsPct,
                         PortfolioNonPayingPct = @PortfolioNonPayingPct,
                         ArrearsTotal = @ArrearsTotal,
+                        ArrearsChangePct = @ArrearsChangePct,
+                        InDefault = @InDefault,
+                        DefaultRatePct = @DefaultRatePct,
+                        ActivePct = @ActivePct,
                         RefreshedAtUtc = SYSUTCDATETIME()
                 WHEN NOT MATCHED THEN
-                    INSERT (DealerId, AgentId, PortfolioGoodPct, PortfolioSlowPct, PortfolioArrearsPct, PortfolioNonPayingPct, ArrearsTotal, RefreshedAtUtc)
-                    VALUES (source.DealerId, source.AgentId, @PortfolioGoodPct, @PortfolioSlowPct, @PortfolioArrearsPct, @PortfolioNonPayingPct, @ArrearsTotal, SYSUTCDATETIME());";
+                    INSERT (DealerId, AgentId, PortfolioGoodPct, PortfolioSlowPct, PortfolioArrearsPct, PortfolioNonPayingPct, ArrearsTotal, ArrearsChangePct, InDefault, DefaultRatePct, ActivePct, RefreshedAtUtc)
+                    VALUES (source.DealerId, source.AgentId, @PortfolioGoodPct, @PortfolioSlowPct, @PortfolioArrearsPct, @PortfolioNonPayingPct, @ArrearsTotal, @ArrearsChangePct, @InDefault, @DefaultRatePct, @ActivePct, SYSUTCDATETIME());";
 
             try
             {
@@ -329,6 +503,10 @@ namespace Ranalo.DataStore
                     PortfolioArrearsPct = portfolioArrearsPct,
                     PortfolioNonPayingPct = portfolioNonPayingPct,
                     ArrearsTotal = arrearsTotal,
+                    ArrearsChangePct = arrearsChangePct,
+                    InDefault = inDefault,
+                    DefaultRatePct = defaultRatePct,
+                    ActivePct = activePct,
                 });
             }
             catch (SqlException ex) when (IsMissingTable(ex))
@@ -573,6 +751,14 @@ namespace Ranalo.DataStore
             // ComputePortfolioClassificationRollupAsync) across ALL their
             // accounts too, uncapped -- one account's arrears reduces the
             // whole pool, not just that account's own commission.
+            // CommissionOutstanding (agent-facing, dealer's liability to pay
+            // out) floors each agent's (NetCommission - Paid) at 0 before
+            // summing across agents -- one agent's arrears wiping out their
+            // own pool must not offset a genuinely-owed balance on another
+            // agent. DealerCommissionOutstanding (Ranalo's liability to the
+            // dealer) is CommissionReceived minus DealerCommissionPayments,
+            // also floored at 0; distinct field, not to be confused with the
+            // agent-facing one above.
             const string sql = @"
                 ;WITH ValidPayments AS (
                     SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue
@@ -637,7 +823,13 @@ namespace Ranalo.DataStore
                     GROUP BY wdc.DealerId, wdc.AssignedAgentId
                 ),
                 PerDealerFromAgents AS (
-                    SELECT DealerId, SUM(Paid) AS CommissionPaidToAgents, SUM(NetCommission - Paid) AS CommissionOutstanding
+                    SELECT
+                        DealerId,
+                        SUM(Paid) AS CommissionPaidToAgents,
+                        -- Floored per agent before summing: one agent's
+                        -- arrears wiping out their own pool shouldn't offset
+                        -- what's genuinely still owed to a different agent.
+                        SUM(CASE WHEN (NetCommission - Paid) > 0 THEN (NetCommission - Paid) ELSE 0 END) AS CommissionOutstanding
                     FROM PerAgent
                     GROUP BY DealerId
                 ),
@@ -645,14 +837,35 @@ namespace Ranalo.DataStore
                     SELECT DealerId, SUM(DealerCommissionEarned) AS CommissionReceived
                     FROM WithDealerCommission
                     GROUP BY DealerId
+                ),
+                -- What Ranalo has actually paid the dealer, joined via
+                -- ContractId (like AgentPaymentsAgg) rather than
+                -- DealerCommissionPayments.DealerId -- existing usage
+                -- elsewhere in this codebase (CommissionsRepository.cs)
+                -- deliberately does the same, since that column's semantics
+                -- aren't confirmed (only ContractId/AmountPaid are).
+                DealerPaymentsAgg AS (
+                    SELECT ContractId, SUM(ISNULL(AmountPaid, 0)) AS TotalDealerPaid
+                    FROM DealerCommissionPayments
+                    GROUP BY ContractId
+                ),
+                PerDealerPayments AS (
+                    SELECT wdc.DealerId, SUM(ISNULL(dpa.TotalDealerPaid, 0)) AS TotalDealerPaid
+                    FROM WithDealerCommission wdc
+                    LEFT JOIN DealerPaymentsAgg dpa ON dpa.ContractId = wdc.ContractID
+                    GROUP BY wdc.DealerId
                 )
                 SELECT
                     o.DealerId,
                     o.CommissionReceived,
                     ISNULL(a.CommissionPaidToAgents, 0) AS CommissionPaidToAgents,
-                    ISNULL(a.CommissionOutstanding, 0) AS CommissionOutstanding
+                    ISNULL(a.CommissionOutstanding, 0) AS CommissionOutstanding,
+                    CASE WHEN (o.CommissionReceived - ISNULL(dp.TotalDealerPaid, 0)) > 0
+                         THEN o.CommissionReceived - ISNULL(dp.TotalDealerPaid, 0)
+                         ELSE 0 END AS DealerCommissionOutstanding
                 FROM PerDealerOwnCommission o
-                LEFT JOIN PerDealerFromAgents a ON a.DealerId = o.DealerId";
+                LEFT JOIN PerDealerFromAgents a ON a.DealerId = o.DealerId
+                LEFT JOIN PerDealerPayments dp ON dp.DealerId = o.DealerId";
 
             try
             {
@@ -701,6 +914,42 @@ namespace Ranalo.DataStore
             catch (SqlException ex) when (IsMissingTable(ex))
             {
                 _logger.LogWarning(ex, "DashboardSnapshot table not found; skipping commission refresh for scope {@Scope}. Apply Database/Dashboard/003_add_commission_snapshot_fields.sql first.", scope);
+            }
+        }
+
+        // Separate from UpsertSnapshotCommissionAsync above (rather than one
+        // extra column on the same MERGE) so that a not-yet-applied
+        // 004_add_dealer_commission_outstanding.sql migration only skips
+        // this one field, not the three already-working commission columns
+        // too -- a single MERGE statement fails all-or-nothing on a missing
+        // column.
+        public async Task UpsertDealerCommissionOutstandingAsync(DashboardScope scope, decimal? dealerCommissionOutstanding)
+        {
+            const string sql = @"
+                MERGE DashboardSnapshot AS target
+                USING (SELECT @DealerId AS DealerId, @AgentId AS AgentId) AS source
+                ON  (target.DealerId = source.DealerId OR (target.DealerId IS NULL AND source.DealerId IS NULL))
+                AND (target.AgentId = source.AgentId OR (target.AgentId IS NULL AND source.AgentId IS NULL))
+                WHEN MATCHED THEN
+                    UPDATE SET
+                        DealerCommissionOutstanding = @DealerCommissionOutstanding,
+                        RefreshedAtUtc = SYSUTCDATETIME()
+                WHEN NOT MATCHED THEN
+                    INSERT (DealerId, AgentId, DealerCommissionOutstanding, RefreshedAtUtc)
+                    VALUES (source.DealerId, source.AgentId, @DealerCommissionOutstanding, SYSUTCDATETIME());";
+
+            try
+            {
+                await _db.ExecuteAsync(sql, new
+                {
+                    scope.DealerId,
+                    scope.AgentId,
+                    DealerCommissionOutstanding = dealerCommissionOutstanding,
+                });
+            }
+            catch (SqlException ex) when (IsMissingTable(ex))
+            {
+                _logger.LogWarning(ex, "DashboardSnapshot.DealerCommissionOutstanding column not found; skipping for scope {@Scope}. Apply Database/Dashboard/004_add_dealer_commission_outstanding.sql first.", scope);
             }
         }
 
@@ -787,7 +1036,15 @@ namespace Ranalo.DataStore
             }
         }
 
-        // SQL Server error 208 = "Invalid object name" (table/view does not exist).
-        private static bool IsMissingTable(SqlException ex) => ex.Number == 208;
+        // SQL Server error 208 = "Invalid object name" (table/view does not
+        // exist); 207 = "Invalid column name" (table exists, a column added
+        // by a later migration doesn't yet -- e.g. DealerCommissionOutstanding
+        // before 004_add_dealer_commission_outstanding.sql runs). Both mean
+        // "this migration hasn't been applied to this database yet" from the
+        // caller's point of view, and should degrade the same way: this app's
+        // DB credentials are DML-only (confirmed via a failed ALTER TABLE
+        // attempt), so schema changes are applied out-of-band by whoever runs
+        // the Database/Dashboard/*.sql scripts, not by this process.
+        private static bool IsMissingTable(SqlException ex) => ex.Number is 208 or 207;
     }
 }
