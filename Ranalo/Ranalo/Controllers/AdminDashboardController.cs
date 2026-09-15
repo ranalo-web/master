@@ -2,15 +2,23 @@ using Microsoft.AspNetCore.Mvc;
 using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
+using Ranalo.Services;
 
 namespace Ranalo.Controllers
 {
     [LoadUserSettingsFromCookie]
     public class AdminDashboardController : Controller
     {
+        private readonly IDashboardReportService _dashboardReportService;
+
+        public AdminDashboardController(IDashboardReportService dashboardReportService)
+        {
+            _dashboardReportService = dashboardReportService;
+        }
+
         [HttpGet]
         [Route("admin-dashboard")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -29,9 +37,19 @@ namespace Ranalo.Controllers
             ViewBag.IsDealer = false;
             ViewBag.UserName = settings.KnownAs;
 
-            // Sample data matching the agreed design mockup. Wiring to
-            // IApplicationReportService and friends is a follow-up step.
-            var model = new AdminDashboardViewModel
+            var model = await _dashboardReportService.GetAdminDashboardAsync();
+
+            return View(model);
+        }
+    }
+
+    // Sample data matching the agreed design mockup. Wiring to
+    // IApplicationReportService and friends is a follow-up step.
+    public static class AdminDashboardSampleData
+    {
+        public static AdminDashboardViewModel Build()
+        {
+            return new AdminDashboardViewModel
             {
                 RevenueThisMonth = 412300m,
                 RevenueGrowthPct = 14.8m,
@@ -236,8 +254,6 @@ namespace Ranalo.Controllers
                     new() { CustomerName = "Ruth Nyambura", DealerName = "Eldoret Tech", ProductName = "Tecno Camon 20", CompletedDate = "Jul 29", TotalPaid = 18100, DurationMonths = 7 },
                 },
             };
-
-            return View(model);
         }
     }
 }

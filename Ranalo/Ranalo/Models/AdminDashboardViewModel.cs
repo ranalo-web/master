@@ -126,5 +126,10 @@ namespace Ranalo.Models
         public string CompletedDate { get; set; } = "";
         public decimal TotalPaid { get; set; }
         public int DurationMonths { get; set; }
+
+        // "Completed" (fully paid off) or "UpsellTarget" (80%+ paid, not yet
+        // done -- a renewal/upsell candidate). See DashboardCompletedContractStatus.
+        public string Status { get; set; } = "Completed";
+        public decimal? PctComplete { get; set; }
     }
 }

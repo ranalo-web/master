@@ -2,15 +2,23 @@ using Microsoft.AspNetCore.Mvc;
 using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
+using Ranalo.Services;
 
 namespace Ranalo.Controllers
 {
     [LoadUserSettingsFromCookie]
     public class DealerDashboardController : Controller
     {
+        private readonly IDashboardReportService _dashboardReportService;
+
+        public DealerDashboardController(IDashboardReportService dashboardReportService)
+        {
+            _dashboardReportService = dashboardReportService;
+        }
+
         [HttpGet]
         [Route("dealer-dashboard")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -29,7 +37,7 @@ namespace Ranalo.Controllers
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
             ViewBag.UserName = settings.KnownAs;
 
-            var model = DealerDashboardSampleData.Build();
+            var model = await _dashboardReportService.GetDealerDashboardAsync(settings.DealerId);
 
             return View(model);
         }

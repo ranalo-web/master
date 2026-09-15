@@ -75,6 +75,10 @@ builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IApplicationReportService, ApplicationReportService>();
 builder.Services.AddScoped<IApplicationReportRepository, ApplicationReportRepository>();
+builder.Services.AddScoped<IDashboardReportService, DashboardReportService>();
+builder.Services.AddScoped<IDashboardReportRepository, DashboardReportRepository>();
+builder.Services.AddScoped<IAccountWatchlistService, AccountWatchlistService>();
+builder.Services.AddScoped<IAccountWatchlistRepository, AccountWatchlistRepository>();
 builder.Services.AddScoped<IContractCalculatorService, ContractCalculatorService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IDevicesRepository, DevicesRepository>();
@@ -137,6 +141,10 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService<ScheduledLockPaying>();
         builder.Services.AddHostedService<ScheduledDailyPaymentSummary>();
 
+        // Not enabled yet -- only refreshes KPI revenue/accounts snapshot fields so far
+        // (see ScheduledDashboardRollup's class comment). Enable once
+        // Database/Dashboard/001_create_dashboard_tables.sql has been applied.
+        //builder.Services.AddHostedService<ScheduledDashboardRollup>();
     }
 }
 
