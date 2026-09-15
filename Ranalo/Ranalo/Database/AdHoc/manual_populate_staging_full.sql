@@ -145,7 +145,7 @@ Classified AS (
         ci.ID AS AccountId,
         ci.First_Name AS CustomerName,
         dl.CompanyName AS DealerName,
-        d.Make + ' ' + d.Model AS ProductName,
+        ISNULL(NULLIF(LTRIM(RTRIM(ISNULL(d.Make, '') + ' ' + ISNULL(d.Model, ''))), ''), 'Unknown Device') AS ProductName,
         CAST(ci.Term_in_Months AS INT) AS DurationMonths,
         ISNULL(pt.TotalPaid, 0) AS TotalPaid,
         pt.LastPaidDate,
@@ -214,7 +214,7 @@ PaymentTotals AS (
 AccountClassification AS (
     SELECT
         dl.DealerId,
-        d.Make + ' ' + d.Model AS DeviceName,
+        ISNULL(NULLIF(LTRIM(RTRIM(ISNULL(d.Make, '') + ' ' + ISNULL(d.Model, ''))), ''), 'Unknown Device') AS DeviceName,
         (ci.Deposit + ci.Daily * 30 * ci.Term_in_Months + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months + ci.Monthly * ci.Term_in_Months) AS FullContractValue,
         ISNULL(pt.TotalPaid, 0)
             - (ci.Deposit + ci.Daily * DaysAccrued.Days + ci.Weekly * (DaysAccrued.Days / 7.0) + ci.Monthly * (DaysAccrued.Days / 30.0)) AS Arrears,
