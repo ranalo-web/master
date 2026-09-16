@@ -25,6 +25,42 @@
     .wl-sort-indicator {
         font-size: 9px;
     }
+
+    /* Mobile: the theme's .nk-block-between has no flex-wrap at all, so the
+       title/greeting and the period-filter+New-Enrolment buttons get forced
+       into one unbreakable row on a narrow phone. Stack them instead. Scoped
+       to this page (not the shared theme file) to avoid touching every other
+       page that uses .nk-block-between. */
+    @@media (max-width: 575.98px) {
+        .nk-content-body > .nk-block-head .nk-block-between {
+            flex-wrap: wrap;
+            row-gap: .75rem;
+        }
+        .nk-content-body > .nk-block-head .nk-block-head-content:last-child {
+            width: 100%;
+        }
+        .nk-content-body > .nk-block-head .nk-block-tools.g-3 {
+            justify-content: flex-start;
+            width: 100%;
+        }
+        .nk-content-body > .nk-block-head .nk-block-tools.g-3 .btn-group,
+        .nk-content-body > .nk-block-head .nk-block-tools.g-3 > li:last-child .btn {
+            width: 100%;
+        }
+
+        /* KPI cards: the stat lines below the headline combine two metrics
+           per line ("X accounts · Y% active") -- give them a touch more
+           size/line-height on small screens so that wrap stays legible
+           instead of looking cramped, and let the summary blurb wrap
+           normally rather than crowding the title. */
+        .nk-sale-data + .mt-3 {
+            font-size: 12px !important;
+            line-height: 1.45;
+        }
+        .nk-block-des {
+            margin-top: .25rem;
+        }
+    }
 </style>
 
 <div class="nk-content-body">
