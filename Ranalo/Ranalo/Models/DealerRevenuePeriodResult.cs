@@ -20,5 +20,26 @@ namespace Ranalo.Models
         // e.g. "this week", "this month" -- goes directly into the card's
         // "<span>X%</span> {label}" sub-title.
         public string Label { get; set; } = "";
+
+        // Total Accounts card: accounts that existed as of the end of the
+        // selected period.
+        public int TotalAccounts { get; set; }
+
+        // New accounts started within the selected period.
+        public int NewInPeriod { get; set; }
+
+        // Period-over-period change in NewInPeriod vs. the immediately
+        // preceding window of the same length -- null when the prior window
+        // had zero new accounts to compare against (see
+        // ScheduledDashboardRollup.CalculateGrowthPct).
+        public decimal? NewInPeriodChangePct { get; set; }
+
+        // Agent Commissions card: commission paid to agents within the
+        // selected period, live from AgentCommissionPayments.
+        public decimal CommissionPaidThisPeriod { get; set; }
+
+        // Dealer Commissions card: commission paid to this dealer within the
+        // selected period, live from DealerCommissionPayments.
+        public decimal DealerCommissionPaidThisPeriod { get; set; }
     }
 }

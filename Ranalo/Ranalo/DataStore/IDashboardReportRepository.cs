@@ -91,6 +91,28 @@ namespace Ranalo.DataStore
         // this one field -- see the implementation's comment.
         Task UpsertDealerCommissionOutstandingAsync(DashboardScope scope, decimal? dealerCommissionOutstanding);
 
+        // Same decoupled-upsert pattern, for the two newest commission
+        // columns (005_add_commission_account_stats.sql) -- see
+        // DashboardCommissionRollupRow.CommissionAccountCount/CommissionWithheldForArrears.
+        Task UpsertCommissionAccountStatsAsync(DashboardScope scope, int? commissionAccountCount, decimal? commissionWithheldForArrears);
+
+        // Same decoupled-upsert pattern again, for
+        // 006_add_dealer_commission_account_count.sql -- see
+        // DashboardCommissionRollupRow.DealerCommissionAccountCount.
+        Task UpsertDealerCommissionAccountCountAsync(DashboardScope scope, int? dealerCommissionAccountCount);
+
+        // Same decoupled-upsert pattern again, for
+        // 007_add_dealer_commission_cost_flags.sql -- see
+        // DashboardCommissionRollupRow.DealerCommissionMissingCostCount/DealerCommissionWithheldForArrears.
+        Task UpsertDealerCommissionCostFlagsAsync(DashboardScope scope, int? dealerCommissionMissingCostCount, decimal? dealerCommissionWithheldForArrears);
+
+        // Dealer Commissions card: live sum of DealerCommissionPayments.PaidDate
+        // within an arbitrary period window, backing the same top-of-page
+        // filter as Revenue/New Accounts/Agent Commissions. Joined via
+        // ContractId, not DealerCommissionPayments.DealerId -- same caution as
+        // elsewhere in this codebase (that column's semantics aren't confirmed).
+        Task<decimal> GetDealerCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive);
+
         // Same full-replace pattern as RefreshCompletedContractsAsync/
         // RefreshDeviceStockAsync, writing DashboardPerformanceEntry rows with
         // EntryType = AgentCommission (deliberately not "Agent" -- see that
@@ -108,5 +130,33 @@ namespace Ranalo.DataStore
             DateTime periodEndExclusive,
             DateTime priorPeriodStart,
             DateTime priorPeriodEndExclusive);
+
+        // Paying vs Non-Paying card: classifies each of the dealer's accounts
+        // as good or "true arrears" (more than 7 days past
+        // Devices.NextLockDateIsoFormat) rather than the accrual-based
+        // "days overdue" formula ComputePortfolioClassificationRollupAsync
+        // uses elsewhere -- NextLockDate stays correct through a
+        // restructuring, the accrual formula doesn't. See
+        // DashboardLockClassificationRow.
+        Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId);
+
+        // Device Performance table: same NextLockDate-based classification as
+        // GetDealerLockClassificationAsync, grouped by device (Make + Model)
+        // instead of aggregated dealer-wide -- replaces RefreshDeviceStockAsync's
+        // accrual-based per-device GoodPct/ArrearsPct. Keyed by the same
+        // DeviceName string RefreshDeviceStockAsync/GetDeviceStockAsync use, so
+        // callers can look up by DashboardDeviceStockRow.DeviceName.
+        Task<Dictionary<string, DashboardLockClassificationRow>> GetDealerDeviceLockClassificationAsync(int dealerId);
+
+        // Total Arrears card: splits dollar arrears into "true" (locked,
+        // genuinely overdue) vs "restructured" (in arrears on paper, future
+        // lock date, being managed) -- see DashboardArrearsClassificationRow.
+        Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId);
+
+        // Agent Commissions card: live sum of AgentCommissionPayments.AmountPaid
+        // for this dealer within an arbitrary period window, backing the same
+        // top-of-page filter as the Revenue/New Accounts cards. periodEndExclusive
+        // is an exclusive upper bound, same convention as GetDealerRevenueForPeriodAsync.
+        Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive);
     }
 }

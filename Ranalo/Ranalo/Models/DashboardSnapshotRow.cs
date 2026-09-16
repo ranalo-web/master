@@ -75,6 +75,11 @@ namespace Ranalo.Models
         public decimal? CommissionPaidToAgents { get; set; }
         public decimal? CommissionOutstanding { get; set; }
         public decimal? DealerCommissionOutstanding { get; set; }
+        public int? CommissionAccountCount { get; set; }
+        public decimal? CommissionWithheldForArrears { get; set; }
+        public int? DealerCommissionAccountCount { get; set; }
+        public int? DealerCommissionMissingCostCount { get; set; }
+        public decimal? DealerCommissionWithheldForArrears { get; set; }
 
         public DateTime RefreshedAtUtc { get; set; }
     }

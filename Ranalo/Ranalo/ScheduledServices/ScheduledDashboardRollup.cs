@@ -210,6 +210,18 @@ namespace Ranalo.ScheduledServices
                     commissionOutstanding: row.CommissionOutstanding);
 
                 await repository.UpsertDealerCommissionOutstandingAsync(scope, row.DealerCommissionOutstanding);
+
+                await repository.UpsertCommissionAccountStatsAsync(
+                    scope,
+                    commissionAccountCount: row.CommissionAccountCount,
+                    commissionWithheldForArrears: row.CommissionWithheldForArrears);
+
+                await repository.UpsertDealerCommissionAccountCountAsync(scope, row.DealerCommissionAccountCount);
+
+                await repository.UpsertDealerCommissionCostFlagsAsync(
+                    scope,
+                    dealerCommissionMissingCostCount: row.DealerCommissionMissingCostCount,
+                    dealerCommissionWithheldForArrears: row.DealerCommissionWithheldForArrears);
             }
 
             return rollupRows.Count;

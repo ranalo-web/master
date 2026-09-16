@@ -48,7 +48,7 @@
                                     <li><a href="#" class="revenue-period-opt" data-period="week"><span>Week</span></a></li>
                                     <li><a href="#" class="revenue-period-opt" data-period="month"><span>Month</span></a></li>
                                     <li><a href="#" class="revenue-period-opt" data-period="ytd"><span>Year to Date</span></a></li>
-                                    <li><a href="#" class="revenue-period-opt" data-period="year"><span>Year</span></a></li>
+                                    <li><a href="#" class="revenue-period-opt" data-period="year"><span>Last 12 Months</span></a></li>
                                 </ul>
                             </div>
                         </div>
@@ -64,42 +64,54 @@
     <div class="nk-block">
         <div class="row g-gs">
             @{
-                var payingAccounts = Model.TotalAccounts - Model.InDefault;
-                var payingPct = Model.TotalAccounts > 0 ? Math.Round((decimal)payingAccounts / Model.TotalAccounts * 100, 1) : 0;
-                var nonPayingImproved = Model.NonPayingChange <= 0;
+                // goodCount: used by the My Portfolio doughnut chart below
+                // (accrual-based Good tier, unrelated to the lock-based
+                // classification the Paying vs Non-Paying card uses).
+                var goodCount = Math.Round(Model.TotalAccounts * Model.PortfolioGoodPct / 100);
 
-                var arrearsUp = Model.ArrearsChangePct >= 0;
-                // Not "% of this month's revenue" -- ArrearsTotal is a
-                // lifetime accumulated balance across every account, while
-                // RevenueThisMonth is a single month's collections, so that
-                // ratio blows past 100% for any dealer with a meaningful
-                // default rate (e.g. 2000%+), reading as broken rather than
-                // informative. "Days of revenue" (arrears / avg daily
-                // revenue, smoothed over the trend months with revenue) is
-                // the standard collections framing and stays meaningful at
-                // any scale.
-                var monthsWithRevenue = Model.RevenueByMonth.Where(r => r > 0).ToList();
-                var avgMonthlyRevenue = monthsWithRevenue.Count > 0 ? monthsWithRevenue.Average() : Model.RevenueThisMonth;
-                var avgDailyRevenue = avgMonthlyRevenue / 30m;
-                var arrearsDaysOfRevenue = avgDailyRevenue > 0 ? Math.Round(Model.ArrearsTotal / avgDailyRevenue) : 0;
-                var arrearsPerNonPaying = Model.InDefault > 0 ? Model.ArrearsTotal / Model.InDefault : 0;
+                // Paying vs Non-Paying card: classified from Devices.NextLockDateIsoFormat
+                // (Model.LockGoodCount/LockNonPayingCount), not the accrual-based
+                // PortfolioGoodPct/InDefault used elsewhere -- see
+                // DealerDashboardViewModel.LockGoodCount's doc comment for why.
+                var lockTotal = Model.LockGoodCount + Model.LockNonPayingCount;
+                var lockGoodPct = lockTotal > 0 ? Math.Round((decimal)Model.LockGoodCount / lockTotal * 100, 1) : 0;
+
+                // New Accounts card's "in default" bottom line: PortfolioArrearsPct
+                // is already lock-based (see the My Portfolio fix above), so
+                // reuse it here too instead of the still-accrual-based
+                // Model.DefaultRatePct/ActivePct/InDefault (those stay
+                // untouched -- Total Arrears/Bad Debt below still depend on
+                // Model.InDefault and are deliberately out of scope for now).
+                var lockActivePct = 100 - Model.PortfolioArrearsPct;
+
+                // Total Arrears card: ArrearsTotal is now "true" arrears only
+                // (locked accounts -- see GetDealerArrearsClassificationAsync),
+                // so ArrearsChangePct (still accrual-based, "vs last month")
+                // no longer applies to it and isn't shown -- same reasoning
+                // as the Paying vs Non-Paying card's dropped comparison.
+                var arrearsAvgPerAccount = Model.ArrearsTrueCount > 0 ? Model.ArrearsTotal / Model.ArrearsTrueCount : 0;
 
                 // Commissions are a lifetime calculation, not "this month" --
-                // no trend/vs-last-month line for either commission card
-                // (unlike Revenue/Arrears/Bad Debt above, which are genuinely
-                // periodic). Agent-facing and dealer-facing figures split
-                // into their own card below rather than one combined
-                // "Commissions Paid" card, since they're two different
-                // audiences' numbers (what the dealer owes agents vs. what
-                // Ranalo owes the dealer).
-                var agentCommissionOutstandingPerAgent = Model.AgentPerformance.Count > 0
-                    ? Model.CommissionOutstanding / Model.AgentPerformance.Count
-                    : 0;
-                var dealerCommissionPaidToDate = Model.CommissionReceived - Model.DealerCommissionOutstanding;
+                // No trend/vs-last-month line for either commission card --
+                // these are lifetime totals ("what's owed in total"), not
+                // periodic like Revenue/Arrears/Bad Debt above. Both cards'
+                // "paid" lines are period-*filtered* instead (share the
+                // top-of-page toggle), not a trend -- see the JS below.
+                // Agent-facing and dealer-facing figures split into their
+                // own card rather than one combined "Commissions Paid" card,
+                // since they're two different audiences' numbers (what the
+                // dealer owes agents vs. what Ranalo owes the dealer) and,
+                // as of this pass, two genuinely independent populations --
+                // dealer commission is earned on every paid account
+                // (including direct sales with no agent), agent commission
+                // only on agent-assigned ones.
 
-                var badDebtImproved = Model.BadDebtChangePct <= 0;
-                var badDebtPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(Model.BadDebtThisMonth / Model.RevenueThisMonth * 100, 1) : 0;
-                var badDebtPerBadAccount = Model.InDefault > 0 ? Model.BadDebtThisMonth / Model.InDefault : 0;
+                // Bad Debt / Write-offs & Collections cards -- both live off
+                // GetDealerArrearsClassificationAsync (see the Total Arrears
+                // card above). No "vs last month" on either -- same no-history
+                // reasoning as Total Arrears' dropped comparison.
+                var badDebtAvgPerAccount = Model.BadDebtCount > 0 ? Model.BadDebtThisMonth / Model.BadDebtCount : 0;
+                var writeOffAvgPerAccount = Model.WriteOffCount > 0 ? Model.WriteOffTotal / Model.WriteOffCount : 0;
             }
             @{
                 var revenueGrowthUp = Model.RevenueGrowthPct >= 0;
@@ -136,17 +148,21 @@
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Total Accounts</h6></div>
+                            <div class="card-title"><h6 class="title">New Accounts <span class="badge badge-dim bg-primary ms-1">Live</span></h6></div>
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
-                                <span class="amount">@Model.TotalAccounts.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="change up text-success"><em class="icon ni ni-arrow-long-up"></em>@Model.NewThisMonth</span> new this month</span>
+                                <span class="amount" id="totalAccountsAmount">@Model.NewThisMonth.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1">
+                                    <span id="totalAccountsChange" class="change text-soft">
+                                        <em id="totalAccountsChangeIcon" class="icon ni ni-minus"></em><span id="totalAccountsChangePct">&mdash;</span>
+                                    </span> new <span id="totalAccountsPeriodLabel">this month</span>
+                                </span>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@Model.ActivePct.ToString("0")% active rate</span>
-                            <span class="text-danger">@Model.InDefault in default &middot; @Model.DefaultRatePct.ToString("0.0")% default rate</span>
+                            <span class="text-soft"><span id="totalAccountsTotal">@Model.TotalAccounts.ToString("N0")</span> total accounts &middot; @lockActivePct.ToString("0")% active</span>
+                            <span class="text-danger">@Model.LockNonPayingCount in default &middot; @Model.PortfolioArrearsPct.ToString("0.0")% default rate</span>
                         </div>
                     </div>
                 </div>
@@ -155,17 +171,17 @@
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Paying vs Non-Paying</h6></div>
+                            <div class="card-title"><h6 class="title">Paying vs Non-Paying <span class="badge badge-dim bg-primary ms-1">Live</span></h6></div>
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
-                                <span class="amount">@payingAccounts.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="@(nonPayingImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(nonPayingImproved ? "down" : "up")"></em>@Math.Abs(Model.NonPayingChange).ToString("N0")</span> non-paying vs last month</span>
+                                <span class="amount">@Model.LockGoodCount.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1">of @lockTotal.ToString("N0") accounts paying</span>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@payingPct.ToString("0")% of accounts paying</span>
-                            <span class="text-danger">@Model.InDefault.ToString("N0") not paying</span>
+                            <span class="text-soft">@lockGoodPct.ToString("0")% of accounts paying</span>
+                            <span class="text-danger">@Model.LockNonPayingCount.ToString("N0") not paying &middot; locked 7+ days past due</span>
                         </div>
                     </div>
                 </div>
@@ -174,17 +190,17 @@
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Total Arrears</h6></div>
+                            <div class="card-title"><h6 class="title">Total Arrears <span class="badge badge-dim bg-primary ms-1">Live</span></h6></div>
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
                                 <span class="amount text-danger">KES @Model.ArrearsTotal.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="@(arrearsUp ? "text-danger" : "text-success")"><em class="icon ni ni-arrow-long-@(arrearsUp ? "up" : "down")"></em>@Math.Abs(Model.ArrearsChangePct).ToString("0.0")%</span> vs last month</span>
+                                <span class="sub-title d-block mt-1">@Model.ArrearsTrueCount.ToString("N0") accounts locked past due</span>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@arrearsDaysOfRevenue.ToString("N0") days of revenue</span>
-                            <span class="text-soft">KES @arrearsPerNonPaying.ToString("N0") avg / non-paying account</span>
+                            <span class="text-warning">KES @Model.RestructuredArrearsTotal.ToString("N0") restructured &middot; being managed</span>
+                            <span class="text-soft">KES @arrearsAvgPerAccount.ToString("N0") avg / &middot; @Model.ArrearsAvgDaysLocked.ToString("0") days</span>
                         </div>
                     </div>
                 </div>
@@ -193,17 +209,36 @@
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Bad Debt / Write-offs</h6></div>
+                            <div class="card-title"><h6 class="title">Bad Debt <span class="badge badge-dim bg-primary ms-1">Live</span></h6></div>
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
                                 <span class="amount text-danger">KES @Model.BadDebtThisMonth.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="@(badDebtImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(badDebtImproved ? "down" : "up")"></em>@Math.Abs(Model.BadDebtChangePct).ToString("0.0")%</span> vs last month</span>
+                                <span class="sub-title d-block mt-1">@Model.BadDebtCount.ToString("N0") accounts &middot; 90+ days locked</span>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@badDebtPctOfRevenue.ToString("0")% of revenue</span>
-                            <span class="text-soft">KES @badDebtPerBadAccount.ToString("N0") avg / bad account</span>
+                            <span class="text-soft">KES @badDebtAvgPerAccount.ToString("N0") avg / account</span>
+                            <span class="text-soft">@Model.BadDebtAvgDaysLocked.ToString("0") days locked avg</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-2">
+                            <div class="card-title"><h6 class="title">Write-offs &amp; Collections <span class="badge badge-dim bg-primary ms-1">Live</span></h6></div>
+                        </div>
+                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
+                            <div class="d-flex flex-column">
+                                <span class="amount text-danger">KES @Model.WriteOffTotal.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1">@Model.WriteOffCount.ToString("N0") accounts &middot; term ended</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
+                            <span class="text-soft">KES @Model.WriteOffRecoveredThisMonth.ToString("N0") recovered this month</span>
+                            <span class="text-success">@Model.WriteOffRecoveryRatePct.ToString("0.0")% recovery rate</span>
                         </div>
                     </div>
                 </div>
@@ -219,12 +254,12 @@
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
                                 <span class="amount">KES @Model.CommissionOutstanding.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1">still owed to your agents</span>
+                                <span class="sub-title d-block mt-1">still owed to your agents, in total</span>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">KES @Model.CommissionPaidToAgents.ToString("N0") paid to date</span>
-                            <span class="text-soft">KES @agentCommissionOutstandingPerAgent.ToString("N0") avg outstanding / agent</span>
+                            <span class="text-soft">KES <span id="commissionPaidThisPeriod">@Model.CommissionPaidThisPeriod.ToString("N0")</span> paid <span id="commissionPaidPeriodLabel">this month</span></span>
+                            <span class="text-soft">@Model.CommissionAccountCount.ToString("N0") accounts &middot; KES @Model.CommissionWithheldForArrears.ToString("N0") withheld (arrears)</span>
                         </div>
                     </div>
                 </div>
@@ -240,12 +275,14 @@
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
                                 <span class="amount">KES @Model.DealerCommissionOutstanding.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1">still owed to you by Ranalo</span>
+                                <span class="sub-title d-block mt-1">still owed to you by Ranalo, in total</span>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft">KES @Model.CommissionReceived.ToString("N0") earned to date</span>
-                            <span class="text-soft">KES @dealerCommissionPaidToDate.ToString("N0") paid to date</span>
+                            <span class="text-soft">@Model.DealerCommissionAccountCount.ToString("N0") accounts &middot; KES <span id="dealerCommissionPaidThisPeriod">@Model.DealerCommissionPaidThisPeriod.ToString("N0")</span> paid <span id="dealerCommissionPaidPeriodLabel">this month</span></span>
+                            <span class="@(Model.DealerCommissionMissingCostCount > 0 ? "text-warning" : "text-soft")">@Model.DealerCommissionMissingCostCount.ToString("N0") accounts missing cost data</span>
+                            <span class="text-soft">KES @Model.DealerCommissionWithheldForArrears.ToString("N0") potential if arrears collected</span>
                         </div>
                     </div>
                 </div>
@@ -280,7 +317,9 @@
                             </div>
                         </div>
                         @{
-                            var goodCount = Math.Round(Model.TotalAccounts * Model.PortfolioGoodPct / 100);
+                            // goodCount already computed above for the Paying
+                            // vs Non-Paying card -- reused here so both cards
+                            // always agree.
                             var slowCount = Math.Round(Model.TotalAccounts * Model.PortfolioSlowPct / 100);
                             var arrearsCount = Math.Round(Model.TotalAccounts * Model.PortfolioArrearsPct / 100);
                             var nonPayCount = Math.Round(Model.TotalAccounts * Model.PortfolioNonPayingPct / 100);
@@ -1129,7 +1168,19 @@
             var targetAmountEl = document.getElementById('revenueTargetAmount');
             var toggleLabel = toggle.querySelector('span');
 
-            var periodNames = { week: 'Week', month: 'Month', ytd: 'Year to Date', year: 'Year' };
+            var totalAccountsAmountEl = document.getElementById('totalAccountsAmount');
+            var totalAccountsChangeEl = document.getElementById('totalAccountsChange');
+            var totalAccountsChangeIconEl = document.getElementById('totalAccountsChangeIcon');
+            var totalAccountsChangePctEl = document.getElementById('totalAccountsChangePct');
+            var totalAccountsPeriodLabelEl = document.getElementById('totalAccountsPeriodLabel');
+            var totalAccountsTotalEl = document.getElementById('totalAccountsTotal');
+
+            var commissionPaidThisPeriodEl = document.getElementById('commissionPaidThisPeriod');
+            var commissionPaidPeriodLabelEl = document.getElementById('commissionPaidPeriodLabel');
+            var dealerCommissionPaidThisPeriodEl = document.getElementById('dealerCommissionPaidThisPeriod');
+            var dealerCommissionPaidPeriodLabelEl = document.getElementById('dealerCommissionPaidPeriodLabel');
+
+            var periodNames = { week: 'Week', month: 'Month', ytd: 'Year to Date', year: 'Last 12 Months' };
 
             opts.forEach(function (opt) {
                 opt.addEventListener('click', function (e) {
@@ -1174,6 +1225,32 @@
                         }
 
                         toggleLabel.textContent = periodNames[period] || periodNames.month;
+
+                        totalAccountsAmountEl.textContent = Math.round(data.newInPeriod).toLocaleString();
+                        totalAccountsTotalEl.textContent = Math.round(data.totalAccounts).toLocaleString();
+                        totalAccountsPeriodLabelEl.textContent = data.label;
+
+                        if (data.newInPeriodChangePct === null || data.newInPeriodChangePct === undefined) {
+                            totalAccountsChangeEl.classList.remove('up', 'text-success', 'down', 'text-danger');
+                            totalAccountsChangeEl.classList.add('text-soft');
+                            totalAccountsChangeIconEl.className = 'icon ni ni-minus';
+                            totalAccountsChangePctEl.textContent = '—';
+                        } else {
+                            var accountsUp = data.newInPeriodChangePct >= 0;
+                            totalAccountsChangeEl.classList.remove('text-soft');
+                            totalAccountsChangeEl.classList.toggle('up', accountsUp);
+                            totalAccountsChangeEl.classList.toggle('text-success', accountsUp);
+                            totalAccountsChangeEl.classList.toggle('down', !accountsUp);
+                            totalAccountsChangeEl.classList.toggle('text-danger', !accountsUp);
+                            totalAccountsChangeIconEl.className = 'icon ni ni-arrow-long-' + (accountsUp ? 'up' : 'down');
+                            totalAccountsChangePctEl.textContent = Math.abs(data.newInPeriodChangePct).toFixed(1) + '%';
+                        }
+
+                        commissionPaidThisPeriodEl.textContent = Math.round(data.commissionPaidThisPeriod).toLocaleString();
+                        commissionPaidPeriodLabelEl.textContent = data.label;
+
+                        dealerCommissionPaidThisPeriodEl.textContent = Math.round(data.dealerCommissionPaidThisPeriod).toLocaleString();
+                        dealerCommissionPaidPeriodLabelEl.textContent = data.label;
                     })
                     .catch(function (err) {
                         console.error('Failed to load revenue for period ' + period, err);

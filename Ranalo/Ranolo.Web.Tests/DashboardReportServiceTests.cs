@@ -20,6 +20,13 @@ namespace Ranolo.Web.Tests
         public List<DashboardCommissionRollupRow> CommissionRollupToReturn { get; set; } = new();
         public string? DealerNameToReturn { get; set; }
         public DashboardRevenuePeriodRow RevenuePeriodToReturn { get; set; } = new();
+        public DashboardLockClassificationRow LockClassificationToReturn { get; set; } = new();
+        public Dictionary<string, DashboardLockClassificationRow> DeviceLockClassificationToReturn { get; set; } = new();
+        public DashboardArrearsClassificationRow ArrearsClassificationToReturn { get; set; } = new();
+        public decimal CommissionPaidForPeriodToReturn { get; set; }
+        public decimal DealerCommissionPaidForPeriodToReturn { get; set; }
+        public List<(DashboardScope Scope, int? CommissionAccountCount, decimal? CommissionWithheldForArrears)> UpsertedCommissionAccountStats { get; } = new();
+        public List<(DashboardScope Scope, int? DealerCommissionAccountCount)> UpsertedDealerCommissionAccountCounts { get; } = new();
         public List<(DashboardScope Scope, decimal? RevenueThisMonth, decimal? RevenueGrowthPct, int? NewThisMonth, int? TotalAccounts)> UpsertedSnapshots { get; } = new();
         public List<(DashboardScope Scope, decimal? GoodPct, decimal? SlowPct, decimal? ArrearsPct, decimal? NonPayingPct, decimal? ArrearsTotal, decimal? ArrearsChangePct, int? InDefault, decimal? DefaultRatePct, decimal? ActivePct)> UpsertedPortfolios { get; } = new();
         public List<(DashboardScope Scope, decimal? CommissionReceived, decimal? CommissionPaidToAgents, decimal? CommissionOutstanding)> UpsertedCommissions { get; } = new();
@@ -31,6 +38,41 @@ namespace Ranolo.Web.Tests
         public Task<DashboardRevenuePeriodRow> GetDealerRevenueForPeriodAsync(
             int dealerId, DateTime periodStart, DateTime periodEndExclusive, DateTime priorPeriodStart, DateTime priorPeriodEndExclusive) =>
             Task.FromResult(RevenuePeriodToReturn);
+
+        public Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId) =>
+            Task.FromResult(LockClassificationToReturn);
+
+        public Task<Dictionary<string, DashboardLockClassificationRow>> GetDealerDeviceLockClassificationAsync(int dealerId) =>
+            Task.FromResult(DeviceLockClassificationToReturn);
+
+        public Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId) =>
+            Task.FromResult(ArrearsClassificationToReturn);
+
+        public Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive) =>
+            Task.FromResult(CommissionPaidForPeriodToReturn);
+
+        public Task UpsertCommissionAccountStatsAsync(DashboardScope scope, int? commissionAccountCount, decimal? commissionWithheldForArrears)
+        {
+            UpsertedCommissionAccountStats.Add((scope, commissionAccountCount, commissionWithheldForArrears));
+            return Task.CompletedTask;
+        }
+
+        public Task UpsertDealerCommissionAccountCountAsync(DashboardScope scope, int? dealerCommissionAccountCount)
+        {
+            UpsertedDealerCommissionAccountCounts.Add((scope, dealerCommissionAccountCount));
+            return Task.CompletedTask;
+        }
+
+        public List<(DashboardScope Scope, int? DealerCommissionMissingCostCount, decimal? DealerCommissionWithheldForArrears)> UpsertedDealerCommissionCostFlags { get; } = new();
+
+        public Task UpsertDealerCommissionCostFlagsAsync(DashboardScope scope, int? dealerCommissionMissingCostCount, decimal? dealerCommissionWithheldForArrears)
+        {
+            UpsertedDealerCommissionCostFlags.Add((scope, dealerCommissionMissingCostCount, dealerCommissionWithheldForArrears));
+            return Task.CompletedTask;
+        }
+
+        public Task<decimal> GetDealerCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive) =>
+            Task.FromResult(DealerCommissionPaidForPeriodToReturn);
 
         public Task<List<DashboardMonthlyTrendPoint>> GetMonthlyTrendAsync(DashboardScope scope, int months = 8) =>
             Task.FromResult(TrendToReturn);
@@ -148,8 +190,13 @@ namespace Ranolo.Web.Tests
                     RevenueThisMonth = 999_000m,
                     TotalAccounts = 321,
                     ActivePct = 88.5m,
+                    // Deliberately different from ArrearsClassificationToReturn
+                    // below -- ArrearsTotal is no longer snapshot-sourced for
+                    // the Dealer scope (see GetDealerArrearsClassificationAsync),
+                    // this proves the live value wins, not this one.
                     ArrearsTotal = 5_000m,
                 },
+                ArrearsClassificationToReturn = new DashboardArrearsClassificationRow { TrueArrearsTotal = 1_200m },
                 TrendToReturn = new List<DashboardMonthlyTrendPoint>
                 {
                     new() { YearMonth = "2026-07", Revenue = 100m, AccountsCount = 10 },
@@ -163,7 +210,7 @@ namespace Ranolo.Web.Tests
             Assert.That(result.RevenueThisMonth, Is.EqualTo(999_000m));
             Assert.That(result.TotalAccounts, Is.EqualTo(321));
             Assert.That(result.ActivePct, Is.EqualTo(88.5m));
-            Assert.That(result.ArrearsTotal, Is.EqualTo(5_000m));
+            Assert.That(result.ArrearsTotal, Is.EqualTo(1_200m));
 
             // AvgPerAccount isn't sourced from snapshot.AvgPerAccount (that
             // rollup column is never populated) -- it's derived from the

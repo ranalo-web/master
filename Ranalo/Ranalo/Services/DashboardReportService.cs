@@ -128,6 +128,54 @@ namespace Ranalo.Services
                 ApplyDealerSnapshot(model, snapshot);
             }
 
+            // Paying vs Non-Paying and My Portfolio cards -- see
+            // GetDealerLockClassificationAsync for why these don't stay on
+            // ApplyDealerSnapshot's PortfolioGoodPct/SlowPct/ArrearsPct/
+            // NonPayingPct/InDefault (accrual-based, doesn't know about a
+            // restructuring). Deliberately overrides whatever the snapshot
+            // just set above -- this is a live recompute, not a rollup read,
+            // and only for the Dealer scope (Admin's portfolio composition
+            // still reads the accrual-based rollup, out of scope here).
+            var lockClassification = await _repository.GetDealerLockClassificationAsync(dealerId);
+            model.LockGoodCount = lockClassification.GoodCount;
+            model.LockNonPayingCount = lockClassification.ArrearsCount;
+
+            var lockTotal = lockClassification.GoodCount + lockClassification.SlowCount + lockClassification.ArrearsCount;
+            if (lockTotal > 0)
+            {
+                model.PortfolioGoodPct = Math.Round(100m * lockClassification.GoodCount / lockTotal, 2);
+                model.PortfolioSlowPct = Math.Round(100m * lockClassification.SlowCount / lockTotal, 2);
+                model.PortfolioArrearsPct = Math.Round(100m * lockClassification.ArrearsCount / lockTotal, 2);
+                model.PortfolioNonPayingPct = Math.Round(100m * lockClassification.NonPayingCount / lockTotal, 2);
+            }
+
+            // Total Arrears card -- see GetDealerArrearsClassificationAsync.
+            // Overrides ArrearsTotal from ApplyDealerSnapshot above (that one
+            // sums every account's accrual shortfall regardless of lock
+            // status; this one only counts accounts genuinely locked).
+            var arrearsClassification = await _repository.GetDealerArrearsClassificationAsync(dealerId);
+            model.ArrearsTotal = arrearsClassification.TrueArrearsTotal;
+            model.ArrearsTrueCount = arrearsClassification.TrueArrearsCount;
+            model.ArrearsAvgDaysLocked = arrearsClassification.TrueArrearsAvgDaysLocked;
+            model.RestructuredArrearsTotal = arrearsClassification.RestructuredArrearsTotal;
+            model.RestructuredArrearsCount = arrearsClassification.RestructuredArrearsCount;
+
+            // Bad Debt card -- subset of the same classification above.
+            model.BadDebtThisMonth = arrearsClassification.BadDebtTotal;
+            model.BadDebtCount = arrearsClassification.BadDebtCount;
+            model.BadDebtAvgDaysLocked = arrearsClassification.BadDebtAvgDaysLocked;
+
+            // Write-offs & Collections card -- "collections" here means
+            // recoveries on already-written-off debt specifically (not the
+            // dealer's overall monthly revenue, which would just duplicate
+            // the Revenue card) -- see WriteOffRecoveredThisMonth's doc comment.
+            model.WriteOffTotal = arrearsClassification.WriteOffTotal;
+            model.WriteOffCount = arrearsClassification.WriteOffCount;
+            model.WriteOffRecoveredThisMonth = arrearsClassification.WriteOffRecoveredThisMonth;
+            model.WriteOffRecoveryRatePct = model.WriteOffTotal > 0
+                ? Math.Round(model.WriteOffRecoveredThisMonth / model.WriteOffTotal * 100, 1)
+                : 0;
+
             // Target isn't part of the nightly rollup (see
             // DashboardRevenuePeriodRow.TargetRevenue) -- computed live here,
             // same as the date-range filter, just always for "this month"
@@ -137,6 +185,23 @@ namespace Ranalo.Services
                 var monthRow = await _repository.GetDealerRevenueForPeriodAsync(
                     dealerId, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive, monthWindow.PriorPeriodStart, monthWindow.PriorPeriodEndExclusive);
                 model.RevenueTarget = monthRow.TargetRevenue;
+
+                // CollectionRatePct was previously a dead field (see its doc
+                // comment) -- "of amount due this month, collected", reusing
+                // the same RevenueTarget ("if everyone paid as expected") the
+                // Revenue card already computes.
+                model.CollectionRatePct = model.RevenueTarget > 0
+                    ? Math.Round(model.RevenueThisMonth / model.RevenueTarget * 100, 1)
+                    : 0;
+
+                // Agent/Dealer Commissions cards' default (page loads with
+                // "Month" selected in the top-of-page filter) -- live-updated
+                // by the same AJAX call as Revenue/New Accounts when the
+                // filter changes.
+                model.CommissionPaidThisPeriod = await _repository.GetDealerAgentCommissionPaidForPeriodAsync(
+                    dealerId, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive);
+                model.DealerCommissionPaidThisPeriod = await _repository.GetDealerCommissionPaidForPeriodAsync(
+                    dealerId, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive);
             }
 
             var trend = await _repository.GetMonthlyTrendAsync(scope);
@@ -192,13 +257,34 @@ namespace Ranalo.Services
             var deviceStock = await _repository.GetDeviceStockAsync(scope);
             if (deviceStock.Count > 0)
             {
-                model.DeviceStock = deviceStock.Select(d => new DealerDeviceStock
+                // Good%/Arrears% per device come from the live NextLockDate
+                // classification below, not d.GoodPct/d.ArrearsPct (accrual-based,
+                // same restructuring issue as PortfolioGoodPct/InDefault) --
+                // Units/AvgValue still come from the rollup row, unaffected.
+                var deviceLock = await _repository.GetDealerDeviceLockClassificationAsync(dealerId);
+
+                model.DeviceStock = deviceStock.Select(d =>
                 {
-                    Device = d.DeviceName,
-                    Units = d.Units,
-                    AvgValue = d.AvgValue,
-                    GoodPct = d.GoodPct,
-                    ArrearsPct = d.ArrearsPct,
+                    var goodPct = d.GoodPct;
+                    var arrearsPct = d.ArrearsPct;
+                    if (deviceLock.TryGetValue(d.DeviceName, out var lockBucket))
+                    {
+                        var deviceTotal = lockBucket.GoodCount + lockBucket.ArrearsCount;
+                        if (deviceTotal > 0)
+                        {
+                            goodPct = Math.Round(100m * lockBucket.GoodCount / deviceTotal, 1);
+                            arrearsPct = Math.Round(100m * lockBucket.ArrearsCount / deviceTotal, 1);
+                        }
+                    }
+
+                    return new DealerDeviceStock
+                    {
+                        Device = d.DeviceName,
+                        Units = d.Units,
+                        AvgValue = d.AvgValue,
+                        GoodPct = goodPct,
+                        ArrearsPct = arrearsPct,
+                    };
                 }).ToList();
             }
 
@@ -229,6 +315,10 @@ namespace Ranalo.Services
 
             var row = await _repository.GetDealerRevenueForPeriodAsync(
                 dealerId, window.PeriodStart, window.PeriodEndExclusive, window.PriorPeriodStart, window.PriorPeriodEndExclusive);
+            var commissionPaidThisPeriod = await _repository.GetDealerAgentCommissionPaidForPeriodAsync(
+                dealerId, window.PeriodStart, window.PeriodEndExclusive);
+            var dealerCommissionPaidThisPeriod = await _repository.GetDealerCommissionPaidForPeriodAsync(
+                dealerId, window.PeriodStart, window.PeriodEndExclusive);
 
             return new DealerRevenuePeriodResult
             {
@@ -237,6 +327,11 @@ namespace Ranalo.Services
                 AvgPerAccount = row.TotalAccounts > 0 ? row.RevenueThisPeriod / row.TotalAccounts : 0,
                 TargetRevenue = row.TargetRevenue,
                 Label = window.Label,
+                TotalAccounts = row.TotalAccountsAsOfPeriod,
+                NewInPeriod = row.NewAccountsInPeriod,
+                NewInPeriodChangePct = ScheduledDashboardRollup.CalculateGrowthPct(row.NewAccountsInPeriod, row.NewAccountsPriorPeriod),
+                CommissionPaidThisPeriod = commissionPaidThisPeriod,
+                DealerCommissionPaidThisPeriod = dealerCommissionPaidThisPeriod,
             };
         }
 
@@ -272,7 +367,7 @@ namespace Ranalo.Services
 
                 case "year":
                     var yearWindowStart = tomorrow.AddYears(-1);
-                    window = new PeriodWindow(yearWindowStart, tomorrow, yearWindowStart.AddYears(-1), yearWindowStart, "trailing year");
+                    window = new PeriodWindow(yearWindowStart, tomorrow, yearWindowStart.AddYears(-1), yearWindowStart, "last 12 months");
                     return true;
 
                 default:
@@ -376,6 +471,11 @@ namespace Ranalo.Services
             model.CommissionPaidToAgents = snapshot.CommissionPaidToAgents ?? model.CommissionPaidToAgents;
             model.CommissionOutstanding = snapshot.CommissionOutstanding ?? model.CommissionOutstanding;
             model.DealerCommissionOutstanding = snapshot.DealerCommissionOutstanding ?? model.DealerCommissionOutstanding;
+            model.CommissionAccountCount = snapshot.CommissionAccountCount ?? model.CommissionAccountCount;
+            model.CommissionWithheldForArrears = snapshot.CommissionWithheldForArrears ?? model.CommissionWithheldForArrears;
+            model.DealerCommissionAccountCount = snapshot.DealerCommissionAccountCount ?? model.DealerCommissionAccountCount;
+            model.DealerCommissionMissingCostCount = snapshot.DealerCommissionMissingCostCount ?? model.DealerCommissionMissingCostCount;
+            model.DealerCommissionWithheldForArrears = snapshot.DealerCommissionWithheldForArrears ?? model.DealerCommissionWithheldForArrears;
             // CommissionsChangePct and the CommissionsReceived transaction-level
             // list intentionally left on sample data -- deferred (see
             // ScheduledDashboardRollup's class comment).

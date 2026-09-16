@@ -42,10 +42,11 @@ namespace Ranalo.Controllers
             return View(model);
         }
 
-        // Backs the Revenue card's date-range filter (see
+        // Backs the top-of-page date-range filter (see
         // Views/DealerDashboard/Index.cshtml) -- returns figures for an
         // arbitrary period on demand instead of the nightly-rollup-backed
-        // "this month" the page loads with.
+        // "this month" the page loads with. Drives both the Revenue card and
+        // the Total Accounts card so they stay in sync off one toggle.
         [HttpGet]
         [Route("dealer-dashboard/revenue")]
         public async Task<IActionResult> Revenue(string period)
