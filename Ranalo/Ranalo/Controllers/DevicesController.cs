@@ -264,6 +264,11 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
+            if (settings.RoleId == UserRole.Approver)
+            {
+                return RedirectToAction("AllDevices", "Devices");
+            }
+
             await SetViewBags(settings, "collector");
 
             DateTime finalDate = string.IsNullOrWhiteSpace(lockDate)

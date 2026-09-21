@@ -193,11 +193,14 @@
                                             <div class="dropdown-menu dropdown-menu-end">
                                                 <ul class="link-list-opt no-bdr">
                                                     <li><a href="/account-details/@devices.DeviceId"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
-                                                    <li>
-                                                        <a href="#lock-device"
-                                                           data-id="@devices.DeviceId"
-                                                           data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Lock Device</span></a>
-                                                    </li>
+                                                    @if (!(ViewBag.IsApprover is true))
+                                                    {
+                                                        <li>
+                                                            <a href="#lock-device"
+                                                               data-id="@devices.DeviceId"
+                                                               data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Lock Device</span></a>
+                                                        </li>
+                                                    }
                                                 </ul>
                                             </div>
                                         </div>

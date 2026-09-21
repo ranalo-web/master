@@ -165,6 +165,11 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
+            if (settings.RoleId == UserRole.Agent || settings.RoleId == UserRole.Approver)
+            {
+                return RedirectToAction("Collections", "Reports");
+            }
+
             await SetViewBags(settings, "collector");
 
             var contractToUpdate = new Woocommece.Api.Models.ContractCreateDto()
@@ -258,6 +263,11 @@ namespace Ranalo.Controllers
             if (settings == null)
             {
                 return RedirectToAction("Index", "Login");
+            }
+
+            if (settings.RoleId == UserRole.Approver)
+            {
+                return RedirectToAction("ManualRestructuredReport", "Reports");
             }
 
             //We need to get the current contract info and do the checks

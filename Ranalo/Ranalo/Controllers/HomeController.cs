@@ -146,17 +146,12 @@ namespace Ranalo.Controllers
             }
             await SetViewBags(settings, "index");
 
-            if (settings.RoleId == UserRole.Admin)
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
                 var neverPaid = await _applicationReportService.GetAllNeverPaidOrdersAsync(page: page, pageSize: pageSize);
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
                 return View("~/Views/Reports/NeverPaid.cshtml", neverPaid);
-            }
-
-            if (settings.RoleId == UserRole.Approver)
-            {
-                return RedirectToAction("Index", "Approver");
             }
 
             return RedirectToAction("Index", "Login");
@@ -173,17 +168,12 @@ namespace Ranalo.Controllers
             }
             await SetViewBags(settings, "index");
 
-            if (settings.RoleId == UserRole.Admin)
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
                 var neverPaid = await _applicationReportService.GetAllNeverPaidOrdersAsync(searchTerm: searchTerm.Trim());
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
                 return View("~/Views/Reports/NeverPaid.cshtml", neverPaid);
-            }
-
-            if (settings.RoleId == UserRole.Approver)
-            {
-                return RedirectToAction("Index", "Approver");
             }
 
             return RedirectToAction("Index", "Login");

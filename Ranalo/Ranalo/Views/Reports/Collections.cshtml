@@ -65,6 +65,37 @@
 
         return new string(initials);
     }
+
+    // Mirrors Devices.NextLockDateIsoFormat's tolerated formats
+    // (DashboardReportRepository.ParseNextLockDate) since that helper is
+    // internal to a different assembly and not reachable from this view.
+    private static readonly string[] NextLockDateFormats =
+    {
+        "dd/MM/yyyy'T'HH:mm:ss",
+        "dd/MM/yyyy'T'HH:mm:ss.FFFFFFF",
+        "dd/MM/yyyy HH:mm:ss",
+        "yyyy-MM-dd HH:mm:ss",
+        "d/M/yyyy h:mm:ss tt",
+    };
+
+    private int? GetDaysInArrears(string? nextLockDateRaw)
+    {
+        if (string.IsNullOrWhiteSpace(nextLockDateRaw))
+        {
+            return null;
+        }
+
+        if (!DateTime.TryParseExact(nextLockDateRaw, NextLockDateFormats, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var parsed)
+            && !DateTime.TryParse(nextLockDateRaw, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out parsed))
+        {
+            return null;
+        }
+
+        var days = (int)Math.Floor((DateTime.Now - parsed).TotalDays);
+        return days > 0 ? days : 0;
+    }
 }
 
 <div class="nk-content-body">
@@ -82,18 +113,6 @@
                     <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu"><em class="icon ni ni-menu-alt-r"></em></a>
                     <div class="toggle-expand-content" data-content="pageMenu">
                         <ul class="nk-block-tools g-3">
-                            <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
-                            <li class="nk-block-tools-opt">
-                                <div class="drodown">
-                                    <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-end">
-                                        <ul class="link-list-opt no-bdr">
-                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#add-loan"><span>Add Loan</span></a></li>
-                                            <li><a href="#"><span>Import Loan</span></a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </li>
                         </ul>
                     </div>
                 </div><!-- .toggle-wrap -->
@@ -105,22 +124,6 @@
             <div class="card-inner-group">
                 <div class="card-inner position-relative card-tools-toggle">
                     <div class="card-title-group">
-                        <div class="card-tools">
-                            <div class="form-inline flex-nowrap gx-3">
-                                <div class="form-wrap w-150px">
-                                    <select class="form-select form-select-sm js-select2" data-search="off" data-placeholder="Bulk Action">
-                                        <option value="">Bulk Action</option>
-                                        <option value="email">Send Email</option>
-                                        <option value="group">Disbursed Loan</option>
-                                        <option value="delete">Delete User</option>
-                                    </select>
-                                </div>
-                                <div class="btn-wrap">
-                                    <span class="d-none d-md-block"><button class="btn btn-dim btn-outline-light disabled">Apply</button></span>
-                                    <span class="d-md-none"><button class="btn btn-dim btn-outline-light btn-icon disabled"><em class="icon ni ni-arrow-right"></em></button></span>
-                                </div>
-                            </div><!-- .form-inline -->
-                        </div><!-- .card-tools -->
                         <div class="card-tools me-n1">
                             <ul class="btn-toolbar gx-1">
                                 <li>
@@ -192,6 +195,7 @@
                             <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Balance</span></div>
 
                             <div class="nk-tb-col tb-col-md"><span class="sub-text">Status</span></div>
+                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Days in Arrears</span></div>
                             <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Enrolled On</span></div>
                             <div class="nk-tb-col nk-tb-col-tools text-end">
                                 <div class="dropdown">
@@ -264,44 +268,52 @@
                                 <div class="nk-tb-col tb-col-md">
                                     <span class="@SetStatusBadge(report.NotPaying7D)">Arrears</span>
                                 </div>
+                                <div class="nk-tb-col tb-col-lg">
+                                    <span>@(GetDaysInArrears(report.NextLockDateIsoFormat)?.ToString() ?? "-")</span>
+                                </div>
                                 <div class="nk-tb-col tb-col-xxl">
                                     <span>@report.EnrolledOn?.ToString("dd MMM yyyy")</span>
                                 </div>
                                 <div class="nk-tb-col nk-tb-col-tools">
                                     <ul class="nk-tb-actions gx-2">
-                                        <li class="nk-tb-action-hidden">
-                                            <a href="#edit-contract"
-                                            class="btn btn-sm btn-icon btn-trigger"
-                                            data-bs-toggle="modal"
-                                            data-id="@report.AccountNo"
-                                            data-name="@report.FirstName"
-                                            data-deposit="@report.Deposit"
-                                            data-interval="@report.RePaymentIntervals"
-                                            data-daily="@report.Daily"
-                                            data-weekly="@report.Weekly"
-                                            data-monthly="@report.Monthly"
-                                            data-loan="@report.TotalLoan"
-                                            data-bs-placement="top"
-                                            title="Recover Device">
-                                                <em class="icon ni ni-user-check-fill"></em>
-                                            </a>
-                                        </li>
+                                        @if (!(ViewBag.IsApprover is true))
+                                        {
+                                            <li class="nk-tb-action-hidden">
+                                                <a href="#edit-contract"
+                                                class="btn btn-sm btn-icon btn-trigger"
+                                                data-bs-toggle="modal"
+                                                data-id="@report.AccountNo"
+                                                data-name="@report.FirstName"
+                                                data-deposit="@report.Deposit"
+                                                data-interval="@report.RePaymentIntervals"
+                                                data-daily="@report.Daily"
+                                                data-weekly="@report.Weekly"
+                                                data-monthly="@report.Monthly"
+                                                data-loan="@report.TotalLoan"
+                                                data-bs-placement="top"
+                                                title="Recover Device">
+                                                    <em class="icon ni ni-user-check-fill"></em>
+                                                </a>
+                                            </li>
+                                        }
                                         <li>
                                             <div class="drodown">
                                                 <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
                                                 <div class="dropdown-menu dropdown-menu-end">
                                                     <ul class="link-list-opt no-bdr">
                                                         <li><a href="/account-details/@report.AccountNo"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
-                                                        <li><a href="#assign-collector"
-                                                               data-id="@report.AccountNo"
-                                                               data-name="@report.FirstName"
-                                                            data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Debt Collection</span></a></li>
-                                                        @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
+                                                        @if (!(ViewBag.IsApprover is true))
+                                                        {
+                                                            <li><a href="#assign-collector"
+                                                                   data-id="@report.AccountNo"
+                                                                   data-name="@report.FirstName"
+                                                                data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Debt Collection</span></a></li>
 
                                                             <li><a href="#lock-device"
                                                                    data-id="@report.AccountNo"
                                                                    data-name="@report.FirstName"
                                                                 data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Lock Device</span></a></li>
+                                                        }
                                                     </ul>
                                                 </div>
                                             </div>

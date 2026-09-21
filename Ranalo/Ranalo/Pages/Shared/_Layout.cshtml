@@ -93,6 +93,15 @@
                                         <span class="nk-menu-text">Orders</span>
                                     </a>
                                 </li>
+                                @if (ViewBag.IsAdmin || ViewBag.IsApprover)
+                                {
+                                    <li class="nk-menu-item">
+                                        <a href="/missingmpesacode" class="nk-menu-link">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-alert-circle"></em></span>
+                                            <span class="nk-menu-text">Missing Mpesa</span>
+                                        </a>
+                                    </li>
+                                }
                                 <li class="nk-menu-item">
                                     <a href="/watchlist" class="nk-menu-link">
                                         <span class="nk-menu-icon"><em class="icon ni ni-eye"></em></span>
@@ -346,12 +355,6 @@
                                         </li>
                                         @if (ViewBag.IsAdmin || ViewBag.IsApprover)
                                         {
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/missingmpesacode">
-                                                    <span class="nk-menu-text">Missing Mpesa</span>
-                                                </a>
-                                            </li>
-
                                                 <li class="nk-menu-item ">
                                                         <a class="nk-menu-link " href="/never-paid">
                                                         <span class="nk-menu-text">Never Paid</span>
@@ -378,7 +381,6 @@
                                                     <span class="nk-menu-text">Manual Restructured</span>
                                                 </a>
                                             </li>
-                                            //manual-restructured
                                         }
                                     </ul>
 
