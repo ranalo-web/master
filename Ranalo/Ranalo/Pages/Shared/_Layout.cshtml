@@ -80,6 +80,12 @@
                                             <span class="nk-menu-text">Approver Dashboard</span>
                                         </a>
                                     </li>
+                                    <li class="nk-menu-item">
+                                        <a href="/approver-orders" class="nk-menu-link">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
+                                            <span class="nk-menu-text">Approvals</span>
+                                        </a>
+                                    </li>
                                 }
                                 <li class="nk-menu-item">
                                     <a href="/orders" class="nk-menu-link">
@@ -187,21 +193,18 @@
 
                                 }
                                
-                                @if (ViewBag.IsAdmin || ViewBag.IsApprover)
+                                @if (ViewBag.IsAdmin && !(ViewBag.IsApprover is true))
                                 {
-                                    @if (!(ViewBag.IsApprover is true))
-                                    {
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/approver">
-                                                <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
-                                                <span class="nk-menu-text">Approver Dashboard</span>
-                                            </a>
-                                        </li>
-                                    }
+                                    <li class="nk-menu-item ">
+                                        <a class="nk-menu-link " href="/approver">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
+                                            <span class="nk-menu-text">Approver Dashboard</span>
+                                        </a>
+                                    </li>
                                     <li class="nk-menu-item ">
                                         <a class="nk-menu-link " href="/approver-orders">
                                             <span class="nk-menu-icon"><em class="icon ni ni-list-check"></em></span>
-                                            <span class="nk-menu-text">Orders Awaiting Approval</span>
+                                            <span class="nk-menu-text">Approvals</span>
                                         </a>
                                     </li>
                                 }

@@ -24,6 +24,20 @@ namespace Ranalo.Controllers
         [HttpPost("upload-payments")]
         public async Task<IActionResult> UploadStatement(IFormFile file)
         {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            // Importing a payments statement is Admin-only -- every other
+            // role (including Approver/Dealer/Agent) only gets read access
+            // to Payments.
+            if (settings.RoleId != UserRole.Admin)
+            {
+                return RedirectToAction("AllPayments", "Payments");
+            }
+
             try
             {
                 var payments = RanaloXlsmUploadParser.Parse(file);

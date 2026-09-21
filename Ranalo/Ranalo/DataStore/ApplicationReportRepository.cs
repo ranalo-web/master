@@ -135,7 +135,7 @@ namespace Ranalo.DataStore
             };
         }
 
-        public async Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int dealerId, string searchTerm = "", int page = 1, int pageSize = 10, int? agentUserId = null)
+        public async Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10, int? agentUserId = null)
         {
             var offset = (page - 1) * pageSize;
 
@@ -146,7 +146,7 @@ namespace Ranalo.DataStore
 	                    INNER JOIN Devices d on kp.AccountNoBigint = d.Id
 	                    INNER JOIN Dealers dl on dl.DealerReference = d.DeviceGroupId
 	                    LEFT JOIN Contract_Info ci on ci.ID = d.Id
-                        WHERE dl.DealerId = @dealerId
+                        WHERE (@dealerId IS NULL OR dl.DealerId = @dealerId)
                         AND d.[Status] = 'enrolled'
                         AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
                         AND (
@@ -178,7 +178,7 @@ namespace Ranalo.DataStore
 	                    INNER JOIN Devices d on kp.AccountNoBigint = d.Id
 	                    INNER JOIN Dealers dl on dl.DealerReference = d.DeviceGroupId
 	                    LEFT JOIN Contract_Info ci on ci.ID = d.Id
-                        WHERE dl.DealerId = @dealerId
+                        WHERE (@dealerId IS NULL OR dl.DealerId = @dealerId)
                         AND d.[Status] = 'enrolled'
                         AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
                         AND (

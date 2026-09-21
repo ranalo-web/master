@@ -272,9 +272,9 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            // Agents have view-only access to the Collections tab -- no
-            // power to assign collectors or lock devices from here.
-            if (settings.RoleId == UserRole.Agent)
+            // Agents and Approvers have view-only access to the Collections
+            // tab -- no power to assign collectors or lock devices from here.
+            if (settings.RoleId == UserRole.Agent || settings.RoleId == UserRole.Approver)
             {
                 return RedirectToAction("Collections", "Reports");
             }
@@ -298,9 +298,9 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            // Agents have view-only access to the Collections tab -- no
-            // power to lock devices from here.
-            if (settings.RoleId == UserRole.Agent)
+            // Agents and Approvers have view-only access to the Collections
+            // tab -- no power to lock devices from here.
+            if (settings.RoleId == UserRole.Agent || settings.RoleId == UserRole.Approver)
             {
                 return RedirectToAction("Collections", "Collections");
             }

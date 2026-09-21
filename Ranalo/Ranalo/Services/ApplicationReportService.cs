@@ -37,15 +37,22 @@ namespace Ranalo.Services
             return result;
 
         }
-        public async Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrdersByUser(int userId, string searchTerm, int page, int pageSize, int? dealerIdOverride = null, int? agentUserId = null)
+        public async Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrdersByUser(int userId, string searchTerm, int page, int pageSize, int? dealerIdOverride = null, int? agentUserId = null, bool systemWide = false)
         {
             // dealerIdOverride: for a non-Dealer user (Agent, Collector) whose
             // own Users.DealerId already names their dealer -- GetDealerByUserIdAsync
             // looks up Dealers.UserId, which only resolves for the Dealer who
             // owns that row themselves, not for their staff. Null (the
             // default) preserves the original Dealer-only lookup untouched.
-            int dealerId;
-            if (dealerIdOverride.HasValue)
+            // systemWide: an Approver isn't tied to any one dealer -- skip
+            // resolving a dealerId at all (GetAllOrdersByUserAsync treats
+            // null as "every dealer").
+            int? dealerId;
+            if (systemWide)
+            {
+                dealerId = null;
+            }
+            else if (dealerIdOverride.HasValue)
             {
                 dealerId = dealerIdOverride.Value;
             }

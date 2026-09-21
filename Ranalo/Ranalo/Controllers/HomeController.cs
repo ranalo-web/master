@@ -126,14 +126,10 @@ namespace Ranalo.Controllers
                 return View("~/Views/Home/Index.cshtml", allAwaitngApproval);
             }
 
-            if(settings.RoleId == UserRole.Approver)
-            {
-                return RedirectToAction("Index", "Approver");
-            }
-
             var dealerIdOverride = settings.RoleId == UserRole.Agent ? settings.DealerId : (int?)null;
             var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
-            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, page: page, pageSize: pageSize, dealerIdOverride: dealerIdOverride, agentUserId: agentUserId);
+            var systemWide = settings.RoleId == UserRole.Approver;
+            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, page: page, pageSize: pageSize, dealerIdOverride: dealerIdOverride, agentUserId: agentUserId, systemWide: systemWide);
             ViewData["OrdersStatus"] = "All Orders";
             return View(waitingApprovalByUser);
 
@@ -355,7 +351,8 @@ namespace Ranalo.Controllers
 
             var searchDealerIdOverride = settings.RoleId == UserRole.Agent ? settings.DealerId : (int?)null;
             var searchAgentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
-            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, searchTerm.Trim(), dealerIdOverride: searchDealerIdOverride, agentUserId: searchAgentUserId);
+            var searchSystemWide = settings.RoleId == UserRole.Approver;
+            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, searchTerm.Trim(), dealerIdOverride: searchDealerIdOverride, agentUserId: searchAgentUserId, systemWide: searchSystemWide);
             ViewData["OrdersStatus"] = "All Orders";
             waitingApprovalByUser.SearchTerm = searchTerm.Trim();
             return View("~/Views/Home/Index.cshtml", waitingApprovalByUser);

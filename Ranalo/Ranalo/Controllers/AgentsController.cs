@@ -210,9 +210,9 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            // Agents have view-only access to the Agents tab -- no power to
-            // assign/unassign accounts.
-            if (settings.RoleId == UserRole.Agent)
+            // Agents and Approvers have view-only access to the Agents tab
+            // -- no power to assign/unassign accounts.
+            if (settings.RoleId == UserRole.Agent || settings.RoleId == UserRole.Approver)
             {
                 return RedirectToAction("UnAssignedCollections", "Agents");
             }
@@ -234,9 +234,9 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            // Agents have view-only access to the Agents tab -- no power to
-            // assign/unassign accounts.
-            if (settings.RoleId == UserRole.Agent)
+            // Agents and Approvers have view-only access to the Agents tab
+            // -- no power to assign/unassign accounts.
+            if (settings.RoleId == UserRole.Agent || settings.RoleId == UserRole.Approver)
             {
                 return RedirectToAction("AssignedCollections", "Agents");
             }

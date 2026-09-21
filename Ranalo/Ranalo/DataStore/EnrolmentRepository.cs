@@ -129,12 +129,12 @@ namespace Ranalo.DataStore
         }
 
         public async Task<(IEnumerable<Enrolment> Items, int TotalCount)>
-        GetAllEnrolmentsAsync(int pageNumber, int pageSize)
+        GetAllEnrolmentsAsync(int pageNumber, int pageSize, string? searchTerm = null)
         {
             if (pageNumber <= 0) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var query = _context.Enrolments.AsNoTracking();
+            var query = ApplyEnrolmentSearch(_context.Enrolments.AsNoTracking(), searchTerm);
 
             var totalCount = await query.CountAsync();
 
@@ -148,12 +148,14 @@ namespace Ranalo.DataStore
         }
 
         public async Task<(IEnumerable<Enrolment> Items, int TotalCount)>
-        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize)
+        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null)
         {
             if (pageNumber <= 0) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var query = _context.Enrolments.AsNoTracking().Where(x => x.DealerId == dealerId);
+            var query = ApplyEnrolmentSearch(
+                _context.Enrolments.AsNoTracking().Where(x => x.DealerId == dealerId),
+                searchTerm);
 
             var totalCount = await query.CountAsync();
 
@@ -164,6 +166,21 @@ namespace Ranalo.DataStore
                 .ToListAsync();
 
             return (items, totalCount);
+        }
+
+        private static IQueryable<Enrolment> ApplyEnrolmentSearch(IQueryable<Enrolment> query, string? searchTerm)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                return query;
+            }
+
+            return query.Where(x =>
+                x.IMEI.Contains(searchTerm)
+                || (x.FirstName != null && x.FirstName.Contains(searchTerm))
+                || (x.LastName != null && x.LastName.Contains(searchTerm))
+                || x.AccountId.ToString().Contains(searchTerm)
+                || x.OrderId.ToString().Contains(searchTerm));
         }
 
         public async Task<IEnumerable<Enrolment>> GetEnrolmentsByDealerIdAsync(int dealerId)

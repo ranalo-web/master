@@ -55,7 +55,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("approver-orders/{page:int?}")]
-        public async Task<IActionResult> Orders(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Orders(int page = 1, int pageSize = 10, string searchTerm = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -63,13 +63,15 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
             await SetViewBags(settings, "approver");
+            ViewBag.PageSize = pageSize;
+            ViewBag.SearchTerm = searchTerm.Trim();
 
             if (settings.RoleId != UserRole.Admin && settings.RoleId != UserRole.Approver)
             {
                 return RedirectToAction("Index", "Approver");
             }
 
-            var allAwaitngApproval = await _applicationReportService.GetAwaitingApprovalOrders(page: page, pageSize: pageSize);
+            var allAwaitngApproval = await _applicationReportService.GetAwaitingApprovalOrders(searchTerm.Trim(), page, pageSize);
             ViewData["OrdersStatus"] = "Waiting Approval";
             return View("~/Views/Approver/Index.cshtml", allAwaitngApproval);
         }

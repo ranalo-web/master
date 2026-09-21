@@ -83,7 +83,7 @@
                     <div class="toggle-expand-content" data-content="pageMenu">
                         <ul class="nk-block-tools g-3">
                             <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
-                            @if (!(ViewBag.IsAgent is true))
+                            @if (!(ViewBag.IsAgent is true) && !(ViewBag.IsApprover is true))
                             {
                                 <li class="nk-block-tools-opt">
                                     <div class="drodown">
@@ -271,7 +271,7 @@
                                 </div>
                                 <div class="nk-tb-col nk-tb-col-tools">
                                     <ul class="nk-tb-actions gx-2">
-                                        @if (!(ViewBag.IsAgent is true))
+                                        @if (!(ViewBag.IsAgent is true) && !(ViewBag.IsApprover is true))
                                         {
                                             <li class="nk-tb-action-hidden">
                                                 <a href="#edit-contract"
@@ -297,7 +297,7 @@
                                                 <div class="dropdown-menu dropdown-menu-end">
                                                     <ul class="link-list-opt no-bdr">
                                                         <li><a href="/account-details/@record.ID"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
-                                                        @if (!(ViewBag.IsAgent is true))
+                                                        @if (!(ViewBag.IsAgent is true) && !(ViewBag.IsApprover is true))
                                                         {
                                                             <li>
                                                                 <a href="#assign-agent"

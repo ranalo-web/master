@@ -19,7 +19,7 @@ namespace Ranalo.DataStore
         #endregion
 
         Task<AwaitingApprovalViewModel> GetAllWaitingApprovalAsync(string searchTerm = "", int page = 1, int pageSize = 10);
-        Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int dealerId, string searchTerm, int page, int pageSize, int? agentUserId = null);
+        Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int? dealerId, string searchTerm, int page, int pageSize, int? agentUserId = null);
 
         Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize, string searchTerm = "");
 

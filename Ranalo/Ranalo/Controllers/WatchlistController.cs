@@ -38,7 +38,7 @@ namespace Ranalo.Controllers
 
             ViewBag.BackLink = "watchlist";
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
-            ViewBag.IsApprover = false;
+            ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
             ViewBag.UserName = settings.KnownAs;
 
@@ -50,7 +50,9 @@ namespace Ranalo.Controllers
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                int? dealerId = settings.RoleId == UserRole.Admin ? null : settings.DealerId;
+                // Admin and Approver both search across every dealer -- an
+                // Approver isn't tied to any one dealer, same as Admin.
+                int? dealerId = settings.RoleId is UserRole.Admin or UserRole.Approver ? null : settings.DealerId;
                 // An Agent can only add their own assigned accounts to the
                 // watchlist -- restrict the search results themselves so the
                 // "Add" button never offers an account outside their book.
@@ -113,6 +115,6 @@ namespace Ranalo.Controllers
         }
 
         private static bool CanUseWatchlist(UserRole role) =>
-            role is UserRole.Admin or UserRole.Dealer or UserRole.Agent;
+            role is UserRole.Admin or UserRole.Dealer or UserRole.Agent or UserRole.Approver;
     }
 }

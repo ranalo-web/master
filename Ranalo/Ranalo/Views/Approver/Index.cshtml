@@ -96,22 +96,6 @@
             <div class="card-inner-group">
                 <div class="card-inner position-relative card-tools-toggle">
                     <div class="card-title-group">
-                        <div class="card-tools">
-                            <div class="form-inline flex-nowrap gx-3">
-                                <div class="form-wrap w-150px">
-                                    <select class="form-select js-select2" data-search="off" data-placeholder="Bulk Action">
-                                        <option value="">Bulk Action</option>
-                                        <option value="email">Send Email</option>
-                                        <option value="suspend">Suspend</option>
-                                        <option value="delete">Delete</option>
-                                    </select>
-                                </div>
-                                <div class="btn-wrap">
-                                    <span class="d-none d-md-block"><button class="btn btn-dim btn-outline-light disabled">Apply</button></span>
-                                    <span class="d-md-none"><button class="btn btn-dim btn-outline-light btn-icon disabled"><em class="icon ni ni-arrow-right"></em></button></span>
-                                </div>
-                            </div><!-- .form-inline -->
-                        </div><!-- .card-tools -->
                         <div class="card-tools me-n1">
                             <ul class="btn-toolbar gx-1">
                                 <li>
@@ -134,14 +118,9 @@
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
                                                             <ul class="link-check">
                                                                 <li><span>Show</span></li>
-                                                                <li class="active"><a href="#">10</a></li>
-                                                                <li><a href="#">20</a></li>
-                                                                <li><a href="#">50</a></li>
-                                                            </ul>
-                                                            <ul class="link-check">
-                                                                <li><span>Order</span></li>
-                                                                <li class="active"><a href="#">DESC</a></li>
-                                                                <li><a href="#">ASC</a></li>
+                                                                <li class="@(ViewBag.PageSize == 10 ? "active" : "")"><a href="/approver-orders?page=1&amp;pageSize=10&amp;searchTerm=@ViewBag.SearchTerm">10</a></li>
+                                                                <li class="@(ViewBag.PageSize == 20 ? "active" : "")"><a href="/approver-orders?page=1&amp;pageSize=20&amp;searchTerm=@ViewBag.SearchTerm">20</a></li>
+                                                                <li class="@(ViewBag.PageSize == 50 ? "active" : "")"><a href="/approver-orders?page=1&amp;pageSize=50&amp;searchTerm=@ViewBag.SearchTerm">50</a></li>
                                                             </ul>
                                                         </div>
                                                     </div><!-- .dropdown -->
@@ -156,9 +135,11 @@
                     <div class="card-search search-wrap" data-search="search">
                         <div class="card-body">
                             <div class="search-content">
-                                <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <input type="text" class="form-control border-transparent form-focus-none" placeholder="Search by name">
-                                <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                <form action="/approver-orders" method="get">
+                                    <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
+                                    <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" placeholder="Search by name, order #, mpesa code" value="@ViewBag.SearchTerm">
+                                    <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                </form>
                             </div>
                         </div>
                     </div><!-- .card-search -->
