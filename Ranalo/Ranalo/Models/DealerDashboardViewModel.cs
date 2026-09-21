@@ -180,6 +180,19 @@ namespace Ranalo.Models
         public decimal ContractCompletionRateChangePct { get; set; }
         public decimal AvgTimeToCompletionMonths { get; set; }
         public decimal TotalValueCompletedThisMonth { get; set; }
+
+        // Approver Dashboard only (system-wide, all dealers). Orders
+        // Awaiting Approval card -- count and how long the oldest one has
+        // sat unreviewed, from Woo_Orders.Status = 'pending'/'processing'
+        // (see GetOrdersAwaitingApprovalSummaryAsync).
+        public int OrdersAwaitingApprovalCount { get; set; }
+        public int OldestPendingOrderDays { get; set; }
+
+        // Approver Dashboard only: accounts most needing arrears follow-up,
+        // system-wide, sorted by dollar shortfall (see
+        // GetCustomersToContactAsync) -- Detail carries the formatted
+        // arrears amount, Phone/DealerName above carry the rest.
+        public List<DealerWatchlistEntry> CustomersToContact { get; set; } = new();
     }
 
     public class DealerWatchlistEntry
@@ -187,6 +200,12 @@ namespace Ranalo.Models
         public string CustomerName { get; set; } = "";
         public string AgentName { get; set; } = "";
         public string Detail { get; set; } = "";
+
+        // Populated for the Approver Dashboard's "Customers to Contact" list
+        // (system-wide, all dealers) -- unused by Dealer's own Non-Payers/
+        // Slow-Payers/Good-Payers tables, which don't render these columns.
+        public string? Phone { get; set; }
+        public string? DealerName { get; set; }
     }
 
     public class DealerContract

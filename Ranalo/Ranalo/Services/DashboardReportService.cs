@@ -313,6 +313,107 @@ namespace Ranalo.Services
             return model;
         }
 
+        // Approver Dashboard: same card set and live-recompute building
+        // blocks as GetDealerDashboardAsync above, just with dealerId = null
+        // (every one of the widened GetDealer*Async methods treats null as
+        // "no dealer filter" -- system-wide, across every dealer) instead of
+        // scoped to one. A separate method rather than widening
+        // GetDealerDashboardAsync's own dealerId to nullable so Dealer's and
+        // Agent's paths through it are completely unchanged.
+        //
+        // Deliberately skips: the nightly-rollup snapshot (ApplyDealerSnapshot)
+        // and its Revenue/New-Accounts change-vs-last-period figures --
+        // DashboardScope only rolls up per dealer (or company-wide for Admin,
+        // a different card set/purpose), not "all dealers combined" the way
+        // an Approver needs; Agent/Dealer Commission cards -- not part of an
+        // Approver's job; and Device Stock/Completed Contracts -- both are
+        // rollup-only with no live-recompute path anywhere in this file (see
+        // BuildDeviceStockAsync), so there's nothing to reuse without a much
+        // larger rollup change. Adds Orders Awaiting Approval and Customers
+        // to Contact, which only make sense for this scope.
+        public async Task<DealerDashboardViewModel> GetApproverDashboardAsync()
+        {
+            var model = new DealerDashboardViewModel { DealerName = "All Dealers" };
+
+            var lockClassification = await _repository.GetDealerLockClassificationAsync(null);
+            model.LockGoodCount = lockClassification.GoodCount;
+            model.LockNonPayingCount = lockClassification.ArrearsCount;
+
+            var lockTotal = lockClassification.GoodCount + lockClassification.SlowCount + lockClassification.ArrearsCount;
+            if (lockTotal > 0)
+            {
+                var exclusiveArrearsCount = lockClassification.ArrearsCount - lockClassification.NonPayingCount;
+                model.PortfolioGoodPct = Math.Round(100m * lockClassification.GoodCount / lockTotal, 2);
+                model.PortfolioSlowPct = Math.Round(100m * lockClassification.SlowCount / lockTotal, 2);
+                model.PortfolioArrearsPct = Math.Round(100m * exclusiveArrearsCount / lockTotal, 2);
+                model.PortfolioNonPayingPct = Math.Round(100m * lockClassification.NonPayingCount / lockTotal, 2);
+            }
+
+            var arrearsClassification = await _repository.GetDealerArrearsClassificationAsync(null);
+            model.ArrearsTotal = arrearsClassification.TrueArrearsTotal;
+            model.ArrearsTrueCount = arrearsClassification.TrueArrearsCount;
+            model.ArrearsAvgDaysLocked = arrearsClassification.TrueArrearsAvgDaysLocked;
+            model.RestructuredArrearsTotal = arrearsClassification.RestructuredArrearsTotal;
+            model.RestructuredArrearsCount = arrearsClassification.RestructuredArrearsCount;
+
+            model.BadDebtThisMonth = arrearsClassification.BadDebtTotal;
+            model.BadDebtCount = arrearsClassification.BadDebtCount;
+            model.BadDebtAvgDaysLocked = arrearsClassification.BadDebtAvgDaysLocked;
+
+            model.WriteOffTotal = arrearsClassification.WriteOffTotal;
+            model.WriteOffCount = arrearsClassification.WriteOffCount;
+            model.WriteOffRecoveredThisMonth = arrearsClassification.WriteOffRecoveredThisMonth;
+            model.WriteOffRecoveryRatePct = model.WriteOffTotal > 0
+                ? Math.Round(model.WriteOffRecoveredThisMonth / model.WriteOffTotal * 100, 1)
+                : 0;
+
+            var accountDetails = await _repository.GetDealerAccountDetailsAsync(null);
+            model.TotalAccounts = accountDetails.Count;
+
+            if (TryResolvePeriodWindow("month", out var monthWindow))
+            {
+                var monthRow = await _repository.GetDealerRevenueForPeriodAsync(
+                    null, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive, monthWindow.PriorPeriodStart, monthWindow.PriorPeriodEndExclusive);
+                model.RevenueThisMonth = monthRow.RevenueThisPeriod;
+                model.RevenueTarget = monthRow.TargetRevenue;
+                model.NewThisMonth = monthRow.NewAccountsInPeriod;
+
+                var (collectionRatePct, portfolioAtRiskPct) = ComputeCohortRates(
+                    accountDetails, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive);
+                model.CollectionRatePct = collectionRatePct;
+                model.PortfolioAtRiskPct = portfolioAtRiskPct;
+            }
+
+            model.NonPayers = BuildNonPayers(accountDetails);
+            model.SlowPayers = BuildSlowPayers(accountDetails);
+            model.GoodPayers = BuildGoodPayers(accountDetails);
+            model.AgentPerformance = BuildAgentPerformance(accountDetails);
+            model.Contracts = BuildContracts(accountDetails);
+            model.ContractsEndingSoon = BuildContractsEndingSoon(accountDetails);
+
+            var ordersAwaitingApproval = await _repository.GetOrdersAwaitingApprovalSummaryAsync();
+            model.OrdersAwaitingApprovalCount = ordersAwaitingApproval.Count;
+            model.OldestPendingOrderDays = ordersAwaitingApproval.OldestPendingDays;
+
+            // Customers to Contact: genuinely overdue accounts (same
+            // LockDays > 0 population as NonPayers+SlowPayers combined),
+            // worst shortfall first, so a call list can be worked top-down.
+            model.CustomersToContact = accountDetails
+                .Where(r => LockDays(r) > 0)
+                .OrderBy(r => r.ArrearsAmount)
+                .Take(30)
+                .Select(r => new DealerWatchlistEntry
+                {
+                    CustomerName = r.CustomerName,
+                    AgentName = r.AgentName ?? "",
+                    Phone = r.CustomerPhone,
+                    DealerName = r.DealerName ?? "",
+                    Detail = $"KES {Math.Max(0, -r.ArrearsAmount):N0} overdue, {Math.Round(LockDays(r))} days",
+                }).ToList();
+
+            return model;
+        }
+
         // A dealer's distinct device models / completed contracts are bounded
         // in practice, unlike Admin's company-wide equivalents -- fetch
         // effectively everything so the dashboard's summary-card counts and
@@ -509,7 +610,7 @@ namespace Ranalo.Services
             return parsed.HasValue ? parsed.Value.ToString("MMM d") : "-";
         }
 
-        public async Task<DealerRevenuePeriodResult?> GetDealerRevenueForPeriodAsync(int dealerId, string period, int? agentUserId = null)
+        public async Task<DealerRevenuePeriodResult?> GetDealerRevenueForPeriodAsync(int? dealerId, string period, int? agentUserId = null)
         {
             if (!TryResolvePeriodWindow(period, out var window))
             {
@@ -518,21 +619,35 @@ namespace Ranalo.Services
 
             var row = await _repository.GetDealerRevenueForPeriodAsync(
                 dealerId, window.PeriodStart, window.PeriodEndExclusive, window.PriorPeriodStart, window.PriorPeriodEndExclusive, agentUserId);
-            var commissionPaidThisPeriod = await _repository.GetDealerAgentCommissionPaidForPeriodAsync(
-                dealerId, window.PeriodStart, window.PeriodEndExclusive, agentUserId);
-            var dealerCommissionPaidThisPeriod = await _repository.GetDealerCommissionPaidForPeriodAsync(
-                dealerId, window.PeriodStart, window.PeriodEndExclusive);
+
+            // Commission cards and Completed Contracts are hidden on the
+            // Approver Dashboard (see GetApproverDashboardAsync's doc
+            // comment) -- dealerId is only null for that scope, so skip the
+            // dealer-only queries backing them entirely rather than widening
+            // GetDealerAgentCommissionPaidForPeriodAsync/
+            // GetDealerCommissionPaidForPeriodAsync/GetCompletedContractsAsync
+            // for a result nothing would render.
+            var commissionPaidThisPeriod = dealerId.HasValue
+                ? await _repository.GetDealerAgentCommissionPaidForPeriodAsync(dealerId.Value, window.PeriodStart, window.PeriodEndExclusive, agentUserId)
+                : 0m;
+            var dealerCommissionPaidThisPeriod = dealerId.HasValue
+                ? await _repository.GetDealerCommissionPaidForPeriodAsync(dealerId.Value, window.PeriodStart, window.PeriodEndExclusive)
+                : 0m;
 
             // Reuses the same rows the Completed Contracts report page shows
             // (GetDealerCompletedContractsReportAsync) -- no separate query,
             // just a date-range filter on Status == Completed. Stays
             // dealer-wide (see GetDealerDeviceStockReportAsync's doc note).
-            var completedContracts = await _repository.GetCompletedContractsAsync(DashboardScope.ForDealer(dealerId), DealerScopeTakeAll);
-            var completedContractsInPeriod = completedContracts.Count(c =>
-                c.Status == DashboardCompletedContractStatus.Completed
-                && c.CompletedDate.HasValue
-                && c.CompletedDate.Value >= window.PeriodStart
-                && c.CompletedDate.Value < window.PeriodEndExclusive);
+            var completedContractsInPeriod = 0;
+            if (dealerId.HasValue)
+            {
+                var completedContracts = await _repository.GetCompletedContractsAsync(DashboardScope.ForDealer(dealerId.Value), DealerScopeTakeAll);
+                completedContractsInPeriod = completedContracts.Count(c =>
+                    c.Status == DashboardCompletedContractStatus.Completed
+                    && c.CompletedDate.HasValue
+                    && c.CompletedDate.Value >= window.PeriodStart
+                    && c.CompletedDate.Value < window.PeriodEndExclusive);
+            }
 
             // Collection Rate / PAR30 for the selected period's cohort -- see
             // ComputeCohortRates.

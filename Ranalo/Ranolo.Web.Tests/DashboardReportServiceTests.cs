@@ -37,23 +37,28 @@ namespace Ranolo.Web.Tests
         public Task<string?> GetDealerNameAsync(int dealerId) => Task.FromResult(DealerNameToReturn);
 
         public Task<DashboardRevenuePeriodRow> GetDealerRevenueForPeriodAsync(
-            int dealerId, DateTime periodStart, DateTime periodEndExclusive, DateTime priorPeriodStart, DateTime priorPeriodEndExclusive, int? agentUserId = null) =>
+            int? dealerId, DateTime periodStart, DateTime periodEndExclusive, DateTime priorPeriodStart, DateTime priorPeriodEndExclusive, int? agentUserId = null) =>
             Task.FromResult(RevenuePeriodToReturn);
 
-        public Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId, int? agentUserId = null) =>
+        public Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int? dealerId, int? agentUserId = null) =>
             Task.FromResult(LockClassificationToReturn);
 
         public Task<Dictionary<string, DashboardLockClassificationRow>> GetDealerDeviceLockClassificationAsync(int dealerId) =>
             Task.FromResult(DeviceLockClassificationToReturn);
 
-        public Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId, int? agentUserId = null) =>
+        public Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int? dealerId, int? agentUserId = null) =>
             Task.FromResult(ArrearsClassificationToReturn);
 
         public Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null) =>
             Task.FromResult(CommissionPaidForPeriodToReturn);
 
-        public Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int dealerId, int? agentUserId = null) =>
+        public Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int? dealerId, int? agentUserId = null) =>
             Task.FromResult(AccountDetailsToReturn);
+
+        public (int Count, int OldestPendingDays) OrdersAwaitingApprovalSummaryToReturn { get; set; } = (0, 0);
+
+        public Task<(int Count, int OldestPendingDays)> GetOrdersAwaitingApprovalSummaryAsync() =>
+            Task.FromResult(OrdersAwaitingApprovalSummaryToReturn);
 
         public Task UpsertCommissionAccountStatsAsync(DashboardScope scope, int? commissionAccountCount, decimal? commissionWithheldForArrears)
         {

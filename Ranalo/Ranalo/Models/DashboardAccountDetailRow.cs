@@ -14,6 +14,16 @@ namespace Ranalo.Models
         public string? AgentName { get; set; }
         public string DeviceName { get; set; } = "";
 
+        // Populated for the Approver Dashboard's system-wide (all-dealer)
+        // use of this method -- which dealer this account belongs to, and a
+        // contact number for the "Customers to Contact" list. Devices.
+        // CustomerPhoneNumber is never actually populated in this dataset;
+        // Woo_Orders.Phone (joined via KosePayments.MpesaCode, most recent
+        // order) is the only reliably-populated phone source. Both null for
+        // a single-dealer call where the caller doesn't need them.
+        public string? DealerName { get; set; }
+        public string? CustomerPhone { get; set; }
+
         // Raw Devices.NextLockDateIsoFormat -- parse with
         // DashboardReportRepository.ParseNextLockDate before use.
         public string? NextLockDateRaw { get; set; }

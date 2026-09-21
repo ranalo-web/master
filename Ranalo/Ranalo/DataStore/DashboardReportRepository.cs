@@ -225,7 +225,7 @@ namespace Ranalo.DataStore
         }
 
         public async Task<DashboardRevenuePeriodRow> GetDealerRevenueForPeriodAsync(
-            int dealerId,
+            int? dealerId,
             DateTime periodStart,
             DateTime periodEndExclusive,
             DateTime priorPeriodStart,
@@ -265,27 +265,27 @@ namespace Ranalo.DataStore
                      FROM Contract_Info ci
                      INNER JOIN Devices d2 ON d2.Id = ci.ID
                      INNER JOIN Dealers dl2 ON dl2.DealerReference = d2.DeviceGroupId
-                     WHERE dl2.DealerId = @DealerId AND ci.StartDate IS NOT NULL
+                     WHERE (@DealerId IS NULL OR dl2.DealerId = @DealerId) AND ci.StartDate IS NOT NULL
                        AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)) AS TotalAccounts,
                     (SELECT COUNT(*)
                      FROM Contract_Info ci4
                      INNER JOIN Devices d4 ON d4.Id = ci4.ID
                      INNER JOIN Dealers dl4 ON dl4.DealerReference = d4.DeviceGroupId
-                     WHERE dl4.DealerId = @DealerId AND ci4.StartDate IS NOT NULL
+                     WHERE (@DealerId IS NULL OR dl4.DealerId = @DealerId) AND ci4.StartDate IS NOT NULL
                        AND ci4.StartDate < @PeriodEnd
                        AND (@AgentUserId IS NULL OR ci4.AssignedAgentId = @AgentUserId)) AS TotalAccountsAsOfPeriod,
                     (SELECT COUNT(*)
                      FROM Contract_Info ci4
                      INNER JOIN Devices d4 ON d4.Id = ci4.ID
                      INNER JOIN Dealers dl4 ON dl4.DealerReference = d4.DeviceGroupId
-                     WHERE dl4.DealerId = @DealerId AND ci4.StartDate >= @PeriodStart
+                     WHERE (@DealerId IS NULL OR dl4.DealerId = @DealerId) AND ci4.StartDate >= @PeriodStart
                        AND ci4.StartDate < @PeriodEnd
                        AND (@AgentUserId IS NULL OR ci4.AssignedAgentId = @AgentUserId)) AS NewAccountsInPeriod,
                     (SELECT COUNT(*)
                      FROM Contract_Info ci4
                      INNER JOIN Devices d4 ON d4.Id = ci4.ID
                      INNER JOIN Dealers dl4 ON dl4.DealerReference = d4.DeviceGroupId
-                     WHERE dl4.DealerId = @DealerId AND ci4.StartDate >= @PriorPeriodStart
+                     WHERE (@DealerId IS NULL OR dl4.DealerId = @DealerId) AND ci4.StartDate >= @PriorPeriodStart
                        AND ci4.StartDate < @PriorPeriodEnd
                        AND (@AgentUserId IS NULL OR ci4.AssignedAgentId = @AgentUserId)) AS NewAccountsPriorPeriod,
                     (SELECT ISNULL(SUM(
@@ -304,14 +304,14 @@ namespace Ranalo.DataStore
                          FROM Contract_Info ci3
                          INNER JOIN Devices d3 ON d3.Id = ci3.ID
                          INNER JOIN Dealers dl3 ON dl3.DealerReference = d3.DeviceGroupId
-                         WHERE dl3.DealerId = @DealerId AND ci3.StartDate IS NOT NULL
+                         WHERE (@DealerId IS NULL OR dl3.DealerId = @DealerId) AND ci3.StartDate IS NOT NULL
                            AND (@AgentUserId IS NULL OR ci3.AssignedAgentId = @AgentUserId)
                      ) ca) AS TargetRevenue
                 FROM KosePayments kp
                 INNER JOIN Devices d ON d.Id = kp.AccountNoBigint
                 INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
                 LEFT JOIN Contract_Info ci5 ON ci5.ID = d.Id
-                WHERE dl.DealerId = @DealerId
+                WHERE (@DealerId IS NULL OR dl.DealerId = @DealerId)
                 AND (@AgentUserId IS NULL OR ci5.AssignedAgentId = @AgentUserId)";
 
             try
@@ -385,7 +385,7 @@ namespace Ranalo.DataStore
             return nextLockDate.HasValue ? ((now ?? DateTime.Now) - nextLockDate.Value).TotalDays : 0;
         }
 
-        public async Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId, int? agentUserId = null)
+        public async Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int? dealerId, int? agentUserId = null)
         {
             // Devices.NextLockDateIsoFormat, not the accrual-based "days
             // overdue" formula ComputePortfolioClassificationRollupAsync
@@ -411,7 +411,7 @@ namespace Ranalo.DataStore
                 FROM Contract_Info ci
                 INNER JOIN Devices d ON d.Id = ci.ID
                 INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                WHERE dl.DealerId = @DealerId AND ci.StartDate IS NOT NULL
+                WHERE (@DealerId IS NULL OR dl.DealerId = @DealerId) AND ci.StartDate IS NOT NULL
                 AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
 
             try
@@ -517,7 +517,7 @@ namespace Ranalo.DataStore
             public decimal PaidThisMonth { get; set; }
         }
 
-        public async Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId, int? agentUserId = null)
+        public async Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int? dealerId, int? agentUserId = null)
         {
             // Same accrual Arrears $ formula as ComputePortfolioClassificationRollupAsync
             // (Deposit + Daily/Weekly/Monthly accrual since StartDate, capped
@@ -568,7 +568,7 @@ namespace Ranalo.DataStore
                         ELSE CAST(ci.Term_in_Months * 30 AS INT)
                     END AS Days
                 ) DaysAccrued
-                WHERE dl.DealerId = @DealerId AND ci.StartDate IS NOT NULL
+                WHERE (@DealerId IS NULL OR dl.DealerId = @DealerId) AND ci.StartDate IS NOT NULL
                 AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
 
             try
@@ -652,9 +652,11 @@ namespace Ranalo.DataStore
             public int DaysAccrued { get; set; }
             public decimal Deposit { get; set; }
             public DateTime StartDate { get; set; }
+            public string? DealerName { get; set; }
+            public string? CustomerPhone { get; set; }
         }
 
-        public async Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int dealerId, int? agentUserId = null)
+        public async Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int? dealerId, int? agentUserId = null)
         {
             // Single live per-account source for Non-Payers/Slow-Payers/
             // Good-Payers, Agent Performance, My Contracts, and Contracts
@@ -690,7 +692,9 @@ namespace Ranalo.DataStore
                     ISNULL(pt.TotalPaid, 0) AS TotalPaid,
                     (ci.Deposit + ci.Daily * 30 * ci.Term_in_Months + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months + ci.Monthly * ci.Term_in_Months) AS FullContractValue,
                     DaysAccrued.Days AS DaysAccrued,
-                    ci.StartDate
+                    ci.StartDate,
+                    dl.CompanyName AS DealerName,
+                    ph.Phone AS CustomerPhone
                 FROM Contract_Info ci
                 INNER JOIN Devices d ON d.Id = ci.ID
                 INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
@@ -703,7 +707,18 @@ namespace Ranalo.DataStore
                         ELSE CAST(ci.Term_in_Months * 30 AS INT)
                     END AS Days
                 ) DaysAccrued
-                WHERE dl.DealerId = @DealerId AND ci.StartDate IS NOT NULL
+                OUTER APPLY (
+                    -- Devices.CustomerPhoneNumber is never populated in this
+                    -- dataset -- Woo_Orders.Phone (via KosePayments.MpesaCode)
+                    -- is the only reliably-populated phone source, so pull
+                    -- whichever of this account's orders is most recent.
+                    SELECT TOP 1 wo.Phone
+                    FROM KosePayments kpPhone
+                    INNER JOIN Woo_Orders wo ON wo.MpesaDepositRef = kpPhone.MpesaCode
+                    WHERE kpPhone.AccountNoBigint = ci.ID
+                    ORDER BY wo.DateCreated DESC
+                ) ph
+                WHERE (@DealerId IS NULL OR dl.DealerId = @DealerId) AND ci.StartDate IS NOT NULL
                 AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
 
             try
@@ -724,6 +739,8 @@ namespace Ranalo.DataStore
                     TotalPaid = row.TotalPaid,
                     FullContractValue = row.FullContractValue,
                     StartDate = row.StartDate,
+                    DealerName = row.DealerName,
+                    CustomerPhone = row.CustomerPhone,
                 }).ToList();
             }
             catch (SqlException ex)
@@ -1825,6 +1842,37 @@ namespace Ranalo.DataStore
             {
                 _logger.LogWarning(ex, "DashboardPerformanceEntry table not found; skipping agent commission list refresh. Apply Database/Dashboard/001_create_dashboard_tables.sql first.");
                 return 0;
+            }
+        }
+
+        private class OrdersAwaitingApprovalSummaryRow
+        {
+            public int Count { get; set; }
+            public int OldestPendingDays { get; set; }
+        }
+
+        // Approver Dashboard's Orders Awaiting Approval card -- same
+        // definition as ApplicationReportRepository.GetAllWaitingApprovalAsync
+        // (Woo_Orders.Status IN ('approval-waiting', 'approved')), system-wide
+        // (no dealer scoping -- an Approver reviews every dealer's orders).
+        public async Task<(int Count, int OldestPendingDays)> GetOrdersAwaitingApprovalSummaryAsync()
+        {
+            const string sql = @"
+                SELECT
+                    COUNT(*) AS Count,
+                    ISNULL(DATEDIFF(DAY, MIN(DateCreated), GETDATE()), 0) AS OldestPendingDays
+                FROM Woo_Orders
+                WHERE [Status] IN ('approval-waiting', 'approved')";
+
+            try
+            {
+                var row = await _db.QuerySingleAsync<OrdersAwaitingApprovalSummaryRow>(sql);
+                return (row.Count, row.OldestPendingDays);
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Orders-awaiting-approval summary query failed");
+                return (0, 0);
             }
         }
 

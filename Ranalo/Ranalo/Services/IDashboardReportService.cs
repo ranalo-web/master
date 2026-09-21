@@ -15,12 +15,14 @@ namespace Ranalo.Services
         // Dealer Commissions also stays dealer-wide (it isn't an agent figure).
         Task<DealerDashboardViewModel> GetDealerDashboardAsync(int dealerId, int? agentUserId = null);
 
+        Task<DealerDashboardViewModel> GetApproverDashboardAsync();
+
         // Backs the Dealer Dashboard's Revenue card date-range filter.
         // `period` is one of "week", "month", "ytd", "year" (see
         // DashboardReportService.TryResolvePeriodWindow); returns null for an
         // unrecognized value so the controller can 400 instead of silently
         // defaulting.
-        Task<DealerRevenuePeriodResult?> GetDealerRevenueForPeriodAsync(int dealerId, string period, int? agentUserId = null);
+        Task<DealerRevenuePeriodResult?> GetDealerRevenueForPeriodAsync(int? dealerId, string period, int? agentUserId = null);
 
         // Individually-callable versions of the sections GetDealerDashboardAsync
         // bundles onto DealerDashboardViewModel, for the dedicated report pages

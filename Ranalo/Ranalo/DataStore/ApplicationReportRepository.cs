@@ -76,7 +76,8 @@ namespace Ranalo.DataStore
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalRecords = totalRecords
             };
         }
 
@@ -129,7 +130,8 @@ namespace Ranalo.DataStore
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalRecords = totalRecords
             };
         }
 
@@ -198,7 +200,8 @@ namespace Ranalo.DataStore
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalRecords = totalRecords
             };
         }
 
@@ -560,7 +563,8 @@ namespace Ranalo.DataStore
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalRecords = totalRecords
             };
         }
 
@@ -1837,7 +1841,8 @@ FROM
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalRecords = totalRecords
             };
         }
 

@@ -65,7 +65,7 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">All Orders</h3>
                 <div class="nk-block-des text-soft">
-                    <p>You have total @Model?.AwaitingApprovals?.Count() orders.</p>
+                    <p>You have total @Model?.TotalRecords orders.</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -276,7 +276,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/approver?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="/approver-orders?page=@(Model.CurrentPage - 1)">Prev</a>
                                     </li>
                                 }
 
@@ -293,7 +293,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/approver?page=1">1</a>
+                                        <a class="page-link" href="/approver-orders?page=1">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -303,7 +303,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/approver?page=@i">@i</a>
+                                        <a class="page-link" href="/approver-orders?page=@i">@i</a>
                                     </li>
                                 }
 
@@ -313,14 +313,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/approver?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/approver-orders?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/approver?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/approver-orders?page=@(Model.CurrentPage + 1)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -332,7 +332,7 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/approver?page=' + this.value">
+                                            onchange="location.href='/approver-orders?page=' + this.value">
                                         >
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {

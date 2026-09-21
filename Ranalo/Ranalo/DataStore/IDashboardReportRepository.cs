@@ -129,7 +129,7 @@ namespace Ranalo.DataStore
         // KosePayments/Devices/Dealers directly. periodEndExclusive and
         // priorPeriodEndExclusive are exclusive upper bounds.
         Task<DashboardRevenuePeriodRow> GetDealerRevenueForPeriodAsync(
-            int dealerId,
+            int? dealerId,
             DateTime periodStart,
             DateTime periodEndExclusive,
             DateTime priorPeriodStart,
@@ -143,7 +143,7 @@ namespace Ranalo.DataStore
         // uses elsewhere -- NextLockDate stays correct through a
         // restructuring, the accrual formula doesn't. See
         // DashboardLockClassificationRow.
-        Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId, int? agentUserId = null);
+        Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int? dealerId, int? agentUserId = null);
 
         // Device Performance table: same NextLockDate-based classification as
         // GetDealerLockClassificationAsync, grouped by device (Make + Model)
@@ -156,7 +156,7 @@ namespace Ranalo.DataStore
         // Total Arrears card: splits dollar arrears into "true" (locked,
         // genuinely overdue) vs "restructured" (in arrears on paper, future
         // lock date, being managed) -- see DashboardArrearsClassificationRow.
-        Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId, int? agentUserId = null);
+        Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int? dealerId, int? agentUserId = null);
 
         // Agent Commissions card: live sum of AgentCommissionPayments.AmountPaid
         // for this dealer within an arbitrary period window, backing the same
@@ -172,6 +172,8 @@ namespace Ranalo.DataStore
         // GetDealerArrearsClassificationAsync) instead of each re-deriving its
         // own rule. No TOP cap -- a dealer's account count is bounded, and
         // capping would make section counts wrong.
-        Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int dealerId, int? agentUserId = null);
+        Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int? dealerId, int? agentUserId = null);
+
+        Task<(int Count, int OldestPendingDays)> GetOrdersAwaitingApprovalSummaryAsync();
     }
 }
