@@ -10,6 +10,14 @@ namespace Ranalo.Models
         public int GoodAccounts { get; set; }
         public int BadAccounts { get; set; }
 
+        // Live "new accounts this month" count and its growth vs. the prior
+        // month -- same source (GetDealerRevenueForPeriodAsync) as the
+        // period-filter dropdown's AJAX response, so the initial page load
+        // and a manual "Month" selection always agree instead of showing
+        // two different numbers.
+        public int NewThisMonth { get; set; }
+        public decimal? NewThisMonthChangePct { get; set; }
+
         public int PayingAccounts { get; set; }
         public int NonPayingAccounts { get; set; }
         public int NonPayingAccountsChange { get; set; }

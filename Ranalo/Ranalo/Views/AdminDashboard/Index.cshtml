@@ -75,10 +75,14 @@
                 </div>
             </div>
             @{
-                var accountsDelta = Model.AccountsByMonth.Count >= 2
-                    ? Model.AccountsByMonth[Model.AccountsByMonth.Count - 1] - Model.AccountsByMonth[Model.AccountsByMonth.Count - 2]
-                    : 0;
-                var accountsUp = accountsDelta >= 0;
+                // Live -- same monthRevenueRow (GetDealerRevenueForPeriodAsync)
+                // the period-filter dropdown's AJAX endpoint uses for its
+                // "Month" option, so the initial load and a manual "Month"
+                // selection always show the same number. Previously this read
+                // a stale, disconnected delta off the never-written monthly
+                // trend array (Model.AccountsByMonth).
+                var accountsChangeNeutral = Model.NewThisMonthChangePct is null;
+                var accountsUp = Model.NewThisMonthChangePct is null or >= 0;
 
                 var nonPayingImproved = Model.NonPayingAccountsChange <= 0;
 
@@ -104,8 +108,8 @@
                             <div class="d-flex flex-column">
                                 <span class="amount" id="totalAccountsAmount">@Model.TotalAccounts.ToString("N0")</span>
                                 <span class="sub-title d-block mt-1">
-                                    <span id="totalAccountsChange" class="change @(accountsUp ? "up text-success" : "down text-danger")">
-                                        <em id="totalAccountsChangeIcon" class="icon ni ni-arrow-long-@(accountsUp ? "up" : "down")"></em><span id="totalAccountsChangePct">@Math.Abs(accountsDelta).ToString("N0")</span>
+                                    <span id="totalAccountsChange" class="change @(accountsChangeNeutral ? "text-soft" : (accountsUp ? "up text-success" : "down text-danger"))">
+                                        <em id="totalAccountsChangeIcon" class="icon ni @(accountsChangeNeutral ? "ni-minus" : "ni-arrow-long-" + (accountsUp ? "up" : "down"))"></em><span id="totalAccountsChangePct">@Model.NewThisMonth.ToString("N0")</span>
                                     </span> new <span id="totalAccountsPeriodLabel">this month</span>
                                 </span>
                             </div>

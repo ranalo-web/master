@@ -118,6 +118,20 @@ namespace Ranalo.Services
                     null, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive, monthWindow.PriorPeriodStart, monthWindow.PriorPeriodEndExclusive);
                 model.RevenueTargetThisMonth = monthRevenueRow.TargetRevenue;
                 model.RevenueGrowthPct = ScheduledDashboardRollup.CalculateGrowthPct(monthRevenueRow.RevenueThisPeriod, monthRevenueRow.RevenueLastPeriod) ?? model.RevenueGrowthPct;
+
+                // Total Accounts card: headline and "new this month" delta
+                // were both still on the stale rollup snapshot (never
+                // overridden anywhere in this method). TotalAccounts now
+                // matches lockTotal/accountDetails.Count (same population,
+                // guaranteed consistent with the Good/Bad/Slow breakdown
+                // shown on the same card). NewThisMonth reuses this same
+                // monthRevenueRow so the initial page load shows the exact
+                // same number as manually selecting "Month" in the period
+                // filter does -- previously these were two disconnected
+                // calculations that could disagree.
+                model.TotalAccounts = lockTotal;
+                model.NewThisMonth = monthRevenueRow.NewAccountsInPeriod;
+                model.NewThisMonthChangePct = ScheduledDashboardRollup.CalculateGrowthPct(monthRevenueRow.NewAccountsInPeriod, monthRevenueRow.NewAccountsPriorPeriod);
             }
 
             // Total Arrears / Bad Debt cards: same live "true arrears" call
@@ -1041,12 +1055,12 @@ namespace Ranalo.Services
             model.RevenueGrowthPct = snapshot.RevenueGrowthPct ?? model.RevenueGrowthPct;
             model.RevenueTargetThisMonth = snapshot.RevenueTargetThisMonth ?? model.RevenueTargetThisMonth;
 
-            model.TotalAccounts = snapshot.TotalAccounts ?? model.TotalAccounts;
-            // GoodAccounts/BadAccounts/PayingAccounts/NonPayingAccounts are
-            // set later in GetAdminDashboardAsync from the live lock
-            // classification, not from this snapshot (the rollup never
-            // wrote them, so they'd otherwise stay on stale sample counts
-            // against a real TotalAccounts -- see that method's comment).
+            // TotalAccounts/GoodAccounts/BadAccounts/PayingAccounts/
+            // NonPayingAccounts/NewThisMonth are all set later in
+            // GetAdminDashboardAsync from live queries, not from this
+            // snapshot (the rollup never wrote a consistent set of these,
+            // so they'd otherwise stay on stale/mismatched sample counts --
+            // see that method's comments).
             model.NonPayingAccountsChange = snapshot.NonPayingChange ?? model.NonPayingAccountsChange;
 
             model.ArrearsTotal = snapshot.ArrearsTotal ?? model.ArrearsTotal;

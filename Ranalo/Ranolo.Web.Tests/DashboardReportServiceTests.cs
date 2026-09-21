@@ -396,8 +396,37 @@ namespace Ranolo.Web.Tests
             var result = await service.GetAdminDashboardAsync();
 
             Assert.That(result.RevenueThisMonth, Is.EqualTo(1_000_000m));
-            Assert.That(result.TotalAccounts, Is.EqualTo(5000));
             Assert.That(result.NonPayingAccountsChange, Is.EqualTo(-25));
+        }
+
+        [Test]
+        public async Task GetAdminDashboardAsync_ComputesTotalAccountsAndNewThisMonthLive()
+        {
+            // TotalAccounts/NewThisMonth are no longer snapshot-sourced --
+            // TotalAccounts is derived from the same live lock classification
+            // as GoodAccounts/BadAccounts (guaranteeing the Total Accounts
+            // card's headline always agrees with its own Good/Bad breakdown),
+            // and NewThisMonth reuses the same monthRevenueRow the
+            // period-filter dropdown's "Month" AJAX option already computes,
+            // so the initial page load and a manual "Month" selection always
+            // show the same number.
+            var fakeRepo = new FakeDashboardReportRepository
+            {
+                SnapshotToReturn = new DashboardSnapshotRow { TotalAccounts = 5000 },
+                LockClassificationToReturn = new DashboardLockClassificationRow { GoodCount = 3, SlowCount = 1, ArrearsCount = 2 },
+                RevenuePeriodToReturn = new DashboardRevenuePeriodRow
+                {
+                    NewAccountsInPeriod = 4,
+                    NewAccountsPriorPeriod = 2,
+                },
+            };
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
+
+            var result = await service.GetAdminDashboardAsync();
+
+            Assert.That(result.TotalAccounts, Is.EqualTo(6));
+            Assert.That(result.NewThisMonth, Is.EqualTo(4));
+            Assert.That(result.NewThisMonthChangePct, Is.EqualTo(100.0m));
         }
 
         [Test]
