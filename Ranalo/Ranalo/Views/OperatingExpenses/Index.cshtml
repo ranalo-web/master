@@ -1,0 +1,128 @@
+@using Ranalo.Models
+@model OperatingExpensesViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var monthLabel = new DateTime(Model.Year, Model.Month, 1).ToString("MMMM yyyy");
+    var prevMonth = new DateTime(Model.Year, Model.Month, 1).AddMonths(-1);
+    var nextMonth = new DateTime(Model.Year, Model.Month, 1).AddMonths(1);
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Operating Expenses</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Salaries, ad costs, and every other operating cost -- feeds the Financials page's Income Statement.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <div class="d-flex align-items-center" style="gap:8px;">
+                    <a href="/operating-expenses?year=@prevMonth.Year&month=@prevMonth.Month" class="btn btn-icon btn-outline-light"><em class="icon ni ni-chevron-left"></em></a>
+                    <span class="fw-medium">@monthLabel</span>
+                    <a href="/operating-expenses?year=@nextMonth.Year&month=@nextMonth.Month" class="btn btn-icon btn-outline-light"><em class="icon ni ni-chevron-right"></em></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered card-preview">
+            <div class="card-inner">
+                <span class="preview-title-lg overline-title">Log an expense</span>
+                <form action="/operating-expenses/add" method="post" class="row g-3 align-items-end">
+                    <input type="hidden" name="year" value="@Model.Year">
+                    <input type="hidden" name="month" value="@Model.Month">
+                    <div class="col-6 col-md-2">
+                        <label class="form-label" for="expenseDate">Date</label>
+                        <input type="date" name="expenseDate" id="expenseDate" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" required>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label" for="category">Category</label>
+                        <select name="category" id="category" class="form-select" required>
+                            @foreach (var category in (IReadOnlyList<string>)ViewBag.Categories)
+                            {
+                                <option value="@category">@category</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="description">Description</label>
+                        <input type="text" name="description" id="description" class="form-control" placeholder="e.g. September payroll" maxlength="300">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label" for="amount">Amount (KES)</label>
+                        <input type="number" name="amount" id="amount" class="form-control" min="0.01" step="0.01" required>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="preview-title-lg overline-title">@monthLabel</span>
+                    <span class="fw-bold">Total: KES @Model.MonthTotal.ToString("N0")</span>
+                </div>
+            </div>
+            <div class="card-inner p-0">
+                @if (Model.Expenses.Count == 0)
+                {
+                    <div class="card-inner">
+                        <p class="text-soft mb-0">No expenses logged for @monthLabel yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                    <div class="nk-tb-list nk-tb-ulist is-compact">
+                        <div class="nk-tb-item nk-tb-head">
+                            <div class="nk-tb-col"><span class="sub-text">Date</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Category</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Description</span></div>
+                            <div class="nk-tb-col"><span class="sub-text">Added By</span></div>
+                            <div class="nk-tb-col text-end"><span class="sub-text">Amount</span></div>
+                            <div class="nk-tb-col nk-tb-col-tools text-end"></div>
+                        </div>
+                        @foreach (var expense in Model.Expenses)
+                        {
+                            <div class="nk-tb-item">
+                                <div class="nk-tb-col">@expense.ExpenseDate.ToString("dd MMM yyyy")</div>
+                                <div class="nk-tb-col"><span class="badge badge-dim bg-primary">@expense.Category</span></div>
+                                <div class="nk-tb-col">@(string.IsNullOrWhiteSpace(expense.Description) ? "-" : expense.Description)</div>
+                                <div class="nk-tb-col">@expense.AddedByName</div>
+                                <div class="nk-tb-col text-end">KES @expense.Amount.ToString("N0")</div>
+                                <div class="nk-tb-col nk-tb-col-tools text-end">
+                                    <form action="/operating-expenses/@expense.Id/delete" method="post">
+                                        <input type="hidden" name="year" value="@Model.Year">
+                                        <input type="hidden" name="month" value="@Model.Month">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    </div>
+                    @if (Model.TotalPages > 1)
+                    {
+                        <div class="card-inner">
+                            <ul class="pagination justify-content-center justify-content-md-start">
+                                @for (var i = 1; i <= Model.TotalPages; i++)
+                                {
+                                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                        <a class="page-link" href="/operating-expenses?year=@Model.Year&month=@Model.Month&page=@i">@i</a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -184,6 +184,7 @@
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft">@profitMarginPct.ToString("0.0")% margin</span>
                             <span class="text-soft">KES @netProfitPerPayingAccount.ToString("N0") avg / paying account</span>
+                            <a href="/financials" class="text-soft">View full financials &rarr;</a>
                         </div>
                     </div>
                 </div>
@@ -203,6 +204,7 @@
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft">vs @Model.ProfitMarginTargetPct.ToString("0")% target</span>
                             <span class="@(marginVsTarget >= 0 ? "text-success" : "text-danger")">@(marginVsTarget >= 0 ? "+" : "")@marginVsTarget.ToString("0.0")pp @(marginVsTarget >= 0 ? "above" : "below")</span>
+                            <a href="/financials" class="text-soft">View full financials &rarr;</a>
                         </div>
                     </div>
                 </div>
@@ -222,6 +224,7 @@
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft">@commissionsPctOfRevenue.ToString("0")% of revenue</span>
                             <span class="text-soft">KES @commissionsPerDealer.ToString("N0") avg / dealer</span>
+                            <a href="/financials" class="text-soft">View full financials &rarr;</a>
                         </div>
                     </div>
                 </div>
@@ -241,157 +244,7 @@
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft">@badDebtPctOfRevenue.ToString("0")% of revenue</span>
                             <span class="text-soft">KES @badDebtPerBadAccount.ToString("N0") avg / bad account</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div><!-- .row -->
-    </div><!-- .nk-block -->
-
-    @{
-        var grossProfit = Model.RevenueThisMonth - Model.CostOfDevicesThisMonth - totalCommissionsPaid;
-        var operatingProfit = grossProfit - Model.BadDebtThisMonth;
-        var ebt = operatingProfit - Model.OperatingExpensesThisMonth;
-        var taxThisMonth = Math.Max(0, ebt) * Model.TaxRatePct / 100;
-        var netProfitAfterTax = ebt - taxThisMonth;
-        var retainedEarnings = netProfitAfterTax - Model.DividendsPaidThisMonth;
-
-        var grossMarginPct = Model.RevenueThisMonth > 0 ? grossProfit / Model.RevenueThisMonth * 100 : 0;
-        var operatingMarginPct = Model.RevenueThisMonth > 0 ? operatingProfit / Model.RevenueThisMonth * 100 : 0;
-        var netMarginPct = Model.RevenueThisMonth > 0 ? netProfitAfterTax / Model.RevenueThisMonth * 100 : 0;
-        var costToIncomeRatio = Model.RevenueThisMonth > 0 ? (Model.CostOfDevicesThisMonth + totalCommissionsPaid + Model.OperatingExpensesThisMonth) / Model.RevenueThisMonth * 100 : 0;
-        var badDebtRatio = Model.RevenueThisMonth > 0 ? Model.BadDebtThisMonth / Model.RevenueThisMonth * 100 : 0;
-        // Both computed directly from their labeled formula (Dividends /
-        // Net Profit, Retained Earnings / Net Profit) rather than deriving
-        // Retention as "100 - Payout" -- the two diverge once Net Profit is
-        // negative (a loss with dividends still paid), which previously
-        // showed a false 0%/100% split instead of the real ratio.
-        var dividendPayoutRatio = netProfitAfterTax != 0 ? Model.DividendsPaidThisMonth / netProfitAfterTax * 100 : 0;
-        var retentionRatio = netProfitAfterTax != 0 ? retainedEarnings / netProfitAfterTax * 100 : 0;
-    }
-    <div class="nk-block">
-        <div class="row g-gs">
-            <div class="col-12 col-lg-7">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group mb-3">
-                            <div class="card-title">
-                                <h6 class="title">Income Statement</h6>
-                                <p class="text-soft">Revenue to retained earnings, this month</p>
-                            </div>
-                        </div>
-                        <div class="d-flex flex-column" style="font-size:13px;">
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="fw-medium">Revenue</span>
-                                <span class="fw-medium">KES @Model.RevenueThisMonth.ToString("N0")</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-soft">Less: Cost of devices (incl. licence &amp; transport)</span>
-                                <span class="text-danger">(@Model.CostOfDevicesThisMonth.ToString("N0"))</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-soft">Less: Commissions paid to dealers</span>
-                                <span class="text-danger">(@totalCommissionsPaid.ToString("N0"))</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="fw-medium">Gross Profit</span>
-                                <span class="fw-medium">KES @grossProfit.ToString("N0")</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-soft">Less: Bad debt / write-offs</span>
-                                <span class="text-danger">(@Model.BadDebtThisMonth.ToString("N0"))</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="fw-medium">Operating Profit (EBIT)</span>
-                                <span class="fw-medium">KES @operatingProfit.ToString("N0")</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-soft">Less: Operating expenses <span class="badge badge-dim bg-warning" title="No data source exists yet -- rent, salaries, etc. aren't tracked anywhere in this app. Placeholder value.">Preview</span></span>
-                                <span class="text-danger">(@Model.OperatingExpensesThisMonth.ToString("N0"))</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="fw-medium">Profit Before Tax (EBT)</span>
-                                <span class="fw-medium">KES @ebt.ToString("N0")</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-soft">Less: Tax (@Model.TaxRatePct.ToString("0")%) <span class="badge badge-dim bg-warning" title="Tax rate is an assumed constant, not pulled from a filing or config anywhere. Placeholder value.">Preview</span></span>
-                                <span class="text-danger">(@taxThisMonth.ToString("N0"))</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom" style="font-size:15px;">
-                                <span class="fw-bold">Net Profit After Tax</span>
-                                <span class="fw-bold @(netProfitAfterTax >= 0 ? "text-success" : "text-danger")">KES @netProfitAfterTax.ToString("N0")</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-soft">Less: Dividends paid <span class="badge badge-dim bg-warning" title="No data source exists yet -- dividend payouts aren't tracked anywhere in this app. Placeholder value.">Preview</span></span>
-                                <span class="text-danger">(@Model.DividendsPaidThisMonth.ToString("N0"))</span>
-                            </div>
-                            <div class="d-flex justify-content-between pt-2" style="font-size:15px;">
-                                <span class="fw-bold">Retained Earnings</span>
-                                <span class="fw-bold">KES @retainedEarnings.ToString("N0")</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-lg-5">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group mb-3">
-                            <div class="card-title">
-                                <h6 class="title">Key Financial Ratios</h6>
-                                <p class="text-soft">Profitability &amp; operational efficiency</p>
-                            </div>
-                        </div>
-                        <div class="d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <div>
-                                    <div class="fw-medium">Gross Margin</div>
-                                    <div class="text-soft" style="font-size:11px;">Gross profit &divide; revenue</div>
-                                </div>
-                                <span class="fw-bold">@grossMarginPct.ToString("0.0")%</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <div>
-                                    <div class="fw-medium">Operating Margin</div>
-                                    <div class="text-soft" style="font-size:11px;">EBIT &divide; revenue</div>
-                                </div>
-                                <span class="fw-bold">@operatingMarginPct.ToString("0.0")%</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <div>
-                                    <div class="fw-medium">Net Margin</div>
-                                    <div class="text-soft" style="font-size:11px;">Net profit after tax &divide; revenue</div>
-                                </div>
-                                <span class="fw-bold">@netMarginPct.ToString("0.0")%</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <div>
-                                    <div class="fw-medium">Cost-to-Income Ratio</div>
-                                    <div class="text-soft" style="font-size:11px;">Cost of devices + commissions + opex &divide; revenue</div>
-                                </div>
-                                <span class="fw-bold @(costToIncomeRatio <= 50 ? "text-success" : "text-danger")">@costToIncomeRatio.ToString("0.0")%</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <div>
-                                    <div class="fw-medium">Bad Debt Ratio</div>
-                                    <div class="text-soft" style="font-size:11px;">Write-offs &divide; revenue</div>
-                                </div>
-                                <span class="fw-bold @(badDebtRatio <= 10 ? "text-success" : "text-danger")">@badDebtRatio.ToString("0.0")%</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <div>
-                                    <div class="fw-medium">Dividend Payout Ratio <span class="badge badge-dim bg-warning" title="Dividends Paid has no real data source yet -- see the Income Statement.">Preview</span></div>
-                                    <div class="text-soft" style="font-size:11px;">Dividends &divide; net profit</div>
-                                </div>
-                                <span class="fw-bold">@dividendPayoutRatio.ToString("0.0")%</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center py-2">
-                                <div>
-                                    <div class="fw-medium">Retention Ratio <span class="badge badge-dim bg-warning" title="Dividends Paid has no real data source yet -- see the Income Statement.">Preview</span></div>
-                                    <div class="text-soft" style="font-size:11px;">Retained earnings &divide; net profit</div>
-                                </div>
-                                <span class="fw-bold">@retentionRatio.ToString("0.0")%</span>
-                            </div>
+                            <a href="/financials" class="text-soft">View full financials &rarr;</a>
                         </div>
                     </div>
                 </div>

@@ -108,6 +108,18 @@ namespace Ranolo.Web.Tests
 
         public Task<List<DashboardDealerCommissionRow>> GetDealerCommissionPaidThisMonthByDealerAsync() => Task.FromResult(CommissionByDealerToReturn);
 
+        public List<DashboardMonthAmountRow> RevenueByMonthToReturn { get; set; } = new();
+        public List<DashboardMonthAmountRow> CommissionsByMonthToReturn { get; set; } = new();
+        public decimal AllTimeRevenueToReturn { get; set; }
+        public decimal AllTimeCommissionsPaidToReturn { get; set; }
+        public (decimal DealerOutstanding, decimal AgentOutstanding) CommissionsOutstandingToReturn { get; set; }
+
+        public Task<List<DashboardMonthAmountRow>> GetRevenueByMonthAsync(int months) => Task.FromResult(RevenueByMonthToReturn);
+        public Task<List<DashboardMonthAmountRow>> GetCommissionsPaidByMonthAsync(int months) => Task.FromResult(CommissionsByMonthToReturn);
+        public Task<decimal> GetAllTimeRevenueAsync() => Task.FromResult(AllTimeRevenueToReturn);
+        public Task<decimal> GetAllTimeCommissionsPaidAsync() => Task.FromResult(AllTimeCommissionsPaidToReturn);
+        public Task<(decimal DealerOutstanding, decimal AgentOutstanding)> GetTotalCommissionsOutstandingAsync() => Task.FromResult(CommissionsOutstandingToReturn);
+
         public Task UpsertSnapshotKpiAsync(DashboardScope scope, decimal? revenueThisMonth, decimal? revenueGrowthPct, int? newThisMonth, int? totalAccounts)
         {
             UpsertedSnapshots.Add((scope, revenueThisMonth, revenueGrowthPct, newThisMonth, totalAccounts));
@@ -183,6 +195,24 @@ namespace Ranolo.Web.Tests
         }
     }
 
+    // Fake standing in for the DB-backed OperatingExpenseRepository, same
+    // reasoning as FakeDashboardReportRepository above.
+    public class FakeOperatingExpenseRepository : IOperatingExpenseRepository
+    {
+        public (List<OperatingExpense> Expenses, int TotalRecords, decimal MonthTotal) PagedToReturn { get; set; } = (new(), 0, 0);
+        public List<OperatingExpenseMonthlyTotal> MonthlyTotalsToReturn { get; set; } = new();
+
+        public Task<(List<OperatingExpense> Expenses, int TotalRecords, decimal MonthTotal)> GetPagedAsync(
+            DateTime monthStart, DateTime monthEndExclusive, int page, int pageSize) => Task.FromResult(PagedToReturn);
+
+        public Task AddAsync(DateTime expenseDate, string category, string? description, decimal amount, int addedByUserId) =>
+            Task.CompletedTask;
+
+        public Task<bool> RemoveAsync(int id, int removedByUserId) => Task.FromResult(true);
+
+        public Task<List<OperatingExpenseMonthlyTotal>> GetMonthlyTotalsAsync(int months) => Task.FromResult(MonthlyTotalsToReturn);
+    }
+
     public class DashboardReportServiceTests
     {
         [Test]
@@ -194,7 +224,7 @@ namespace Ranolo.Web.Tests
             // changed from DealerDashboardSampleData.Build() to a bare
             // DealerDashboardViewModel().
             var fakeRepo = new FakeDashboardReportRepository(); // no snapshot, no trend
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
@@ -230,7 +260,7 @@ namespace Ranolo.Web.Tests
                     new() { YearMonth = "2026-08", Revenue = 200m, AccountsCount = 20 },
                 },
             };
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
@@ -287,7 +317,7 @@ namespace Ranolo.Web.Tests
                     },
                 },
             };
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
@@ -316,7 +346,7 @@ namespace Ranolo.Web.Tests
         public async Task GetDealerDashboardAsync_WithNoAccountDetailRows_WatchlistsAndAgentPerformanceStayEmpty()
         {
             var fakeRepo = new FakeDashboardReportRepository();
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
@@ -332,7 +362,7 @@ namespace Ranolo.Web.Tests
         public async Task GetAdminDashboardAsync_WithNoRollupRow_FallsBackToSampleData()
         {
             var fakeRepo = new FakeDashboardReportRepository();
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
             var sample = Ranalo.Controllers.AdminDashboardSampleData.Build();
 
             var result = await service.GetAdminDashboardAsync();
@@ -362,7 +392,7 @@ namespace Ranolo.Web.Tests
                     RevenueTargetThisMonth = 1_200_000m,
                 },
             };
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetAdminDashboardAsync();
 
@@ -402,7 +432,7 @@ namespace Ranolo.Web.Tests
                 RevenueByDealerToReturn = new() { new() { DealerName = "Test Dealer", RevenueThisMonth = 50000m } },
                 CommissionByDealerToReturn = new() { new() { DealerName = "Test Dealer", CommissionPaidThisMonth = 1000m } },
             };
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetAdminDashboardAsync();
 
@@ -442,7 +472,7 @@ namespace Ranolo.Web.Tests
                     new() { AccountId = 3, CustomerName = "No Cost Recorded", DealerName = "Test Dealer", StartDate = now, BuyingPrice = null },
                 },
             };
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetAdminDashboardAsync();
 
@@ -463,7 +493,7 @@ namespace Ranolo.Web.Tests
                     new() { CustomerName = "Test Customer", ProductName = "Test Phone", CompletedDate = new DateTime(2026, 8, 9), TotalPaid = 15000, DurationMonths = 6 },
                 },
             };
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
@@ -483,7 +513,7 @@ namespace Ranolo.Web.Tests
                     new() { CustomerName = "Test Customer", DealerName = "Test Dealer", ProductName = "Test Phone", CompletedDate = new DateTime(2026, 8, 28), TotalPaid = 19000, DurationMonths = 8 },
                 },
             };
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetAdminDashboardAsync();
 
@@ -511,7 +541,7 @@ namespace Ranolo.Web.Tests
                     },
                 },
             };
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
@@ -534,7 +564,7 @@ namespace Ranolo.Web.Tests
                     CommissionOutstanding = 4_500m,
                 },
             };
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
@@ -559,7 +589,7 @@ namespace Ranolo.Web.Tests
                     },
                 },
             };
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
@@ -578,7 +608,7 @@ namespace Ranolo.Web.Tests
         public async Task GetDealerDashboardAsync_WithNoAgentCommissionRows_StaysEmpty()
         {
             var fakeRepo = new FakeDashboardReportRepository();
-            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 

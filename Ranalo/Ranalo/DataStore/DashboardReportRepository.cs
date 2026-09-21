@@ -289,6 +289,109 @@ namespace Ranalo.DataStore
             }
         }
 
+        // Company-wide revenue by calendar month -- Financials page's
+        // monthly comparison chart. Only months with at least one payment
+        // get a row; GetFinancialsAsync fills any gaps the same way
+        // OperatingExpenseRepository.GetMonthlyTotalsAsync does.
+        public async Task<List<DashboardMonthAmountRow>> GetRevenueByMonthAsync(int months)
+        {
+            var rangeStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-(months - 1));
+
+            const string sql = @"
+                SELECT YEAR(PaymentDateValue) AS Year, MONTH(PaymentDateValue) AS Month, SUM(AmountValue) AS Total
+                FROM KosePayments
+                WHERE PaymentDateValue >= @RangeStart
+                GROUP BY YEAR(PaymentDateValue), MONTH(PaymentDateValue)";
+
+            try
+            {
+                var rows = await _db.QueryAsync<DashboardMonthAmountRow>(sql, new { RangeStart = rangeStart });
+                return rows.ToList();
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Revenue-by-month computation failed");
+                return new List<DashboardMonthAmountRow>();
+            }
+        }
+
+        public async Task<List<DashboardMonthAmountRow>> GetCommissionsPaidByMonthAsync(int months)
+        {
+            var rangeStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-(months - 1));
+
+            const string sql = @"
+                SELECT YEAR(PaidDate) AS Year, MONTH(PaidDate) AS Month, SUM(AmountPaid) AS Total
+                FROM DealerCommissionPayments
+                WHERE PaidDate >= @RangeStart
+                GROUP BY YEAR(PaidDate), MONTH(PaidDate)";
+
+            try
+            {
+                var rows = await _db.QueryAsync<DashboardMonthAmountRow>(sql, new { RangeStart = rangeStart });
+                return rows.ToList();
+            }
+            catch (SqlException ex) when (IsMissingTable(ex))
+            {
+                _logger.LogWarning(ex, "DealerCommissionPayments table not found; returning no commissions-by-month rows.");
+                return new List<DashboardMonthAmountRow>();
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Commissions-paid-by-month computation failed");
+                return new List<DashboardMonthAmountRow>();
+            }
+        }
+
+        public async Task<decimal> GetAllTimeRevenueAsync()
+        {
+            const string sql = "SELECT ISNULL(SUM(AmountValue), 0) FROM KosePayments";
+            try
+            {
+                return await _db.QuerySingleAsync<decimal>(sql);
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "All-time revenue computation failed");
+                return 0;
+            }
+        }
+
+        public async Task<decimal> GetAllTimeCommissionsPaidAsync()
+        {
+            const string sql = "SELECT ISNULL(SUM(AmountPaid), 0) FROM DealerCommissionPayments";
+            try
+            {
+                return await _db.QuerySingleAsync<decimal>(sql);
+            }
+            catch (SqlException ex) when (IsMissingTable(ex))
+            {
+                return 0;
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "All-time commissions-paid computation failed");
+                return 0;
+            }
+        }
+
+        public async Task<(decimal DealerOutstanding, decimal AgentOutstanding)> GetTotalCommissionsOutstandingAsync()
+        {
+            const string sql = @"
+                SELECT ISNULL(SUM(DealerCommissionOutstanding), 0), ISNULL(SUM(CommissionOutstanding), 0)
+                FROM DashboardSnapshot
+                WHERE DealerId IS NOT NULL";
+
+            try
+            {
+                return await _db.QuerySingleAsync<(decimal, decimal)>(sql);
+            }
+            catch (SqlException ex) when (IsMissingTable(ex))
+            {
+                _logger.LogWarning(ex, "DashboardSnapshot table not found; returning 0 commissions outstanding.");
+                return (0, 0);
+            }
+        }
+
         public async Task<DashboardRevenuePeriodRow> GetDealerRevenueForPeriodAsync(
             int? dealerId,
             DateTime periodStart,

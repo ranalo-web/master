@@ -41,6 +41,25 @@ namespace Ranalo.DataStore
         // Performance table, summed system-wide.
         Task<List<DashboardDealerCommissionRow>> GetDealerCommissionPaidThisMonthByDealerAsync();
 
+        // Company-wide revenue/commissions-paid, one row per calendar month
+        // over the trailing `months` months -- the Financials page's monthly
+        // comparison chart. Same KosePayments/DealerCommissionPayments
+        // sources as the "this month" queries above, just grouped by month
+        // instead of filtered to the current one.
+        Task<List<DashboardMonthAmountRow>> GetRevenueByMonthAsync(int months);
+        Task<List<DashboardMonthAmountRow>> GetCommissionsPaidByMonthAsync(int months);
+
+        // All-time (no date filter) totals for the Financials page's
+        // best-effort Retained Earnings estimate.
+        Task<decimal> GetAllTimeRevenueAsync();
+        Task<decimal> GetAllTimeCommissionsPaidAsync();
+
+        // Sum of DashboardSnapshot.DealerCommissionOutstanding/
+        // CommissionOutstanding across every dealer row (WHERE DealerId IS
+        // NOT NULL) -- the Financials page's balance sheet liabilities.
+        // Rollup-backed (only as fresh as the last nightly run), not live.
+        Task<(decimal DealerOutstanding, decimal AgentOutstanding)> GetTotalCommissionsOutstandingAsync();
+
         // Same single-pass GROUPING SETS pattern as ComputeKpiRollupAsync, for
         // the arrears/portfolio classification (see DashboardPortfolioRollupRow
         // for the exact tier definitions).

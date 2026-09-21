@@ -6,6 +6,12 @@ namespace Ranalo.Services
     {
         Task<AdminDashboardViewModel> GetAdminDashboardAsync();
 
+        // Financials page (Income Statement, monthly comparison chart,
+        // best-effort balance sheet) -- moved off the Admin Dashboard onto
+        // its own route. See FinancialsViewModel's doc comments for what's
+        // live vs. approximated.
+        Task<FinancialsViewModel> GetFinancialsAsync();
+
         // agentUserId narrows every account-level query down to just that
         // agent's own book (Contract_Info.AssignedAgentId) instead of the
         // whole dealer -- used to render this same dashboard/report set for

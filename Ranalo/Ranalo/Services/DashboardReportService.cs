@@ -32,10 +32,12 @@ namespace Ranalo.Services
     public class DashboardReportService : IDashboardReportService
     {
         private readonly IDashboardReportRepository _repository;
+        private readonly IOperatingExpenseRepository _operatingExpenseRepository;
 
-        public DashboardReportService(IDashboardReportRepository repository)
+        public DashboardReportService(IDashboardReportRepository repository, IOperatingExpenseRepository operatingExpenseRepository)
         {
             _repository = repository;
+            _operatingExpenseRepository = operatingExpenseRepository;
         }
 
         public async Task<AdminDashboardViewModel> GetAdminDashboardAsync()
@@ -129,6 +131,114 @@ namespace Ranalo.Services
 
             // Admin's ProductPerformance is a different shape (Rank/Revenue/DefaultRatePct,
             // no Units/GoodPct/ArrearsPct) with no rollup table yet -- stays on sample data.
+
+            return model;
+        }
+
+        // Financials page -- moved off the Admin Dashboard so the P&L could
+        // get room for a monthly comparison chart and a balance sheet. This
+        // month's figures reuse the exact live sources GetAdminDashboardAsync
+        // already wired up (Cost of Devices from BuyingPrice, Commissions
+        // from DealerCommissionPayments, Bad Debt from the live arrears
+        // classification) instead of the rollup snapshot, so every number on
+        // this page is consistently live, not a mix of live and
+        // nightly-stale.
+        public async Task<FinancialsViewModel> GetFinancialsAsync()
+        {
+            var model = new FinancialsViewModel();
+            var now = DateTime.Now;
+
+            var accountDetails = await _repository.GetDealerAccountDetailsAsync(null);
+
+            var revenueByDealer = await _repository.GetRevenueThisMonthByDealerAsync();
+            model.RevenueThisMonth = revenueByDealer.Sum(r => r.RevenueThisMonth);
+
+            var commissionByDealer = await _repository.GetDealerCommissionPaidThisMonthByDealerAsync();
+            model.CommissionsPaidThisMonth = commissionByDealer.Sum(c => c.CommissionPaidThisMonth);
+
+            model.CostOfDevicesThisMonth = accountDetails
+                .Where(r => r.StartDate.Year == now.Year && r.StartDate.Month == now.Month)
+                .Sum(r => r.BuyingPrice ?? 0);
+
+            var arrearsClassification = await _repository.GetDealerArrearsClassificationAsync(null);
+            model.BadDebtThisMonth = arrearsClassification.BadDebtTotal;
+
+            var thisMonthStart = new DateTime(now.Year, now.Month, 1);
+            var (_, _, opexThisMonth) = await _operatingExpenseRepository.GetPagedAsync(
+                thisMonthStart, thisMonthStart.AddMonths(1), page: 1, pageSize: 1);
+            model.OperatingExpensesThisMonth = opexThisMonth;
+
+            // Kenya's standard resident corporate income tax rate (KRA) --
+            // confirmed current as of 2026, not a placeholder. No dividends
+            // have been paid to date (confirmed by the business).
+            model.TaxRatePct = 30m;
+            model.DividendsPaidThisMonth = 0m;
+
+            // Monthly comparison chart (last 12 months). Cost of Devices is
+            // filtered in-memory from the already-fetched accountDetails
+            // (same pattern BuildDealerPerformance etc. already use) rather
+            // than a second query. Bad Debt and Tax are deliberately not
+            // part of this trend -- see FinancialsMonthRow's doc comment.
+            const int trendMonths = 12;
+            var revenueByMonth = (await _repository.GetRevenueByMonthAsync(trendMonths))
+                .ToDictionary(r => (r.Year, r.Month), r => r.Total);
+            var commissionsByMonth = (await _repository.GetCommissionsPaidByMonthAsync(trendMonths))
+                .ToDictionary(r => (r.Year, r.Month), r => r.Total);
+            var opexByMonth = await _operatingExpenseRepository.GetMonthlyTotalsAsync(trendMonths);
+            var opexByMonthMap = opexByMonth.ToDictionary(r => (r.Year, r.Month), r => r.Total);
+
+            var trendStart = thisMonthStart.AddMonths(-(trendMonths - 1));
+            for (var i = 0; i < trendMonths; i++)
+            {
+                var monthStart = trendStart.AddMonths(i);
+                var monthEnd = monthStart.AddMonths(1);
+                var key = (monthStart.Year, monthStart.Month);
+
+                var revenue = revenueByMonth.TryGetValue(key, out var rev) ? rev : 0;
+                var commissions = commissionsByMonth.TryGetValue(key, out var comm) ? comm : 0;
+                var costOfDevices = accountDetails
+                    .Where(r => r.StartDate >= monthStart && r.StartDate < monthEnd)
+                    .Sum(r => r.BuyingPrice ?? 0);
+                var opex = opexByMonthMap.TryGetValue(key, out var opexTotal) ? opexTotal : 0;
+
+                model.MonthlyTrend.Add(new FinancialsMonthRow
+                {
+                    MonthLabel = monthStart.ToString("MMM yyyy"),
+                    Revenue = revenue,
+                    CostOfDevices = costOfDevices,
+                    CommissionsPaid = commissions,
+                    OperatingExpenses = opex,
+                    NetBeforeTax = revenue - costOfDevices - commissions - opex,
+                    HasOperatingExpenses = opex > 0,
+                });
+            }
+
+            // Balance sheet (best-effort -- see FinancialsViewModel's doc
+            // comment on why this app has no Cash/Inventory figures to show).
+            model.LoanReceivablesGross = accountDetails.Sum(r => Math.Max(0, r.FullContractValue - r.TotalPaid));
+
+            var (dealerOutstanding, agentOutstanding) = await _repository.GetTotalCommissionsOutstandingAsync();
+            model.CommissionsPayableToDealers = dealerOutstanding;
+            model.CommissionsPayableToAgents = agentOutstanding;
+
+            // Retained Earnings: an approximation, not a precise accounting
+            // figure -- there's no real all-time ledger. All-time Revenue/
+            // Commissions come from a simple unfiltered SUM; all-time Cost
+            // of Devices sums BuyingPrice across every fetched account
+            // regardless of StartDate; Bad Debt uses the current (point-in-
+            // time) classification as the best available proxy for
+            // cumulative write-offs, since there's no historical recompute
+            // for it; Operating Expenses sums the trailing `trendMonths`
+            // months, which in practice is the table's entire history since
+            // it was only just created.
+            var allTimeRevenue = await _repository.GetAllTimeRevenueAsync();
+            var allTimeCommissions = await _repository.GetAllTimeCommissionsPaidAsync();
+            var allTimeCostOfDevices = accountDetails.Sum(r => r.BuyingPrice ?? 0);
+            var allTimeOperatingExpenses = opexByMonth.Sum(r => r.Total);
+
+            var allTimeNetBeforeTax = allTimeRevenue - allTimeCostOfDevices - allTimeCommissions - model.BadDebtThisMonth - allTimeOperatingExpenses;
+            var allTimeTax = Math.Max(0, allTimeNetBeforeTax) * model.TaxRatePct / 100;
+            model.RetainedEarningsAllTime = allTimeNetBeforeTax - allTimeTax;
 
             return model;
         }

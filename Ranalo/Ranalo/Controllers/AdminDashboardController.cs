@@ -90,8 +90,13 @@ namespace Ranalo.Controllers
                 BadDebtChangePct = -12.4m,
 
                 OperatingExpensesThisMonth = 45000m,
+                // Kenya's standard resident corporate income tax rate (KRA) --
+                // confirmed current as of 2026, not a placeholder.
                 TaxRatePct = 30m,
-                DividendsPaidThisMonth = 60000m,
+
+                // No dividends have been paid to date (confirmed by the
+                // business, not a placeholder) -- real data, not a guess.
+                DividendsPaidThisMonth = 0m,
 
                 TotalCustomers = 1798,
                 NewCustomersThisMonth = 187,
