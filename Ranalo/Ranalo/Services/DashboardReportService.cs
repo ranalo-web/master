@@ -135,6 +135,23 @@ namespace Ranalo.Services
                 ApplyDealerSnapshot(model, snapshot);
             }
 
+            // Agent Commissions card -- ApplyDealerSnapshot above set
+            // CommissionOutstanding/CommissionAccountCount/
+            // CommissionWithheldForArrears from the dealer-wide nightly
+            // rollup (every agent's accounts pooled together), since no
+            // per-agent rollup row exists (DashboardScope.ForAgent is
+            // unused/unpopulated). For an Agent viewing their own dashboard,
+            // override with a live recompute scoped to just their accounts --
+            // same formula, see GetAgentCommissionSummaryAsync. Dealer's own
+            // view (agentUserId null) keeps the rollup figures as-is.
+            if (agentUserId.HasValue)
+            {
+                var agentCommission = await _repository.GetAgentCommissionSummaryAsync(dealerId, agentUserId.Value);
+                model.CommissionOutstanding = agentCommission.CommissionOutstanding;
+                model.CommissionAccountCount = agentCommission.CommissionAccountCount;
+                model.CommissionWithheldForArrears = agentCommission.CommissionWithheldForArrears;
+            }
+
             // Paying vs Non-Paying and My Portfolio cards -- see
             // GetDealerLockClassificationAsync for why these don't stay on
             // ApplyDealerSnapshot's PortfolioGoodPct/SlowPct/ArrearsPct/

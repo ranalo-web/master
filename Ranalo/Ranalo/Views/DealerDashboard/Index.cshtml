@@ -279,29 +279,32 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-2">
-                            <div class="card-title">
-                                <h6 class="title">Dealer Commissions</h6>
+            @if (!(ViewBag.IsAgent is true))
+            {
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <div class="card-title-group align-start mb-2">
+                                <div class="card-title">
+                                    <h6 class="title">Dealer Commissions</h6>
+                                </div>
                             </div>
-                        </div>
-                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex flex-column">
-                                <span class="amount">KES @Model.DealerCommissionOutstanding.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1">still owed to you by Ranalo, in total</span>
+                            <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
+                                <div class="d-flex flex-column">
+                                    <span class="amount">KES @Model.DealerCommissionOutstanding.ToString("N0")</span>
+                                    <span class="sub-title d-block mt-1">still owed to you by Ranalo, in total</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">KES @Model.CommissionReceived.ToString("N0") earned to date</span>
-                            <span class="text-soft">@Model.DealerCommissionAccountCount.ToString("N0") accounts &middot; KES <span id="dealerCommissionPaidThisPeriod">@Model.DealerCommissionPaidThisPeriod.ToString("N0")</span> paid <span id="dealerCommissionPaidPeriodLabel">this month</span></span>
-                            <span class="@(Model.DealerCommissionMissingCostCount > 0 ? "text-warning" : "text-soft")">@Model.DealerCommissionMissingCostCount.ToString("N0") accounts missing cost data</span>
-                            <span class="text-soft">KES @Model.DealerCommissionWithheldForArrears.ToString("N0") potential if arrears collected</span>
+                            <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
+                                <span class="text-soft">KES @Model.CommissionReceived.ToString("N0") earned to date</span>
+                                <span class="text-soft">@Model.DealerCommissionAccountCount.ToString("N0") accounts &middot; KES <span id="dealerCommissionPaidThisPeriod">@Model.DealerCommissionPaidThisPeriod.ToString("N0")</span> paid <span id="dealerCommissionPaidPeriodLabel">this month</span></span>
+                                <span class="@(Model.DealerCommissionMissingCostCount > 0 ? "text-warning" : "text-soft")">@Model.DealerCommissionMissingCostCount.ToString("N0") accounts missing cost data</span>
+                                <span class="text-soft">KES @Model.DealerCommissionWithheldForArrears.ToString("N0") potential if arrears collected</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            }
         </div>
     </div><!-- .nk-block -->
 
@@ -783,8 +786,15 @@
                         commissionPaidThisPeriodEl.textContent = Math.round(data.commissionPaidThisPeriod).toLocaleString();
                         commissionPaidPeriodLabelEl.textContent = data.label;
 
-                        dealerCommissionPaidThisPeriodEl.textContent = Math.round(data.dealerCommissionPaidThisPeriod).toLocaleString();
-                        dealerCommissionPaidPeriodLabelEl.textContent = data.label;
+                        // Dealer Commissions card is hidden on the Agent
+                        // Dashboard (see the @@if (!(ViewBag.IsAgent...))
+                        // wrapper above) -- these elements won't exist there.
+                        if (dealerCommissionPaidThisPeriodEl) {
+                            dealerCommissionPaidThisPeriodEl.textContent = Math.round(data.dealerCommissionPaidThisPeriod).toLocaleString();
+                        }
+                        if (dealerCommissionPaidPeriodLabelEl) {
+                            dealerCommissionPaidPeriodLabelEl.textContent = data.label;
+                        }
 
                         // Count-based, not value-based -- how many contracts
                         // were completed within the selected period.

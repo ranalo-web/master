@@ -137,6 +137,11 @@ namespace Ranolo.Web.Tests
 
         public Task<List<DashboardCommissionRollupRow>> ComputeCommissionSnapshotRollupAsync() => Task.FromResult(CommissionRollupToReturn);
 
+        public (decimal CommissionOutstanding, int CommissionAccountCount, decimal CommissionWithheldForArrears) AgentCommissionSummaryToReturn { get; set; } = (0m, 0, 0m);
+
+        public Task<(decimal CommissionOutstanding, int CommissionAccountCount, decimal CommissionWithheldForArrears)> GetAgentCommissionSummaryAsync(int dealerId, int agentUserId) =>
+            Task.FromResult(AgentCommissionSummaryToReturn);
+
         public Task UpsertSnapshotCommissionAsync(DashboardScope scope, decimal? commissionReceived, decimal? commissionPaidToAgents, decimal? commissionOutstanding)
         {
             UpsertedCommissions.Add((scope, commissionReceived, commissionPaidToAgents, commissionOutstanding));

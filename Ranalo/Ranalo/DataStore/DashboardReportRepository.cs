@@ -1230,6 +1230,122 @@ namespace Ranalo.DataStore
             public decimal DealerPaid { get; set; }
         }
 
+        // Shared by ComputeCommissionSnapshotRollupAsync (dealer-wide nightly
+        // rollup, no filters) and GetAgentCommissionSummaryAsync (a single
+        // agent's live Commission card on their own dashboard) so the
+        // AgentGrossCommission/Arrears formula only exists once.
+        private async Task<List<AgentCommissionAccountRow>> FetchAgentCommissionAccountRowsAsync(int? dealerId = null, int? agentUserId = null)
+        {
+            const string sql = @"
+                ;WITH ValidPayments AS (
+                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue
+                    FROM KosePayments kp
+                    LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
+                ),
+                PaymentTotals AS (
+                    SELECT AccountNo, SUM(AmountValue) AS TotalPaid
+                    FROM ValidPayments
+                    GROUP BY AccountNo
+                ),
+                AccountCommission AS (
+                    SELECT
+                        dl.DealerId,
+                        ci.AssignedAgentId,
+                        ci.ContractID,
+                        ISNULL(pt.TotalPaid, 0) AS TotalPaid,
+                        -- NOT wrapped in ISNULL(..., 0) -- a missing
+                        -- BuyingPrice needs to be visibly excluded from the
+                        -- dealer commission calc, not silently treated as a
+                        -- free device (see AgentCommissionAccountRow.BuyingPrice).
+                        ci.BuyingPrice AS BuyingPrice,
+                        -- Computed unconditionally for EVERY account, agent
+                        -- assigned or not (see the class comment above) --
+                        -- this is the dealer's cost-of-sale deduction, not a
+                        -- claim that a real agent is owed this amount. Only
+                        -- PerAgent below (filtered to AssignedAgentId IS NOT
+                        -- NULL) treats it as money actually owed to someone.
+                        (ci.Deposit * 0.50)
+                            + (CASE WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) >= 90 THEN ci.Deposit * 0.25 ELSE 0 END)
+                            AS AgentGrossCommission,
+                        ISNULL(pt.TotalPaid, 0)
+                            - (
+                                ci.Deposit
+                                + ci.Daily * DaysAccrued.Days
+                                + ci.Weekly * (DaysAccrued.Days / 7.0)
+                                + ci.Monthly * (DaysAccrued.Days / 30.0)
+                              ) AS Arrears,
+                        d.NextLockDateIsoFormat AS LockDate
+                    FROM Contract_Info ci
+                    INNER JOIN Devices d ON d.Id = ci.ID
+                    INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
+                    CROSS APPLY (
+                        SELECT CASE
+                            WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) < CAST(ci.Term_in_Months * 30 AS INT)
+                                THEN DATEDIFF(DAY, ci.StartDate, GETDATE())
+                            ELSE CAST(ci.Term_in_Months * 30 AS INT)
+                        END AS Days
+                    ) DaysAccrued
+                    WHERE ci.StartDate IS NOT NULL
+                    AND (@DealerId IS NULL OR dl.DealerId = @DealerId)
+                    AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+                ),
+                AgentPaymentsAgg AS (
+                    SELECT ContractId, SUM(ISNULL(AmountPaid, 0)) AS TotalAgentPaid
+                    FROM AgentCommissionPayments
+                    GROUP BY ContractId
+                ),
+                -- What Ranalo has actually paid the dealer, joined via
+                -- ContractId (like AgentPaymentsAgg) rather than
+                -- DealerCommissionPayments.DealerId -- existing usage
+                -- elsewhere in this codebase (CommissionsRepository.cs)
+                -- deliberately does the same, since that column's semantics
+                -- aren't confirmed (only ContractId/AmountPaid are).
+                DealerPaymentsAgg AS (
+                    SELECT ContractId, SUM(ISNULL(AmountPaid, 0)) AS TotalDealerPaid
+                    FROM DealerCommissionPayments
+                    GROUP BY ContractId
+                )
+                SELECT
+                    ac.DealerId,
+                    ac.AssignedAgentId,
+                    ac.AgentGrossCommission,
+                    ac.TotalPaid,
+                    ac.BuyingPrice,
+                    ac.Arrears,
+                    ac.LockDate,
+                    ISNULL(ap.TotalAgentPaid, 0) AS AgentPaid,
+                    ISNULL(dp.TotalDealerPaid, 0) AS DealerPaid
+                FROM AccountCommission ac
+                LEFT JOIN AgentPaymentsAgg ap ON ap.ContractId = ac.ContractID
+                LEFT JOIN DealerPaymentsAgg dp ON dp.ContractId = ac.ContractID";
+
+            var rows = await _db.QueryAsync<AgentCommissionAccountRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId });
+            return rows.ToList();
+        }
+
+        // A single agent's own Commission card (Agent Dashboard) -- the
+        // exact same AgentGrossCommission/Arrears/Withheld formula as the
+        // dealer-wide nightly rollup below, just filtered to this agent's
+        // accounts and computed live (no per-agent rollup row exists yet;
+        // DashboardScope.ForAgent is unused/unpopulated). See the "perAgent"
+        // step inside ComputeCommissionSnapshotRollupAsync for the same math.
+        public async Task<(decimal CommissionOutstanding, int CommissionAccountCount, decimal CommissionWithheldForArrears)> GetAgentCommissionSummaryAsync(int dealerId, int agentUserId)
+        {
+            var rows = await FetchAgentCommissionAccountRowsAsync(dealerId, agentUserId);
+            var now = DateTime.Now;
+
+            var gross = rows.Sum(r => r.AgentGrossCommission);
+            var trueArrearsDeduction = rows
+                .Where(r => IsPastLockDate(r.LockDate, now))
+                .Sum(r => r.Arrears < 0 ? -r.Arrears : 0);
+            var paid = rows.Sum(r => r.AgentPaid);
+            var withheld = Math.Min(trueArrearsDeduction, gross);
+            var netCommission = gross - trueArrearsDeduction;
+
+            return (Math.Max(0, netCommission - paid), rows.Count, withheld);
+        }
+
         public async Task<List<DashboardCommissionRollupRow>> ComputeCommissionSnapshotRollupAsync()
         {
             // AgentGrossCommission per account: 50% of Deposit vests immediately
@@ -1294,91 +1410,15 @@ namespace Ranalo.DataStore
             // dealer) is CommissionReceived minus DealerCommissionPayments,
             // also floored at 0; distinct field, not to be confused with the
             // agent-facing one above.
-            const string sql = @"
-                ;WITH ValidPayments AS (
-                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue
-                    FROM KosePayments kp
-                    LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
-                ),
-                PaymentTotals AS (
-                    SELECT AccountNo, SUM(AmountValue) AS TotalPaid
-                    FROM ValidPayments
-                    GROUP BY AccountNo
-                ),
-                AccountCommission AS (
-                    SELECT
-                        dl.DealerId,
-                        ci.AssignedAgentId,
-                        ci.ContractID,
-                        ISNULL(pt.TotalPaid, 0) AS TotalPaid,
-                        -- NOT wrapped in ISNULL(..., 0) -- a missing
-                        -- BuyingPrice needs to be visibly excluded from the
-                        -- dealer commission calc, not silently treated as a
-                        -- free device (see AgentCommissionAccountRow.BuyingPrice).
-                        ci.BuyingPrice AS BuyingPrice,
-                        -- Computed unconditionally for EVERY account, agent
-                        -- assigned or not (see the class comment above) --
-                        -- this is the dealer's cost-of-sale deduction, not a
-                        -- claim that a real agent is owed this amount. Only
-                        -- PerAgent below (filtered to AssignedAgentId IS NOT
-                        -- NULL) treats it as money actually owed to someone.
-                        (ci.Deposit * 0.50)
-                            + (CASE WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) >= 90 THEN ci.Deposit * 0.25 ELSE 0 END)
-                            AS AgentGrossCommission,
-                        ISNULL(pt.TotalPaid, 0)
-                            - (
-                                ci.Deposit
-                                + ci.Daily * DaysAccrued.Days
-                                + ci.Weekly * (DaysAccrued.Days / 7.0)
-                                + ci.Monthly * (DaysAccrued.Days / 30.0)
-                              ) AS Arrears,
-                        d.NextLockDateIsoFormat AS LockDate
-                    FROM Contract_Info ci
-                    INNER JOIN Devices d ON d.Id = ci.ID
-                    INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
-                    CROSS APPLY (
-                        SELECT CASE
-                            WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) < CAST(ci.Term_in_Months * 30 AS INT)
-                                THEN DATEDIFF(DAY, ci.StartDate, GETDATE())
-                            ELSE CAST(ci.Term_in_Months * 30 AS INT)
-                        END AS Days
-                    ) DaysAccrued
-                    WHERE ci.StartDate IS NOT NULL
-                ),
-                AgentPaymentsAgg AS (
-                    SELECT ContractId, SUM(ISNULL(AmountPaid, 0)) AS TotalAgentPaid
-                    FROM AgentCommissionPayments
-                    GROUP BY ContractId
-                ),
-                -- What Ranalo has actually paid the dealer, joined via
-                -- ContractId (like AgentPaymentsAgg) rather than
-                -- DealerCommissionPayments.DealerId -- existing usage
-                -- elsewhere in this codebase (CommissionsRepository.cs)
-                -- deliberately does the same, since that column's semantics
-                -- aren't confirmed (only ContractId/AmountPaid are).
-                DealerPaymentsAgg AS (
-                    SELECT ContractId, SUM(ISNULL(AmountPaid, 0)) AS TotalDealerPaid
-                    FROM DealerCommissionPayments
-                    GROUP BY ContractId
-                )
-                SELECT
-                    ac.DealerId,
-                    ac.AssignedAgentId,
-                    ac.AgentGrossCommission,
-                    ac.TotalPaid,
-                    ac.BuyingPrice,
-                    ac.Arrears,
-                    ac.LockDate,
-                    ISNULL(ap.TotalAgentPaid, 0) AS AgentPaid,
-                    ISNULL(dp.TotalDealerPaid, 0) AS DealerPaid
-                FROM AccountCommission ac
-                LEFT JOIN AgentPaymentsAgg ap ON ap.ContractId = ac.ContractID
-                LEFT JOIN DealerPaymentsAgg dp ON dp.ContractId = ac.ContractID";
-
+            //
+            // The account-level SQL/formula itself lives in
+            // FetchAgentCommissionAccountRowsAsync (shared with
+            // GetAgentCommissionSummaryAsync, a single agent's live
+            // Commission card) -- called here with no filters for the
+            // dealer-wide, all-dealers nightly rollup.
             try
             {
-                var accountRows = await _db.QueryAsync<AgentCommissionAccountRow>(sql);
+                var accountRows = await FetchAgentCommissionAccountRowsAsync();
                 var now = DateTime.Now;
 
                 return accountRows

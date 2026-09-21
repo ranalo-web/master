@@ -80,6 +80,8 @@ namespace Ranalo.DataStore
         // side; paired with UpsertSnapshotCommissionAsync.
         Task<List<DashboardCommissionRollupRow>> ComputeCommissionSnapshotRollupAsync();
 
+        Task<(decimal CommissionOutstanding, int CommissionAccountCount, decimal CommissionWithheldForArrears)> GetAgentCommissionSummaryAsync(int dealerId, int agentUserId);
+
         Task UpsertSnapshotCommissionAsync(
             DashboardScope scope,
             decimal? commissionReceived,
