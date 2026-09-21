@@ -41,6 +41,40 @@ namespace Ranalo.Controllers
 
             return View(model);
         }
+
+        // Backs the top-of-page "This Month" date-range filter (see
+        // Views/AdminDashboard/Index.cshtml) -- was a dead, unwired widget
+        // (every option was a plain href="#") until now. Same
+        // dealerId=null, company-wide call as the Approver Dashboard's copy
+        // of this endpoint (DealerDashboardController.Revenue), reusing the
+        // exact same live infrastructure rather than a new query.
+        [HttpGet]
+        [Route("admin-dashboard/revenue")]
+        public async Task<IActionResult> Revenue(string period)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return Unauthorized();
+            }
+
+            if (settings.RoleId != UserRole.Admin)
+            {
+                // Not Forbid() -- this app has no ASP.NET Core authentication
+                // scheme registered (auth is the custom cookie-based
+                // LoadUserSettingsFromCookie filter), so ForbidResult would
+                // throw trying to resolve IAuthenticationService.
+                return StatusCode(403);
+            }
+
+            var result = await _dashboardReportService.GetDealerRevenueForPeriodAsync(dealerId: null, period);
+            if (result == null)
+            {
+                return BadRequest("Unrecognized period. Expected one of: week, month, ytd, year.");
+            }
+
+            return Json(result);
+        }
     }
 
     // Sample data matching the agreed design mockup. Wiring to

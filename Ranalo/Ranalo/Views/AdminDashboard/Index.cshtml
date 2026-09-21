@@ -18,15 +18,15 @@
                 <ul class="nk-block-tools g-3">
                     <li>
                         <div class="btn-group">
-                            <button type="button" class="btn btn-outline-light btn-white dropdown-toggle" data-bs-toggle="dropdown">
-                                <em class="icon ni ni-calendar"></em><span>This Month</span>
+                            <button type="button" id="revenuePeriodToggle" class="btn btn-outline-light btn-white dropdown-toggle" data-bs-toggle="dropdown">
+                                <em class="icon ni ni-calendar"></em><span>Month</span>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end">
                                 <ul class="link-list-opt no-bdr">
-                                    <li><a href="#"><span>Week</span></a></li>
-                                    <li><a href="#"><span>Month</span></a></li>
-                                    <li><a href="#"><span>Year to Date</span></a></li>
-                                    <li><a href="#"><span>Year</span></a></li>
+                                    <li><a href="#" class="revenue-period-opt" data-period="week"><span>Week</span></a></li>
+                                    <li><a href="#" class="revenue-period-opt" data-period="month"><span>Month</span></a></li>
+                                    <li><a href="#" class="revenue-period-opt" data-period="ytd"><span>Year to Date</span></a></li>
+                                    <li><a href="#" class="revenue-period-opt" data-period="year"><span>Last 12 Months</span></a></li>
                                 </ul>
                             </div>
                         </div>
@@ -57,15 +57,19 @@
                         <div class="align-end flex-sm-wrap g-4 flex-md-nowrap">
                             <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                                 <div class="d-flex flex-column">
-                                    <span class="amount">KES @Model.RevenueThisMonth.ToString("N0")</span>
+                                    <span class="amount" id="revenueAmount">KES @Model.RevenueThisMonth.ToString("N0")</span>
                                     @{ var revenueUp = Model.RevenueGrowthPct >= 0; }
-                                    <span class="sub-title d-block mt-1"><span class="@(revenueUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(revenueUp ? "up" : "down")"></em>@Math.Abs(Model.RevenueGrowthPct).ToString("0.0")%</span> this month</span>
+                                    <span class="sub-title d-block mt-1">
+                                        <span id="revenueGrowth" class="@(revenueUp ? "text-success" : "text-danger")">
+                                            <em id="revenueGrowthIcon" class="icon ni ni-arrow-long-@(revenueUp ? "up" : "down")"></em><span id="revenueGrowthPct">@Math.Abs(Model.RevenueGrowthPct).ToString("0.0")</span>%
+                                        </span> <span id="revenuePeriodLabel">this month</span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@revenueTargetPct.ToString("0")% of KES @Model.RevenueTargetThisMonth.ToString("N0") target</span>
-                            <span class="text-soft">KES @revenuePerPayingAccount.ToString("N0") avg / paying account</span>
+                            <span class="text-soft"><span id="revenueTargetPct">@revenueTargetPct.ToString("0")</span>% of KES <span id="revenueTargetAmount">@Model.RevenueTargetThisMonth.ToString("N0")</span> target</span>
+                            <span class="text-soft">KES <span id="revenueAvgPerAccount">@revenuePerPayingAccount.ToString("N0")</span> avg / paying account</span>
                         </div>
                     </div>
                 </div>
@@ -100,8 +104,12 @@
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
-                                <span class="amount">@Model.TotalAccounts.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="change @(accountsUp ? "up text-success" : "down text-danger")"><em class="icon ni ni-arrow-long-@(accountsUp ? "up" : "down")"></em>@Math.Abs(accountsDelta).ToString("N0")</span> vs last month</span>
+                                <span class="amount" id="totalAccountsAmount">@Model.TotalAccounts.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1">
+                                    <span id="totalAccountsChange" class="change @(accountsUp ? "up text-success" : "down text-danger")">
+                                        <em id="totalAccountsChangeIcon" class="icon ni ni-arrow-long-@(accountsUp ? "up" : "down")"></em><span id="totalAccountsChangePct">@Math.Abs(accountsDelta).ToString("N0")</span>
+                                    </span> new <span id="totalAccountsPeriodLabel">this month</span>
+                                </span>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
@@ -217,13 +225,13 @@
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
-                                <span class="amount">KES @totalCommissionsPaid.ToString("N0")</span>
+                                <span class="amount" id="commissionsPaidAmount">KES @totalCommissionsPaid.ToString("N0")</span>
                                 <span class="sub-title d-block mt-1"><span class="@(commissionsUp ? "text-danger" : "text-success")"><em class="icon ni ni-arrow-long-@(commissionsUp ? "up" : "down")"></em>@Math.Abs(Model.CommissionsChangePct).ToString("0.0")%</span> vs last month</span>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@commissionsPctOfRevenue.ToString("0")% of revenue</span>
-                            <span class="text-soft">KES @commissionsPerDealer.ToString("N0") avg / dealer</span>
+                            <span class="text-soft"><span id="commissionsPctOfRevenue">@commissionsPctOfRevenue.ToString("0")</span>% of revenue</span>
+                            <span class="text-soft">KES <span id="commissionsPerDealer">@commissionsPerDealer.ToString("N0")</span> avg / dealer</span>
                             <a href="/financials" class="text-soft">View full financials &rarr;</a>
                         </div>
                     </div>
@@ -322,13 +330,13 @@
                                 <div class="mb-4">
                                     <div class="d-flex justify-content-between align-items-baseline flex-wrap mb-1">
                                         <span class="text-soft" style="font-size:12px;">Collection Rate</span>
-                                        <span class="fw-bold text-success" style="font-size:12px;">@Model.CollectionRatePct.ToString("0.0")%</span>
+                                        <span class="fw-bold text-success" style="font-size:12px;" id="collectionRatePctText">@Model.CollectionRatePct.ToString("0.0")%</span>
                                     </div>
                                     <div class="progress progress-md progress-alt">
-                                        <div class="progress-bar bg-success" data-progress="@Model.CollectionRatePct.ToString("0.0")"></div>
+                                        <div class="progress-bar bg-success" id="collectionRateProgressBar" data-progress="@Model.CollectionRatePct.ToString("0.0")"></div>
                                     </div>
                                     <div class="mt-1">
-                                        <div class="text-soft" style="font-size:11px;">of amount due this month, collected</div>
+                                        <div class="text-soft" style="font-size:11px;">of amount due <span id="collectionRatePeriodLabel">this month</span>, collected</div>
                                         <div class="@(collectionTrendUp ? "text-success" : "text-danger")" style="font-size:11px;">
                                             <em class="icon ni ni-arrow-long-@(collectionTrendUp ? "up" : "down")"></em>@Math.Abs(Model.CollectionRateChangePct).ToString("0.0")pp <span class="text-soft">vs last month</span>
                                         </div>
@@ -337,10 +345,10 @@
                                 <div>
                                     <div class="d-flex justify-content-between align-items-baseline flex-wrap mb-1">
                                         <span class="text-soft" style="font-size:12px;">Portfolio at Risk (PAR30)</span>
-                                        <span class="fw-bold text-danger" style="font-size:12px;">@Model.PortfolioAtRiskPct.ToString("0.0")%</span>
+                                        <span class="fw-bold text-danger" style="font-size:12px;" id="portfolioAtRiskPctText">@Model.PortfolioAtRiskPct.ToString("0.0")%</span>
                                     </div>
                                     <div class="progress progress-md progress-alt">
-                                        <div class="progress-bar bg-danger" data-progress="@Model.PortfolioAtRiskPct.ToString("0.0")"></div>
+                                        <div class="progress-bar bg-danger" id="portfolioAtRiskProgressBar" data-progress="@Model.PortfolioAtRiskPct.ToString("0.0")"></div>
                                     </div>
                                     <div class="mt-1">
                                         <div class="text-soft" style="font-size:11px;">outstanding balance 30+ days overdue</div>
@@ -1075,6 +1083,143 @@
                         }
                     }
                 });
+            }
+        })();
+    </script>
+    <script>
+        (function () {
+            var toggle = document.getElementById('revenuePeriodToggle');
+            var opts = document.querySelectorAll('.revenue-period-opt');
+            if (!toggle || opts.length === 0) return;
+
+            var dealerCount = @Html.Raw(Model.DealerPerformance.Count);
+
+            var amountEl = document.getElementById('revenueAmount');
+            var growthEl = document.getElementById('revenueGrowth');
+            var growthIconEl = document.getElementById('revenueGrowthIcon');
+            var growthPctEl = document.getElementById('revenueGrowthPct');
+            var periodLabelEl = document.getElementById('revenuePeriodLabel');
+            var avgPerAccountEl = document.getElementById('revenueAvgPerAccount');
+            var targetPctEl = document.getElementById('revenueTargetPct');
+            var targetAmountEl = document.getElementById('revenueTargetAmount');
+            var toggleLabel = toggle.querySelector('span');
+
+            var totalAccountsAmountEl = document.getElementById('totalAccountsAmount');
+            var totalAccountsChangeEl = document.getElementById('totalAccountsChange');
+            var totalAccountsChangeIconEl = document.getElementById('totalAccountsChangeIcon');
+            var totalAccountsChangePctEl = document.getElementById('totalAccountsChangePct');
+            var totalAccountsPeriodLabelEl = document.getElementById('totalAccountsPeriodLabel');
+
+            var commissionsPaidAmountEl = document.getElementById('commissionsPaidAmount');
+            var commissionsPctOfRevenueEl = document.getElementById('commissionsPctOfRevenue');
+            var commissionsPerDealerEl = document.getElementById('commissionsPerDealer');
+
+            var collectionRatePctTextEl = document.getElementById('collectionRatePctText');
+            var collectionRateProgressBarEl = document.getElementById('collectionRateProgressBar');
+            var collectionRatePeriodLabelEl = document.getElementById('collectionRatePeriodLabel');
+            var portfolioAtRiskPctTextEl = document.getElementById('portfolioAtRiskPctText');
+            var portfolioAtRiskProgressBarEl = document.getElementById('portfolioAtRiskProgressBar');
+
+            var periodNames = { week: 'Week', month: 'Month', ytd: 'Year to Date', year: 'Last 12 Months' };
+
+            opts.forEach(function (opt) {
+                opt.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var period = opt.getAttribute('data-period');
+                    loadRevenueForPeriod(period);
+                });
+            });
+
+            function loadRevenueForPeriod(period) {
+                toggle.disabled = true;
+                fetch('/admin-dashboard/revenue?period=' + encodeURIComponent(period), {
+                    headers: { 'Accept': 'application/json' }
+                })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error('Request failed: ' + res.status);
+                        return res.json();
+                    })
+                    .then(function (data) {
+                        amountEl.textContent = 'KES ' + Math.round(data.revenue).toLocaleString();
+                        avgPerAccountEl.textContent = Math.round(data.avgPerAccount).toLocaleString();
+                        periodLabelEl.textContent = data.label;
+
+                        targetAmountEl.textContent = Math.round(data.targetRevenue).toLocaleString();
+                        var targetPct = data.targetRevenue > 0 ? Math.min(100, Math.round(data.revenue / data.targetRevenue * 100)) : 0;
+                        targetPctEl.textContent = targetPct;
+
+                        if (data.growthPct === null || data.growthPct === undefined) {
+                            growthEl.classList.remove('text-success', 'text-danger');
+                            growthEl.classList.add('text-soft');
+                            growthIconEl.className = 'icon ni ni-minus';
+                            growthPctEl.textContent = '—';
+                        } else {
+                            var up = data.growthPct >= 0;
+                            growthEl.classList.remove('text-soft');
+                            growthEl.classList.toggle('text-success', up);
+                            growthEl.classList.toggle('text-danger', !up);
+                            growthIconEl.className = 'icon ni ni-arrow-long-' + (up ? 'up' : 'down');
+                            growthPctEl.textContent = Math.abs(data.growthPct).toFixed(1);
+                        }
+
+                        toggleLabel.textContent = periodNames[period] || periodNames.month;
+
+                        // Total Accounts card: headline stays the running
+                        // total as of the selected period's end; the trend
+                        // line switches from "new accounts started within
+                        // the period".
+                        totalAccountsAmountEl.textContent = Math.round(data.totalAccounts).toLocaleString();
+                        totalAccountsPeriodLabelEl.textContent = data.label;
+                        totalAccountsChangePctEl.textContent = Math.round(data.newInPeriod).toLocaleString();
+                        if (data.newInPeriodChangePct === null || data.newInPeriodChangePct === undefined) {
+                            totalAccountsChangeEl.classList.remove('up', 'text-success', 'down', 'text-danger');
+                            totalAccountsChangeEl.classList.add('text-soft');
+                            totalAccountsChangeIconEl.className = 'icon ni ni-minus';
+                        } else {
+                            var accountsUp = data.newInPeriodChangePct >= 0;
+                            totalAccountsChangeEl.classList.remove('text-soft');
+                            totalAccountsChangeEl.classList.toggle('up', accountsUp);
+                            totalAccountsChangeEl.classList.toggle('text-success', accountsUp);
+                            totalAccountsChangeEl.classList.toggle('down', !accountsUp);
+                            totalAccountsChangeEl.classList.toggle('text-danger', !accountsUp);
+                            totalAccountsChangeIconEl.className = 'icon ni ni-arrow-long-' + (accountsUp ? 'up' : 'down');
+                        }
+
+                        // Commissions Paid: headline is the company-wide
+                        // dealer-commission total for the selected period
+                        // (data.dealerCommissionPaidThisPeriod); % of revenue
+                        // and avg/dealer are recomputed client-side from the
+                        // same response instead of a second request.
+                        if (commissionsPaidAmountEl) {
+                            commissionsPaidAmountEl.textContent = 'KES ' + Math.round(data.dealerCommissionPaidThisPeriod).toLocaleString();
+                        }
+                        if (commissionsPctOfRevenueEl) {
+                            var commissionsPct = data.revenue > 0 ? Math.round(data.dealerCommissionPaidThisPeriod / data.revenue * 100) : 0;
+                            commissionsPctOfRevenueEl.textContent = commissionsPct;
+                        }
+                        if (commissionsPerDealerEl) {
+                            var perDealer = dealerCount > 0 ? data.dealerCommissionPaidThisPeriod / dealerCount : 0;
+                            commissionsPerDealerEl.textContent = Math.round(perDealer).toLocaleString();
+                        }
+
+                        // Collection Rate / PAR30: of accounts that started
+                        // within the selected period, count-based -- same
+                        // cohort definition as the Dealer/Approver Dashboards.
+                        collectionRatePctTextEl.textContent = data.collectionRatePct.toFixed(1) + '%';
+                        collectionRateProgressBarEl.style.width = data.collectionRatePct + '%';
+                        collectionRateProgressBarEl.setAttribute('data-progress', data.collectionRatePct);
+                        collectionRatePeriodLabelEl.textContent = data.label;
+
+                        portfolioAtRiskPctTextEl.textContent = data.portfolioAtRiskPct.toFixed(1) + '%';
+                        portfolioAtRiskProgressBarEl.style.width = data.portfolioAtRiskPct + '%';
+                        portfolioAtRiskProgressBarEl.setAttribute('data-progress', data.portfolioAtRiskPct);
+                    })
+                    .catch(function (err) {
+                        console.error('Failed to load revenue for period ' + period, err);
+                    })
+                    .finally(function () {
+                        toggle.disabled = false;
+                    });
             }
         })();
     </script>

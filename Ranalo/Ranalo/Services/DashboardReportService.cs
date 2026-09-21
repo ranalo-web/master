@@ -854,24 +854,28 @@ namespace Ranalo.Services
             var row = await _repository.GetDealerRevenueForPeriodAsync(
                 dealerId, window.PeriodStart, window.PeriodEndExclusive, window.PriorPeriodStart, window.PriorPeriodEndExclusive, agentUserId);
 
-            // Commission cards and Completed Contracts are hidden on the
-            // Approver Dashboard (see GetApproverDashboardAsync's doc
-            // comment) -- dealerId is only null for that scope, so skip the
-            // dealer-only queries backing them entirely rather than widening
-            // GetDealerAgentCommissionPaidForPeriodAsync/
-            // GetDealerCommissionPaidForPeriodAsync/GetCompletedContractsAsync
-            // for a result nothing would render.
+            // Agent Commissions card is dealer-scoped by nature (an agent
+            // belongs to one dealer) and hidden on both the Approver and
+            // Admin Dashboards, so this stays skipped for a null dealerId --
+            // no widened query would render anywhere.
             var commissionPaidThisPeriod = dealerId.HasValue
                 ? await _repository.GetDealerAgentCommissionPaidForPeriodAsync(dealerId.Value, window.PeriodStart, window.PeriodEndExclusive, agentUserId)
                 : 0m;
-            var dealerCommissionPaidThisPeriod = dealerId.HasValue
-                ? await _repository.GetDealerCommissionPaidForPeriodAsync(dealerId.Value, window.PeriodStart, window.PeriodEndExclusive)
-                : 0m;
 
-            // Reuses the same rows the Completed Contracts report page shows
+            // Dealer Commissions: null dealerId now returns the company-wide
+            // total (GetDealerCommissionPaidForPeriodAsync widened to
+            // nullable) -- backs the Admin Dashboard's Commissions Paid card.
+            // Still a harmless no-op for the Approver Dashboard, which
+            // doesn't render this field.
+            var dealerCommissionPaidThisPeriod = await _repository.GetDealerCommissionPaidForPeriodAsync(
+                dealerId, window.PeriodStart, window.PeriodEndExclusive);
+
+            // Completed Contracts summary card: reuses the same rows the
+            // Completed Contracts report page shows
             // (GetDealerCompletedContractsReportAsync) -- no separate query,
-            // just a date-range filter on Status == Completed. Stays
-            // dealer-wide (see GetDealerDeviceStockReportAsync's doc note).
+            // just a date-range filter on Status == Completed. Neither the
+            // Approver nor Admin Dashboard shows a period-filtered Completed
+            // Contracts count, so this stays skipped for a null dealerId.
             var completedContractsInPeriod = 0;
             if (dealerId.HasValue)
             {

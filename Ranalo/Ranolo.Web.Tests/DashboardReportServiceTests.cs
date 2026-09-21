@@ -80,7 +80,7 @@ namespace Ranolo.Web.Tests
             return Task.CompletedTask;
         }
 
-        public Task<decimal> GetDealerCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive) =>
+        public Task<decimal> GetDealerCommissionPaidForPeriodAsync(int? dealerId, DateTime periodStart, DateTime periodEndExclusive) =>
             Task.FromResult(DealerCommissionPaidForPeriodToReturn);
 
         public Task<List<DashboardMonthlyTrendPoint>> GetMonthlyTrendAsync(DashboardScope scope, int months = 8) =>

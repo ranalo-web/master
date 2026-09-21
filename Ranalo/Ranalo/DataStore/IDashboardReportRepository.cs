@@ -148,7 +148,10 @@ namespace Ranalo.DataStore
         // filter as Revenue/New Accounts/Agent Commissions. Joined via
         // ContractId, not DealerCommissionPayments.DealerId -- same caution as
         // elsewhere in this codebase (that column's semantics aren't confirmed).
-        Task<decimal> GetDealerCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive);
+        // dealerId null = company-wide (Admin Dashboard's period-filtered
+        // Commissions Paid card, no single dealer to scope to -- same
+        // "widen to nullable" pattern as GetDealerAccountDetailsAsync etc.).
+        Task<decimal> GetDealerCommissionPaidForPeriodAsync(int? dealerId, DateTime periodStart, DateTime periodEndExclusive);
 
         // Same full-replace pattern as RefreshCompletedContractsAsync/
         // RefreshDeviceStockAsync, writing DashboardPerformanceEntry rows with
