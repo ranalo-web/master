@@ -81,6 +81,23 @@ namespace Ranalo.Services
             model.PayingAccounts = lockClassification.GoodCount;
             model.NonPayingAccounts = lockClassification.ArrearsCount;
 
+            // Portfolio Composition doughnut: same live lock-date split and
+            // NonPaying-is-a-subset-of-Arrears convention as the Dealer
+            // Dashboard's My Portfolio card (GetDealerDashboardAsync) --
+            // was left on the stale accrual-based rollup (PortfolioGoodPct
+            // etc. from ApplyAdminSnapshot) as an explicit out-of-scope call
+            // when Dealer's copy was made live. Reuses lockClassification,
+            // already fetched above -- no new query.
+            var lockTotal = lockClassification.GoodCount + lockClassification.SlowCount + lockClassification.ArrearsCount;
+            if (lockTotal > 0)
+            {
+                var exclusiveArrearsCount = lockClassification.ArrearsCount - lockClassification.NonPayingCount;
+                model.PortfolioGoodPct = Math.Round(100m * lockClassification.GoodCount / lockTotal, 2);
+                model.PortfolioSlowPct = Math.Round(100m * lockClassification.SlowCount / lockTotal, 2);
+                model.PortfolioArrearsPct = Math.Round(100m * exclusiveArrearsCount / lockTotal, 2);
+                model.PortfolioNonPayingPct = Math.Round(100m * lockClassification.NonPayingCount / lockTotal, 2);
+            }
+
             // Total Arrears / Bad Debt cards: same live "true arrears" call
             // as the Dealer/Approver Dashboards (GetDealerArrearsClassificationAsync
             // -- only accounts genuinely locked past NextLockDate, not every
