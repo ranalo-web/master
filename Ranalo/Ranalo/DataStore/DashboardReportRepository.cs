@@ -254,6 +254,41 @@ namespace Ranalo.DataStore
             }
         }
 
+        // Same KosePayments->Devices->Dealers-style linkage as
+        // GetRevenueThisMonthByDealerAsync above, but over
+        // DealerCommissionPayments (money paid OUT to dealers) grouped by
+        // dl.CompanyName for the same name-based join against
+        // DashboardAccountDetailRow.DealerName.
+        public async Task<List<DashboardDealerCommissionRow>> GetDealerCommissionPaidThisMonthByDealerAsync()
+        {
+            const string sql = @"
+                SELECT
+                    dl.CompanyName AS DealerName,
+                    SUM(CASE WHEN MONTH(dcp.PaidDate) = MONTH(GETDATE()) AND YEAR(dcp.PaidDate) = YEAR(GETDATE())
+                             THEN dcp.AmountPaid ELSE 0 END) AS CommissionPaidThisMonth
+                FROM DealerCommissionPayments dcp
+                INNER JOIN Contract_Info ci ON ci.ContractID = dcp.ContractId
+                INNER JOIN Devices d ON d.Id = ci.ID
+                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                GROUP BY dl.CompanyName";
+
+            try
+            {
+                var rows = await _db.QueryAsync<DashboardDealerCommissionRow>(sql);
+                return rows.ToList();
+            }
+            catch (SqlException ex) when (IsMissingTable(ex))
+            {
+                _logger.LogWarning(ex, "DealerCommissionPayments table not found; returning no dealer commission rows.");
+                return new List<DashboardDealerCommissionRow>();
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Dealer commission-paid-by-dealer computation failed");
+                return new List<DashboardDealerCommissionRow>();
+            }
+        }
+
         public async Task<DashboardRevenuePeriodRow> GetDealerRevenueForPeriodAsync(
             int? dealerId,
             DateTime periodStart,
@@ -684,6 +719,7 @@ namespace Ranalo.DataStore
             public DateTime StartDate { get; set; }
             public string? DealerName { get; set; }
             public string? CustomerPhone { get; set; }
+            public decimal? BuyingPrice { get; set; }
         }
 
         public async Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int? dealerId, int? agentUserId = null)
@@ -724,7 +760,8 @@ namespace Ranalo.DataStore
                     DaysAccrued.Days AS DaysAccrued,
                     ci.StartDate,
                     dl.CompanyName AS DealerName,
-                    ph.Phone AS CustomerPhone
+                    ph.Phone AS CustomerPhone,
+                    ci.BuyingPrice
                 FROM Contract_Info ci
                 INNER JOIN Devices d ON d.Id = ci.ID
                 INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
@@ -771,6 +808,7 @@ namespace Ranalo.DataStore
                     StartDate = row.StartDate,
                     DealerName = row.DealerName,
                     CustomerPhone = row.CustomerPhone,
+                    BuyingPrice = row.BuyingPrice,
                 }).ToList();
             }
             catch (SqlException ex)

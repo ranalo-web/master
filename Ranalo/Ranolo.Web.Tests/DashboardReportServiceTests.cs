@@ -104,6 +104,10 @@ namespace Ranolo.Web.Tests
 
         public Task<List<DashboardDealerRevenueRow>> GetRevenueThisMonthByDealerAsync() => Task.FromResult(RevenueByDealerToReturn);
 
+        public List<DashboardDealerCommissionRow> CommissionByDealerToReturn { get; set; } = new();
+
+        public Task<List<DashboardDealerCommissionRow>> GetDealerCommissionPaidThisMonthByDealerAsync() => Task.FromResult(CommissionByDealerToReturn);
+
         public Task UpsertSnapshotKpiAsync(DashboardScope scope, decimal? revenueThisMonth, decimal? revenueGrowthPct, int? newThisMonth, int? totalAccounts)
         {
             UpsertedSnapshots.Add((scope, revenueThisMonth, revenueGrowthPct, newThisMonth, totalAccounts));
@@ -333,9 +337,16 @@ namespace Ranolo.Web.Tests
 
             var result = await service.GetAdminDashboardAsync();
 
+            // RevenueThisMonth still falls back to sample data (no rollup
+            // row). GoodAccounts/DealerPerformance no longer do -- they're
+            // always live-recomputed from GetDealerAccountDetailsAsync/
+            // GetDealerLockClassificationAsync now (see
+            // GetAdminDashboardAsync_WithAccountDetailRows_ClassifiesIntoWatchlistsAndPerformance
+            // below), so with no account-detail rows they're genuinely
+            // empty/zero rather than sample data.
             Assert.That(result.RevenueThisMonth, Is.EqualTo(sample.RevenueThisMonth));
-            Assert.That(result.GoodAccounts, Is.EqualTo(sample.GoodAccounts));
-            Assert.That(result.DealerPerformance.Count, Is.EqualTo(sample.DealerPerformance.Count));
+            Assert.That(result.GoodAccounts, Is.EqualTo(0));
+            Assert.That(result.DealerPerformance, Is.Empty);
         }
 
         [Test]
@@ -347,8 +358,6 @@ namespace Ranolo.Web.Tests
                 {
                     RevenueThisMonth = 1_000_000m,
                     TotalAccounts = 5000,
-                    GoodAccounts = 4200,
-                    BadAccounts = 800,
                     NonPayingChange = -25,
                     RevenueTargetThisMonth = 1_200_000m,
                 },
@@ -359,38 +368,85 @@ namespace Ranolo.Web.Tests
 
             Assert.That(result.RevenueThisMonth, Is.EqualTo(1_000_000m));
             Assert.That(result.TotalAccounts, Is.EqualTo(5000));
-            Assert.That(result.GoodAccounts, Is.EqualTo(4200));
-            Assert.That(result.BadAccounts, Is.EqualTo(800));
             Assert.That(result.NonPayingAccountsChange, Is.EqualTo(-25));
             Assert.That(result.RevenueTargetThisMonth, Is.EqualTo(1_200_000m));
         }
 
         [Test]
-        public async Task GetAdminDashboardAsync_WithPerformanceRows_OverlaysDealerAndAgentPerformance()
+        public async Task GetAdminDashboardAsync_WithAccountDetailRows_ClassifiesIntoWatchlistsAndPerformance()
         {
+            // Non-Payers/Slow-Payers/Good-Payers, Dealer Performance, Agent
+            // Performance, and GoodAccounts/BadAccounts/PayingAccounts/
+            // NonPayingAccounts are all live-recomputed from
+            // GetDealerAccountDetailsAsync + GetDealerLockClassificationAsync
+            // now (same source/rule as the Approver Dashboard), not the old
+            // rollup-backed GetWatchlistAsync/GetPerformanceAsync(Dealer/Agent)
+            // path, which the nightly job never populates.
+            var now = DateTime.Now;
             var fakeRepo = new FakeDashboardReportRepository
             {
-                PerformanceToReturn = new()
+                LockClassificationToReturn = new DashboardLockClassificationRow { GoodCount = 1, ArrearsCount = 1 },
+                AccountDetailsToReturn = new()
                 {
-                    [DashboardPerformanceEntryType.Dealer] = new()
+                    new()
                     {
-                        new() { Rank = 1, SubjectId = 5, SubjectName = "Test Dealer", Accounts = 100, ActivePct = 92, Revenue = 50000, CommissionPaid = 1000, CommissionDue = 200, PctOfTarget = 110 },
+                        AccountId = 1, CustomerName = "Non Payer", AssignedAgentId = 7, AgentName = "Test Agent",
+                        DealerName = "Test Dealer", NextLockDateRaw = now.AddDays(-30).ToString("yyyy-MM-dd HH:mm:ss"),
                     },
-                    [DashboardPerformanceEntryType.Agent] = new()
+                    new()
                     {
-                        new() { Rank = 1, SubjectId = 7, SubjectName = "Test Agent", ParentName = "Test Dealer", Accounts = 30, ActivePct = 88, PctOfTarget = 101 },
+                        AccountId = 2, CustomerName = "Good Payer", AssignedAgentId = 7, AgentName = "Test Agent",
+                        DealerName = "Test Dealer", NextLockDateRaw = now.AddDays(30).ToString("yyyy-MM-dd HH:mm:ss"),
                     },
+                },
+                RevenueByDealerToReturn = new() { new() { DealerName = "Test Dealer", RevenueThisMonth = 50000m } },
+                CommissionByDealerToReturn = new() { new() { DealerName = "Test Dealer", CommissionPaidThisMonth = 1000m } },
+            };
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+
+            var result = await service.GetAdminDashboardAsync();
+
+            Assert.That(result.GoodAccounts, Is.EqualTo(1));
+            Assert.That(result.BadAccounts, Is.EqualTo(1));
+            Assert.That(result.PayingAccounts, Is.EqualTo(1));
+            Assert.That(result.NonPayingAccounts, Is.EqualTo(1));
+
+            Assert.That(result.NonPayers, Has.Count.EqualTo(1));
+            Assert.That(result.NonPayers[0].CustomerName, Is.EqualTo("Non Payer"));
+            Assert.That(result.NonPayers[0].DealerName, Is.EqualTo("Test Dealer"));
+
+            Assert.That(result.GoodPayers, Has.Count.EqualTo(1));
+            Assert.That(result.GoodPayers[0].CustomerName, Is.EqualTo("Good Payer"));
+
+            Assert.That(result.DealerPerformance, Has.Count.EqualTo(1));
+            Assert.That(result.DealerPerformance[0].DealerName, Is.EqualTo("Test Dealer"));
+            Assert.That(result.DealerPerformance[0].Revenue, Is.EqualTo(50000m));
+            Assert.That(result.DealerPerformance[0].CommissionPaid, Is.EqualTo(1000m));
+            Assert.That(result.DealerPerformance[0].CommissionDue, Is.EqualTo(1000m));
+
+            Assert.That(result.AgentPerformance, Has.Count.EqualTo(1));
+            Assert.That(result.AgentPerformance[0].AgentName, Is.EqualTo("Test Agent"));
+            Assert.That(result.AgentPerformance[0].DealerName, Is.EqualTo("Test Dealer"));
+        }
+
+        [Test]
+        public async Task GetAdminDashboardAsync_WithAccountDetailRows_ComputesCostOfDevicesThisMonthFromBuyingPrice()
+        {
+            var now = DateTime.Now;
+            var fakeRepo = new FakeDashboardReportRepository
+            {
+                AccountDetailsToReturn = new()
+                {
+                    new() { AccountId = 1, CustomerName = "This Month", DealerName = "Test Dealer", StartDate = now, BuyingPrice = 15000m },
+                    new() { AccountId = 2, CustomerName = "Last Month", DealerName = "Test Dealer", StartDate = now.AddMonths(-1), BuyingPrice = 20000m },
+                    new() { AccountId = 3, CustomerName = "No Cost Recorded", DealerName = "Test Dealer", StartDate = now, BuyingPrice = null },
                 },
             };
             var service = new Ranalo.Services.DashboardReportService(fakeRepo);
 
             var result = await service.GetAdminDashboardAsync();
 
-            Assert.That(result.DealerPerformance, Has.Count.EqualTo(1));
-            Assert.That(result.DealerPerformance[0].DealerName, Is.EqualTo("Test Dealer"));
-            Assert.That(result.DealerPerformance[0].Revenue, Is.EqualTo(50000m));
-            Assert.That(result.AgentPerformance, Has.Count.EqualTo(1));
-            Assert.That(result.AgentPerformance[0].DealerName, Is.EqualTo("Test Dealer"));
+            Assert.That(result.CostOfDevicesThisMonth, Is.EqualTo(15000m));
         }
 
         [Test]

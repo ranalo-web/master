@@ -34,6 +34,13 @@ namespace Ranalo.DataStore
         // has DealerName (not DealerId) to join against.
         Task<List<DashboardDealerRevenueRow>> GetRevenueThisMonthByDealerAsync();
 
+        // Same shape/purpose as GetRevenueThisMonthByDealerAsync, for
+        // DealerCommissionPayments (money Ranalo has paid OUT to dealers)
+        // instead of KosePayments (money received) -- the Admin Dashboard's
+        // "Commissions paid to dealers" Income Statement line and Dealer
+        // Performance table, summed system-wide.
+        Task<List<DashboardDealerCommissionRow>> GetDealerCommissionPaidThisMonthByDealerAsync();
+
         // Same single-pass GROUPING SETS pattern as ComputeKpiRollupAsync, for
         // the arrears/portfolio classification (see DashboardPortfolioRollupRow
         // for the exact tier definitions).

@@ -83,7 +83,11 @@
                 var goodAccountsPct = Model.TotalAccounts > 0 ? Math.Round((decimal)Model.GoodAccounts / Model.TotalAccounts * 100, 1) : 0;
                 var accountsPerDealer = Model.DealerPerformance.Count > 0 ? (decimal)Model.TotalAccounts / Model.DealerPerformance.Count : 0;
 
-                var payingPct = Model.TotalAccounts > 0 ? Math.Round((decimal)Model.PayingAccounts / Model.TotalAccounts * 100, 1) : 0;
+                // Excludes Slow from the denominator, same "Paying vs
+                // Non-Paying" convention as the Dealer/Approver Dashboards'
+                // lockGoodPct (Good / (Good + Arrears)).
+                var payingDenominator = Model.PayingAccounts + Model.NonPayingAccounts;
+                var payingPct = payingDenominator > 0 ? Math.Round((decimal)Model.PayingAccounts / payingDenominator * 100, 1) : 0;
 
                 var arrearsPerNonPaying = Model.NonPayingAccounts > 0 ? Model.ArrearsTotal / Model.NonPayingAccounts : 0;
                 var arrearsPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(Model.ArrearsTotal / Model.RevenueThisMonth * 100, 1) : 0;
@@ -302,7 +306,7 @@
                                 <span class="fw-medium">KES @operatingProfit.ToString("N0")</span>
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-soft">Less: Operating expenses</span>
+                                <span class="text-soft">Less: Operating expenses <span class="badge badge-dim bg-warning" title="No data source exists yet -- rent, salaries, etc. aren't tracked anywhere in this app. Placeholder value.">Preview</span></span>
                                 <span class="text-danger">(@Model.OperatingExpensesThisMonth.ToString("N0"))</span>
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom">
@@ -310,7 +314,7 @@
                                 <span class="fw-medium">KES @ebt.ToString("N0")</span>
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-soft">Less: Tax (@Model.TaxRatePct.ToString("0")%)</span>
+                                <span class="text-soft">Less: Tax (@Model.TaxRatePct.ToString("0")%) <span class="badge badge-dim bg-warning" title="Tax rate is an assumed constant, not pulled from a filing or config anywhere. Placeholder value.">Preview</span></span>
                                 <span class="text-danger">(@taxThisMonth.ToString("N0"))</span>
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom" style="font-size:15px;">
@@ -318,7 +322,7 @@
                                 <span class="fw-bold @(netProfitAfterTax >= 0 ? "text-success" : "text-danger")">KES @netProfitAfterTax.ToString("N0")</span>
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-soft">Less: Dividends paid</span>
+                                <span class="text-soft">Less: Dividends paid <span class="badge badge-dim bg-warning" title="No data source exists yet -- dividend payouts aren't tracked anywhere in this app. Placeholder value.">Preview</span></span>
                                 <span class="text-danger">(@Model.DividendsPaidThisMonth.ToString("N0"))</span>
                             </div>
                             <div class="d-flex justify-content-between pt-2" style="font-size:15px;">
@@ -376,14 +380,14 @@
                             </div>
                             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                                 <div>
-                                    <div class="fw-medium">Dividend Payout Ratio</div>
+                                    <div class="fw-medium">Dividend Payout Ratio <span class="badge badge-dim bg-warning" title="Dividends Paid has no real data source yet -- see the Income Statement.">Preview</span></div>
                                     <div class="text-soft" style="font-size:11px;">Dividends &divide; net profit</div>
                                 </div>
                                 <span class="fw-bold">@dividendPayoutRatio.ToString("0.0")%</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center py-2">
                                 <div>
-                                    <div class="fw-medium">Retention Ratio</div>
+                                    <div class="fw-medium">Retention Ratio <span class="badge badge-dim bg-warning" title="Dividends Paid has no real data source yet -- see the Income Statement.">Preview</span></div>
                                     <div class="text-soft" style="font-size:11px;">Retained earnings &divide; net profit</div>
                                 </div>
                                 <span class="fw-bold">@retentionRatio.ToString("0.0")%</span>
@@ -780,7 +784,7 @@
                         <div class="card-inner">
                             <div class="card-title-group">
                                 <div class="card-title">
-                                    <h6 class="title">Product Performance</h6>
+                                    <h6 class="title">Product Performance <span class="badge badge-dim bg-warning" title="No rollup or live query exists for this yet -- sample data.">Preview</span></h6>
                                     <p class="text-soft">Devices financed this month, ranked by units</p>
                                 </div>
                             </div>
@@ -832,7 +836,7 @@
                     <div class="card-inner">
                         <div class="card-title-group mb-3">
                             <div class="card-title">
-                                <h6 class="title">Customer Performance</h6>
+                                <h6 class="title">Customer Performance <span class="badge badge-dim bg-warning" title="No rollup or live query exists for this yet -- sample data.">Preview</span></h6>
                                 <p class="text-soft">Customer base health, this month</p>
                             </div>
                         </div>

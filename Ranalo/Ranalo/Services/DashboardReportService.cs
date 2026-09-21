@@ -8,18 +8,23 @@ namespace Ranalo.Services
     // Assembles dashboard view models for Admin/Dealer (and, later, Agent)
     // scopes. Wired to the rollup tables so far
     // (Database/Dashboard/001_create_dashboard_tables.sql, populated by
-    // ScheduledDashboardRollup once that job exists): KPI snapshot, monthly
-    // trend, dealer/agent performance leaderboards (Admin only -- see below),
-    // device stock (Dealer only), and the completed-contracts list.
-    // Commissions and Admin's ProductPerformance (a different shape, no
-    // rollup table) still come from the sample data builders.
+    // ScheduledDashboardRollup once that job exists): KPI snapshot (Revenue/
+    // TotalAccounts/ArrearsTotal/Portfolio %), monthly trend, and the
+    // completed-contracts list. Note the rollup job itself is not currently
+    // registered as a hosted service (see Program.cs) -- these figures are
+    // real but only as fresh as the last manual run, not nightly-refreshed.
+    // Operating Expenses/Tax Rate/Dividends Paid have no data source
+    // anywhere in this app (not WooCommerce/CRM data -- corporate
+    // bookkeeping entries) and Admin's ProductPerformance has no rollup
+    // table yet; both still come from the sample data builder.
     //
-    // The Dealer scope's Non-Payers/Slow-Payers/Good-Payers, Agent
-    // Performance, My Contracts, and Contracts Ending Soon are NOT
-    // rollup-backed -- the nightly job never populates DashboardWatchlistEntry
-    // or DashboardPerformanceEntry(EntryType=Agent) (see
-    // ScheduledDashboardRollup's class comment), so these are built live from
-    // GetDealerAccountDetailsAsync instead (see the Build* methods below).
+    // Non-Payers/Slow-Payers/Good-Payers, Dealer/Agent Performance, and Cost
+    // of Devices are NOT rollup-backed -- the nightly job never populates
+    // DashboardWatchlistEntry or DashboardPerformanceEntry(EntryType=Dealer/
+    // Agent) (see ScheduledDashboardRollup's class comment), so these are
+    // built live from GetDealerAccountDetailsAsync instead (see the Build*
+    // methods below) -- the same live-recompute source and Good/Slow/Arrears
+    // rule the Dealer scope and the Approver Dashboard already use.
     //
     // If a scope has no rollup rows yet (schema not applied, or the nightly
     // job hasn't run for this dealer/agent yet), the sample-data values for
@@ -52,44 +57,59 @@ namespace Ranalo.Services
                 model.AccountsByMonth = trend.Select(t => t.AccountsCount).ToList();
             }
 
-            var nonPayers = await _repository.GetWatchlistAsync(scope, DashboardWatchlistType.NonPayer);
-            if (nonPayers.Count > 0) model.NonPayers = nonPayers.Select(ToAdminWatchlistEntry).ToList();
+            // Live, system-wide (all dealers) recompute -- same source and
+            // Good/Slow/Arrears rule as the Approver Dashboard
+            // (GetApproverDashboardAsync), reused here instead of the old
+            // rollup path (DashboardWatchlistEntry/DashboardPerformanceEntry
+            // for EntryType Dealer/Agent), which is never populated -- see
+            // ScheduledDashboardRollup's "NOT refreshed by this job yet"
+            // note -- and was silently falling back to sample data.
+            var accountDetails = await _repository.GetDealerAccountDetailsAsync(null);
+            var lockClassification = await _repository.GetDealerLockClassificationAsync(null);
 
-            var slowPayers = await _repository.GetWatchlistAsync(scope, DashboardWatchlistType.SlowPayer);
-            if (slowPayers.Count > 0) model.SlowPayers = slowPayers.Select(ToAdminWatchlistEntry).ToList();
+            // Fixes a real bug this replaces: GoodAccounts/BadAccounts/
+            // PayingAccounts/NonPayingAccounts were never written by the
+            // rollup either, so they stayed on sample-data counts
+            // (1,583/259/1,691/151) while TotalAccounts above came from the
+            // (also real) snapshot -- a real denominator against a
+            // stale-mock numerator produced >100% figures ("313% good
+            // standing", "334% of accounts paying").
+            model.GoodAccounts = lockClassification.GoodCount;
+            model.BadAccounts = lockClassification.ArrearsCount;
+            model.PayingAccounts = lockClassification.GoodCount;
+            model.NonPayingAccounts = lockClassification.ArrearsCount;
 
-            var goodPayers = await _repository.GetWatchlistAsync(scope, DashboardWatchlistType.GoodPayer);
-            if (goodPayers.Count > 0) model.GoodPayers = goodPayers.Select(ToAdminWatchlistEntry).ToList();
+            // Bad Debt / Write-offs card: was never written by the rollup at
+            // all (not just stale), always a flat mock constant (28,500).
+            // Same live accrual-based classification and >90-day-past-lock
+            // threshold as the Approver Dashboard's Bad Debt card.
+            var arrearsClassification = await _repository.GetDealerArrearsClassificationAsync(null);
+            model.BadDebtThisMonth = arrearsClassification.BadDebtTotal;
 
-            var dealerPerformance = await _repository.GetPerformanceAsync(scope, DashboardPerformanceEntryType.Dealer);
-            if (dealerPerformance.Count > 0)
-            {
-                model.DealerPerformance = dealerPerformance.Select(p => new AdminDealerPerformance
-                {
-                    Rank = p.Rank,
-                    DealerName = p.SubjectName,
-                    Accounts = p.Accounts,
-                    ActivePct = p.ActivePct,
-                    Revenue = p.Revenue ?? 0,
-                    CommissionPaid = p.CommissionPaid ?? 0,
-                    CommissionDue = p.CommissionDue ?? 0,
-                    PctOfTarget = p.PctOfTarget,
-                }).ToList();
-            }
+            model.NonPayers = BuildNonPayers(accountDetails).Select(ToAdminWatchlistEntry).ToList();
+            model.SlowPayers = BuildSlowPayers(accountDetails).Select(ToAdminWatchlistEntry).ToList();
+            model.GoodPayers = BuildGoodPayers(accountDetails).Select(ToAdminWatchlistEntry).ToList();
 
-            var agentPerformance = await _repository.GetPerformanceAsync(scope, DashboardPerformanceEntryType.Agent);
-            if (agentPerformance.Count > 0)
-            {
-                model.AgentPerformance = agentPerformance.Select(p => new AdminAgentPerformance
-                {
-                    Rank = p.Rank,
-                    AgentName = p.SubjectName,
-                    DealerName = p.ParentName ?? "",
-                    Accounts = p.Accounts,
-                    ActivePct = p.ActivePct,
-                    PctOfTarget = p.PctOfTarget,
-                }).ToList();
-            }
+            var revenueByDealer = (await _repository.GetRevenueThisMonthByDealerAsync())
+                .ToDictionary(r => r.DealerName, r => r.RevenueThisMonth);
+            var commissionByDealer = (await _repository.GetDealerCommissionPaidThisMonthByDealerAsync())
+                .ToDictionary(r => r.DealerName, r => r.CommissionPaidThisMonth);
+
+            model.DealerPerformance = BuildAdminDealerPerformance(accountDetails, revenueByDealer, commissionByDealer);
+            model.AgentPerformance = BuildAdminAgentPerformance(accountDetails);
+
+            // Cost of Devices This Month: Contract_Info.BuyingPrice
+            // (manually entered per-contract device cost -- see
+            // DashboardAccountDetailRow's doc comment; NOT synced from
+            // WooCommerce) summed for accounts that started this calendar
+            // month, same period definition as NewThisMonth/RevenueThisMonth
+            // above. Was a flat mock constant (38,000); accounts with no
+            // BuyingPrice recorded contribute 0, same population
+            // DealerCommissionMissingCostCount already tracks.
+            var thisMonth = DateTime.Now;
+            model.CostOfDevicesThisMonth = accountDetails
+                .Where(r => r.StartDate.Year == thisMonth.Year && r.StartDate.Month == thisMonth.Month)
+                .Sum(r => r.BuyingPrice ?? 0);
 
             var completedContracts = await _repository.GetCompletedContractsAsync(scope);
             if (completedContracts.Count > 0)
@@ -486,6 +506,8 @@ namespace Ranalo.Services
             {
                 CustomerName = r.CustomerName,
                 AgentName = r.AgentName ?? "",
+                DealerName = r.DealerName,
+                Phone = r.CustomerPhone,
                 Detail = $"{Math.Round(LockDays(r))} days overdue",
             }).ToList();
 
@@ -495,6 +517,8 @@ namespace Ranalo.Services
             {
                 CustomerName = r.CustomerName,
                 AgentName = r.AgentName ?? "",
+                DealerName = r.DealerName,
+                Phone = r.CustomerPhone,
                 Detail = $"KES {Math.Max(0, -r.ArrearsAmount):N0} due",
             }).ToList();
 
@@ -504,6 +528,8 @@ namespace Ranalo.Services
             {
                 CustomerName = r.CustomerName,
                 AgentName = r.AgentName ?? "",
+                DealerName = r.DealerName,
+                Phone = r.CustomerPhone,
                 Detail = $"{PaymentsAhead(r)} payments ahead",
             }).ToList();
 
@@ -598,6 +624,70 @@ namespace Ranalo.Services
                     ActivePct = activeDenominator > 0 ? Math.Round(100m * good / activeDenominator, 1) : 0,
                     ArrearsTotal = g.Sum(r => Math.Max(0, -r.ArrearsAmount)),
                     RevenueThisMonth = revenueByDealer.TryGetValue(g.Key, out var rev) ? rev : 0,
+                };
+            })
+            .OrderByDescending(d => d.Accounts)
+            .Select((d, i) => { d.Rank = i + 1; return d; })
+            .ToList();
+
+        // Admin Dashboard's Agent Performance: same grouping/formulas as
+        // BuildAgentPerformance above, plus DealerName -- Admin's table
+        // spans every dealer at once (unlike the Dealer scope's own Agent
+        // Performance, already scoped to one dealer), so the dealer column
+        // is needed to tell agents apart.
+        private static List<AdminAgentPerformance> BuildAdminAgentPerformance(List<DashboardAccountDetailRow> rows) => rows
+            .Where(r => r.AssignedAgentId.HasValue)
+            .GroupBy(r => r.AssignedAgentId!.Value)
+            .Select(g =>
+            {
+                var total = g.Count();
+                var good = g.Count(r => LockDays(r) <= 0);
+                var arrears = g.Count(r => LockDays(r) > 7);
+                var activeDenominator = good + arrears;
+                return new AdminAgentPerformance
+                {
+                    AgentName = g.First().AgentName ?? "",
+                    DealerName = g.First().DealerName ?? "",
+                    Accounts = total,
+                    ActivePct = activeDenominator > 0 ? Math.Round(100m * good / activeDenominator, 1) : 0,
+                    PctOfTarget = total > 0 ? Math.Round(100m * (total - arrears) / total, 1) : 0,
+                };
+            })
+            .OrderByDescending(a => a.Accounts)
+            .Select((a, i) => { a.Rank = i + 1; return a; })
+            .ToList();
+
+        // Admin Dashboard's Dealer Performance: same grouping/formulas as
+        // BuildDealerPerformance above, plus commissions -- CommissionPaid
+        // is this month's real DealerCommissionPayments total (see
+        // GetDealerCommissionPaidThisMonthByDealerAsync); CommissionDue has
+        // no live system-wide "outstanding" source yet (would need the full
+        // per-account dealer-commission formula -- 30% of lifetime
+        // TotalPaid-BuyingPrice-AgentGrossCommission -- replicated across
+        // every dealer, a separate feature), so it's approximated as fully
+        // settled (== CommissionPaid) rather than show a fabricated balance.
+        private static List<AdminDealerPerformance> BuildAdminDealerPerformance(
+            List<DashboardAccountDetailRow> rows,
+            Dictionary<string, decimal> revenueByDealer,
+            Dictionary<string, decimal> commissionByDealer) => rows
+            .Where(r => !string.IsNullOrWhiteSpace(r.DealerName))
+            .GroupBy(r => r.DealerName!)
+            .Select(g =>
+            {
+                var total = g.Count();
+                var good = g.Count(r => LockDays(r) <= 0);
+                var arrears = g.Count(r => LockDays(r) > 7);
+                var activeDenominator = good + arrears;
+                var commissionPaid = commissionByDealer.TryGetValue(g.Key, out var cp) ? cp : 0;
+                return new AdminDealerPerformance
+                {
+                    DealerName = g.Key,
+                    Accounts = total,
+                    ActivePct = activeDenominator > 0 ? Math.Round(100m * good / activeDenominator, 1) : 0,
+                    Revenue = revenueByDealer.TryGetValue(g.Key, out var rev) ? rev : 0,
+                    CommissionPaid = commissionPaid,
+                    CommissionDue = commissionPaid,
+                    PctOfTarget = total > 0 ? Math.Round(100m * (total - arrears) / total, 1) : 0,
                 };
             })
             .OrderByDescending(d => d.Accounts)
@@ -776,12 +866,12 @@ namespace Ranalo.Services
             }
         }
 
-        private static AdminWatchlistEntry ToAdminWatchlistEntry(DashboardWatchlistEntryRow row) => new()
+        private static AdminWatchlistEntry ToAdminWatchlistEntry(DealerWatchlistEntry entry) => new()
         {
-            CustomerName = row.CustomerName,
-            DealerName = row.DealerName ?? "",
-            Phone = row.Phone ?? "",
-            Detail = row.Detail,
+            CustomerName = entry.CustomerName,
+            DealerName = entry.DealerName ?? "",
+            Phone = entry.Phone ?? "",
+            Detail = entry.Detail,
         };
 
         private static void ApplyAdminSnapshot(AdminDashboardViewModel model, DashboardSnapshotRow snapshot)
@@ -791,10 +881,11 @@ namespace Ranalo.Services
             model.RevenueTargetThisMonth = snapshot.RevenueTargetThisMonth ?? model.RevenueTargetThisMonth;
 
             model.TotalAccounts = snapshot.TotalAccounts ?? model.TotalAccounts;
-            model.GoodAccounts = snapshot.GoodAccounts ?? model.GoodAccounts;
-            model.BadAccounts = snapshot.BadAccounts ?? model.BadAccounts;
-            model.PayingAccounts = snapshot.PayingAccounts ?? model.PayingAccounts;
-            model.NonPayingAccounts = snapshot.NonPayingAccounts ?? model.NonPayingAccounts;
+            // GoodAccounts/BadAccounts/PayingAccounts/NonPayingAccounts are
+            // set later in GetAdminDashboardAsync from the live lock
+            // classification, not from this snapshot (the rollup never
+            // wrote them, so they'd otherwise stay on stale sample counts
+            // against a real TotalAccounts -- see that method's comment).
             model.NonPayingAccountsChange = snapshot.NonPayingChange ?? model.NonPayingAccountsChange;
 
             model.ArrearsTotal = snapshot.ArrearsTotal ?? model.ArrearsTotal;

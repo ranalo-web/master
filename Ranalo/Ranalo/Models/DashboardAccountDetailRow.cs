@@ -49,5 +49,12 @@ namespace Ranalo.Models
         public decimal FullContractValue { get; set; }
 
         public DateTime StartDate { get; set; }
+
+        // Contract_Info.BuyingPrice -- manually entered per-contract device
+        // cost (not synced from WooCommerce; see ContractController's
+        // "Update Buying Price" action). Null when never recorded, same
+        // population DealerCommissionMissingCostCount already tracks. Used
+        // for the Admin Dashboard's live Cost of Devices figure.
+        public decimal? BuyingPrice { get; set; }
     }
 }
