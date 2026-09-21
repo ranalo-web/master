@@ -1,6 +1,5 @@
-﻿@using Ranalo.DataStore.DataModels
+@using Ranalo.DataStore.DataModels
 @using Ranalo.Models
-@using System.Text.Json
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
@@ -81,7 +80,7 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Users Lists</h3>
                 <div class="nk-block-des text-soft">
-                    <p>You have total 2,595 users.</p>
+                    <p>You have total @Model.TotalRecords.ToString("N0") users.</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -90,17 +89,6 @@
                     <div class="toggle-expand-content" data-content="pageMenu">
                         <ul class="nk-block-tools g-3">
                             <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
-                            <li class="nk-block-tools-opt">
-                                <div class="drodown">
-                                    <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-end">
-                                        <ul class="link-list-opt no-bdr">
-                                            <li><a href="/adduser"><span>Add User</span></a></li>
-                                            <li><a href="/addrole"><span>Add Role</span></a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </li>
                         </ul>
                     </div>
                 </div><!-- .toggle-wrap -->
@@ -112,136 +100,18 @@
             <div class="card-inner-group">
                 <div class="card-inner position-relative card-tools-toggle">
                     <div class="card-title-group">
-                        <div class="card-tools">
-                            <div class="form-inline flex-nowrap gx-3">
-                                <div class="form-wrap w-150px">
-                                    <select class="form-select js-select2" data-search="off" data-placeholder="Bulk Action">
-                                        <option value="">Bulk Action</option>
-                                        <option value="email">Send Email</option>
-                                        <option value="group">Change Group</option>
-                                        <option value="suspend">Suspend User</option>
-                                        <option value="delete">Delete User</option>
-                                    </select>
-                                </div>
-                                <div class="btn-wrap">
-                                    <span class="d-none d-md-block"><button class="btn btn-dim btn-outline-light disabled">Apply</button></span>
-                                    <span class="d-md-none"><button class="btn btn-dim btn-outline-light btn-icon disabled"><em class="icon ni ni-arrow-right"></em></button></span>
-                                </div>
-                            </div><!-- .form-inline -->
-                        </div><!-- .card-tools -->
                         <div class="card-tools me-n1">
-                            <ul class="btn-toolbar gx-1">
-                                <li>
-                                    <a href="#" class="btn btn-icon search-toggle toggle-search" data-target="search"><em class="icon ni ni-search"></em></a>
-                                </li><!-- li -->
-                                <li class="btn-toolbar-sep"></li><!-- li -->
-                                <li>
-                                    <div class="toggle-wrap">
-                                        <a href="#" class="btn btn-icon btn-trigger toggle" data-target="cardTools"><em class="icon ni ni-menu-right"></em></a>
-                                        <div class="toggle-content" data-content="cardTools">
-                                            <ul class="btn-toolbar gx-1">
-                                                <li class="toggle-close">
-                                                    <a href="#" class="btn btn-icon btn-trigger toggle" data-target="cardTools"><em class="icon ni ni-arrow-left"></em></a>
-                                                </li><!-- li -->
-                                                <li>
-                                                    <div class="dropdown">
-                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
-                                                            <div class="dot dot-primary"></div>
-                                                            <em class="icon ni ni-filter-alt"></em>
-                                                        </a>
-                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
-                                                            <div class="dropdown-head">
-                                                                <span class="sub-title dropdown-title">Filter Users</span>
-                                                                <div class="dropdown">
-                                                                    <a href="#" class="btn btn-sm btn-icon">
-                                                                        <em class="icon ni ni-more-h"></em>
-                                                                    </a>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-body dropdown-body-rg">
-                                                                <div class="row gx-6 gy-3">
-                                                                    <div class="col-6">
-                                                                        <div class="custom-control custom-control-sm custom-checkbox">
-                                                                            <input type="checkbox" class="custom-control-input" id="hasBalance">
-                                                                            <label class="custom-control-label" for="hasBalance"> Have Balance</label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="custom-control custom-control-sm custom-checkbox">
-                                                                            <input type="checkbox" class="custom-control-input" id="hasKYC">
-                                                                            <label class="custom-control-label" for="hasKYC"> KYC Verified</label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Role</label>
-                                                                            <select class="form-select js-select2">
-                                                                                <option value="any">Any Role</option>
-                                                                                <option value="investor">Investor</option>
-                                                                                <option value="seller">Seller</option>
-                                                                                <option value="buyer">Buyer</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Status</label>
-                                                                            <select class="form-select js-select2">
-                                                                                <option value="any">Any Status</option>
-                                                                                <option value="active">Active</option>
-                                                                                <option value="pending">Pending</option>
-                                                                                <option value="suspend">Suspend</option>
-                                                                                <option value="deleted">Deleted</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <button type="button" class="btn btn-secondary">Filter</button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-foot between">
-                                                                <a class="clickable" href="#">Reset Filter</a>
-                                                                <a href="#">Save Filter</a>
-                                                            </div>
-                                                        </div><!-- .filter-wg -->
-                                                    </div><!-- .dropdown -->
-                                                </li><!-- li -->
-                                                <li>
-                                                    <div class="dropdown">
-                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
-                                                            <em class="icon ni ni-setting"></em>
-                                                        </a>
-                                                        <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
-                                                            <ul class="link-check">
-                                                                <li><span>Show</span></li>
-                                                                <li class="active"><a href="#">10</a></li>
-                                                                <li><a href="#">20</a></li>
-                                                                <li><a href="#">50</a></li>
-                                                            </ul>
-                                                            <ul class="link-check">
-                                                                <li><span>Order</span></li>
-                                                                <li class="active"><a href="#">DESC</a></li>
-                                                                <li><a href="#">ASC</a></li>
-                                                            </ul>
-                                                        </div>
-                                                    </div><!-- .dropdown -->
-                                                </li><!-- li -->
-                                            </ul><!-- .btn-toolbar -->
-                                        </div><!-- .toggle-content -->
-                                    </div><!-- .toggle-wrap -->
-                                </li><!-- li -->
-                            </ul><!-- .btn-toolbar -->
-                        </div><!-- .card-tools -->
+                            <a href="#" class="btn btn-icon search-toggle toggle-search" data-target="search"><em class="icon ni ni-search"></em></a>
+                        </div>
                     </div><!-- .card-title-group -->
                     <div class="card-search search-wrap" data-search="search">
                         <div class="card-body">
                             <div class="search-content">
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <input type="text" class="form-control border-transparent form-focus-none" placeholder="Search by user or email">
-                                <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                <form action="/users" method="get">
+                                    <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" value="@ViewBag.SearchTerm" placeholder="Search by name or email">
+                                    <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                </form>
                             </div>
                         </div>
                     </div><!-- .card-search -->
@@ -249,12 +119,6 @@
                 <div class="card-inner p-0">
                     <div class="nk-tb-list nk-tb-ulist is-compact">
                         <div class="nk-tb-item nk-tb-head">
-                            <div class="nk-tb-col nk-tb-col-check">
-                                <div class="custom-control custom-control-sm custom-checkbox notext">
-                                    <input type="checkbox" class="custom-control-input" id="uid">
-                                    <label class="custom-control-label" for="uid"></label>
-                                </div>
-                            </div>
                             <div class="nk-tb-col"><span class="sub-text">User</span></div>
                             <div class="nk-tb-col tb-col-md"><span class="sub-text">Role</span></div>
                             <div class="nk-tb-col tb-col-sm"><span class="sub-text">Email</span></div>
@@ -263,49 +127,10 @@
                             <div class="nk-tb-col tb-col-lg"><span class="sub-text">Verified</span></div>
                             <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Last Login</span></div>
                             <div class="nk-tb-col"><span class="sub-text">Status</span></div>
-                            <div class="nk-tb-col nk-tb-col-tools text-end">
-                                <div class="dropdown">
-                                    <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-offset="0,5"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
-                                        <ul class="link-tidy sm no-bdr">
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" checked="" id="bl">
-                                                    <label class="custom-control-label" for="bl">Balance</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" checked="" id="ph">
-                                                    <label class="custom-control-label" for="ph">Phone</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" id="vri">
-                                                    <label class="custom-control-label" for="vri">Verified</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" id="st">
-                                                    <label class="custom-control-label" for="st">Status</label>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
                         </div><!-- .nk-tb-item -->
                         @foreach (var user in Model.Users)
                         {
                             <div class="nk-tb-item">
-                                <div class="nk-tb-col nk-tb-col-check">
-                                    <div class="custom-control custom-control-sm custom-checkbox notext">
-                                        <input type="checkbox" class="custom-control-input" id="uid1">
-                                        <label class="custom-control-label" for="uid1"></label>
-                                    </div>
-                                </div>
                                 <div class="nk-tb-col">
                                     <div class="user-card">
                                         <div class="user-avatar xs bg-primary">
@@ -334,59 +159,10 @@
                                     </ul>
                                 </div>
                                 <div class="nk-tb-col tb-col-xxl">
-                                    <span>16 Jul 2025</span>
+                                    <span>@(user.LastLogin?.ToString("MMM d, yyyy") ?? "Never")</span>
                                 </div>
                                 <div class="nk-tb-col">
                                     <span class="@SetStatusBadge(user.Status)">@SetStatusText(user.Status)</span>
-                                </div>
-                                <div class="nk-tb-col nk-tb-col-tools">
-                                    <ul class="nk-tb-actions gx-2">
-                                        <li class="nk-tb-action-hidden">
-                                            <a href="#" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Wallet">
-                                                <em class="icon ni ni-wallet-fill"></em>
-                                            </a>
-                                        </li>
-                                        <li class="nk-tb-action-hidden">
-                                            <a href="#" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Send Email">
-                                                <em class="icon ni ni-mail-fill"></em>
-                                            </a>
-                                        </li>
-                                        <li class="nk-tb-action-hidden">
-                                            <a href="/suspenduser/@user.UserId" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Suspend">
-                                                <em class="icon ni ni-user-cross-fill"></em>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <div class="drodown">
-                                                <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
-                                                <div class="dropdown-menu dropdown-menu-end">
-                                                    <ul class="link-list-opt no-bdr">
-                                                        <li>
-                                                            <a href="#edit-user"
-                                                            data-bs-toggle="modal"
-                                                            data-id="@user.UserId"
-                                                            data-email="@user.Email"
-                                                            data-password="@user.PasswordHash"
-                                                            data-roleId="@((int)user.RoleId)"
-                                                            data-dealerId="@user.DealerId"
-                                                            data-known="@user.KnownAs"
-                                                            data-name="@user.Name"
-                                                            data-active="@user.IsActive"
-                                                            data-lastName="@user.LastName"
-                                                            data-status="@user.Status"
-                                                            data-city="@user.City"
-                                                            data-phone="@user.Phone"
-                                                            data-otherroles='@Html.Raw(JsonSerializer.Serialize(user.OtherSelectedRoles))'
-                                                            data-lastlog="@user.LastLogin">
-                                                                <em class="icon ni ni-eye"></em><span>Edit User</span>
-                                                            </a>
-                                                        </li>
-                                                        <li><a href="#"><em class="icon ni ni-archive"></em><span>Delete User</span></a></li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </ul>
                                 </div>
                             </div>
 
@@ -397,242 +173,42 @@
                     </div><!-- .nk-tb-list -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
+                    @{
+                        string PageLink(int p) => Url.Action("Users", "Home", new { page = p, searchTerm = ViewBag.SearchTerm })!;
+                        var maxVisiblePages = 5;
+                        var startPage = Math.Max(1, Model.CurrentPage - 2);
+                        var endPage = Math.Min(Model.TotalPages, startPage + maxVisiblePages - 1);
+                        if (endPage - startPage < maxVisiblePages - 1)
+                        {
+                            startPage = Math.Max(1, endPage - maxVisiblePages + 1);
+                        }
+                    }
                     <ul class="pagination justify-content-center justify-content-md-start">
-                        <li class="page-item"><a class="page-link" href="#">Prev</a></li>
-                        <li class="page-item"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><span class="page-link"><em class="icon ni ni-more-h"></em></span></li>
-                        <li class="page-item"><a class="page-link" href="#">6</a></li>
-                        <li class="page-item"><a class="page-link" href="#">7</a></li>
-                        <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                        @if (Model.CurrentPage > 1)
+                        {
+                            <li class="page-item"><a class="page-link" href="@PageLink(Model.CurrentPage - 1)">Prev</a></li>
+                        }
+                        @if (startPage > 1)
+                        {
+                            <li class="page-item"><a class="page-link" href="@PageLink(1)">1</a></li>
+                            <li class="page-item"><span class="page-link"><em class="icon ni ni-more-h"></em></span></li>
+                        }
+                        @for (int i = startPage; i <= endPage; i++)
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")"><a class="page-link" href="@PageLink(i)">@i</a></li>
+                        }
+                        @if (endPage < Model.TotalPages)
+                        {
+                            <li class="page-item"><span class="page-link"><em class="icon ni ni-more-h"></em></span></li>
+                            <li class="page-item"><a class="page-link" href="@PageLink(Model.TotalPages)">@Model.TotalPages</a></li>
+                        }
+                        @if (Model.CurrentPage < Model.TotalPages)
+                        {
+                            <li class="page-item"><a class="page-link" href="@PageLink(Model.CurrentPage + 1)">Next</a></li>
+                        }
                     </ul><!-- .pagination -->
                 </div><!-- .card-inner -->
             </div><!-- .card-inner-group -->
         </div><!-- .card -->
     </div><!-- .nk-block -->
 </div>
-
-
-<div class="modal fade" tabindex="-1" id="edit-user">
-    <div class="modal-dialog modal-md" role="document">
-        <div class="modal-content">
-            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
-                <em class="icon ni ni-cross-sm"></em>
-            </a>
-            <div class="modal-body modal-body-md">
-                <h5 class="modal-title">Edit User</h5>
-                <form action="/adduser" method="post" class="mt-2">
-                    <input type="hidden" class="form-control" name="userId" id="hiddenUserId">
-                    <div class="row gy-4">
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-name">First Name</label>
-                                <div class="form-control-wrap">
-                                    <div class="form-icon form-icon-left">
-                                        <em class="icon ni ni-user"></em>
-                                    </div>
-                                    <input type="text" name="name" class="form-control" id="edit-name" placeholder="Enter user first name" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-lastName">Last Name</label>
-                                <div class="form-control-wrap">
-                                    <div class="form-icon form-icon-left">
-                                        <em class="icon ni ni-user"></em>
-                                    </div>
-                                    <input type="text" name="lastname" class="form-control" id="edit-lastName" placeholder="Enter user last name" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-known">Nick Name</label>
-                                <div class="form-control-wrap">
-                                    <div class="form-icon form-icon-left">
-                                        <em class="icon ni ni-user"></em>
-                                    </div>
-                                    <input type="text" name="knownas" class="form-control" id="edit-known" placeholder="Enter a known as name">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-email">Email Address</label>
-                                <div class="form-control-wrap">
-                                    <div class="form-icon form-icon-left">
-                                        <em class="icon ni ni-mail"></em>
-                                    </div>
-                                    <input type="text" name="email" class="form-control" id="edit-email" placeholder="Enter a valid email address" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-dealerId">Dealer Id</label>
-                                <div class="form-control-wrap">
-                                    <div class="form-icon form-icon-left">
-                                        <em class="icon ni ni-user"></em>
-                                    </div>
-                                    <input type="text" name="lastname" class="form-control" id="edit-dealerId" placeholder="Enter user last name" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-city">City</label>
-                                <div class="form-control-wrap">
-                                    <div class="form-icon form-icon-left">
-                                        <em class="icon ni ni-building"></em>
-                                    </div>
-                                    <input type="text" name="city" class="form-control" id="edit-city" placeholder="Enter a city">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-roleId">Select Main Role</label>
-                                <div class="form-control-wrap ">
-                                    <div class="form-control-select">
-                                        <select name="roleId" class="form-control" id="edit-roleId">
-                                            @if (ViewBag.IsAdmin)
-                                            {
-                                                <option value="1">Admin</option>
-                                                <option value="2">Dealer</option>
-                                                <option value="3">Customer</option>
-                                                <option value="4">Supplier</option>
-                                                <option value="5">Approver</option>
-                                                <option value="6">Collector</option>
-                                                <option value="7">Agent</option>
-                                            }
-                                            else
-                                            {
-                                                <option value="6">Collector</option>
-                                                <option value="7">Agent</option>
-                                            }
-
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        @if (ViewBag.IsAdmin)
-                        {
-                            
-                             <div class="col-sm-12">
-                            <div class="form-group">
-                                <label class="form-label" for="default-06">Select Other Roles</label>
-                                <div class="form-control-wrap ">
-                                    <div class="custom-control custom-control-lg custom-checkbox">
-                                        <input type="checkbox" name="OtherSelectedRoles" value="Admin" class="custom-control-input" id="customAdmin">
-                                        <label class="custom-control-label" for="customAdmin">Admin </label>
-
-                                    </div>
-                                    <div class="custom-control custom-control-lg custom-checkbox">
-                                        <input type="checkbox" name="OtherSelectedRoles" value="Dealer" class="custom-control-input" id="customDealer">
-                                        <label class="custom-control-label" for="customDealer">Dealer </label>
-                                    </div>
-                                    <div class="custom-control custom-control-lg custom-checkbox">
-                                        
-                                        <input type="checkbox" name="OtherSelectedRoles" value="Supplier" class="custom-control-input" id="customSupplier">
-                                        <label class="custom-control-label" for="customSupplier">Supplier </label>
-                                    </div>
-                                    <div class="custom-control custom-control-lg custom-checkbox">
-                                        
-                                        <input type="checkbox" name="OtherSelectedRoles" value="Approver" class="custom-control-input" id="customApprover">
-                                        <label class="custom-control-label" for="customApprover">Approver </label>
-                                    </div>
-                                    <div class="custom-control custom-control-lg custom-checkbox">
-                                        
-                                        <input type="checkbox" name="OtherSelectedRoles" value="Collector" class="custom-control-input" id="customCollector">
-                                        <label class="custom-control-label" for="customCollector">Collector </label>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                        }
-                       
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <div class="form-control-wrap">
-                                    <div class="form-group">
-                                        <label class="form-label" for="edit-password">Password</label>
-                                        <div class="form-control-wrap">
-                                            <a tabindex="-1" href="#" class="form-icon form-icon-right passcode-switch lg" data-target="edit-password">
-                                                <em class="passcode-icon icon-show icon ni ni-eye"></em>
-                                                <em class="passcode-icon icon-hide icon ni ni-eye-off"></em>
-                                            </a>
-                                            <input type="password" name="passwordHash" class="form-control form-control-lg" id="edit-password" placeholder="Enter your passcode" required>
-                                        </div>
-                                    </div><!-- .form-group -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-sm-12">
-                            <div class="form-control-wrap">
-                                <div class="form-btn-group">
-                                    <button type="submit" class="btn btn-lg btn-success">Submit</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div><!-- .Edit Modal-Content -->
-
-@section Scripts
-{
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-            var modal = document.getElementById('edit-user');
-        modal.addEventListener('shown.bs.modal', function (event) {
-            var button = event.relatedTarget; // Button that triggered the modal
-                var id = button.getAttribute('data-id');
-                var email = button.getAttribute('data-email');
-                        var password = button.getAttribute('data-password');
-                        var roleId = button.getAttribute('data-roleId');
-                        var dealerId = button.getAttribute('data-dealerId');
-                        var known = button.getAttribute('data-known');
-                        var name = button.getAttribute('data-name');
-                        var active = button.getAttribute('data-active');
-                        var lastName = button.getAttribute('data-lastName');
-                        var status = button.getAttribute('data-status');
-                        var city = button.getAttribute('data-city');
-                        var phone = button.getAttribute('data-phone');
-                        var lastlog = button.getAttribute('data-lastlog');
-
-                    document.getElementById('hiddenUserId').value = id;
-
-                        document.getElementById('edit-email').value = email;
-                        document.getElementById('edit-password').value = password;
-                    
-                        document.getElementById('edit-roleId').value = roleId;
-                        document.getElementById('edit-dealerId').value = dealerId;
-                        document.getElementById('edit-known').value = known;
-                        document.getElementById('edit-name').value = name;
-                        document.getElementById('edit-lastName').value = lastName;
-                        //document.getElementById('edit-status').value = status;
-                        document.getElementById('edit-city').value = city;
-                        //document.getElementById('edit-phone').value = phone;
-                        
-                        //document.getElementById('edit-lastlog').value = lastlog;
-
-                         document.querySelectorAll('input[name="OtherSelectedRoles"]')
-                            .forEach(cb => cb.checked = false);
-
-                               var otherroles = button.getAttribute('data-otherroles');
-                        var rolesArray = otherroles ? JSON.parse(otherroles) : [];
-
-                        document.querySelectorAll('input[name="OtherSelectedRoles"]')
-                            .forEach(cb => cb.checked = rolesArray.includes(cb.value));
-                        });
-                    });
-    </script>
-
-}

@@ -175,84 +175,14 @@
                                                 <li>
                                                     <div class="dropdown">
                                                         <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
-                                                            <div class="dot dot-primary"></div>
-                                                            <em class="icon ni ni-filter-alt"></em>
-                                                        </a>
-                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
-                                                            <div class="dropdown-head">
-                                                                <span class="sub-title dropdown-title">Filter Borrower</span>
-                                                                <div class="dropdown">
-                                                                    <a href="#" class="btn btn-sm btn-icon">
-                                                                        <em class="icon ni ni-more-h"></em>
-                                                                    </a>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-body dropdown-body-rg">
-                                                                <div class="row gx-6 gy-3">
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Category</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="education">Education</option>
-                                                                                <option value="emergency">Emergency</option>
-                                                                                <option value="daily">Daily</option>
-                                                                                <option value="kibaba">Kibaba</option>
-                                                                                <option value="bilashi">Bilashi</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Interest</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="5">5%</option>
-                                                                                <option value="7">7%</option>
-                                                                                <option value="10">10%</option>
-                                                                                <option value="15">15%</option>
-                                                                                <option value="20">20%</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Status</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="approved">Approved</option>
-                                                                                <option value="pending">Pending</option>
-                                                                                <option value="rejected">Rejected</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <button type="button" class="btn btn-secondary">Filter</button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-foot between">
-                                                                <a class="clickable" href="#">Reset Filter</a>
-                                                                <a href="#">Save Filter</a>
-                                                            </div>
-                                                        </div><!-- .filter-wg -->
-                                                    </div><!-- .dropdown -->
-                                                </li><!-- li -->
-                                                <li>
-                                                    <div class="dropdown">
-                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
                                                             <em class="icon ni ni-setting"></em>
                                                         </a>
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
                                                             <ul class="link-check">
                                                                 <li><span>Show</span></li>
-                                                                <li class="active"><a href="#">10</a></li>
-                                                                <li><a href="#">20</a></li>
-                                                                <li><a href="#">50</a></li>
-                                                            </ul>
-                                                            <ul class="link-check">
-                                                                <li><span>Order</span></li>
-                                                                <li class="active"><a href="#">DESC</a></li>
-                                                                <li><a href="#">ASC</a></li>
+                                                                <li class="@(ViewBag.PageSize == 10 ? "active" : "")"><a href="/statusreport?page=1&amp;pageSize=10&amp;searchTerm=@ViewBag.SearchTerm">10</a></li>
+                                                                <li class="@(ViewBag.PageSize == 20 ? "active" : "")"><a href="/statusreport?page=1&amp;pageSize=20&amp;searchTerm=@ViewBag.SearchTerm">20</a></li>
+                                                                <li class="@(ViewBag.PageSize == 50 ? "active" : "")"><a href="/statusreport?page=1&amp;pageSize=50&amp;searchTerm=@ViewBag.SearchTerm">50</a></li>
                                                             </ul>
                                                         </div>
                                                     </div><!-- .dropdown -->
@@ -407,10 +337,13 @@
                     <div class="nk-block-between-md g-3">
                         <div class="g">
                             <ul class="pagination justify-content-center justify-content-md-start">
+                                @{
+                                    string StatusReportPageLink(int p) => Url.Action("Index", "Reports", new { page = p, pageSize = ViewBag.PageSize, searchTerm = ViewBag.SearchTerm })!;
+                                }
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="@StatusReportPageLink(Model.CurrentPage - 1)">Prev</a>
                                     </li>
                                 }
 
@@ -427,7 +360,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=1">1</a>
+                                        <a class="page-link" href="@StatusReportPageLink(1)">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -437,7 +370,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/statusreport?page=@i">@i</a>
+                                        <a class="page-link" href="@StatusReportPageLink(i)">@i</a>
                                     </li>
                                 }
 
@@ -447,14 +380,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="@StatusReportPageLink(Model.TotalPages)">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/statusreport?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="@StatusReportPageLink(Model.CurrentPage + 1)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -466,7 +399,7 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/statusreport?page=' + this.value">
+                                            onchange="location.href='/statusreport?page=' + this.value + '&pageSize=@ViewBag.PageSize&searchTerm=@ViewBag.SearchTerm'">
                                         >
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {

@@ -51,7 +51,11 @@ namespace Ranalo.Controllers
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 int? dealerId = settings.RoleId == UserRole.Admin ? null : settings.DealerId;
-                var searchResults = await _applicationReportService.GetAllAccountsAsync(dealerId, searchTerm, page, pageSize);
+                // An Agent can only add their own assigned accounts to the
+                // watchlist -- restrict the search results themselves so the
+                // "Add" button never offers an account outside their book.
+                int? agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : null;
+                var searchResults = await _applicationReportService.GetAllAccountsAsync(dealerId, searchTerm, page, pageSize, agentUserId);
                 model.SearchResults = searchResults.Accounts ?? new List<AllAccounts>();
             }
 
@@ -71,6 +75,16 @@ namespace Ranalo.Controllers
             if (!CanUseWatchlist(settings.RoleId))
             {
                 return RedirectToAction("Index", "Home");
+            }
+
+            // Defense in depth: accountId travels as a hidden form field, so
+            // even though the search results already only offer an Agent
+            // their own accounts, re-verify ownership server-side before
+            // adding.
+            if (settings.RoleId == UserRole.Agent &&
+                !await _applicationReportService.IsAccountAssignedToAgentAsync(accountId, settings.UserId))
+            {
+                return RedirectToAction("Index", new { searchTerm });
             }
 
             await _watchlistService.AddToWatchlistAsync(accountId, settings);

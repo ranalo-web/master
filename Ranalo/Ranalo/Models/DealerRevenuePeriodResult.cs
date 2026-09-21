@@ -41,5 +41,19 @@ namespace Ranalo.Models
         // Dealer Commissions card: commission paid to this dealer within the
         // selected period, live from DealerCommissionPayments.
         public decimal DealerCommissionPaidThisPeriod { get; set; }
+
+        // Completed Contracts summary card: how many of the dealer's
+        // contracts finished (fully paid off) within the selected period --
+        // filtered in DashboardReportService from the same
+        // GetCompletedContractsAsync rows the Completed Contracts report page
+        // uses, not a separate query.
+        public int CompletedContractsInPeriod { get; set; }
+
+        // My Portfolio card: of the accounts that STARTED within the selected
+        // period, % currently in good standing (CollectionRatePct) vs 30+
+        // days past their lock date (PortfolioAtRiskPct) -- count-based, not
+        // value-based. See DashboardReportService.ComputeCohortRates.
+        public decimal CollectionRatePct { get; set; }
+        public decimal PortfolioAtRiskPct { get; set; }
     }
 }

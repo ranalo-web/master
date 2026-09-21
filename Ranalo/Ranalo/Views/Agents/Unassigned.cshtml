@@ -83,17 +83,20 @@
                     <div class="toggle-expand-content" data-content="pageMenu">
                         <ul class="nk-block-tools g-3">
                             <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
-                            <li class="nk-block-tools-opt">
-                                <div class="drodown">
-                                    <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-end">
-                                        <ul class="link-list-opt no-bdr">
-                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#add-loan"><span>Add Loan</span></a></li>
-                                            <li><a href="#"><span>Import Loan</span></a></li>
-                                        </ul>
+                            @if (!(ViewBag.IsAgent is true))
+                            {
+                                <li class="nk-block-tools-opt">
+                                    <div class="drodown">
+                                        <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <ul class="link-list-opt no-bdr">
+                                                <li><a href="#" data-bs-toggle="modal" data-bs-target="#add-loan"><span>Add Loan</span></a></li>
+                                                <li><a href="#"><span>Import Loan</span></a></li>
+                                            </ul>
+                                        </div>
                                     </div>
-                                </div>
-                            </li>
+                                </li>
+                            }
                         </ul>
                     </div>
                 </div><!-- .toggle-wrap -->
@@ -134,71 +137,6 @@
                                             <ul class="btn-toolbar gx-1">
                                                 <li class="toggle-close">
                                                     <a href="#" class="btn btn-icon btn-trigger toggle" data-target="cardTools"><em class="icon ni ni-arrow-left"></em></a>
-                                                </li><!-- li -->
-                                                <li>
-                                                    <div class="dropdown">
-                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
-                                                            <div class="dot dot-primary"></div>
-                                                            <em class="icon ni ni-filter-alt"></em>
-                                                        </a>
-                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
-                                                            <div class="dropdown-head">
-                                                                <span class="sub-title dropdown-title">Filter Borrower</span>
-                                                                <div class="dropdown">
-                                                                    <a href="#" class="btn btn-sm btn-icon">
-                                                                        <em class="icon ni ni-more-h"></em>
-                                                                    </a>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-body dropdown-body-rg">
-                                                                <div class="row gx-6 gy-3">
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Category</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="education">Education</option>
-                                                                                <option value="emergency">Emergency</option>
-                                                                                <option value="daily">Daily</option>
-                                                                                <option value="kibaba">Kibaba</option>
-                                                                                <option value="bilashi">Bilashi</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Interest</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="5">5%</option>
-                                                                                <option value="7">7%</option>
-                                                                                <option value="10">10%</option>
-                                                                                <option value="15">15%</option>
-                                                                                <option value="20">20%</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Status</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="approved">Approved</option>
-                                                                                <option value="pending">Pending</option>
-                                                                                <option value="rejected">Rejected</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <button type="button" class="btn btn-secondary">Filter</button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-foot between">
-                                                                <a class="clickable" href="#">Reset Filter</a>
-                                                                <a href="#">Save Filter</a>
-                                                            </div>
-                                                        </div><!-- .filter-wg -->
-                                                    </div><!-- .dropdown -->
                                                 </li><!-- li -->
                                                 <li>
                                                     <div class="dropdown">
@@ -251,12 +189,8 @@
                             <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
                             <div class="nk-tb-col tb-col-md"><span class="sub-text">Daily Rate</span></div>
                             <div class="nk-tb-col"><span class="sub-text">Deposit</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Total Paid</span></div>
-                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Arrears</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Total Due</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Balance</span></div>
-
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Status</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Last Payment</span></div>
+                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Mpesa Code</span></div>
                             <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Enrolled On</span></div>
                             <div class="nk-tb-col nk-tb-col-tools text-end">
                                 <div class="dropdown">
@@ -314,40 +248,60 @@
                                 <div class="nk-tb-col">
                                     <span>@record.Deposit </span>
                                 </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    @if (record.LastPaymentDate.HasValue)
+                                    {
+                                        <span class="tb-lead">KES @record.LastPaymentAmount?.ToString("N0")</span><br />
+                                        <span class="sub-text">@record.LastPaymentDate?.ToString("MMM d, yyyy")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-soft">No payments</span>
+                                    }
+                                </div>
+                                <div class="nk-tb-col tb-col-md">
+                                    <span>@(record.LastMpesaCode ?? "-")</span>
+                                </div>
                                 <div class="nk-tb-col tb-col-xxl">
                                     <span>@record.StartDate?.ToString("dd MMM yyyy")</span>
                                 </div>
                                 <div class="nk-tb-col nk-tb-col-tools">
                                     <ul class="nk-tb-actions gx-2">
-                                        <li class="nk-tb-action-hidden">
-                                            <a href="#edit-contract"
-                                               class="btn btn-sm btn-icon btn-trigger"
-                                               data-bs-toggle="modal"
-                                               data-id="@record.ID"
-                                               data-name="@record.FirstName"
-                                               data-deposit="@record.Deposit"
-                                               data-interval="@record.RePaymentIntervals"
-                                               data-daily="@record.Daily"
-                                               data-weekly="@record.Weekly"
-                                               data-monthly="@record.Monthly"
-                                               data-loan="@record.TotalLoan"
-                                               data-bs-placement="top"
-                                               title="Recover Device">
-                                                <em class="icon ni ni-user-check-fill"></em>
-                                            </a>
-                                        </li>
+                                        @if (!(ViewBag.IsAgent is true))
+                                        {
+                                            <li class="nk-tb-action-hidden">
+                                                <a href="#edit-contract"
+                                                   class="btn btn-sm btn-icon btn-trigger"
+                                                   data-bs-toggle="modal"
+                                                   data-id="@record.ID"
+                                                   data-name="@record.FirstName"
+                                                   data-deposit="@record.Deposit"
+                                                   data-interval="@record.RePaymentIntervals"
+                                                   data-daily="@record.Daily"
+                                                   data-weekly="@record.Weekly"
+                                                   data-monthly="@record.Monthly"
+                                                   data-loan="@record.TotalLoan"
+                                                   data-bs-placement="top"
+                                                   title="Recover Device">
+                                                    <em class="icon ni ni-user-check-fill"></em>
+                                                </a>
+                                            </li>
+                                        }
                                         <li>
                                             <div class="drodown">
                                                 <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
                                                 <div class="dropdown-menu dropdown-menu-end">
                                                     <ul class="link-list-opt no-bdr">
                                                         <li><a href="/account-details/@record.ID"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
-                                                        <li>
-                                                            <a href="#assign-agent"
-                                                               data-id="@record.ID"
-                                                               data-name="@record.FirstName"
-                                                               data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Assign Agent</span></a>
-                                                        </li>
+                                                        @if (!(ViewBag.IsAgent is true))
+                                                        {
+                                                            <li>
+                                                                <a href="#assign-agent"
+                                                                   data-id="@record.ID"
+                                                                   data-name="@record.FirstName"
+                                                                   data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Assign Agent</span></a>
+                                                            </li>
+                                                        }
                                                         @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
                                                     </ul>
                                                 </div>
@@ -636,39 +590,30 @@
 @section Scripts
 {
     <script>
+        // Populate each modal's fields directly from the triggering link's
+        // click, rather than the modal's own 'show.bs.modal' event -- this
+        // app's bundled Bootstrap build doesn't dispatch that as a native
+        // CustomEvent, so a listener on the modal element never fires.
         document.addEventListener("DOMContentLoaded", function () {
-                var modal = document.getElementById('edit-contract');
-            modal.addEventListener('show.bs.modal', function (event) {
-                var button = event.relatedTarget; // Button that triggered the modal
-                var deviceId = button.getAttribute('data-id');
-                    var name = button.getAttribute('data-name');
+            document.addEventListener('click', function (event) {
+                var trigger = event.target.closest('a[data-bs-toggle="modal"]');
+                if (!trigger) return;
+
+                var href = trigger.getAttribute('href');
+                var deviceId = trigger.getAttribute('data-id') || '';
+                var name = trigger.getAttribute('data-name') || '';
+
+                if (href === '#edit-contract') {
                     document.getElementById('modalDeviceId').value = deviceId;
                     document.getElementById('modalFirstName').value = name;
-            });
-        });
-
-        //Assign contract
-        document.addEventListener("DOMContentLoaded", function () {
-                        var modal1 = document.getElementById('assign-agent');
-        modal1.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget; // Button that triggered the modal
-            var deviceId = button.getAttribute('data-id');
-                var name = button.getAttribute('data-name');
-                document.getElementById('modalDeviceId1').value = deviceId;
-                document.getElementById('modalFirstName1').value = name;
-        });
-        });
-
-        //Lock Device
-            document.addEventListener("DOMContentLoaded", function () {
-                            var modal1 = document.getElementById('lock-device');
-            modal1.addEventListener('show.bs.modal', function (event) {
-                var button = event.relatedTarget; // Button that triggered the modal
-                var deviceId = button.getAttribute('data-id');
-                    var name = button.getAttribute('data-name');
+                } else if (href === '#assign-agent') {
+                    document.getElementById('modalDeviceId1').value = deviceId;
+                    document.getElementById('modalFirstName1').value = name;
+                } else if (href === '#lock-device') {
                     document.getElementById('modalDeviceId2').value = deviceId;
                     document.getElementById('modalFirstName2').value = name;
+                }
             });
-            });
+        });
     </script>
  }

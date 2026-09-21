@@ -57,7 +57,7 @@ namespace Ranalo.Controllers
                 return Unauthorized();
             }
 
-            if (settings.RoleId != UserRole.Dealer && settings.RoleId != UserRole.Admin)
+            if (settings.RoleId != UserRole.Dealer && settings.RoleId != UserRole.Admin && settings.RoleId != UserRole.Agent)
             {
                 // Not Forbid() -- this app has no ASP.NET Core authentication
                 // scheme registered (auth is the custom cookie-based
@@ -66,7 +66,11 @@ namespace Ranalo.Controllers
                 return StatusCode(403);
             }
 
-            var result = await _dashboardReportService.GetDealerRevenueForPeriodAsync(settings.DealerId, period);
+            // An Agent only ever sees their own book (AssignedAgentId), not
+            // the whole dealer's -- see GetDealerDashboardAsync's agentUserId
+            // doc note.
+            var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
+            var result = await _dashboardReportService.GetDealerRevenueForPeriodAsync(settings.DealerId, period, agentUserId);
             if (result == null)
             {
                 return BadRequest("Unrecognized period. Expected one of: week, month, ytd, year.");

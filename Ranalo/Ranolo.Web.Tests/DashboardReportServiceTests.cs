@@ -25,6 +25,7 @@ namespace Ranolo.Web.Tests
         public DashboardArrearsClassificationRow ArrearsClassificationToReturn { get; set; } = new();
         public decimal CommissionPaidForPeriodToReturn { get; set; }
         public decimal DealerCommissionPaidForPeriodToReturn { get; set; }
+        public List<DashboardAccountDetailRow> AccountDetailsToReturn { get; set; } = new();
         public List<(DashboardScope Scope, int? CommissionAccountCount, decimal? CommissionWithheldForArrears)> UpsertedCommissionAccountStats { get; } = new();
         public List<(DashboardScope Scope, int? DealerCommissionAccountCount)> UpsertedDealerCommissionAccountCounts { get; } = new();
         public List<(DashboardScope Scope, decimal? RevenueThisMonth, decimal? RevenueGrowthPct, int? NewThisMonth, int? TotalAccounts)> UpsertedSnapshots { get; } = new();
@@ -36,20 +37,23 @@ namespace Ranolo.Web.Tests
         public Task<string?> GetDealerNameAsync(int dealerId) => Task.FromResult(DealerNameToReturn);
 
         public Task<DashboardRevenuePeriodRow> GetDealerRevenueForPeriodAsync(
-            int dealerId, DateTime periodStart, DateTime periodEndExclusive, DateTime priorPeriodStart, DateTime priorPeriodEndExclusive) =>
+            int dealerId, DateTime periodStart, DateTime periodEndExclusive, DateTime priorPeriodStart, DateTime priorPeriodEndExclusive, int? agentUserId = null) =>
             Task.FromResult(RevenuePeriodToReturn);
 
-        public Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId) =>
+        public Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId, int? agentUserId = null) =>
             Task.FromResult(LockClassificationToReturn);
 
         public Task<Dictionary<string, DashboardLockClassificationRow>> GetDealerDeviceLockClassificationAsync(int dealerId) =>
             Task.FromResult(DeviceLockClassificationToReturn);
 
-        public Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId) =>
+        public Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId, int? agentUserId = null) =>
             Task.FromResult(ArrearsClassificationToReturn);
 
-        public Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive) =>
+        public Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null) =>
             Task.FromResult(CommissionPaidForPeriodToReturn);
+
+        public Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int dealerId, int? agentUserId = null) =>
+            Task.FromResult(AccountDetailsToReturn);
 
         public Task UpsertCommissionAccountStatsAsync(DashboardScope scope, int? commissionAccountCount, decimal? commissionWithheldForArrears)
         {
@@ -230,22 +234,33 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
-        public async Task GetDealerDashboardAsync_WithWatchlistAndPerformanceRows_OverlaysThemOnly()
+        public async Task GetDealerDashboardAsync_WithAccountDetailRows_ClassifiesIntoWatchlistsAndAgentPerformance()
         {
+            // Non-Payers/Slow-Payers/Good-Payers and Agent Performance are no
+            // longer rollup-backed (GetWatchlistAsync/GetPerformanceAsync(Agent)
+            // -- see ScheduledDashboardRollup's class comment on why) -- they're
+            // built live from GetDealerAccountDetailsAsync using the same
+            // Good(<=0)/Slow(1-7)/Arrears(>7 days past lock) split as the
+            // Paying-vs-Non-Paying top card.
+            var now = DateTime.Now;
             var fakeRepo = new FakeDashboardReportRepository
             {
-                WatchlistsToReturn = new()
+                AccountDetailsToReturn = new()
                 {
-                    [DashboardWatchlistType.NonPayer] = new()
+                    new()
                     {
-                        new() { Rank = 1, CustomerName = "Test Customer", AgentName = "Test Agent", Detail = "10 days" },
+                        AccountId = 1, CustomerName = "Non Payer", AssignedAgentId = 7, AgentName = "Test Agent",
+                        NextLockDateRaw = now.AddDays(-30).ToString("yyyy-MM-dd HH:mm:ss"),
                     },
-                },
-                PerformanceToReturn = new()
-                {
-                    [DashboardPerformanceEntryType.Agent] = new()
+                    new()
                     {
-                        new() { Rank = 1, SubjectId = 7, SubjectName = "Test Agent", Accounts = 12, ActivePct = 90, PctOfTarget = 105 },
+                        AccountId = 2, CustomerName = "Slow Payer", AssignedAgentId = 7, AgentName = "Test Agent",
+                        NextLockDateRaw = now.AddDays(-3).ToString("yyyy-MM-dd HH:mm:ss"),
+                    },
+                    new()
+                    {
+                        AccountId = 3, CustomerName = "Good Payer", AssignedAgentId = 7, AgentName = "Test Agent",
+                        NextLockDateRaw = now.AddDays(30).ToString("yyyy-MM-dd HH:mm:ss"),
                     },
                 },
             };
@@ -254,13 +269,40 @@ namespace Ranolo.Web.Tests
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
             Assert.That(result.NonPayers, Has.Count.EqualTo(1));
-            Assert.That(result.NonPayers[0].CustomerName, Is.EqualTo("Test Customer"));
+            Assert.That(result.NonPayers[0].CustomerName, Is.EqualTo("Non Payer"));
+            Assert.That(result.NonPayers[0].Detail, Does.Contain("days overdue"));
+
+            Assert.That(result.SlowPayers, Has.Count.EqualTo(1));
+            Assert.That(result.SlowPayers[0].CustomerName, Is.EqualTo("Slow Payer"));
+
+            Assert.That(result.GoodPayers, Has.Count.EqualTo(1));
+            Assert.That(result.GoodPayers[0].CustomerName, Is.EqualTo("Good Payer"));
+
+            // Agent Performance groups all three accounts under their shared
+            // AssignedAgentId: ActivePct excludes the Slow account from its
+            // denominator (Good/(Good+Arrears) = 1/2), PctOfTarget includes
+            // it (whole book not in default = 2/3).
             Assert.That(result.AgentPerformance, Has.Count.EqualTo(1));
             Assert.That(result.AgentPerformance[0].AgentName, Is.EqualTo("Test Agent"));
+            Assert.That(result.AgentPerformance[0].Accounts, Is.EqualTo(3));
+            Assert.That(result.AgentPerformance[0].ActivePct, Is.EqualTo(50m));
+            Assert.That(result.AgentPerformance[0].PctOfTarget, Is.EqualTo(66.7m));
+        }
 
-            // Watchlist types with no rows returned stay empty, not sample data.
+        [Test]
+        public async Task GetDealerDashboardAsync_WithNoAccountDetailRows_WatchlistsAndAgentPerformanceStayEmpty()
+        {
+            var fakeRepo = new FakeDashboardReportRepository();
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo);
+
+            var result = await service.GetDealerDashboardAsync(dealerId: 42);
+
+            Assert.That(result.NonPayers, Is.Empty);
             Assert.That(result.SlowPayers, Is.Empty);
             Assert.That(result.GoodPayers, Is.Empty);
+            Assert.That(result.AgentPerformance, Is.Empty);
+            Assert.That(result.Contracts, Is.Empty);
+            Assert.That(result.ContractsEndingSoon, Is.Empty);
         }
 
         [Test]

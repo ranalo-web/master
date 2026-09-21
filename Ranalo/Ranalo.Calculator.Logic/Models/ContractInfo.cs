@@ -25,5 +25,8 @@ namespace Ranalo.Calculator.Logic.Models
         public string? AssignedAgentName { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        public DateTime? LastPaymentDate { get; set; }
+        public decimal? LastPaymentAmount { get; set; }
+        public string? LastMpesaCode { get; set; }
     }
 }

@@ -181,6 +181,11 @@ namespace Ranalo.Models
         public string Status { get; set; } = "";
         public string NextDue { get; set; } = "";
         public string DaysLeft { get; set; } = "";
+
+        // Contracts Ending Soon only (not in arrears, 80%+ paid) -- how much
+        // of the contract's full value has been paid off. Null for "My
+        // Contracts" rows, which show DaysLeft/NextDue instead.
+        public decimal? PctComplete { get; set; }
     }
 
     public class DealerAgentPerformance

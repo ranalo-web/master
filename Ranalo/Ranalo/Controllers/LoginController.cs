@@ -42,7 +42,7 @@ namespace Ranalo.Controllers
                 case UserRole.Admin:
                     return RedirectToAction("Index", "Home");
                 case UserRole.Dealer:
-                    return Redirect("/Index");
+                    return RedirectToAction("Index", "DealerDashboard");
                 case UserRole.Approver:
                     return RedirectToAction("Index", "Approver");
                 case UserRole.Collector:
@@ -53,7 +53,7 @@ namespace Ranalo.Controllers
                     break;
             }
 
-            return Redirect("/Index");
+            return RedirectToAction("Index", "DealerDashboard");
         }
 
         [HttpPost]
@@ -91,7 +91,7 @@ namespace Ranalo.Controllers
                         case UserRole.Admin:
                             return RedirectToAction("Index", "Home");
                         case UserRole.Dealer:
-                            return Redirect("/Index");
+                            return RedirectToAction("Index", "DealerDashboard");
                         case UserRole.Approver:
                             return RedirectToAction("Index", "Approver");
                         case UserRole.Collector:

@@ -44,7 +44,7 @@ namespace Ranalo.Controllers
         }
 
         [Route("allpayments/{page:int?}")]
-        public async Task<IActionResult> AllPayments(string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<IActionResult> AllPayments(string searchTerm = "", int page = 1, int pageSize = 10, string period = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -53,34 +53,55 @@ namespace Ranalo.Controllers
             }
 
             await SetViewBags(settings, "index", searchTerm.Trim());
+            ViewBag.Period = period;
+            var (fromDate, toDateExclusive) = ResolvePeriod(period);
 
             //await _enrolmentService.SendReminderMessage("359063757998542");
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPayments = await _applicationReportService.GetAllPaymentsAsync(null, searchTerm.Trim(), page: page, pageSize: pageSize);
+                var allPayments = await _applicationReportService.GetAllPaymentsAsync(null, searchTerm.Trim(), page, pageSize, fromDate, toDateExclusive);
 
                 return View(allPayments);
             }
 
-            var allPaymentsByUser = await _applicationReportService.GetAllPaymentAccountsByUserIdAsync(settings.UserId, page: page, pageSize: pageSize);
+            // GetAllPaymentsAsync(int userId, ...) resolves the dealer for
+            // this user and joins through Devices/Dealers (the correct
+            // dealer-scoped query, same as the POST Search action below) --
+            // GetAllPaymentAccountsByUserIdAsync filtered on
+            // Contract_Info.AssignedAgentId, which is the collections agent
+            // assigned to an account, not this dealer, so it returned no
+            // rows for a real dealer user. That userId overload internally
+            // looks up Dealers.UserId, which never resolves for an Agent (not
+            // a Dealer themselves) -- their own Users.DealerId already names
+            // the dealer they belong to, so use the dealerId overload above
+            // directly instead, same as the Admin/Approver branch.
+            if (settings.RoleId == UserRole.Agent)
+            {
+                var agentPayments = await _applicationReportService.GetAllPaymentsAsync((int?)settings.DealerId, searchTerm.Trim(), page, pageSize, fromDate, toDateExclusive, agentUserId: settings.UserId);
+                return View(agentPayments);
+            }
+
+            var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, searchTerm.Trim(), page, pageSize, fromDate, toDateExclusive);
 
             return View(allPaymentsByUser);
         }
 
         [Route("paymentsummary")]
-        public async Task<IActionResult> PaymentSummary()
+        public async Task<IActionResult> PaymentSummary(string searchTerm = "", int page = 1, int pageSize = 10, string period = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
             {
                 return RedirectToAction("Index", "Login");
             }
-            await SetViewBags(settings, "index");
+            await SetViewBags(settings, "index", searchTerm.Trim());
+            ViewBag.Period = period;
 
             if (settings.RoleId == UserRole.Admin)
             {
-                var allPayments = await _applicationReportService.PaymentsSummary();
+                var (fromDate, toDateExclusive) = ResolvePeriod(period);
+                var allPayments = await _applicationReportService.PaymentsSummary(searchTerm.Trim(), page, pageSize, fromDate, toDateExclusive);
 
                 return View(allPayments);
             }
@@ -90,7 +111,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("allpayments")]
-        public async Task<IActionResult> Search(string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Search(string searchTerm = "", int page = 1, int pageSize = 10, string period = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -99,18 +120,29 @@ namespace Ranalo.Controllers
             }
 
             await SetViewBags(settings, "index", searchTerm.Trim());
+            ViewBag.Period = period;
+            var (fromDate, toDateExclusive) = ResolvePeriod(period);
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPayments = await _applicationReportService.GetAllPaymentsAsync(null, searchTerm.Trim(), page, pageSize);
+                var allPayments = await _applicationReportService.GetAllPaymentsAsync(null, searchTerm.Trim(), page, pageSize, fromDate, toDateExclusive);
 
                 return View("AllPayments", allPayments);
             }
 
-            var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, searchTerm.Trim());
+            if (settings.RoleId == UserRole.Agent)
+            {
+                var agentPayments = await _applicationReportService.GetAllPaymentsAsync((int?)settings.DealerId, searchTerm.Trim(), page, pageSize, fromDate, toDateExclusive, agentUserId: settings.UserId);
+                return View("AllPayments", agentPayments);
+            }
+
+            var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, searchTerm.Trim(), page, pageSize, fromDate, toDateExclusive);
 
             return View("AllPayments", allPaymentsByUser);
         }
+
+        private static (DateTime? FromDate, DateTime? ToDateExclusive) ResolvePeriod(string period) =>
+            PeriodWindowHelper.Resolve(period);
 
         [Route("orphanedpayments/{page:int?}")]
         public async Task<IActionResult> OrphanedPayments(string searchTerm = "",  int page = 1, int pageSize = 10)
@@ -180,6 +212,7 @@ namespace Ranalo.Controllers
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+            ViewBag.IsAgent = settings.RoleId == UserRole.Agent;
             ViewBag.UserName = settings.KnownAs;
             ViewBag.SearchTerm = searchTerm.Trim();
             if (settings.RoleId == UserRole.Dealer)

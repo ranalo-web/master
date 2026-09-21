@@ -12,6 +12,7 @@ namespace Ranalo.Services
         Task<User?> LoginUser(string email, string password);
 
         Task<Dealer?> GetDealerByUserId(int userId);
+        Task<Dealer?> GetDealerByDealerId(int dealerId);
 
         Task<User?> GetUserByCustomerIdAsync(int userId);
 
@@ -20,6 +21,9 @@ namespace Ranalo.Services
         Task<List<User>> GetUsersByDealerIdAsync(int dealerId);
 
         Task<List<User>> GetAllUsersAsync();
+
+        Task<(List<User> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize, string searchTerm);
+        Task<(List<User> Users, int TotalCount)> GetUsersByDealerIdPagedAsync(int dealerId, int page, int pageSize, string searchTerm);
 
         Task AddUserAsync(User user);
         Task UpdateUserAsync(User user);

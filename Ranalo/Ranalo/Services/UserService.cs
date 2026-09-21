@@ -99,6 +99,13 @@ namespace Ranalo.Services
             return await _userRepository.GetDealerByUserIdAsync(userId);
         }
 
+        // For a non-Dealer user (Agent, Collector) -- see
+        // IRepository.GetDealerByDealerIdAsync's doc comment.
+        public async Task<Dealer?> GetDealerByDealerId(int dealerId)
+        {
+            return await _userRepository.GetDealerByDealerIdAsync(dealerId);
+        }
+
 
         public async Task<List<Dealer>?> GetAllDealers()
         {
@@ -129,6 +136,16 @@ namespace Ranalo.Services
             var users = await _userRepository.GetAllUsersAsync();
 
             return users.ToList();
+        }
+
+        public async Task<(List<User> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize, string searchTerm)
+        {
+            return await _userRepository.GetAllUsersPagedAsync(page, pageSize, searchTerm);
+        }
+
+        public async Task<(List<User> Users, int TotalCount)> GetUsersByDealerIdPagedAsync(int dealerId, int page, int pageSize, string searchTerm)
+        {
+            return await _userRepository.GetUsersByDealerIdPagedAsync(dealerId, page, pageSize, searchTerm);
         }
 
         public async Task<IEnumerable<User>> GetDebtCollectors()

@@ -229,7 +229,8 @@ namespace Ranalo.DataStore
             DateTime periodStart,
             DateTime periodEndExclusive,
             DateTime priorPeriodStart,
-            DateTime priorPeriodEndExclusive)
+            DateTime priorPeriodEndExclusive,
+            int? agentUserId = null)
         {
             // Same Dealer linkage as ComputeKpiRollupAsync (KosePayments ->
             // Devices -> Dealers), but filtered to one dealer and an arbitrary
@@ -264,25 +265,29 @@ namespace Ranalo.DataStore
                      FROM Contract_Info ci
                      INNER JOIN Devices d2 ON d2.Id = ci.ID
                      INNER JOIN Dealers dl2 ON dl2.DealerReference = d2.DeviceGroupId
-                     WHERE dl2.DealerId = @DealerId AND ci.StartDate IS NOT NULL) AS TotalAccounts,
+                     WHERE dl2.DealerId = @DealerId AND ci.StartDate IS NOT NULL
+                       AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)) AS TotalAccounts,
                     (SELECT COUNT(*)
                      FROM Contract_Info ci4
                      INNER JOIN Devices d4 ON d4.Id = ci4.ID
                      INNER JOIN Dealers dl4 ON dl4.DealerReference = d4.DeviceGroupId
                      WHERE dl4.DealerId = @DealerId AND ci4.StartDate IS NOT NULL
-                       AND ci4.StartDate < @PeriodEnd) AS TotalAccountsAsOfPeriod,
+                       AND ci4.StartDate < @PeriodEnd
+                       AND (@AgentUserId IS NULL OR ci4.AssignedAgentId = @AgentUserId)) AS TotalAccountsAsOfPeriod,
                     (SELECT COUNT(*)
                      FROM Contract_Info ci4
                      INNER JOIN Devices d4 ON d4.Id = ci4.ID
                      INNER JOIN Dealers dl4 ON dl4.DealerReference = d4.DeviceGroupId
                      WHERE dl4.DealerId = @DealerId AND ci4.StartDate >= @PeriodStart
-                       AND ci4.StartDate < @PeriodEnd) AS NewAccountsInPeriod,
+                       AND ci4.StartDate < @PeriodEnd
+                       AND (@AgentUserId IS NULL OR ci4.AssignedAgentId = @AgentUserId)) AS NewAccountsInPeriod,
                     (SELECT COUNT(*)
                      FROM Contract_Info ci4
                      INNER JOIN Devices d4 ON d4.Id = ci4.ID
                      INNER JOIN Dealers dl4 ON dl4.DealerReference = d4.DeviceGroupId
                      WHERE dl4.DealerId = @DealerId AND ci4.StartDate >= @PriorPeriodStart
-                       AND ci4.StartDate < @PriorPeriodEnd) AS NewAccountsPriorPeriod,
+                       AND ci4.StartDate < @PriorPeriodEnd
+                       AND (@AgentUserId IS NULL OR ci4.AssignedAgentId = @AgentUserId)) AS NewAccountsPriorPeriod,
                     (SELECT ISNULL(SUM(
                             ca.DailyBlendedRate *
                             CASE WHEN ca.OverlapEnd > ca.OverlapStart THEN DATEDIFF(DAY, ca.OverlapStart, ca.OverlapEnd) ELSE 0 END
@@ -300,11 +305,14 @@ namespace Ranalo.DataStore
                          INNER JOIN Devices d3 ON d3.Id = ci3.ID
                          INNER JOIN Dealers dl3 ON dl3.DealerReference = d3.DeviceGroupId
                          WHERE dl3.DealerId = @DealerId AND ci3.StartDate IS NOT NULL
+                           AND (@AgentUserId IS NULL OR ci3.AssignedAgentId = @AgentUserId)
                      ) ca) AS TargetRevenue
                 FROM KosePayments kp
                 INNER JOIN Devices d ON d.Id = kp.AccountNoBigint
                 INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                WHERE dl.DealerId = @DealerId";
+                LEFT JOIN Contract_Info ci5 ON ci5.ID = d.Id
+                WHERE dl.DealerId = @DealerId
+                AND (@AgentUserId IS NULL OR ci5.AssignedAgentId = @AgentUserId)";
 
             try
             {
@@ -315,6 +323,7 @@ namespace Ranalo.DataStore
                     PeriodEnd = periodEndExclusive,
                     PriorPeriodStart = priorPeriodStart,
                     PriorPeriodEnd = priorPeriodEndExclusive,
+                    AgentUserId = agentUserId,
                 });
                 return row ?? new DashboardRevenuePeriodRow();
             }
@@ -340,7 +349,7 @@ namespace Ranalo.DataStore
             "d/M/yyyy h:mm:ss tt",
         };
 
-        private static DateTime? ParseNextLockDate(string? raw)
+        internal static DateTime? ParseNextLockDate(string? raw)
         {
             if (string.IsNullOrWhiteSpace(raw))
             {
@@ -357,7 +366,26 @@ namespace Ranalo.DataStore
                 System.Globalization.DateTimeStyles.None, out parsed) ? parsed : null;
         }
 
-        public async Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId)
+        // Single definition of the Good/Slow/Arrears split used everywhere an
+        // account is classified off Devices.NextLockDateIsoFormat -- the
+        // dealer-wide and per-device aggregate classifications below, the
+        // per-account watchlist/agent-performance/contracts sections in
+        // GetDealerAccountDetailsAsync, and the Dealer Dashboard's own
+        // Paying-vs-Non-Paying card (Index.cshtml treats ArrearsCount as
+        // "Non-Paying") all resolve through this one method so none of them
+        // can drift out of sync with each other.
+        internal enum LockBucket { Good, Slow, Arrears }
+
+        internal static LockBucket ClassifyLock(double daysPastLock) =>
+            daysPastLock > 7 ? LockBucket.Arrears : daysPastLock > 0 ? LockBucket.Slow : LockBucket.Good;
+
+        internal static double DaysPastLock(string? nextLockDateRaw, DateTime? now = null)
+        {
+            var nextLockDate = ParseNextLockDate(nextLockDateRaw);
+            return nextLockDate.HasValue ? ((now ?? DateTime.Now) - nextLockDate.Value).TotalDays : 0;
+        }
+
+        public async Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId, int? agentUserId = null)
         {
             // Devices.NextLockDateIsoFormat, not the accrual-based "days
             // overdue" formula ComputePortfolioClassificationRollupAsync
@@ -383,34 +411,34 @@ namespace Ranalo.DataStore
                 FROM Contract_Info ci
                 INNER JOIN Devices d ON d.Id = ci.ID
                 INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                WHERE dl.DealerId = @DealerId AND ci.StartDate IS NOT NULL";
+                WHERE dl.DealerId = @DealerId AND ci.StartDate IS NOT NULL
+                AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
 
             try
             {
-                var rawDates = await _db.QueryAsync<string?>(sql, new { DealerId = dealerId });
+                var rawDates = await _db.QueryAsync<string?>(sql, new { DealerId = dealerId, AgentUserId = agentUserId });
                 var now = DateTime.Now;
                 var result = new DashboardLockClassificationRow();
 
                 foreach (var raw in rawDates)
                 {
-                    var nextLockDate = ParseNextLockDate(raw);
-                    var daysPastLock = nextLockDate.HasValue ? (now - nextLockDate.Value).TotalDays : 0;
+                    var daysPastLock = DaysPastLock(raw, now);
 
-                    if (daysPastLock > 7)
+                    switch (ClassifyLock(daysPastLock))
                     {
-                        result.ArrearsCount++;
-                        if (daysPastLock > 90)
-                        {
-                            result.NonPayingCount++;
-                        }
-                    }
-                    else if (daysPastLock > 0)
-                    {
-                        result.SlowCount++;
-                    }
-                    else
-                    {
-                        result.GoodCount++;
+                        case LockBucket.Arrears:
+                            result.ArrearsCount++;
+                            if (daysPastLock > 90)
+                            {
+                                result.NonPayingCount++;
+                            }
+                            break;
+                        case LockBucket.Slow:
+                            result.SlowCount++;
+                            break;
+                        default:
+                            result.GoodCount++;
+                            break;
                     }
                 }
 
@@ -460,10 +488,9 @@ namespace Ranalo.DataStore
                         result[row.DeviceName] = bucket;
                     }
 
-                    var nextLockDate = ParseNextLockDate(row.LockDate);
-                    var daysPastLock = nextLockDate.HasValue ? (now - nextLockDate.Value).TotalDays : 0;
+                    var daysPastLock = DaysPastLock(row.LockDate, now);
 
-                    if (daysPastLock > 7)
+                    if (ClassifyLock(daysPastLock) == LockBucket.Arrears)
                     {
                         bucket.ArrearsCount++;
                     }
@@ -490,7 +517,7 @@ namespace Ranalo.DataStore
             public decimal PaidThisMonth { get; set; }
         }
 
-        public async Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId)
+        public async Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId, int? agentUserId = null)
         {
             // Same accrual Arrears $ formula as ComputePortfolioClassificationRollupAsync
             // (Deposit + Daily/Weekly/Monthly accrual since StartDate, capped
@@ -541,11 +568,12 @@ namespace Ranalo.DataStore
                         ELSE CAST(ci.Term_in_Months * 30 AS INT)
                     END AS Days
                 ) DaysAccrued
-                WHERE dl.DealerId = @DealerId AND ci.StartDate IS NOT NULL";
+                WHERE dl.DealerId = @DealerId AND ci.StartDate IS NOT NULL
+                AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
 
             try
             {
-                var rows = await _db.QueryAsync<AccountArrearsRow>(sql, new { DealerId = dealerId });
+                var rows = await _db.QueryAsync<AccountArrearsRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId });
                 var now = DateTime.Now;
                 var result = new DashboardArrearsClassificationRow();
                 decimal totalDaysLocked = 0;
@@ -608,7 +636,104 @@ namespace Ranalo.DataStore
             }
         }
 
-        public async Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive)
+        private class AccountDetailQueryRow
+        {
+            public long AccountId { get; set; }
+            public string CustomerName { get; set; } = "";
+            public int? AssignedAgentId { get; set; }
+            public string? AgentName { get; set; }
+            public string DeviceName { get; set; } = "";
+            public string? NextLockDateRaw { get; set; }
+            public decimal Daily { get; set; }
+            public decimal Weekly { get; set; }
+            public decimal Monthly { get; set; }
+            public decimal TotalPaid { get; set; }
+            public decimal FullContractValue { get; set; }
+            public int DaysAccrued { get; set; }
+            public decimal Deposit { get; set; }
+            public DateTime StartDate { get; set; }
+        }
+
+        public async Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int dealerId, int? agentUserId = null)
+        {
+            // Single live per-account source for Non-Payers/Slow-Payers/
+            // Good-Payers, Agent Performance, My Contracts, and Contracts
+            // Ending Soon (see IDashboardReportRepository's doc comment) --
+            // same join/CTE pattern and formulas as
+            // GetDealerArrearsClassificationAsync (ArrearsAmount) and
+            // RefreshCompletedContractsAsync (FullContractValue), plus the
+            // agent join AccountWatchlistRepository.GetActiveWatchlistAsync
+            // already uses. Classification into Good/Slow/Arrears happens in
+            // C# via ClassifyLock, same as everywhere else in this file.
+            const string sql = @"
+                ;WITH ValidPayments AS (
+                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue
+                    FROM KosePayments kp
+                    LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
+                ),
+                PaymentTotals AS (
+                    SELECT AccountNo, SUM(AmountValue) AS TotalPaid
+                    FROM ValidPayments
+                    GROUP BY AccountNo
+                )
+                SELECT
+                    ci.ID AS AccountId,
+                    ci.First_Name AS CustomerName,
+                    ci.AssignedAgentId,
+                    agentUser.[Name] + ' ' + agentUser.[LastName] AS AgentName,
+                    ISNULL(NULLIF(LTRIM(RTRIM(ISNULL(d.Make, '') + ' ' + ISNULL(d.Model, ''))), ''), 'Unknown Device') AS DeviceName,
+                    d.NextLockDateIsoFormat AS NextLockDateRaw,
+                    ci.Daily,
+                    ci.Weekly,
+                    ci.Monthly,
+                    ci.Deposit,
+                    ISNULL(pt.TotalPaid, 0) AS TotalPaid,
+                    (ci.Deposit + ci.Daily * 30 * ci.Term_in_Months + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months + ci.Monthly * ci.Term_in_Months) AS FullContractValue,
+                    DaysAccrued.Days AS DaysAccrued,
+                    ci.StartDate
+                FROM Contract_Info ci
+                INNER JOIN Devices d ON d.Id = ci.ID
+                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                LEFT JOIN Users agentUser ON agentUser.UserId = ci.AssignedAgentId
+                LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
+                CROSS APPLY (
+                    SELECT CASE
+                        WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) < CAST(ci.Term_in_Months * 30 AS INT)
+                            THEN DATEDIFF(DAY, ci.StartDate, GETDATE())
+                        ELSE CAST(ci.Term_in_Months * 30 AS INT)
+                    END AS Days
+                ) DaysAccrued
+                WHERE dl.DealerId = @DealerId AND ci.StartDate IS NOT NULL
+                AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
+
+            try
+            {
+                var rows = await _db.QueryAsync<AccountDetailQueryRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId });
+
+                return rows.Select(row => new DashboardAccountDetailRow
+                {
+                    AccountId = row.AccountId,
+                    CustomerName = row.CustomerName,
+                    AssignedAgentId = row.AssignedAgentId,
+                    AgentName = row.AgentName,
+                    DeviceName = row.DeviceName,
+                    NextLockDateRaw = row.NextLockDateRaw,
+                    ArrearsAmount = row.TotalPaid - (row.Deposit + row.Daily * row.DaysAccrued + row.Weekly * (row.DaysAccrued / 7.0m) + row.Monthly * (row.DaysAccrued / 30.0m)),
+                    DailyBlendedRate = row.Daily + (row.Weekly / 7.0m) + (row.Monthly / 30.0m),
+                    MonthlyPayment = row.Daily * 30 + row.Weekly * (30.0m / 7.0m) + row.Monthly,
+                    TotalPaid = row.TotalPaid,
+                    FullContractValue = row.FullContractValue,
+                    StartDate = row.StartDate,
+                }).ToList();
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Dealer account-details query failed for dealer {DealerId}", dealerId);
+                return new List<DashboardAccountDetailRow>();
+            }
+        }
+
+        public async Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null)
         {
             const string sql = @"
                 SELECT ISNULL(SUM(acp.AmountPaid), 0)
@@ -617,7 +742,8 @@ namespace Ranalo.DataStore
                 INNER JOIN Devices d ON d.Id = ci.ID
                 INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
                 WHERE dl.DealerId = @DealerId
-                  AND acp.PaymentDate >= @PeriodStart AND acp.PaymentDate < @PeriodEnd";
+                  AND acp.PaymentDate >= @PeriodStart AND acp.PaymentDate < @PeriodEnd
+                  AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
 
             try
             {
@@ -626,6 +752,7 @@ namespace Ranalo.DataStore
                     DealerId = dealerId,
                     PeriodStart = periodStart,
                     PeriodEnd = periodEndExclusive,
+                    AgentUserId = agentUserId,
                 });
             }
             catch (SqlException ex) when (IsMissingTable(ex))

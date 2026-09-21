@@ -153,12 +153,11 @@ namespace Ranalo.DataStore
             if (pageNumber <= 0) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var query = _context.Enrolments.AsNoTracking();
+            var query = _context.Enrolments.AsNoTracking().Where(x => x.DealerId == dealerId);
 
             var totalCount = await query.CountAsync();
 
             var items = await query
-                .Where(x=>x.DealerId == dealerId)
                 .OrderByDescending(x => x.Created) // always order before Skip
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)

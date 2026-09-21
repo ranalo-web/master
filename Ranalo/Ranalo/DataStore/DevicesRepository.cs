@@ -15,7 +15,7 @@ namespace Ranalo.DataStore
             _db = db;
         }
 
-        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoOrders(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "")
+        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoOrders(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null)
         {
             var offset = (page - 1) * pageSize;
 
@@ -23,10 +23,12 @@ namespace Ranalo.DataStore
             FROM Devices d
                 LEFT JOIN Dealers dealer
                     ON dealer.DealerReference = d.DeviceGroupId
+                LEFT JOIN Contract_Info ci
+                    ON ci.ID = d.Id
                 WHERE NOT EXISTS (
                     SELECT 1
                     FROM Woo_Orders wo
-	                INNER JOIN KosePayments kp2 
+	                INNER JOIN KosePayments kp2
                     ON wo.MpesaDepositRef = kp2.MpesaCode
                     WHERE kp2.AccountNoBigint = d.Id
                     AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending')
@@ -35,7 +37,8 @@ namespace Ranalo.DataStore
               AND (
                   @DealerId = 0 OR dealer.DealerReference = @DealerId
               )
-            
+              AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+
               AND (
                 @SearchTerm IS NULL
                 OR d.Id LIKE '%' + @SearchTerm + '%'
@@ -44,9 +47,9 @@ namespace Ranalo.DataStore
                 OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
             )";
 
-            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerReference, searchTerm });
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerReference, searchTerm, AgentUserId = agentUserId });
 
-            var sql = @"SELECT DISTINCT 
+            var sql = @"SELECT DISTINCT
                     d.Id AS DeviceId,
                     d.DeviceGroupId,
                     dealer.DealerReference AS DealerId,
@@ -56,10 +59,12 @@ namespace Ranalo.DataStore
                 FROM Devices d
                 LEFT JOIN Dealers dealer
                     ON dealer.DealerReference = d.DeviceGroupId
+                LEFT JOIN Contract_Info ci
+                    ON ci.ID = d.Id
                 WHERE NOT EXISTS (
                     SELECT 1
                     FROM Woo_Orders wo
-	                INNER JOIN KosePayments kp2 
+	                INNER JOIN KosePayments kp2
                     ON wo.MpesaDepositRef = kp2.MpesaCode
                     WHERE kp2.AccountNoBigint = d.Id
                     AND wo.[Status] not in ('rejected', 'failed', 'cancelled', 'on-hold', 'pending')
@@ -68,6 +73,7 @@ namespace Ranalo.DataStore
                 AND (
                     @DealerId = 0 OR dealer.DealerReference = @DealerId
                 )
+                AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
                 AND d.[Status] = 'enrolled'
                 AND (
                     @SearchTerm IS NULL
@@ -77,9 +83,9 @@ namespace Ranalo.DataStore
                     OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
                 )
                 order by d.CreatedAt
-                OFFSET @Offset ROWS 
+                OFFSET @Offset ROWS
                 FETCH NEXT @pageSize ROWS ONLY";
-            var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerReference, offset, pageSize, searchTerm });
+            var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerReference, offset, pageSize, searchTerm, AgentUserId = agentUserId });
 
             return new DevicesWithDealerViewModel()
             {
@@ -439,23 +445,32 @@ namespace Ranalo.DataStore
             return device;
         }
 
-        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "")
+        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null)
         {
             var offset = (page - 1) * pageSize;
 
+            // A device only lands here when it has NO Contract_Info row at
+            // all, so it can never carry an AssignedAgentId -- when scoped to
+            // an agent, this page always returns zero rows (an agent cannot
+            // "own" a device with no contract yet), which is the correct
+            // reading of "only see their own" here.
             var countSql = @"SELECT COUNT(DISTINCT D.Id)
             FROM Devices d
               LEFT JOIN Contract_Info ci
                   ON d.Id = ci.ID
 				  WHERE ci.ID IS NULL
-                  
+
 				  AND d.[Status] = 'enrolled'
+              AND (
+                @DealerId = 0 OR d.DeviceGroupId = @DealerId
+              )
+              AND (@AgentUserId IS NULL)
               AND (
                 @SearchTerm IS NULL
                 OR d.Id LIKE '%' + @SearchTerm + '%'
             )";
 
-            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerReference, searchTerm });
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerReference, searchTerm, AgentUserId = agentUserId });
 
             var sql = @"SELECT DISTINCT 
                     d.Id AS DeviceId,
@@ -478,6 +493,7 @@ namespace Ranalo.DataStore
                 AND (
                     @DealerId = 0 OR d.DeviceGroupId = @DealerId
                 )
+                AND (@AgentUserId IS NULL)
                 AND (
                     @SearchTerm IS NULL
                     OR d.Id LIKE '%' + @SearchTerm + '%'
@@ -486,9 +502,9 @@ namespace Ranalo.DataStore
                     OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
                 )
                 order by d.CreatedAt
-                OFFSET @Offset ROWS 
+                OFFSET @Offset ROWS
                 FETCH NEXT @pageSize ROWS ONLY";
-            var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerReference, offset, pageSize, searchTerm });
+            var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerReference, offset, pageSize, searchTerm, AgentUserId = agentUserId });
 
             return new DevicesWithDealerViewModel()
             {
@@ -569,7 +585,7 @@ namespace Ranalo.DataStore
             };
         }
 
-        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoPayments(int? dealerId, int page, int pageSize, string searchTerm)
+        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoPayments(int? dealerId, int page, int pageSize, string searchTerm, int? agentUserId = null)
         {
             var offset = (page - 1) * pageSize;
 
@@ -578,19 +594,22 @@ namespace Ranalo.DataStore
 LEFT JOIN KosePayments kp
     ON kp.AccountNoBigint = d.Id
 LEFT JOIN OrphanedPayments op
-    ON op.AccountNoBigint = d.Id 
+    ON op.AccountNoBigint = d.Id
        OR op.MpesaCode IN (
            SELECT MpesaCode FROM KosePayments WHERE AccountNoBigint = d.Id
        )
 LEFT JOIN Dealers dealer
     ON dealer.DealerReference = d.DeviceGroupId
+LEFT JOIN Contract_Info ci
+    ON ci.ID = d.Id
 WHERE kp.AccountNoBigint IS NULL
   AND op.AccountNoBigint IS NULL
   AND d.Status = 'enrolled'
               AND (
                   @DealerId IS NULL OR dealer.DealerReference = @DealerId
               )
-            
+              AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+
               AND (
                 @SearchTerm IS NULL
                 OR d.Id LIKE '%' + @SearchTerm + '%'
@@ -599,9 +618,9 @@ WHERE kp.AccountNoBigint IS NULL
                 OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
             )";
 
-            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerId, searchTerm });
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { DealerId = dealerId, searchTerm, AgentUserId = agentUserId });
 
-            var sql = @"SELECT 
+            var sql = @"SELECT
     d.Id AS DeviceId,
     d.DeviceGroupId,
     dealer.DealerReference AS DealerId,
@@ -616,12 +635,14 @@ FROM Devices d
 LEFT JOIN KosePayments kp
     ON kp.AccountNoBigint = d.Id
 LEFT JOIN OrphanedPayments op
-    ON op.AccountNoBigint = d.Id 
+    ON op.AccountNoBigint = d.Id
        OR op.MpesaCode IN (
            SELECT MpesaCode FROM KosePayments WHERE AccountNoBigint = d.Id
        )
 LEFT JOIN Dealers dealer
     ON dealer.DealerReference = d.DeviceGroupId
+LEFT JOIN Contract_Info ci
+    ON ci.ID = d.Id
 WHERE kp.AccountNoBigint IS NULL
   AND op.AccountNoBigint IS NULL
   AND d.Status = 'enrolled'
@@ -629,7 +650,8 @@ WHERE kp.AccountNoBigint IS NULL
                             AND (
                                 @DealerId IS NULL OR dealer.DealerReference = @DealerId
                             )
-                            
+                            AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+
                         AND (
                                 @SearchTerm IS NULL
                                 OR d.Id LIKE '%' + @SearchTerm + '%'
@@ -637,11 +659,11 @@ WHERE kp.AccountNoBigint IS NULL
                                 OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
                                 OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
                             )
-                            
+
                           order by d.CreatedAt
-                          OFFSET @Offset ROWS 
+                          OFFSET @Offset ROWS
                           FETCH NEXT @pageSize ROWS ONLY";
-            var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerId, offset, pageSize, searchTerm });
+            var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerId, offset, pageSize, searchTerm, AgentUserId = agentUserId });
 
             return new DevicesWithDealerViewModel()
             {

@@ -54,9 +54,11 @@ namespace Ranalo.Controllers
 
             var dealer = await _userService.GetDealerByUserId(settings.UserId);
 
-            var dealerId = Convert.ToInt32(dealer.DealerReference);
-
-            var dealerEnrolments = await _enrolmentService.GetDealerEnrolmentsAsync(dealerId, page, pageSize: pageSize);
+            // Enrolment.DealerId is set from settings.DealerId (see the POST
+            // AddEnrolment action below), which is the real Dealers.DealerId
+            // PK -- not DealerReference (the separate value matched against
+            // Devices.DeviceGroupId elsewhere in the app).
+            var dealerEnrolments = await _enrolmentService.GetDealerEnrolmentsAsync(dealer.DealerId, page, pageSize: pageSize);
 
             var dealerResponse = new EnrolmentViewModel()
             {

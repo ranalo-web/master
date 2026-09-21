@@ -183,8 +183,17 @@ app.UseRouting();
 app.UseAuthorization();
 app.UseMiddleware<UserSettingsMiddleware>();
 app.MapRazorPages();
-//app.MapFallbackToPage("/Pages/Login");
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=DealerDashboard}/{action=Index}/{id?}");
+
+// Every controller action in this app uses an explicit [Route] attribute, so
+// the conventional "default" route above never actually matches anything --
+// it's what MapFallbackToController is for: any GET request that doesn't
+// resolve to any other endpoint (a broken/stale link) lands on the Dealer
+// Dashboard instead of a bare 404. DealerDashboardController.Index() already
+// redirects to Login when unauthenticated, or to Home for the wrong role, so
+// this degrades gracefully for every user.
+app.MapFallbackToController("Index", "DealerDashboard");
+
 app.Run();

@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <base href="../">
+    <base href="/">
     <meta charset="utf-8">
     <meta name="author" content="Roanalo">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -13,30 +13,6 @@
     <!-- StyleSheets  -->
     <link rel="stylesheet" href="./assets/css/dashlite.css?ver=3.3.0">
     <link id="skin-default" rel="stylesheet" href="./assets/css/theme.css?ver=3.3.0">
-
-    <style>
-        .wl-th {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: .03em;
-            font-weight: 700;
-            color: #526484;
-            white-space: nowrap;
-            text-align: left;
-            cursor: pointer;
-            user-select: none;
-            background-color: #f5f6fa !important;
-            padding: 10px 16px !important;
-            border-bottom: 2px solid #e5e9f2 !important;
-        }
-        .wl-th:hover {
-            color: #6576ff;
-            background-color: #eef1fd !important;
-        }
-        .wl-sort-indicator {
-            font-size: 9px;
-        }
-    </style>
 </head>
 <body class="nk-body bg-lighter npc-general has-sidebar ">
     <div class="nk-app-root">
@@ -62,12 +38,6 @@
                                     <h6 class="overline-title text-primary-alt">Dashboard &amp; Panels</h6>
                                 </li>
 
-                                <li class="nk-menu-item">
-                                    <a href="/index" class="nk-menu-link">
-                                        <span class="nk-menu-icon"><em class="icon ni ni-presentation"></em></span>
-                                        <span class="nk-menu-text">Home</span>
-                                    </a>
-                                </li><!-- .nk-menu-item -->
                                 @if (ViewBag.IsDealer is true)
                                 {
                                     <li class="nk-menu-item">
@@ -83,6 +53,15 @@
                                         <a href="/admin-dashboard" class="nk-menu-link">
                                             <span class="nk-menu-icon"><em class="icon ni ni-dashboard"></em></span>
                                             <span class="nk-menu-text">Admin Dashboard</span>
+                                        </a>
+                                    </li>
+                                }
+                                @if (ViewBag.IsAgent is true)
+                                {
+                                    <li class="nk-menu-item">
+                                        <a href="/agent" class="nk-menu-link">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-dashboard"></em></span>
+                                            <span class="nk-menu-text">Agent Dashboard</span>
                                         </a>
                                     </li>
                                 }
@@ -122,7 +101,7 @@
                                 <li class="nk-menu-item has-sub">
                                     <a class="nk-menu-link nk-menu-toggle" href="agents">
                                         <span class="nk-menu-icon">
-                                            <em class="icon ni ni-briefcase-fill"></em>
+                                            <em class="icon ni ni-user-list-fill"></em>
                                         </span>
                                         <span class="nk-menu-text">Agents</span>
                                     </a>
@@ -272,12 +251,6 @@
                                         }
 
                                         <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/paymentsummary">
-                                                <span class="nk-menu-text">Payment Summary</span>
-                                            </a>
-                                        </li>
-
-                                        <li class="nk-menu-item ">
                                             <a class="nk-menu-link " href="/allpayments">
                                                 <span class="nk-menu-text">All Payments</span>
                                             </a>
@@ -367,7 +340,7 @@
                                         }
                                     </ul>
 
-                                    
+
                                 </li>
 
                             </ul>

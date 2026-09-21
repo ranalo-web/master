@@ -129,7 +129,8 @@ namespace Ranalo.DataStore
             DateTime periodStart,
             DateTime periodEndExclusive,
             DateTime priorPeriodStart,
-            DateTime priorPeriodEndExclusive);
+            DateTime priorPeriodEndExclusive,
+            int? agentUserId = null);
 
         // Paying vs Non-Paying card: classifies each of the dealer's accounts
         // as good or "true arrears" (more than 7 days past
@@ -138,7 +139,7 @@ namespace Ranalo.DataStore
         // uses elsewhere -- NextLockDate stays correct through a
         // restructuring, the accrual formula doesn't. See
         // DashboardLockClassificationRow.
-        Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId);
+        Task<DashboardLockClassificationRow> GetDealerLockClassificationAsync(int dealerId, int? agentUserId = null);
 
         // Device Performance table: same NextLockDate-based classification as
         // GetDealerLockClassificationAsync, grouped by device (Make + Model)
@@ -151,12 +152,22 @@ namespace Ranalo.DataStore
         // Total Arrears card: splits dollar arrears into "true" (locked,
         // genuinely overdue) vs "restructured" (in arrears on paper, future
         // lock date, being managed) -- see DashboardArrearsClassificationRow.
-        Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId);
+        Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int dealerId, int? agentUserId = null);
 
         // Agent Commissions card: live sum of AgentCommissionPayments.AmountPaid
         // for this dealer within an arbitrary period window, backing the same
         // top-of-page filter as the Revenue/New Accounts cards. periodEndExclusive
         // is an exclusive upper bound, same convention as GetDealerRevenueForPeriodAsync.
-        Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive);
+        Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null);
+
+        // Single live per-account source for Non-Payers/Slow-Payers/Good-Payers,
+        // Agent Performance, My Contracts, and Contracts Ending Soon -- every
+        // one of those sections is a filter/projection of this same row set in
+        // DashboardReportService, so they classify accounts identically to the
+        // top KPI cards (GetDealerLockClassificationAsync/
+        // GetDealerArrearsClassificationAsync) instead of each re-deriving its
+        // own rule. No TOP cap -- a dealer's account count is bounded, and
+        // capping would make section counts wrong.
+        Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int dealerId, int? agentUserId = null);
     }
 }

@@ -180,7 +180,12 @@ namespace Ranalo.Controllers
                 return View(allPaymentSummaries);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            // An Agent isn't a Dealer themselves, so GetDealerByUserId (which
+            // looks up Dealers.UserId) never resolves for them -- their own
+            // Users.DealerId already names the dealer they belong to.
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
@@ -226,15 +231,15 @@ namespace Ranalo.Controllers
                 return View("AssignedCollections", allPaymentSummaries);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
             var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, false, null, dealerId, page, pageSize, searchTerm.Trim());
 
             return View("AssignedCollections", allDelaerStatusReport);
-            return View(allDelaerStatusReport);
-
         }
 
         [HttpPost]
@@ -248,6 +253,13 @@ namespace Ranalo.Controllers
             if (settings == null)
             {
                 return RedirectToAction("Index", "Login");
+            }
+
+            // Agents have view-only access to the Collections tab -- no
+            // power to assign collectors or lock devices from here.
+            if (settings.RoleId == UserRole.Agent)
+            {
+                return RedirectToAction("Collections", "Reports");
             }
 
             await SetViewBags(settings, "collector");
@@ -267,6 +279,13 @@ namespace Ranalo.Controllers
             if (settings == null)
             {
                 return RedirectToAction("Index", "Login");
+            }
+
+            // Agents have view-only access to the Collections tab -- no
+            // power to lock devices from here.
+            if (settings.RoleId == UserRole.Agent)
+            {
+                return RedirectToAction("Collections", "Collections");
             }
 
             await SetViewBags(settings, "collector");
@@ -293,6 +312,7 @@ namespace Ranalo.Controllers
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+            ViewBag.IsAgent = settings.RoleId == UserRole.Agent;
             ViewBag.SearchTerm = searchTerm.Trim();
 
             ViewBag.UserName = settings.KnownAs;

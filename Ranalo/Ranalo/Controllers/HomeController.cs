@@ -131,8 +131,9 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Approver");
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
-            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, page:page, pageSize:pageSize);
+            var dealerIdOverride = settings.RoleId == UserRole.Agent ? settings.DealerId : (int?)null;
+            var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
+            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, page: page, pageSize: pageSize, dealerIdOverride: dealerIdOverride, agentUserId: agentUserId);
             ViewData["OrdersStatus"] = "All Orders";
             return View(waitingApprovalByUser);
 
@@ -352,14 +353,17 @@ namespace Ranalo.Controllers
                 return View("~/Views/Home/Index.cshtml", allAwaitngApproval);
             }
 
-            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, searchTerm.Trim());
+            var searchDealerIdOverride = settings.RoleId == UserRole.Agent ? settings.DealerId : (int?)null;
+            var searchAgentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
+            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, searchTerm.Trim(), dealerIdOverride: searchDealerIdOverride, agentUserId: searchAgentUserId);
             ViewData["OrdersStatus"] = "All Orders";
             waitingApprovalByUser.SearchTerm = searchTerm.Trim();
             return View("~/Views/Home/Index.cshtml", waitingApprovalByUser);
         }
 
         [Route("users")]
-        public async Task<IActionResult> Users()
+        [Route("users/{page:int?}")]
+        public async Task<IActionResult> Users(string searchTerm = "", int page = 1, int pageSize = 20)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -368,20 +372,31 @@ namespace Ranalo.Controllers
             }
 
             await SetViewBags(settings, "index");
+            ViewBag.SearchTerm = searchTerm.Trim();
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
+                var (allUsers, allTotal) = await _userService.GetAllUsersPagedAsync(page, pageSize, searchTerm.Trim());
                 var users = new UsersViewModel()
                 {
-                    Users = await _userService.GetAllUsersAsync()
+                    Users = allUsers,
+                    CurrentPage = page,
+                    TotalRecords = allTotal,
+                    TotalPages = (int)Math.Ceiling((double)allTotal / pageSize),
+                    SearchTerm = searchTerm,
                 };
 
                 return View(users);
             }
 
+            var (dealerUsersList, dealerTotal) = await _userService.GetUsersByDealerIdPagedAsync(settings.DealerId, page, pageSize, searchTerm.Trim());
             var dealerUsers = new UsersViewModel()
             {
-                Users = await _userService.GetUsersByDealerIdAsync(settings.DealerId)
+                Users = dealerUsersList,
+                CurrentPage = page,
+                TotalRecords = dealerTotal,
+                TotalPages = (int)Math.Ceiling((double)dealerTotal / pageSize),
+                SearchTerm = searchTerm,
             };
 
             return View(dealerUsers);
@@ -574,6 +589,7 @@ namespace Ranalo.Controllers
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+            ViewBag.IsAgent = settings.RoleId == UserRole.Agent;
             ViewBag.UserName = settings.KnownAs;
             ViewBag.SearchTerm = searchTerm.Trim();
             if (settings.RoleId == UserRole.Dealer)

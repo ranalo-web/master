@@ -7,6 +7,8 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=2">
+
 <div class="nk-content-body">
 
     <div class="nk-block-head nk-block-head-sm">
@@ -78,67 +80,6 @@
                                                 <li>
                                                     <div class="dropdown">
                                                         <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
-                                                            <div class="dot dot-primary"></div>
-                                                            <em class="icon ni ni-filter-alt"></em>
-                                                        </a>
-                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
-                                                            <div class="dropdown-head">
-                                                                <span class="sub-title dropdown-title">Filter Customers</span>
-                                                            </div>
-                                                            <div class="dropdown-body dropdown-body-rg">
-                                                                <div class="row gx-6 gy-3">
-                                                                    <div class="col-6">
-                                                                        <div class="custom-control custom-control-sm custom-checkbox">
-                                                                            <input type="checkbox" class="custom-control-input" id="hasBalance">
-                                                                            <label class="custom-control-label" for="hasBalance"> Have Balance</label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="custom-control custom-control-sm custom-checkbox">
-                                                                            <input type="checkbox" class="custom-control-input" id="hasKYC">
-                                                                            <label class="custom-control-label" for="hasKYC"> KYC Verified</label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Card Type</label>
-                                                                            <select class="form-select js-select2">
-                                                                                <option value="any">Any Card</option>
-                                                                                <option value="Visa">Visa</option>
-                                                                                <option value="Mastercard">Mastercard</option>
-                                                                                <option value="AmericanExpress">American Express</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Status</label>
-                                                                            <select class="form-select js-select2">
-                                                                                <option value="any">Any Status</option>
-                                                                                <option value="new">New</option>
-                                                                                <option value="active">Active</option>
-                                                                                <option value="suspend">Suspend</option>
-                                                                                <option value="deleted">Deleted</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <button type="button" class="btn btn-secondary">Filter</button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-foot between">
-                                                                <a class="clickable" href="#">Reset Filter</a>
-                                                                <a href="#">Save Filter</a>
-                                                            </div>
-                                                        </div><!-- .filter-wg -->
-                                                    </div><!-- .dropdown -->
-                                                </li><!-- li -->
-                                                <li>
-                                                    <div class="dropdown">
-                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
                                                             <em class="icon ni ni-setting"></em>
                                                         </a>
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
@@ -190,89 +131,42 @@
                         }
                     }
 
-                    <table class="table table-tranx">
+                    <table class="table mb-0" data-key="devices-no-orders" data-page-size="@Model?.PageSize">
                         <thead>
-                            <tr class="tb-tnx-head">
-                                <th class="tb-tnx-id"><span class="">Account No</span></th>
-                                <th class="tb-tnx-info">
-                                    <span class="tb-tnx-desc d-none d-sm-inline-block">
-                                        <span>ImeiNo</span>
-                                    </span>
-                                    <span class="tb-tnx-date d-md-inline-block d-none">
-                                        <span class="d-md-none">Date</span>
-                                        <span class="d-none d-md-block">
-                                            <span>CreatedAt</span>
-                                        </span>
-                                    </span>
-                                </th>
-                                <th class="tb-tnx-info">
-                                    <span>Dealer Id</span>
-                                </th>
-                                <th class="tb-tnx-info">
-                                    <span>
-                                        <span>Dealer Name</span>
-                                    </span>
-                                </th>
-
-                                <th class="tb-tnx-info">
-                                    <span class="tb-tnx-desc d-none d-sm-inline-block">
-                                        <span>Order Id</span>
-                                    </span>
-                                    <span class="tb-tnx-date d-md-inline-block d-none">
-                                        <span class="d-md-none">Date</span>
-                                        <span class="d-none d-md-block">
-                                            <span>Mpesa</span>
-                                        </span>
-                                    </span>
-                                </th>
-                            </tr><!-- tb-tnx-item -->
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Account No</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">IMEI</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Created</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer ID</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer Name</th>
+                                <th class="wl-th" style="white-space:normal;">Fix Order / Mpesa</th>
+                            </tr>
                         </thead>
+                        <tbody>
                         @if (Model?.Devices != null)
                         {
                             foreach (var devices in Model.Devices)
                             {
-                                <tr class="tb-tnx-item">
-                                    <td class="tb-tnx-id">
-                                        <a href="#"><span>@devices.DeviceId</span></a>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-desc">
-                                            <span class="title">@devices.ImeiNo</span>
-                                        </div>
-                                        <div class="tb-tnx-date">
-                                            <span class="date">@devices.CreatedAtDate</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="title">@devices.DealerId</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="title">@devices.DealerName</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <form action="/correct-mpesa" class="form-validate" novalidate="novalidate" method="post">
+                                <tr>
+                                    <td><a href="/account-details/@devices.DeviceId" class="fw-medium">@devices.DeviceId</a></td>
+                                    <td>@(string.IsNullOrWhiteSpace(devices.ImeiNo) ? "-" : devices.ImeiNo)</td>
+                                    <td>@devices.CreatedAtDate</td>
+                                    <td>@devices.DealerId</td>
+                                    <td>@devices.DealerName</td>
+                                    <td>
+                                        <form action="/correct-mpesa" class="form-validate d-flex gap-2" novalidate="novalidate" method="post">
                                             <input type="hidden" name="accountno" value="@devices.DeviceId" />
                                             <input type="hidden" name="page" value="@Model.CurrentPage" />
                                             <input type="hidden" name="pageSize" value="10" />
-                                            <div class="tb-tnx-desc">
-                                                <input type="number" name="orderNumber" class="form-control" id="default-04" placeholder="Enter order" required>
-                                        </div>
-                                            <div class="tb-tnx-desc">
-                                                <div class="input-group">
-                                                    <input type="text" name="newMpesa" class="form-control" id="default-05" placeholder="Enter Mpesa" required>
-                                                    <div class="input-group-append"><button type="submit" class="btn btn-outline-primary btn-dim">Save</button></div>
-                                                </div>
-                                        </div>
+                                            <input type="number" name="orderNumber" class="form-control" placeholder="Order #" required style="width:110px;">
+                                            <input type="text" name="newMpesa" class="form-control" placeholder="Mpesa code" required style="width:130px;">
+                                            <button type="submit" class="btn btn-outline-primary btn-dim">Save</button>
                                         </form>
                                     </td>
                                 </tr>
-                                <!-- tb-tnx-item -->
                             }
                         }
+                        </tbody>
                     </table>
                 </div><!-- .card-inner -->
                 <div class="card-inner">
