@@ -82,6 +82,8 @@ namespace Ranalo.DataStore
 
         Task<(decimal CommissionOutstanding, int CommissionAccountCount, decimal CommissionWithheldForArrears)> GetAgentCommissionSummaryAsync(int dealerId, int agentUserId);
 
+        Task<(decimal CommissionPaidLifetime, int BonusEarnedAccountCount, int BonusAtRiskAccountCount, int BonusUpcomingAccountCount)> GetAgentBonusTrackerAsync(int dealerId, int agentUserId);
+
         Task UpsertSnapshotCommissionAsync(
             DashboardScope scope,
             decimal? commissionReceived,

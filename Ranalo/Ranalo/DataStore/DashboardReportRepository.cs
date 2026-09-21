@@ -1228,6 +1228,11 @@ namespace Ranalo.DataStore
             public string? LockDate { get; set; }
             public decimal AgentPaid { get; set; }
             public decimal DealerPaid { get; set; }
+
+            // Days since Contract_Info.StartDate, for the Performance Bonus
+            // Tracker card (GetAgentBonusTrackerAsync) -- not used by
+            // AgentGrossCommission's own 90-day check, which is done in SQL.
+            public int DaysSinceStart { get; set; }
         }
 
         // Shared by ComputeCommissionSnapshotRollupAsync (dealer-wide nightly
@@ -1274,7 +1279,8 @@ namespace Ranalo.DataStore
                                 + ci.Weekly * (DaysAccrued.Days / 7.0)
                                 + ci.Monthly * (DaysAccrued.Days / 30.0)
                               ) AS Arrears,
-                        d.NextLockDateIsoFormat AS LockDate
+                        d.NextLockDateIsoFormat AS LockDate,
+                        DATEDIFF(DAY, ci.StartDate, GETDATE()) AS DaysSinceStart
                     FROM Contract_Info ci
                     INNER JOIN Devices d ON d.Id = ci.ID
                     INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
@@ -1314,6 +1320,7 @@ namespace Ranalo.DataStore
                     ac.BuyingPrice,
                     ac.Arrears,
                     ac.LockDate,
+                    ac.DaysSinceStart,
                     ISNULL(ap.TotalAgentPaid, 0) AS AgentPaid,
                     ISNULL(dp.TotalDealerPaid, 0) AS DealerPaid
                 FROM AccountCommission ac
@@ -1344,6 +1351,28 @@ namespace Ranalo.DataStore
             var netCommission = gross - trueArrearsDeduction;
 
             return (Math.Max(0, netCommission - paid), rows.Count, withheld);
+        }
+
+        // Performance Bonus Tracker card (Agent Dashboard): lifetime
+        // commission actually paid to this agent, plus their accounts'
+        // standing against the 25%-of-deposit performance bonus that vests
+        // at the 90-day mark (see AgentGrossCommission above). "Earned" is
+        // past 90 days and currently performing (not past its NextLockDate,
+        // same test as GetAgentCommissionSummaryAsync's arrears deduction);
+        // "at risk" is past 90 days but in true arrears -- the bonus portion
+        // is being withheld, not necessarily lost forever; "upcoming" is
+        // 60-89 days in, i.e. within 30 days of the milestone.
+        public async Task<(decimal CommissionPaidLifetime, int BonusEarnedAccountCount, int BonusAtRiskAccountCount, int BonusUpcomingAccountCount)> GetAgentBonusTrackerAsync(int dealerId, int agentUserId)
+        {
+            var rows = await FetchAgentCommissionAccountRowsAsync(dealerId, agentUserId);
+            var now = DateTime.Now;
+
+            var paidLifetime = rows.Sum(r => r.AgentPaid);
+            var earned = rows.Count(r => r.DaysSinceStart >= 90 && !IsPastLockDate(r.LockDate, now));
+            var atRisk = rows.Count(r => r.DaysSinceStart >= 90 && IsPastLockDate(r.LockDate, now));
+            var upcoming = rows.Count(r => r.DaysSinceStart >= 60 && r.DaysSinceStart < 90);
+
+            return (paidLifetime, earned, atRisk, upcoming);
         }
 
         public async Task<List<DashboardCommissionRollupRow>> ComputeCommissionSnapshotRollupAsync()

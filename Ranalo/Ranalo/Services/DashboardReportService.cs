@@ -150,6 +150,13 @@ namespace Ranalo.Services
                 model.CommissionOutstanding = agentCommission.CommissionOutstanding;
                 model.CommissionAccountCount = agentCommission.CommissionAccountCount;
                 model.CommissionWithheldForArrears = agentCommission.CommissionWithheldForArrears;
+
+                // Performance Bonus Tracker card -- Agent Dashboard only.
+                var bonusTracker = await _repository.GetAgentBonusTrackerAsync(dealerId, agentUserId.Value);
+                model.CommissionPaidLifetime = bonusTracker.CommissionPaidLifetime;
+                model.BonusEarnedAccountCount = bonusTracker.BonusEarnedAccountCount;
+                model.BonusAtRiskAccountCount = bonusTracker.BonusAtRiskAccountCount;
+                model.BonusUpcomingAccountCount = bonusTracker.BonusUpcomingAccountCount;
             }
 
             // Paying vs Non-Paying and My Portfolio cards -- see

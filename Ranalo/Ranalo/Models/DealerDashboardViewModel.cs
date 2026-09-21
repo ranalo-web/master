@@ -74,6 +74,23 @@ namespace Ranalo.Models
         // (distinct from the lifetime CommissionPaidToAgents above).
         public decimal CommissionPaidThisPeriod { get; set; }
 
+        // Performance Bonus Tracker card (Agent Dashboard only): lifetime
+        // commission actually paid to this one agent (AgentCommissionPayments,
+        // no period filter -- distinct from CommissionPaidThisPeriod above and
+        // from the dealer-wide CommissionPaidToAgents), plus a breakdown of
+        // this agent's accounts against the 25%-of-deposit performance bonus
+        // (StartDate 90+ days ago) -- see GetAgentCommissionSummaryAsync's
+        // AgentGrossCommission formula. An account only counts as "earned"
+        // once it's past 90 days AND currently performing (not past its
+        // NextLockDate); past 90 days but in arrears is "at risk" (the bonus
+        // portion is being withheld, same accounts contributing to
+        // CommissionWithheldForArrears); under 90 days but within 30 days of
+        // the milestone is "upcoming".
+        public decimal CommissionPaidLifetime { get; set; }
+        public int BonusEarnedAccountCount { get; set; }
+        public int BonusAtRiskAccountCount { get; set; }
+        public int BonusUpcomingAccountCount { get; set; }
+
         // Dealer Commissions card: independent of Agent Commissions --
         // every paid account contributes here, including direct dealer
         // sales with no assigned agent (wider population than
