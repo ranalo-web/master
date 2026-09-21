@@ -24,7 +24,14 @@
                         <a href="#" class="nk-nav-compact nk-quick-nav-icon d-none d-xl-inline-flex" data-target="sidebarMenu"><em class="icon ni ni-menu"></em></a>
                     </div>
                     <div class="nk-sidebar-brand">
-                        <a href="/orders" class="logo-link nk-sidebar-logo">
+                        @{
+                            var homeHref = ViewBag.IsDealer is true ? "/dealer-dashboard"
+                                : ViewBag.IsAdmin is true ? "/admin-dashboard"
+                                : ViewBag.IsAgent is true ? "/agent"
+                                : ViewBag.IsApprover is true ? "/approver"
+                                : "/orders";
+                        }
+                        <a href="@homeHref" class="logo-link nk-sidebar-logo">
                             <img class="logo-light logo-img" src="./images/Ranalo_Credit_Logo.png" srcset="./images/Ranalo_Credit_Logo.png 2x" alt="logo">
                             <img class="logo-dark logo-img" src="./images/Ranalo_Credit_Logo.png" srcset="./images/Ranalo_Credit_Logo.png 2x" alt="logo-dark">
                         </a>
@@ -62,6 +69,15 @@
                                         <a href="/agent" class="nk-menu-link">
                                             <span class="nk-menu-icon"><em class="icon ni ni-dashboard"></em></span>
                                             <span class="nk-menu-text">Agent Dashboard</span>
+                                        </a>
+                                    </li>
+                                }
+                                @if (ViewBag.IsApprover is true)
+                                {
+                                    <li class="nk-menu-item">
+                                        <a href="/approver" class="nk-menu-link">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-dashboard"></em></span>
+                                            <span class="nk-menu-text">Approver Dashboard</span>
                                         </a>
                                     </li>
                                 }
@@ -173,12 +189,15 @@
                                
                                 @if (ViewBag.IsAdmin || ViewBag.IsApprover)
                                 {
-                                    <li class="nk-menu-item ">
-                                        <a class="nk-menu-link " href="/approver">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
-                                            <span class="nk-menu-text">Approver Dashboard</span>
-                                        </a>
-                                    </li>
+                                    @if (!(ViewBag.IsApprover is true))
+                                    {
+                                        <li class="nk-menu-item ">
+                                            <a class="nk-menu-link " href="/approver">
+                                                <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
+                                                <span class="nk-menu-text">Approver Dashboard</span>
+                                            </a>
+                                        </li>
+                                    }
                                     <li class="nk-menu-item ">
                                         <a class="nk-menu-link " href="/approver-orders">
                                             <span class="nk-menu-icon"><em class="icon ni ni-list-check"></em></span>
