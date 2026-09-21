@@ -58,7 +58,8 @@
                             <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                                 <div class="d-flex flex-column">
                                     <span class="amount">KES @Model.RevenueThisMonth.ToString("N0")</span>
-                                    <span class="sub-title d-block mt-1"><span class="change up text-success"><em class="icon ni ni-arrow-long-up"></em>@Model.RevenueGrowthPct.ToString("0.0")%</span> this month</span>
+                                    @{ var revenueUp = Model.RevenueGrowthPct >= 0; }
+                                    <span class="sub-title d-block mt-1"><span class="@(revenueUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(revenueUp ? "up" : "down")"></em>@Math.Abs(Model.RevenueGrowthPct).ToString("0.0")%</span> this month</span>
                                 </div>
                             </div>
                         </div>
@@ -256,8 +257,13 @@
         var netMarginPct = Model.RevenueThisMonth > 0 ? netProfitAfterTax / Model.RevenueThisMonth * 100 : 0;
         var costToIncomeRatio = Model.RevenueThisMonth > 0 ? (Model.CostOfDevicesThisMonth + totalCommissionsPaid + Model.OperatingExpensesThisMonth) / Model.RevenueThisMonth * 100 : 0;
         var badDebtRatio = Model.RevenueThisMonth > 0 ? Model.BadDebtThisMonth / Model.RevenueThisMonth * 100 : 0;
-        var dividendPayoutRatio = netProfitAfterTax > 0 ? Model.DividendsPaidThisMonth / netProfitAfterTax * 100 : 0;
-        var retentionRatio = 100 - dividendPayoutRatio;
+        // Both computed directly from their labeled formula (Dividends /
+        // Net Profit, Retained Earnings / Net Profit) rather than deriving
+        // Retention as "100 - Payout" -- the two diverge once Net Profit is
+        // negative (a loss with dividends still paid), which previously
+        // showed a false 0%/100% split instead of the real ratio.
+        var dividendPayoutRatio = netProfitAfterTax != 0 ? Model.DividendsPaidThisMonth / netProfitAfterTax * 100 : 0;
+        var retentionRatio = netProfitAfterTax != 0 ? retainedEarnings / netProfitAfterTax * 100 : 0;
     }
     <div class="nk-block">
         <div class="row g-gs">
@@ -309,7 +315,7 @@
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom" style="font-size:15px;">
                                 <span class="fw-bold">Net Profit After Tax</span>
-                                <span class="fw-bold text-success">KES @netProfitAfterTax.ToString("N0")</span>
+                                <span class="fw-bold @(netProfitAfterTax >= 0 ? "text-success" : "text-danger")">KES @netProfitAfterTax.ToString("N0")</span>
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom">
                                 <span class="text-soft">Less: Dividends paid</span>
@@ -357,7 +363,7 @@
                             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                                 <div>
                                     <div class="fw-medium">Cost-to-Income Ratio</div>
-                                    <div class="text-soft" style="font-size:11px;">Commissions + opex &divide; revenue</div>
+                                    <div class="text-soft" style="font-size:11px;">Cost of devices + commissions + opex &divide; revenue</div>
                                 </div>
                                 <span class="fw-bold @(costToIncomeRatio <= 50 ? "text-success" : "text-danger")">@costToIncomeRatio.ToString("0.0")%</span>
                             </div>
