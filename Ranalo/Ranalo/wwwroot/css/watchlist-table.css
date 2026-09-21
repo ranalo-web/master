@@ -1,0 +1,40 @@
+/* Shared styling for the app's lightweight watchlist-style tables (plain
+   <table data-key="..."> markup, used on the Dealer Dashboard, its report
+   pages, and the Payments pages) -- sortable column headers, paired with
+   wwwroot/js/watchlist-table.js's click-to-sort behavior. Font sizes,
+   weights and colors are matched to DashLite's own native table typography
+   (.nk-tb-list / .sub-text / .tb-lead) so these tables read the same as
+   the theme's built-in ones (e.g. Contract Info Management). */
+.wl-th {
+    font-size: 13px;
+    font-weight: 400;
+    text-transform: none;
+    color: #8094ae !important;
+    white-space: nowrap;
+    text-align: left;
+    cursor: pointer;
+    user-select: none;
+    background-color: #f5f6fa !important;
+    padding: 10px 16px !important;
+    border-bottom: 2px solid #e5e9f2 !important;
+}
+.wl-th:hover {
+    color: #6576ff !important;
+    background-color: #eef1fd !important;
+}
+.wl-sort-indicator {
+    font-size: 9px;
+}
+
+/* .table's own cell rule (dashlite.css) beats a plain class selector on
+   specificity, so color needs !important here too. */
+table[data-key] td {
+    font-size: 13px;
+    font-weight: 400;
+    color: #8094ae !important;
+}
+table[data-key] td .fw-medium {
+    font-size: 13px;
+    font-weight: 500;
+    color: #364a63 !important;
+}

@@ -9,6 +9,7 @@ namespace Ranalo.Services
         Task<int> AddContractAsync(ContractInfo contract);
         Task<int> DeleteContractAsync(int contractId);
         Task<ContractViewModel> GetAllContractsAsync(int page, int pageSize, string searchParam = "");
+        Task<ContractViewModel> GetAllContractsByDealerAsync(int dealerId, int page, int pageSize, string searchParam = "");
         Task<ContractInfo?> GetContractByDeviceIdAsync(int deviceId);
         Task<ContractInfo?> GetContractByIdAsync(int contractId);
         Task<int> UpdateContractAsync(ContractInfo contract);
@@ -16,6 +17,7 @@ namespace Ranalo.Services
         Task AssignContractToCollector(int contractId, int collectorUserId);
 
         Task AssignAccountToAgent(int contractId, int agentId);
+        Task UnassignAccountFromAgent(int contractId);
 
         Task<StatusReportViewModel> GetCollectorsContractSummaryAsync(int userId, int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "");
         Task<ContractViewModel> GetAccountsByDealer(int dealerId, int page, int pageSize, string searchTerm);

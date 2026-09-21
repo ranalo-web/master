@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet run *)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(open *)",
+      "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --new-window --window-size=390,844 '--user-agent=Mozilla/5.0 \\(iPhone; CPU iPhone OS 17_0 like Mac OS X\\) AppleWebKit/605.1.15 \\(KHTML, like Gecko\\) Version/17.0 Mobile/15E148 Safari/604.1' http://localhost:5086)"
+    ]
+  }
+}

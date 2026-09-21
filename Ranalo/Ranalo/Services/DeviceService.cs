@@ -13,9 +13,9 @@ namespace Ranalo.Services
             _devicesRepository = devicesRepository;
         }
 
-        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoOrders(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "")
+        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoOrders(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null)
         {
-            return await _devicesRepository.GetDevicesWithNoOrders(dealerReference, page, pageSize, searchTerm);
+            return await _devicesRepository.GetDevicesWithNoOrders(dealerReference, page, pageSize, searchTerm, agentUserId);
         }
 
         public async Task<(string AccountNo, long? DeviceId)> GetCheckOrderIdLinkedAsync(long orderId)
@@ -61,9 +61,9 @@ namespace Ranalo.Services
             return await _devicesRepository.MpesaCodeIsAlreadyLinked(newMpesa);
         }
 
-        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "")
+        public async Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null)
         {
-            return await _devicesRepository.GetDevicesWithNoContracts(dealerReference, page, pageSize, searchTerm);
+            return await _devicesRepository.GetDevicesWithNoContracts(dealerReference, page, pageSize, searchTerm, agentUserId);
         }
 
         public async Task<DevicesWithDealerViewModel> GetAllDevicesAsync(int? dealerId, string searchTerm, int page, int pageSize)
@@ -71,9 +71,9 @@ namespace Ranalo.Services
             return await _devicesRepository.GetAllDevicesAsync(dealerId, page, pageSize, searchTerm);
         }
 
-        public async Task<DevicesWithDealerViewModel> GetAllDevicesWithNoPaymentsAsync(int? dealerId, string searchTerm, int page, int pageSize)
+        public async Task<DevicesWithDealerViewModel> GetAllDevicesWithNoPaymentsAsync(int? dealerId, string searchTerm, int page, int pageSize, int? agentUserId = null)
         {
-            return await _devicesRepository.GetDevicesWithNoPayments(dealerId, page, pageSize, searchTerm);
+            return await _devicesRepository.GetDevicesWithNoPayments(dealerId, page, pageSize, searchTerm, agentUserId);
         }
 
         public async Task<DevicesWithDealerViewModel> GetAllDevicesByUserAccountIdAsync(int userId, string searchTerm, int page, int pageSize)

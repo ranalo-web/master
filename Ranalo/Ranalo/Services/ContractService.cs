@@ -31,6 +31,11 @@ namespace Ranalo.Services
             return await _contractRepository.GetAllContractsAsync(page, pageSize, searchParam);
         }
 
+        public async Task<ContractViewModel> GetAllContractsByDealerAsync(int dealerId, int page, int pageSize, string searchParam = "")
+        {
+            return await _contractRepository.GetAllContractsByDealerAsync(dealerId, page, pageSize, searchParam);
+        }
+
        public async Task<ContractInfo?> GetContractByDeviceIdAsync(int deviceId)
         {
             return await _contractRepository.GetContractByDeviceIdAsync(deviceId);
@@ -80,6 +85,11 @@ namespace Ranalo.Services
         public async Task AssignAccountToAgent(int contractId, int agentId)
         {
             await _contractRepository.AssignAccountToAgentAsync(contractId, agentId);
+        }
+
+        public async Task UnassignAccountFromAgent(int contractId)
+        {
+            await _contractRepository.UnassignAccountFromAgentAsync(contractId);
         }
 
         public async Task<StatusReportViewModel> GetCollectorsContractSummaryAsync(int userId, int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "")

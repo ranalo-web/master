@@ -106,23 +106,6 @@
             <div class="card-inner-group">
                 <div class="card-inner position-relative card-tools-toggle">
                     <div class="card-title-group">
-                        <div class="card-tools">
-                            <div class="form-inline flex-nowrap gx-3">
-                                <div class="form-wrap w-150px">
-                                    <select class="form-select js-select2" data-search="off" data-placeholder="Bulk Action">
-                                        <option value="">Bulk Action</option>
-                                        <option value="email">Send Email</option>
-                                        <option value="group">Change Group</option>
-                                        <option value="suspend">Suspend User</option>
-                                        <option value="delete">Delete User</option>
-                                    </select>
-                                </div>
-                                <div class="btn-wrap">
-                                    <span class="d-none d-md-block"><button class="btn btn-dim btn-outline-light disabled">Apply</button></span>
-                                    <span class="d-md-none"><button class="btn btn-dim btn-outline-light btn-icon disabled"><em class="icon ni ni-arrow-right"></em></button></span>
-                                </div>
-                            </div><!-- .form-inline -->
-                        </div><!-- .card-tools -->
                         <div class="card-tools me-n1">
                             <ul class="btn-toolbar gx-1">
                                 <li>
@@ -140,85 +123,14 @@
                                                 <li>
                                                     <div class="dropdown">
                                                         <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
-                                                            <div class="dot dot-primary"></div>
-                                                            <em class="icon ni ni-filter-alt"></em>
-                                                        </a>
-                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
-                                                            <div class="dropdown-head">
-                                                                <span class="sub-title dropdown-title">Filter Enrolments</span>
-                                                                <div class="dropdown">
-                                                                    <a href="#" class="btn btn-sm btn-icon">
-                                                                        <em class="icon ni ni-more-h"></em>
-                                                                    </a>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-body dropdown-body-rg">
-                                                                <div class="row gx-6 gy-3">
-                                                                    <div class="col-6">
-                                                                        <div class="custom-control custom-control-sm custom-checkbox">
-                                                                            <input type="checkbox" class="custom-control-input" id="hasBalance">
-                                                                            <label class="custom-control-label" for="hasBalance"> Have Balance</label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="custom-control custom-control-sm custom-checkbox">
-                                                                            <input type="checkbox" class="custom-control-input" id="hasKYC">
-                                                                            <label class="custom-control-label" for="hasKYC"> KYC Verified</label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Role</label>
-                                                                            <select class="form-select js-select2">
-                                                                                <option value="any">Any Role</option>
-                                                                                <option value="investor">Investor</option>
-                                                                                <option value="seller">Seller</option>
-                                                                                <option value="buyer">Buyer</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Status</label>
-                                                                            <select class="form-select js-select2">
-                                                                                <option value="any">Any Status</option>
-                                                                                <option value="active">Active</option>
-                                                                                <option value="pending">Pending</option>
-                                                                                <option value="suspend">Suspend</option>
-                                                                                <option value="deleted">Deleted</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <button type="button" class="btn btn-secondary">Filter</button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-foot between">
-                                                                <a class="clickable" href="#">Reset Filter</a>
-                                                                <a href="#">Save Filter</a>
-                                                            </div>
-                                                        </div><!-- .filter-wg -->
-                                                    </div><!-- .dropdown -->
-                                                </li><!-- li -->
-                                                <li>
-                                                    <div class="dropdown">
-                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
                                                             <em class="icon ni ni-setting"></em>
                                                         </a>
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
                                                             <ul class="link-check">
                                                                 <li><span>Show</span></li>
-                                                                <li class="active"><a href="#">10</a></li>
-                                                                <li><a href="#">20</a></li>
-                                                                <li><a href="#">50</a></li>
-                                                            </ul>
-                                                            <ul class="link-check">
-                                                                <li><span>Order</span></li>
-                                                                <li class="active"><a href="#">DESC</a></li>
-                                                                <li><a href="#">ASC</a></li>
+                                                                <li class="@(ViewBag.PageSize == 10 ? "active" : "")"><a href="/enrolments?page=1&amp;pageSize=10&amp;searchTerm=@ViewBag.SearchTerm">10</a></li>
+                                                                <li class="@(ViewBag.PageSize == 20 ? "active" : "")"><a href="/enrolments?page=1&amp;pageSize=20&amp;searchTerm=@ViewBag.SearchTerm">20</a></li>
+                                                                <li class="@(ViewBag.PageSize == 50 ? "active" : "")"><a href="/enrolments?page=1&amp;pageSize=50&amp;searchTerm=@ViewBag.SearchTerm">50</a></li>
                                                             </ul>
                                                         </div>
                                                     </div><!-- .dropdown -->
@@ -233,9 +145,11 @@
                     <div class="card-search search-wrap" data-search="search">
                         <div class="card-body">
                             <div class="search-content">
-                                <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <input type="text" class="form-control border-transparent form-focus-none" placeholder="Search by enrolment details">
-                                <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                <form action="/enrolments" method="get">
+                                    <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
+                                    <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" placeholder="Search by name, IMEI, account or order #" value="@ViewBag.SearchTerm">
+                                    <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                </form>
                             </div>
                         </div>
                     </div><!-- .card-search -->
@@ -359,6 +273,10 @@
 
 
                     </div><!-- .nk-tb-list -->
+                    @if (Model.Enrolments == null || !Model.Enrolments.Any())
+                    {
+                        <div class="card-inner text-soft">No enrolments found.</div>
+                    }
                 </div><!-- .card-inner -->
                 <div class="card-inner">
                     <div class="nk-block-between-md g-3">
@@ -367,7 +285,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/alldevices?page=@(Model.CurrentPage - 1)&pageSize=@(Model.PageSize)">Prev</a>
+                                        <a class="page-link" href="/enrolments?page=@(Model.CurrentPage - 1)&pageSize=@(Model.PageSize)">Prev</a>
                                     </li>
                                 }
 
@@ -384,7 +302,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/alldevices?page=1&pageSize=@(Model.PageSize)">1</a>
+                                        <a class="page-link" href="/enrolments?page=1&pageSize=@(Model.PageSize)">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -394,7 +312,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/alldevices?page=@i&pageSize=@(Model.PageSize)">@i</a>
+                                        <a class="page-link" href="/enrolments?page=@i&pageSize=@(Model.PageSize)">@i</a>
                                     </li>
                                 }
 
@@ -404,14 +322,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/alldevices?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/enrolments?page=@Model.TotalPages">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/alldevices?page=@(Model.CurrentPage + 1)&pageSize=@(Model.PageSize)">Next</a>
+                                        <a class="page-link" href="/enrolments?page=@(Model.CurrentPage + 1)&pageSize=@(Model.PageSize)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -423,7 +341,7 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/alldevices?page=' + this.value + '&pageSize=@(Model.PageSize)'">
+                                            onchange="location.href='/enrolments?page=' + this.value + '&pageSize=@(Model.PageSize)'">
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>

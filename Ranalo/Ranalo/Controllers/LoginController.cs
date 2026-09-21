@@ -40,9 +40,9 @@ namespace Ranalo.Controllers
             switch (cookieValue.RoleId)
             {
                 case UserRole.Admin:
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("Index", "AdminDashboard");
                 case UserRole.Dealer:
-                    return Redirect("/Index");
+                    return RedirectToAction("Index", "DealerDashboard");
                 case UserRole.Approver:
                     return RedirectToAction("Index", "Approver");
                 case UserRole.Collector:
@@ -53,7 +53,7 @@ namespace Ranalo.Controllers
                     break;
             }
 
-            return Redirect("/Index");
+            return RedirectToAction("Index", "DealerDashboard");
         }
 
         [HttpPost]
@@ -89,15 +89,15 @@ namespace Ranalo.Controllers
                     switch (user.RoleId)
                     {
                         case UserRole.Admin:
-                            return RedirectToAction("Index", "Home");
+                            return RedirectToAction("Index", "AdminDashboard");
                         case UserRole.Dealer:
-                            return Redirect("/Index");
+                            return RedirectToAction("Index", "DealerDashboard");
                         case UserRole.Approver:
                             return RedirectToAction("Index", "Approver");
                         case UserRole.Collector:
                             return RedirectToAction("Index", "Collections");
                         case UserRole.Agent:
-                            return RedirectToAction("Index", "Agent");
+                            return RedirectToAction("Index", "Agents");
                         default:
                             break;
                     }

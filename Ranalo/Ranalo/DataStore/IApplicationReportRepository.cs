@@ -8,15 +8,18 @@ namespace Ranalo.DataStore
     public interface IApplicationReportRepository
     {
         #region Payments
-        Task<KosePaymentsViewModel> GetAllPaymentsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10);
-        Task<PaymentsSummaryTotalsViewModel> GetPaymentsSummaryAsync(string searchTerm = "", int page = 1, int pageSize = 10);
-        Task<KosePaymentsViewModel> GetAllPaymentsByDealerIdAsync(int dealerId, string searchTerm = "", int page = 1, int pageSize = 10);
+        // fromDate/toDateExclusive scope the query to a period (Week/Month/
+        // YTD/Last 12 Months on the All Payments and Payment Summary pages) --
+        // null means no date filter, i.e. all time.
+        Task<KosePaymentsViewModel> GetAllPaymentsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10, DateTime? fromDate = null, DateTime? toDateExclusive = null, int? agentUserId = null);
+        Task<PaymentsSummaryTotalsViewModel> GetPaymentsSummaryAsync(string searchTerm = "", int page = 1, int pageSize = 10, DateTime? fromDate = null, DateTime? toDateExclusive = null);
+        Task<KosePaymentsViewModel> GetAllPaymentsByDealerIdAsync(int dealerId, string searchTerm = "", int page = 1, int pageSize = 10, DateTime? fromDate = null, DateTime? toDateExclusive = null);
 
-        Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "");
+        Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null);
         #endregion
 
         Task<AwaitingApprovalViewModel> GetAllWaitingApprovalAsync(string searchTerm = "", int page = 1, int pageSize = 10);
-        Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int dealerId, string searchTerm, int page, int pageSize);
+        Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int? dealerId, string searchTerm, int page, int pageSize, int? agentUserId = null);
 
         Task<KosePaymentsViewModel> GetOrphanedPaymentsAsync(int page, int pageSize, string searchTerm = "");
 
@@ -53,7 +56,9 @@ namespace Ranalo.DataStore
 
         Task<List<TransactionHistory>> GetTransactionHistory(int dealerId = 0);
 
-        Task<AllAccountsViewModel> GetAllAccountsByUserAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10);
+        Task<AllAccountsViewModel> GetAllAccountsByUserAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10, int? agentUserId = null);
+
+        Task<bool> IsAccountAssignedToAgentAsync(long accountId, int agentUserId);
 
         Task<CustomerDetails?> GetCustomerDetailsByAccountId(int accountId);
 
@@ -73,7 +78,6 @@ namespace Ranalo.DataStore
         Task<KosePaymentsViewModel> GetAssignedPaymentsAsync(string searchTerm, int page, int pageSize);
         Task CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo);
         Task<List<RestructuredRecord>> GetAllRestructuredFlat();
-        Task<KosePaymentsViewModel> GetAllPaymentAccountsByUserIdAsync(int userId, string searchTerm, int page, int pageSize);
         #endregion
     }
 }

@@ -37,16 +37,38 @@ namespace Ranalo.Services
             return result;
 
         }
-        public async Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrdersByUser(int userId, string searchTerm, int page, int pageSize)
+        public async Task<AwaitingApprovalViewModel> GetAwaitingApprovalOrdersByUser(int userId, string searchTerm, int page, int pageSize, int? dealerIdOverride = null, int? agentUserId = null, bool systemWide = false)
         {
-            var dealerDetails = await _repository.GetDealerByUserIdAsync(userId);
-
-            if (dealerDetails == null)
+            // dealerIdOverride: for a non-Dealer user (Agent, Collector) whose
+            // own Users.DealerId already names their dealer -- GetDealerByUserIdAsync
+            // looks up Dealers.UserId, which only resolves for the Dealer who
+            // owns that row themselves, not for their staff. Null (the
+            // default) preserves the original Dealer-only lookup untouched.
+            // systemWide: an Approver isn't tied to any one dealer -- skip
+            // resolving a dealerId at all (GetAllOrdersByUserAsync treats
+            // null as "every dealer").
+            int? dealerId;
+            if (systemWide)
             {
-                return null;
+                dealerId = null;
+            }
+            else if (dealerIdOverride.HasValue)
+            {
+                dealerId = dealerIdOverride.Value;
+            }
+            else
+            {
+                var dealerDetails = await _repository.GetDealerByUserIdAsync(userId);
+
+                if (dealerDetails == null)
+                {
+                    return null;
+                }
+
+                dealerId = dealerDetails.DealerId;
             }
 
-            var result = await _applicationReportRepository.GetAllOrdersByUserAsync(dealerDetails.DealerId, searchTerm, page, pageSize);
+            var result = await _applicationReportRepository.GetAllOrdersByUserAsync(dealerId, searchTerm, page, pageSize, agentUserId);
 
             return result;
         }
@@ -65,20 +87,20 @@ namespace Ranalo.Services
             return result.ToList();
         }
 
-        public async Task<PaymentsSummaryTotalsViewModel> GetPaymentsSummaryAsync(string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<PaymentsSummaryTotalsViewModel> GetPaymentsSummaryAsync(string searchTerm = "", int page = 1, int pageSize = 10, DateTime? fromDate = null, DateTime? toDateExclusive = null)
         {
-            var result = await _applicationReportRepository.GetPaymentsSummaryAsync(searchTerm, page, pageSize);
+            var result = await _applicationReportRepository.GetPaymentsSummaryAsync(searchTerm, page, pageSize, fromDate, toDateExclusive);
             return result;
 
         }
 
-        public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10, DateTime? fromDate = null, DateTime? toDateExclusive = null, int? agentUserId = null)
         {
-            var result = await _applicationReportRepository.GetAllPaymentsAsync(dealerId, searchTerm, page, pageSize);
+            var result = await _applicationReportRepository.GetAllPaymentsAsync(dealerId, searchTerm, page, pageSize, fromDate, toDateExclusive, agentUserId);
             return result;
 
         }
-        public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(int userId, string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(int userId, string searchTerm = "", int page = 1, int pageSize = 10, DateTime? fromDate = null, DateTime? toDateExclusive = null)
         {
             var dealerDetails = await _repository.GetDealerByUserIdAsync(userId);
 
@@ -87,22 +109,14 @@ namespace Ranalo.Services
                 return null;
             }
 
-            var dealerPayments = await _applicationReportRepository.GetAllPaymentsByDealerIdAsync(dealerDetails.DealerId, searchTerm, page, pageSize);
+            var dealerPayments = await _applicationReportRepository.GetAllPaymentsByDealerIdAsync(dealerDetails.DealerId, searchTerm, page, pageSize, fromDate, toDateExclusive);
 
             return dealerPayments;
         }
 
-        public async Task<KosePaymentsViewModel> GetAllPaymentAccountsByUserIdAsync(int userId, string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<PaymentsSummaryTotalsViewModel> PaymentsSummary(string searchTerm = "", int page = 1, int pageSize = 10, DateTime? fromDate = null, DateTime? toDateExclusive = null)
         {
-
-            var paymentAccounts = await _applicationReportRepository.GetAllPaymentAccountsByUserIdAsync(userId, searchTerm, page, pageSize);
-
-            return paymentAccounts;
-        }
-
-        public async Task<PaymentsSummaryTotalsViewModel> PaymentsSummary(string searchTerm = "", int page = 1, int pageSize = 10)
-        {
-            var payments = await GetPaymentsSummaryAsync(searchTerm, page, pageSize);
+            var payments = await GetPaymentsSummaryAsync(searchTerm, page, pageSize, fromDate, toDateExclusive);
             return payments;
         }
 
@@ -275,10 +289,10 @@ namespace Ranalo.Services
             return approved;
         }
 
-        public async Task<StatusReportViewModel> GetStatusReportByDealer(int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm)
+        public async Task<StatusReportViewModel> GetStatusReportByDealer(int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, int? agentUserId = null)
         {
             deviceGroupId ??= 0;
-            var result = await _applicationReportRepository.GetPaymentSummaryAsync(accountId, deviceGroupId.Value, page, pageSize, searchTerm);
+            var result = await _applicationReportRepository.GetPaymentSummaryAsync(accountId, deviceGroupId.Value, page, pageSize, searchTerm, agentUserId);
 
             List<MobileStatusReport> mobileStatusReports = await SetMobileStatusRecords(false, false, accountId, deviceGroupId, page, pageSize, searchTerm, result);
 
@@ -385,7 +399,7 @@ namespace Ranalo.Services
             return mobileStatusReports;
         }
 
-        public async Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, bool assigned, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm)
+        public async Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, bool assigned, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, int? agentUserId = null)
         {
             deviceGroupId ??= 0;
 
@@ -403,7 +417,8 @@ namespace Ranalo.Services
                         deviceGroupId.Value,
                         pageNumber,
                         pageSize,
-                        searchTerm
+                        searchTerm,
+                        agentUserId
                     );
 
                     // Apply your business transformation (IsInArrears calc)
@@ -417,7 +432,7 @@ namespace Ranalo.Services
                 CurrentPage = page,
                 SearchTerm = searchTerm,
                 StatusReports = allQualified,
-                TotalPages = (result.total / pageSize),
+                TotalPages = (int)Math.Ceiling((double)result.total / pageSize),
                 TotalRecords = result.total
             };
         }
@@ -495,9 +510,9 @@ namespace Ranalo.Services
                 pageNumber++;
             }
         }
-        public async Task<AllAccountsViewModel> GetAllAccountsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<AllAccountsViewModel> GetAllAccountsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10, int? agentUserId = null)
         {
-            var allAccounts = await _applicationReportRepository.GetAllAccountsByUserAsync(dealerId, searchTerm, page, pageSize);
+            var allAccounts = await _applicationReportRepository.GetAllAccountsByUserAsync(dealerId, searchTerm, page, pageSize, agentUserId);
             if (allAccounts.Accounts != null) 
             {
                 foreach (var account in allAccounts.Accounts)
@@ -508,6 +523,11 @@ namespace Ranalo.Services
             }
 
             return allAccounts;
+        }
+
+        public async Task<bool> IsAccountAssignedToAgentAsync(long accountId, int agentUserId)
+        {
+            return await _applicationReportRepository.IsAccountAssignedToAgentAsync(accountId, agentUserId);
         }
 
         private async Task<string> GetFirstNameByMpesa(string? firstMPesaCode)

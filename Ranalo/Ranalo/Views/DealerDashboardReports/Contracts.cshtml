@@ -1,0 +1,74 @@
+@model List<Ranalo.Models.DealerContract>
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    const int pageSize = 20;
+    const string key = "report-contracts";
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=2">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">My Contracts</h3>
+                <div class="nk-block-des text-soft"><p>All active contracts.</p></div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/@(ViewBag.BackLink)" class="btn btn-outline-light btn-white"><em class="icon ni ni-arrow-left"></em><span>Back to Dashboard</span></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner p-0">
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="@key" data-page-size="@pageSize">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Device</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Monthly Payment</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Next Due</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Count; i++)
+                            {
+                                var c = Model[i];
+                                <tr class="@(i >= pageSize ? "d-none" : "")" data-watchlist-row="@key">
+                                    <td><span class="fw-medium">@c.CustomerName</span></td>
+                                    <td>@c.AgentName</td>
+                                    <td>@c.Device</td>
+                                    <td>KES @c.MonthlyPayment.ToString("N0")</td>
+                                    <td><span class="badge @(c.Status == "Late" ? "badge-dim bg-warning" : "badge-dim bg-success")">@c.Status</span></td>
+                                    <td class="@(c.Status == "Late" ? "text-danger" : "")">@c.NextDue</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    </div>
+                    @if (Model.Count > pageSize)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="@key" onclick="event.preventDefault(); Ranalo.showMoreRows(this, '@key', @pageSize);">Show @Math.Min(pageSize, Model.Count - pageSize) more</a>
+                            <a href="#" class="link link-primary" data-less-for="@key" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, '@key', @pageSize);">Show less</a>
+                        </div>
+                    }
+                    @if (Model.Count == 0)
+                    {
+                        <div class="card-inner text-soft">No active contracts found.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/watchlist-table.js"></script>
+}

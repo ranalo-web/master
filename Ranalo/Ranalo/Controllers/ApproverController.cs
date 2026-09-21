@@ -10,10 +10,12 @@ namespace Ranalo.Controllers
     {
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
-        public ApproverController(IApplicationReportService applicationReportService, IUserService userService)
+        private readonly IDashboardReportService _dashboardReportService;
+        public ApproverController(IApplicationReportService applicationReportService, IUserService userService, IDashboardReportService dashboardReportService)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
+            _dashboardReportService = dashboardReportService;
         }
 
         [HttpGet]
@@ -27,18 +29,51 @@ namespace Ranalo.Controllers
             }
             await SetViewBags(settings, "approver");
 
+            // Approver's own landing page: a real KPI dashboard, same
+            // card-grid view as Dealer/Agent (reused, not duplicated -- see
+            // GetApproverDashboardAsync's doc comment for what's included/
+            // skipped and why), system-wide across every dealer. The
+            // previous "All Orders" awaiting-approval table this route used
+            // to render directly moved to its own page -- see Orders() below.
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allAwaitngApproval = await _applicationReportService.GetAwaitingApprovalOrders(page: page, pageSize: pageSize);
-                var user = await _userService.GetUserByCustomerIdAsync(settings.UserId);
-                ViewData["OrdersStatus"] = "Waiting Approval";
-                return View("~/Views/Approver/Index.cshtml", allAwaitngApproval);
+                // SetViewBags only sets IsApprover for the Approver role
+                // itself; this dashboard is the same for Admin visiting the
+                // same route, so force it here too -- every role-gate on
+                // DealerDashboard/Index.cshtml keys off ViewBag.IsApprover,
+                // not the user's actual RoleId.
+                ViewBag.IsApprover = true;
+                var model = await _dashboardReportService.GetApproverDashboardAsync();
+                return View("~/Views/DealerDashboard/Index.cshtml", model);
             }
 
             var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, page: page, pageSize: pageSize);
             ViewData["OrdersStatus"] = "All Orders";
             return View(waitingApprovalByUser);
 
+        }
+
+        [HttpGet]
+        [Route("approver-orders/{page:int?}")]
+        public async Task<IActionResult> Orders(int page = 1, int pageSize = 10, string searchTerm = "")
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            await SetViewBags(settings, "approver");
+            ViewBag.PageSize = pageSize;
+            ViewBag.SearchTerm = searchTerm.Trim();
+
+            if (settings.RoleId != UserRole.Admin && settings.RoleId != UserRole.Approver)
+            {
+                return RedirectToAction("Index", "Approver");
+            }
+
+            var allAwaitngApproval = await _applicationReportService.GetAwaitingApprovalOrders(searchTerm.Trim(), page, pageSize);
+            ViewData["OrdersStatus"] = "Waiting Approval";
+            return View("~/Views/Approver/Index.cshtml", allAwaitngApproval);
         }
 
         [HttpPost]

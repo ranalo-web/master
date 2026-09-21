@@ -103,6 +103,64 @@ namespace Ranalo.DataStore
             return result;
         }
 
+        public async Task<ContractViewModel> GetAllContractsByDealerAsync(int dealerId, int page, int pageSize, string searchParam = "")
+        {
+            var offset = (page - 1) * pageSize;
+
+            var countSql = @"SELECT COUNT(*)
+                            FROM Contract_Info CI
+                            INNER JOIN Devices D ON D.Id = CI.ID
+                            INNER JOIN Dealers DL ON DL.DealerReference = D.DeviceGroupId
+                            WHERE DL.DealerId = @dealerId
+                            AND (
+                            @SearchTerm IS NULL
+                            OR CI.First_Name LIKE '%' + @SearchTerm + '%'
+                            OR CI.ID LIKE '%' + @SearchTerm + '%'
+                            )
+                            AND CI.EndDate IS NULL";
+
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { dealerId, SearchTerm = searchParam });
+
+            var sql = @"SELECT [ContractID]
+                          ,CI.[ID]
+                          ,[Deposit]
+                          ,[Daily]
+                          ,[Weekly]
+                          ,[Monthly]
+                          ,[rePayment_Intervals] as RePaymentIntervals
+                          ,[Term_in_Months] as TermInMonths
+                          ,[Total_Loan] as TotalLoan
+                          ,[Total_Cost] as TotalCost
+                          ,[First_Name] as FirstName
+                          ,TotalAmount
+                          ,[BuyingPrice]
+                        FROM Contract_Info CI
+                        INNER JOIN Devices D ON D.Id = CI.ID
+                        INNER JOIN Dealers DL ON DL.DealerReference = D.DeviceGroupId
+                        WHERE DL.DealerId = @dealerId
+                        AND (
+                            @SearchTerm IS NULL
+                            OR CI.First_Name LIKE '%' + @SearchTerm + '%'
+                            OR CI.ID LIKE '%' + @SearchTerm + '%'
+                        )
+                        AND CI.EndDate IS NULL
+                        ORDER BY [ContractID] DESC
+                        OFFSET @Offset ROWS
+                        FETCH NEXT @pageSize ROWS ONLY";
+
+            var contracts = await _db.QueryAsync<ContractInfo>(sql, new { dealerId, Offset = offset, pageSize = pageSize, SearchTerm = searchParam });
+
+            return new ContractViewModel()
+            {
+                Contracts = contracts.ToList(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                SearchTerm = searchParam,
+                TotalRecords = totalRecords,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+            };
+        }
+
         // Update
         public async Task<int> UpdateContractAsync(ContractInfo contract)
         {
@@ -426,18 +484,24 @@ WHERE kp.AccountNoBigint IS NOT NULL
 
         public async Task<ContractViewModel> GetAccountsByDealerAsync(int dealerId, int page, int pageSize, string searchTerm)
         {
+            // dealerId here is a DeviceGroupId (callers pass dealer.DealerReference,
+            // not Dealers.DealerId -- see AgentsController.AssignedCollections),
+            // matched directly against Devices.DeviceGroupId.
             var offset = (page - 1) * pageSize;
 
-            var countSql = @"SELECT COUNT(*) FROM Contract_Info  
-                            WHERE (
+            var countSql = @"SELECT COUNT(*)
+                            FROM Contract_Info CI
+                            INNER JOIN Devices D ON D.Id = CI.ID
+                            WHERE D.DeviceGroupId = @dealerId
+                            AND (
                             @SearchTerm IS NULL
-                            OR First_Name LIKE '%' + @SearchTerm + '%'
-                            OR ID LIKE '%' + @SearchTerm + '%'
+                            OR CI.First_Name LIKE '%' + @SearchTerm + '%'
+                            OR CI.ID LIKE '%' + @SearchTerm + '%'
                             )
-                            AND EndDate IS NULL
-                            AND AssignedAgentId IS NULL";
+                            AND CI.EndDate IS NULL
+                            AND CI.AssignedAgentId IS NULL";
 
-            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchTerm });
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { dealerId, SearchTerm = searchTerm });
 
             var sql = @"SELECT [ContractID]
                       ,CI.[ID]
@@ -447,15 +511,24 @@ WHERE kp.AccountNoBigint IS NOT NULL
                       ,[EndDate]
 	                  ,[AssignedAgentId]
 	                  ,Deposit
+                      ,lp.LastPaymentDate
+                      ,lp.LastPaymentAmount
+                      ,lp.LastMpesaCode
                   FROM [dbo].[Contract_Info] CI
                   INNER JOIN Devices D on D.Id = CI.ID
-                  WHERE D.DeviceGroupId = 9085
+                  OUTER APPLY (
+                      SELECT TOP 1 kp.PaymentDateValue AS LastPaymentDate, kp.AmountValue AS LastPaymentAmount, kp.MpesaCode AS LastMpesaCode
+                      FROM KosePayments kp
+                      WHERE kp.AccountNoBigint = CI.ID
+                      ORDER BY kp.PaymentDateValue DESC
+                  ) lp
+                  WHERE D.DeviceGroupId = @dealerId
                   AND [AssignedAgentId] IS NULL
                    ORDER BY [ContractID] DESC
-                        OFFSET @Offset ROWS 
+                        OFFSET @Offset ROWS
                         FETCH NEXT @pageSize ROWS ONLY";
 
-            var contracts = await _db.QueryAsync<ContractInfo>(sql, new { Offset = offset, pageSize = pageSize, SearchTerm = searchTerm });
+            var contracts = await _db.QueryAsync<ContractInfo>(sql, new { dealerId, Offset = offset, pageSize = pageSize, SearchTerm = searchTerm });
 
             var result = new ContractViewModel()
             {
@@ -464,7 +537,7 @@ WHERE kp.AccountNoBigint IS NOT NULL
                 PageSize = pageSize,
                 SearchTerm = searchTerm,
                 TotalRecords = totalRecords,
-                TotalPages = totalRecords / pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
             };
 
             return result;
@@ -473,18 +546,22 @@ WHERE kp.AccountNoBigint IS NOT NULL
 
         public async Task<ContractViewModel> GetAssignedAccountsByDealerAsync(int dealerId, int page, int pageSize, string searchTerm)
         {
+            // Same DeviceGroupId convention as GetAccountsByDealerAsync above.
             var offset = (page - 1) * pageSize;
 
-            var countSql = @"SELECT COUNT(*) FROM Contract_Info  
-                            WHERE (
+            var countSql = @"SELECT COUNT(*)
+                            FROM Contract_Info CI
+                            INNER JOIN Devices D ON D.Id = CI.ID
+                            WHERE D.DeviceGroupId = @dealerId
+                            AND (
                             @SearchTerm IS NULL
-                            OR First_Name LIKE '%' + @SearchTerm + '%'
-                            OR ID LIKE '%' + @SearchTerm + '%'
+                            OR CI.First_Name LIKE '%' + @SearchTerm + '%'
+                            OR CI.ID LIKE '%' + @SearchTerm + '%'
                             )
-                            AND EndDate IS NULL
-                            AND AssignedAgentId IS NOT NULL";
+                            AND CI.EndDate IS NULL
+                            AND CI.AssignedAgentId IS NOT NULL";
 
-            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchTerm });
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { dealerId, SearchTerm = searchTerm });
 
             var sql = @"SELECT [ContractID]
                       ,CI.[ID]
@@ -495,16 +572,25 @@ WHERE kp.AccountNoBigint IS NOT NULL
 	                  ,[AssignedAgentId]
 	                  ,Deposit
                       ,u.[Name] + ' ' + u.[LastName] AS AssignedAgentName
+                      ,lp.LastPaymentDate
+                      ,lp.LastPaymentAmount
+                      ,lp.LastMpesaCode
                 FROM [dbo].[Contract_Info] CI
                 INNER JOIN Devices D on D.Id = CI.ID
 	            INNER JOIN Users u on u.UserId = CI.AssignedAgentId
-                WHERE D.DeviceGroupId = 9085
+                OUTER APPLY (
+                    SELECT TOP 1 kp.PaymentDateValue AS LastPaymentDate, kp.AmountValue AS LastPaymentAmount, kp.MpesaCode AS LastMpesaCode
+                    FROM KosePayments kp
+                    WHERE kp.AccountNoBigint = CI.ID
+                    ORDER BY kp.PaymentDateValue DESC
+                ) lp
+                WHERE D.DeviceGroupId = @dealerId
                 AND [AssignedAgentId] IS NOT NULL
                 ORDER BY [ContractID] DESC
-                        OFFSET @Offset ROWS 
+                        OFFSET @Offset ROWS
                         FETCH NEXT @pageSize ROWS ONLY";
 
-            var contracts = await _db.QueryAsync<ContractInfo>(sql, new { Offset = offset, pageSize = pageSize, SearchTerm = searchTerm });
+            var contracts = await _db.QueryAsync<ContractInfo>(sql, new { dealerId, Offset = offset, pageSize = pageSize, SearchTerm = searchTerm });
 
             var result = new ContractViewModel()
             {
@@ -513,7 +599,7 @@ WHERE kp.AccountNoBigint IS NOT NULL
                 PageSize = pageSize,
                 SearchTerm = searchTerm,
                 TotalRecords = totalRecords,
-                TotalPages = totalRecords / pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
             };
 
             return result;
@@ -532,6 +618,17 @@ WHERE kp.AccountNoBigint IS NOT NULL
                 ContractId = contractId,
                 AssignedAgentId = agentId
             });
+        }
+
+        public async Task UnassignAccountFromAgentAsync(int contractId)
+        {
+            const string sql = @"
+                UPDATE Contract_Info
+                SET AssignedAgentId = NULL
+                WHERE ID = @ContractId;
+            ";
+
+            await _db.ExecuteAsync(sql, new { ContractId = contractId });
         }
     }
 }

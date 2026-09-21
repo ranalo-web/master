@@ -8,10 +8,10 @@ namespace Ranalo.Services
         Task<Enrolment> CreateEnrolmentasync(Enrolment newEnrolment, CustomerDetails? order);
 
         Task<(IEnumerable<Enrolment> Items, int TotalCount)>
-        GetAllEnrolmentsAsync(int pageNumber, int pageSize);
+        GetAllEnrolmentsAsync(int pageNumber, int pageSize, string? searchTerm = null);
 
         Task<(IEnumerable<Enrolment> Items, int TotalCount)>
-        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize);
+        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null);
 
         Task<Enrolment?> GetByImeiNumberAsync(string imei);
         Task ApproveEnrolment(Enrolment existingEnrolment);

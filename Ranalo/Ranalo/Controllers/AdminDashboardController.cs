@@ -2,15 +2,23 @@ using Microsoft.AspNetCore.Mvc;
 using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
+using Ranalo.Services;
 
 namespace Ranalo.Controllers
 {
     [LoadUserSettingsFromCookie]
     public class AdminDashboardController : Controller
     {
+        private readonly IDashboardReportService _dashboardReportService;
+
+        public AdminDashboardController(IDashboardReportService dashboardReportService)
+        {
+            _dashboardReportService = dashboardReportService;
+        }
+
         [HttpGet]
         [Route("admin-dashboard")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -29,9 +37,53 @@ namespace Ranalo.Controllers
             ViewBag.IsDealer = false;
             ViewBag.UserName = settings.KnownAs;
 
-            // Sample data matching the agreed design mockup. Wiring to
-            // IApplicationReportService and friends is a follow-up step.
-            var model = new AdminDashboardViewModel
+            var model = await _dashboardReportService.GetAdminDashboardAsync();
+
+            return View(model);
+        }
+
+        // Backs the top-of-page "This Month" date-range filter (see
+        // Views/AdminDashboard/Index.cshtml) -- was a dead, unwired widget
+        // (every option was a plain href="#") until now. Same
+        // dealerId=null, company-wide call as the Approver Dashboard's copy
+        // of this endpoint (DealerDashboardController.Revenue), reusing the
+        // exact same live infrastructure rather than a new query.
+        [HttpGet]
+        [Route("admin-dashboard/revenue")]
+        public async Task<IActionResult> Revenue(string period)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return Unauthorized();
+            }
+
+            if (settings.RoleId != UserRole.Admin)
+            {
+                // Not Forbid() -- this app has no ASP.NET Core authentication
+                // scheme registered (auth is the custom cookie-based
+                // LoadUserSettingsFromCookie filter), so ForbidResult would
+                // throw trying to resolve IAuthenticationService.
+                return StatusCode(403);
+            }
+
+            var result = await _dashboardReportService.GetDealerRevenueForPeriodAsync(dealerId: null, period);
+            if (result == null)
+            {
+                return BadRequest("Unrecognized period. Expected one of: week, month, ytd, year.");
+            }
+
+            return Json(result);
+        }
+    }
+
+    // Sample data matching the agreed design mockup. Wiring to
+    // IApplicationReportService and friends is a follow-up step.
+    public static class AdminDashboardSampleData
+    {
+        public static AdminDashboardViewModel Build()
+        {
+            return new AdminDashboardViewModel
             {
                 RevenueThisMonth = 412300m,
                 RevenueGrowthPct = 14.8m,
@@ -72,8 +124,13 @@ namespace Ranalo.Controllers
                 BadDebtChangePct = -12.4m,
 
                 OperatingExpensesThisMonth = 45000m,
+                // Kenya's standard resident corporate income tax rate (KRA) --
+                // confirmed current as of 2026, not a placeholder.
                 TaxRatePct = 30m,
-                DividendsPaidThisMonth = 60000m,
+
+                // No dividends have been paid to date (confirmed by the
+                // business, not a placeholder) -- real data, not a guess.
+                DividendsPaidThisMonth = 0m,
 
                 TotalCustomers = 1798,
                 NewCustomersThisMonth = 187,
@@ -236,8 +293,6 @@ namespace Ranalo.Controllers
                     new() { CustomerName = "Ruth Nyambura", DealerName = "Eldoret Tech", ProductName = "Tecno Camon 20", CompletedDate = "Jul 29", TotalPaid = 18100, DurationMonths = 7 },
                 },
             };
-
-            return View(model);
         }
     }
 }

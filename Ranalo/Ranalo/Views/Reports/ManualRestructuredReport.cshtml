@@ -79,18 +79,12 @@
                     <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu"><em class="icon ni ni-menu-alt-r"></em></a>
                     <div class="toggle-expand-content" data-content="pageMenu">
                         <ul class="nk-block-tools g-3">
-                            <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
-                            <li class="nk-block-tools-opt">
-                                <div class="drodown">
-                                    <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-end">
-                                        <ul class="link-list-opt no-bdr">
-                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#modalRestructure"><span>Add Restructure</span></a></li>
-                                            <li><a href="#"><span>Import Loan</span></a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </li>
+                            @if (ViewBag.IsAdmin is true)
+                            {
+                                <li class="nk-block-tools-opt">
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#modalRestructure" class="btn btn-primary"><em class="icon ni ni-plus"></em><span>Add Restructure</span></a>
+                                </li>
+                            }
                         </ul>
                     </div>
                 </div><!-- .toggle-wrap -->
@@ -102,22 +96,6 @@
             <div class="card-inner-group">
                 <div class="card-inner position-relative card-tools-toggle">
                     <div class="card-title-group">
-                        <div class="card-tools">
-                            <div class="form-inline flex-nowrap gx-3">
-                                <div class="form-wrap w-150px">
-                                    <select class="form-select form-select-sm js-select2" data-search="off" data-placeholder="Bulk Action">
-                                        <option value="">Bulk Action</option>
-                                        <option value="email">Send Email</option>
-                                        <option value="group">Disbursed Loan</option>
-                                        <option value="delete">Delete User</option>
-                                    </select>
-                                </div>
-                                <div class="btn-wrap">
-                                    <span class="d-none d-md-block"><button class="btn btn-dim btn-outline-light disabled">Apply</button></span>
-                                    <span class="d-md-none"><button class="btn btn-dim btn-outline-light btn-icon disabled"><em class="icon ni ni-arrow-right"></em></button></span>
-                                </div>
-                            </div><!-- .form-inline -->
-                        </div><!-- .card-tools -->
                         <div class="card-tools me-n1">
                             <ul class="btn-toolbar gx-1">
                                 <li>
@@ -131,71 +109,6 @@
                                             <ul class="btn-toolbar gx-1">
                                                 <li class="toggle-close">
                                                     <a href="#" class="btn btn-icon btn-trigger toggle" data-target="cardTools"><em class="icon ni ni-arrow-left"></em></a>
-                                                </li><!-- li -->
-                                                <li>
-                                                    <div class="dropdown">
-                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
-                                                            <div class="dot dot-primary"></div>
-                                                            <em class="icon ni ni-filter-alt"></em>
-                                                        </a>
-                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
-                                                            <div class="dropdown-head">
-                                                                <span class="sub-title dropdown-title">Filter Borrower</span>
-                                                                <div class="dropdown">
-                                                                    <a href="#" class="btn btn-sm btn-icon">
-                                                                        <em class="icon ni ni-more-h"></em>
-                                                                    </a>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-body dropdown-body-rg">
-                                                                <div class="row gx-6 gy-3">
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Category</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="education">Education</option>
-                                                                                <option value="emergency">Emergency</option>
-                                                                                <option value="daily">Daily</option>
-                                                                                <option value="kibaba">Kibaba</option>
-                                                                                <option value="bilashi">Bilashi</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Interest</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="5">5%</option>
-                                                                                <option value="7">7%</option>
-                                                                                <option value="10">10%</option>
-                                                                                <option value="15">15%</option>
-                                                                                <option value="20">20%</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Status</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="approved">Approved</option>
-                                                                                <option value="pending">Pending</option>
-                                                                                <option value="rejected">Rejected</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <button type="button" class="btn btn-secondary">Filter</button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-foot between">
-                                                                <a class="clickable" href="#">Reset Filter</a>
-                                                                <a href="#">Save Filter</a>
-                                                            </div>
-                                                        </div><!-- .filter-wg -->
-                                                    </div><!-- .dropdown -->
                                                 </li><!-- li -->
                                                 <li>
                                                     <div class="dropdown">
@@ -258,6 +171,7 @@
                             <div class="nk-tb-col"><span class="sub-text">Arrears R</span></div>
                                 <div class="nk-tb-col"><span class="sub-text">Last Paid Date</span></div>
                                 <div class="nk-tb-col"><span class="sub-text">Last Paid Amnt</span></div>
+                            <div class="nk-tb-col nk-tb-col-tools text-end"></div>
                         </div><!-- .nk-tb-item -->
                         @foreach (var report in Model.Records)
                         {
@@ -314,6 +228,15 @@
                                     <div class="nk-tb-col">
                                         <span>@report.LastPaidAmount</span>
                                     </div>
+                                <div class="nk-tb-col nk-tb-col-tools">
+                                    <ul class="nk-tb-actions gx-2">
+                                        <li>
+                                            <a href="/account-details/@report.AccountNo" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="View Details">
+                                                <em class="icon ni ni-eye"></em>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         }
                         </div>
@@ -411,6 +334,8 @@
     </div><!-- .nk-block -->
 </div>
 
+@if (ViewBag.IsAdmin is true)
+{
 <div class="modal fade" tabindex="-1" id="modalRestructure">
     <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
@@ -466,3 +391,4 @@
         </div>
     </div>
 </div>
+}

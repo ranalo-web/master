@@ -35,11 +35,12 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            await SetViewBags(settings, "index");
+            await SetViewBags(settings, "index", searchTerm);
+            ViewBag.PageSize = pageSize;
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var enrolments = await _enrolmentService.GetAllEnrolmentsAsync(page, pageSize: pageSize);
+                var enrolments = await _enrolmentService.GetAllEnrolmentsAsync(page, pageSize, searchTerm.Trim());
 
                 var response = new EnrolmentViewModel()
                 {
@@ -47,6 +48,7 @@ namespace Ranalo.Controllers
                     Enrolments = enrolments.Items.ToList(),
                     PageSize = pageSize,
                     TotalCount = enrolments.TotalCount,
+                    SearchTerm = searchTerm.Trim(),
                 };
 
                 return View(response);
@@ -54,9 +56,11 @@ namespace Ranalo.Controllers
 
             var dealer = await _userService.GetDealerByUserId(settings.UserId);
 
-            var dealerId = Convert.ToInt32(dealer.DealerReference);
-
-            var dealerEnrolments = await _enrolmentService.GetDealerEnrolmentsAsync(dealerId, page, pageSize: pageSize);
+            // Enrolment.DealerId is set from settings.DealerId (see the POST
+            // AddEnrolment action below), which is the real Dealers.DealerId
+            // PK -- not DealerReference (the separate value matched against
+            // Devices.DeviceGroupId elsewhere in the app).
+            var dealerEnrolments = await _enrolmentService.GetDealerEnrolmentsAsync(dealer.DealerId, page, pageSize, searchTerm.Trim());
 
             var dealerResponse = new EnrolmentViewModel()
             {
@@ -64,6 +68,7 @@ namespace Ranalo.Controllers
                 Enrolments = dealerEnrolments.Items.ToList(),
                 PageSize = pageSize,
                 TotalCount = dealerEnrolments.TotalCount,
+                SearchTerm = searchTerm.Trim(),
             };
 
             return View(dealerResponse);

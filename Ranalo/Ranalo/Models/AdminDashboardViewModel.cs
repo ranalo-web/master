@@ -10,11 +10,29 @@ namespace Ranalo.Models
         public int GoodAccounts { get; set; }
         public int BadAccounts { get; set; }
 
+        // Live "new accounts this month" count and its growth vs. the prior
+        // month -- same source (GetDealerRevenueForPeriodAsync) as the
+        // period-filter dropdown's AJAX response, so the initial page load
+        // and a manual "Month" selection always agree instead of showing
+        // two different numbers.
+        public int NewThisMonth { get; set; }
+        public decimal? NewThisMonthChangePct { get; set; }
+
         public int PayingAccounts { get; set; }
         public int NonPayingAccounts { get; set; }
         public int NonPayingAccountsChange { get; set; }
         public decimal ArrearsTotal { get; set; }
         public decimal ArrearsChangePct { get; set; }
+
+        // Accounts contributing to ArrearsTotal (live, from
+        // GetDealerArrearsClassificationAsync -- same source as ArrearsTotal
+        // itself) -- replaces the "vs last month" trend on the Total
+        // Arrears card, which has no live recompute path (ArrearsChangePct
+        // stays rollup-backed/stale; comparing it against the now-live
+        // ArrearsTotal would be a meaningless mismatched baseline, same
+        // reasoning the Dealer/Approver Dashboards already applied to their
+        // own Total Arrears card).
+        public int ArrearsTrueCount { get; set; }
 
         public List<string> GrowthMonths { get; set; } = new();
         public List<decimal> RevenueByMonth { get; set; } = new();
@@ -126,5 +144,10 @@ namespace Ranalo.Models
         public string CompletedDate { get; set; } = "";
         public decimal TotalPaid { get; set; }
         public int DurationMonths { get; set; }
+
+        // "Completed" (fully paid off) or "UpsellTarget" (80%+ paid, not yet
+        // done -- a renewal/upsell candidate). See DashboardCompletedContractStatus.
+        public string Status { get; set; } = "Completed";
+        public decimal? PctComplete { get; set; }
     }
 }

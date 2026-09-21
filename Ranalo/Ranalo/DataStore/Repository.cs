@@ -196,12 +196,73 @@ namespace Ranalo.DataStore
 
         }
 
+        public async Task<(List<User> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize, string searchTerm)
+        {
+            var query = _context.Users.AsNoTracking();
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                query = query.Where(u =>
+                    (u.Name != null && u.Name.Contains(searchTerm))
+                    || (u.LastName != null && u.LastName.Contains(searchTerm))
+                    || u.Email.Contains(searchTerm));
+            }
+
+            var totalCount = await query.CountAsync();
+            var users = await query
+                .OrderByDescending(u => u.UserId)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (users, totalCount);
+        }
+
+        public async Task<(List<User> Users, int TotalCount)> GetUsersByDealerIdPagedAsync(int dealerId, int page, int pageSize, string searchTerm)
+        {
+            var query = _context.Users.AsNoTracking().Where(u => u.DealerId == dealerId);
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                query = query.Where(u =>
+                    (u.Name != null && u.Name.Contains(searchTerm))
+                    || (u.LastName != null && u.LastName.Contains(searchTerm))
+                    || u.Email.Contains(searchTerm));
+            }
+
+            var totalCount = await query.CountAsync();
+            var users = await query
+                .OrderByDescending(u => u.UserId)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (users, totalCount);
+        }
+
         public async Task<Dealer?> GetDealerByUserIdAsync(int userId)
         {
             try
             {
                 return await _context.Dealers
                 .FirstOrDefaultAsync(u => u.UserId == userId);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+
+        }
+
+        // For a non-Dealer user (Agent, Collector) whose own Users.DealerId
+        // column already names the dealer they belong to -- GetDealerByUserIdAsync
+        // looks up Dealers.UserId, which only resolves for the Dealer who owns
+        // that row themselves, not for their staff.
+        public async Task<Dealer?> GetDealerByDealerIdAsync(int dealerId)
+        {
+            try
+            {
+                return await _context.Dealers
+                .FirstOrDefaultAsync(d => d.DealerId == dealerId);
             }
             catch (Exception)
             {

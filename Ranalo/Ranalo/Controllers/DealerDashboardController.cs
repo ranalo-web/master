@@ -2,15 +2,23 @@ using Microsoft.AspNetCore.Mvc;
 using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
+using Ranalo.Services;
 
 namespace Ranalo.Controllers
 {
     [LoadUserSettingsFromCookie]
     public class DealerDashboardController : Controller
     {
+        private readonly IDashboardReportService _dashboardReportService;
+
+        public DealerDashboardController(IDashboardReportService dashboardReportService)
+        {
+            _dashboardReportService = dashboardReportService;
+        }
+
         [HttpGet]
         [Route("dealer-dashboard")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -29,9 +37,48 @@ namespace Ranalo.Controllers
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
             ViewBag.UserName = settings.KnownAs;
 
-            var model = DealerDashboardSampleData.Build();
+            var model = await _dashboardReportService.GetDealerDashboardAsync(settings.DealerId);
 
             return View(model);
+        }
+
+        // Backs the top-of-page date-range filter (see
+        // Views/DealerDashboard/Index.cshtml) -- returns figures for an
+        // arbitrary period on demand instead of the nightly-rollup-backed
+        // "this month" the page loads with. Drives both the Revenue card and
+        // the Total Accounts card so they stay in sync off one toggle.
+        [HttpGet]
+        [Route("dealer-dashboard/revenue")]
+        public async Task<IActionResult> Revenue(string period)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return Unauthorized();
+            }
+
+            if (settings.RoleId != UserRole.Dealer && settings.RoleId != UserRole.Admin && settings.RoleId != UserRole.Agent && settings.RoleId != UserRole.Approver)
+            {
+                // Not Forbid() -- this app has no ASP.NET Core authentication
+                // scheme registered (auth is the custom cookie-based
+                // LoadUserSettingsFromCookie filter), so ForbidResult would
+                // throw trying to resolve IAuthenticationService.
+                return StatusCode(403);
+            }
+
+            // An Agent only ever sees their own book (AssignedAgentId), not
+            // the whole dealer's -- see GetDealerDashboardAsync's agentUserId
+            // doc note. An Approver's dashboard is system-wide (no single
+            // dealer to scope to) -- see GetApproverDashboardAsync.
+            var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
+            var dealerId = settings.RoleId == UserRole.Approver ? (int?)null : settings.DealerId;
+            var result = await _dashboardReportService.GetDealerRevenueForPeriodAsync(dealerId, period, agentUserId);
+            if (result == null)
+            {
+                return BadRequest("Unrecognized period. Expected one of: week, month, ytd, year.");
+            }
+
+            return Json(result);
         }
     }
 
@@ -48,6 +95,7 @@ namespace Ranalo.Controllers
                 RevenueThisMonth = 412300m,
                 RevenueGrowthPct = 14.8m,
                 AvgPerAccount = 2904m,
+                RevenueTarget = 490000m,
 
                 TotalAccounts = 142,
                 ActivePct = 91,
@@ -62,6 +110,7 @@ namespace Ranalo.Controllers
                 CommissionReceived = 18600m,
                 CommissionPaidToAgents = 12200m,
                 CommissionOutstanding = 2000m,
+                DealerCommissionOutstanding = 3200m,
                 CommissionsChangePct = 8.3m,
 
                 BadDebtThisMonth = 3100m,

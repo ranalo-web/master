@@ -60,14 +60,31 @@ namespace Ranalo.Controllers
         [Route("devices-with-no-contracts/{page:int?}/{pageSize:int?}")]
         public async Task<IActionResult> DevicesWithNoContract(string searchTerm = "", int page = 1, int pageSize = 10)
         {
-            
+
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
             {
                 return RedirectToAction("Index", "Login");
             }
-            var devices = await _devicesService.GetDevicesWithNoContracts(page: page, pageSize: pageSize, searchTerm: searchTerm.Trim());
+
             await SetViewBags(settings, "index");
+
+            DevicesWithDealerViewModel devices;
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+            {
+                devices = await _devicesService.GetDevicesWithNoContracts(page: page, pageSize: pageSize, searchTerm: searchTerm.Trim());
+            }
+            else
+            {
+                var dealer = settings.RoleId == UserRole.Agent
+                    ? await _userService.GetDealerByDealerId(settings.DealerId)
+                    : await _userService.GetDealerByUserId(settings.UserId);
+                var dealerId = Convert.ToInt32(dealer.DealerReference);
+                var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
+
+                devices = await _devicesService.GetDevicesWithNoContracts(dealerId, page: page, pageSize: pageSize, searchTerm: searchTerm.Trim(), agentUserId: agentUserId);
+            }
+
             return View(devices);
         }
         private async Task<IActionResult> GetAndRenderView(User settings, List<string>? errors, int page = 1, int pageSize = 10, string searchTerm = "")
@@ -88,11 +105,14 @@ namespace Ranalo.Controllers
                 return View(devices);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
+            var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
 
-            devices = await _devicesService.GetDevicesWithNoOrders(dealerId, page: page, pageSize: pageSize, searchTerm: searchTerm.Trim());
+            devices = await _devicesService.GetDevicesWithNoOrders(dealerId, page: page, pageSize: pageSize, searchTerm: searchTerm.Trim(), agentUserId: agentUserId);
 
             if (errors != null)
             {
@@ -174,6 +194,7 @@ namespace Ranalo.Controllers
             {
                 accounts = await _devicesService.GetAllDevicesAsync(null, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
 
+                ApplyLockStatus(accounts);
                 return View(accounts);
             }
 
@@ -185,12 +206,51 @@ namespace Ranalo.Controllers
 
                 accounts = await _devicesService.GetAllDevicesAsync(dealerId, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
 
+                ApplyLockStatus(accounts);
                 return View(accounts);
             }
 
                 accounts = await _devicesService.GetAllDevicesByUserAccountIdAsync(settings.UserId, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
 
+            ApplyLockStatus(accounts);
             return View(accounts);
+        }
+
+        // Good/Slow/Arrears/Non-Payer indicator for All Devices -- same
+        // mutually-exclusive tiers and NextLockDateIsoFormat classification
+        // as the Dealer Dashboard's My Portfolio doughnut
+        // (DashboardReportRepository.ClassifyLock/DaysPastLock), so this
+        // page agrees with the dashboard instead of inventing its own rule.
+        private static void ApplyLockStatus(DevicesWithDealerViewModel model)
+        {
+            if (model.Devices == null) return;
+
+            foreach (var device in model.Devices)
+            {
+                var daysPastLock = DashboardReportRepository.DaysPastLock(device.NextLockDateIsoFormat);
+                var bucket = DashboardReportRepository.ClassifyLock(daysPastLock);
+
+                if (bucket == DashboardReportRepository.LockBucket.Arrears && daysPastLock > 90)
+                {
+                    device.LockStatusLabel = "Non-Payer";
+                    device.LockStatusBadgeClass = "badge-dim bg-dark";
+                }
+                else
+                {
+                    device.LockStatusLabel = bucket switch
+                    {
+                        DashboardReportRepository.LockBucket.Good => "Good",
+                        DashboardReportRepository.LockBucket.Slow => "Slow",
+                        _ => "Bad",
+                    };
+                    device.LockStatusBadgeClass = bucket switch
+                    {
+                        DashboardReportRepository.LockBucket.Good => "badge-dim bg-success",
+                        DashboardReportRepository.LockBucket.Slow => "badge-dim bg-warning",
+                        _ => "badge-dim bg-danger",
+                    };
+                }
+            }
         }
 
         [HttpPost]
@@ -202,6 +262,11 @@ namespace Ranalo.Controllers
             if (settings == null)
             {
                 return RedirectToAction("Index", "Login");
+            }
+
+            if (settings.RoleId == UserRole.Approver)
+            {
+                return RedirectToAction("AllDevices", "Devices");
             }
 
             await SetViewBags(settings, "collector");
@@ -242,11 +307,14 @@ namespace Ranalo.Controllers
                 return View(accounts);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
+            var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
 
-            accounts = await _devicesService.GetAllDevicesWithNoPaymentsAsync(dealerId, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize);
+            accounts = await _devicesService.GetAllDevicesWithNoPaymentsAsync(dealerId, searchTerm: searchTerm.Trim(), page: page, pageSize: pageSize, agentUserId: agentUserId);
 
             return View(accounts);
         }
@@ -313,6 +381,7 @@ namespace Ranalo.Controllers
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+            ViewBag.IsAgent = settings.RoleId == UserRole.Agent;
 
             ViewBag.UserName = settings.KnownAs;
             if (settings.RoleId == UserRole.Dealer)

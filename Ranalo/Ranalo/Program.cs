@@ -75,6 +75,12 @@ builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IApplicationReportService, ApplicationReportService>();
 builder.Services.AddScoped<IApplicationReportRepository, ApplicationReportRepository>();
+builder.Services.AddScoped<IDashboardReportService, DashboardReportService>();
+builder.Services.AddScoped<IDashboardReportRepository, DashboardReportRepository>();
+builder.Services.AddScoped<IAccountWatchlistService, AccountWatchlistService>();
+builder.Services.AddScoped<IAccountWatchlistRepository, AccountWatchlistRepository>();
+builder.Services.AddScoped<IOperatingExpenseService, OperatingExpenseService>();
+builder.Services.AddScoped<IOperatingExpenseRepository, OperatingExpenseRepository>();
 builder.Services.AddScoped<IContractCalculatorService, ContractCalculatorService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IDevicesRepository, DevicesRepository>();
@@ -137,6 +143,14 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService<ScheduledLockPaying>();
         builder.Services.AddHostedService<ScheduledDailyPaymentSummary>();
 
+        // Runs nightly at 4 AM UTC alongside the other scheduled jobs above
+        // (see the class comment for exactly which snapshot fields it
+        // refreshes). Requires Database/Dashboard/001_create_dashboard_tables.sql
+        // to have been applied to whichever database this connects to --
+        // if not, GetSnapshotAsync logs a warning and every caller falls
+        // back to its existing sample-data/live-recompute path, so this is
+        // safe to enable even where the migration hasn't landed yet.
+        builder.Services.AddHostedService<ScheduledDashboardRollup>();
     }
 }
 
@@ -175,8 +189,17 @@ app.UseRouting();
 app.UseAuthorization();
 app.UseMiddleware<UserSettingsMiddleware>();
 app.MapRazorPages();
-//app.MapFallbackToPage("/Pages/Login");
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=DealerDashboard}/{action=Index}/{id?}");
+
+// Every controller action in this app uses an explicit [Route] attribute, so
+// the conventional "default" route above never actually matches anything --
+// it's what MapFallbackToController is for: any GET request that doesn't
+// resolve to any other endpoint (a broken/stale link) lands on the Dealer
+// Dashboard instead of a bare 404. DealerDashboardController.Index() already
+// redirects to Login when unauthenticated, or to Home for the wrong role, so
+// this degrades gracefully for every user.
+app.MapFallbackToController("Index", "DealerDashboard");
+
 app.Run();

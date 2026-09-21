@@ -59,13 +59,15 @@
     }
 }
 
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=2">
+
 <div class="nk-content-body">
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">All Orders</h3>
                 <div class="nk-block-des text-soft">
-                    <p>You have total @Model?.AwaitingApprovals?.Count() orders.</p>
+                    <p>You have total @Model?.TotalRecords orders.</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -125,35 +127,6 @@
                                             <ul class="btn-toolbar gx-1">
                                                 <li class="toggle-close">
                                                     <a href="#" class="btn btn-icon btn-trigger toggle" data-target="cardTools"><em class="icon ni ni-arrow-left"></em></a>
-                                                </li><!-- li -->
-                                                <li>
-                                                    <div class="dropdown">
-                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
-                                                            <div class="dot dot-primary"></div>
-                                                            <em class="icon ni ni-filter-alt"></em>
-                                                        </a>
-                                                        <div class="filter-wg dropdown-menu p-3" style="background-color:#fff; width: 220px; max-width: calc(100vw - 24px);">
-                                                            <div class="mb-2" style="font-weight:600; color:#364a63;">Filter Orders</div>
-                                                            <div class="mb-3">
-                                                                <label class="form-label" for="statusFilter" style="color:#526484;">Status</label>
-                                                                <select class="form-select" id="statusFilter" style="color:#364a63;">
-                                                                    <option value="any">Any Status</option>
-                                                                    <option value="approval-waiting">Approval Waiting</option>
-                                                                    <option value="approved">Approved</option>
-                                                                </select>
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <label class="form-label" for="joinedFrom" style="color:#526484;">Joined From</label>
-                                                                <input type="date" class="form-control" id="joinedFrom" style="color:#364a63;">
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <label class="form-label" for="joinedTo" style="color:#526484;">Joined To</label>
-                                                                <input type="date" class="form-control" id="joinedTo" style="color:#364a63;">
-                                                            </div>
-                                                            <button type="button" class="btn btn-primary w-100 mb-2" id="applyStatusFilter">Filter</button>
-                                                            <a href="#" class="d-block text-center" id="resetStatusFilter">Reset Filter</a>
-                                                        </div><!-- .filter-wg -->
-                                                    </div><!-- .dropdown -->
                                                 </li><!-- li -->
                                                 <li>
                                                     <div class="dropdown">

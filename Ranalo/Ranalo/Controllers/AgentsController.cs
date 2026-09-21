@@ -12,11 +12,13 @@ namespace Ranalo.Controllers
         private readonly IApplicationReportService _applicationReportService;
         private readonly IContractService _contractService;
         private readonly IUserService _userService;
-        public AgentsController(IApplicationReportService applicationReportService, IUserService userService, IContractService contractService)
+        private readonly IDashboardReportService _dashboardReportService;
+        public AgentsController(IApplicationReportService applicationReportService, IUserService userService, IContractService contractService, IDashboardReportService dashboardReportService)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
             _contractService = contractService;
+            _dashboardReportService = dashboardReportService;
         }
 
         [HttpGet]
@@ -38,10 +40,19 @@ namespace Ranalo.Controllers
                 return View("~/Views/Approver/Index.cshtml", allAwaitngApproval);
             }
 
-            var waitingApprovalByUser = await _applicationReportService.GetAwaitingApprovalOrdersByUser(settings.UserId, page: page, pageSize: pageSize);
-            ViewData["OrdersStatus"] = "All Orders";
-            return View(waitingApprovalByUser);
-
+            // Agent home: same rendering as the Dealer Dashboard
+            // (Views/DealerDashboard/Index.cshtml), scoped down to just this
+            // agent's own assigned accounts (AssignedAgentId = settings.UserId)
+            // instead of the whole dealer's book -- see
+            // GetDealerDashboardAsync's agentUserId doc note. settings.DealerId
+            // comes straight from the Users.DealerId column on the cookie (set
+            // when this agent's account was created), not a Dealers-table
+            // lookup by UserId -- that lookup only resolves for an actual
+            // Dealer-role user who owns a Dealers row themselves.
+            ViewBag.BackLink = "agent";
+            ViewBag.IsAgent = true;
+            var model = await _dashboardReportService.GetDealerDashboardAsync(settings.DealerId, settings.UserId);
+            return View("~/Views/DealerDashboard/Index.cshtml", model);
         }
 
         [HttpGet]
@@ -53,6 +64,15 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
+
+            // The Agents tab (dealer-wide list of every agent's assigned
+            // accounts) serves no purpose for an Agent -- they only need
+            // their own accounts, already covered by Collections/Orders/etc.
+            if (settings.RoleId == UserRole.Agent)
+            {
+                return RedirectToAction("Index", "Agents");
+            }
+
             //Page Origin ViewBad
             ViewBag.PageOrigin = "assigned";
             await SetViewBags(settings, "approver");
@@ -80,7 +100,9 @@ namespace Ranalo.Controllers
                 return View("~/Views/Collections/AssignedCollections.cshtml", allPaymentSummaries);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
             if (dealer != null)
             {
@@ -114,6 +136,14 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
+
+            // The Agents tab serves no purpose for an Agent -- see
+            // AssignedCollections above.
+            if (settings.RoleId == UserRole.Agent)
+            {
+                return RedirectToAction("Index", "Agents");
+            }
+
             ViewBag.PageOrigin = "unassigned";
 
             await SetViewBags(settings, "approver");
@@ -141,7 +171,9 @@ namespace Ranalo.Controllers
                 return View("~/Views/Collections/AssignedCollections.cshtml", allPaymentSummaries);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
             if(dealer != null)
             {
@@ -178,11 +210,42 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
+            // Agents and Approvers have view-only access to the Agents tab
+            // -- no power to assign/unassign accounts.
+            if (settings.RoleId == UserRole.Agent || settings.RoleId == UserRole.Approver)
+            {
+                return RedirectToAction("UnAssignedCollections", "Agents");
+            }
+
             await SetViewBags(settings, "collector");
 
             await _contractService.AssignAccountToAgent((int)displayDeviceId, debtCollectorUserId);
 
             return RedirectToAction("UnAssignedCollections", "Agents");
+        }
+
+        [HttpPost]
+        [Route("unassign-agent")]
+        public async Task<IActionResult> UnassignAccountCollector(long displayDeviceId)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            // Agents and Approvers have view-only access to the Agents tab
+            // -- no power to assign/unassign accounts.
+            if (settings.RoleId == UserRole.Agent || settings.RoleId == UserRole.Approver)
+            {
+                return RedirectToAction("AssignedCollections", "Agents");
+            }
+
+            await SetViewBags(settings, "collector");
+
+            await _contractService.UnassignAccountFromAgent((int)displayDeviceId);
+
+            return RedirectToAction("AssignedCollections", "Agents");
         }
 
         [HttpPost]
@@ -242,6 +305,7 @@ namespace Ranalo.Controllers
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+            ViewBag.IsAgent = settings.RoleId == UserRole.Agent;
             ViewBag.UserName = settings.KnownAs;
             if (settings.RoleId == UserRole.Dealer)
             {

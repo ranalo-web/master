@@ -79,18 +79,6 @@
                     <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu"><em class="icon ni ni-menu-alt-r"></em></a>
                     <div class="toggle-expand-content" data-content="pageMenu">
                         <ul class="nk-block-tools g-3">
-                            <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
-                            <li class="nk-block-tools-opt">
-                                <div class="drodown">
-                                    <a href="#" class="dropdown-toggle btn btn-icon btn-primary" data-bs-toggle="dropdown"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-end">
-                                        <ul class="link-list-opt no-bdr">
-                                            <li><a href="#" data-bs-toggle="modal" data-bs-target="#add-loan"><span>Add Loan</span></a></li>
-                                            <li><a href="#"><span>Import Loan</span></a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </li>
                         </ul>
                     </div>
                 </div><!-- .toggle-wrap -->
@@ -102,22 +90,6 @@
             <div class="card-inner-group">
                 <div class="card-inner position-relative card-tools-toggle">
                     <div class="card-title-group">
-                        <div class="card-tools">
-                            <div class="form-inline flex-nowrap gx-3">
-                                <div class="form-wrap w-150px">
-                                    <select class="form-select form-select-sm js-select2" data-search="off" data-placeholder="Bulk Action">
-                                        <option value="">Bulk Action</option>
-                                        <option value="email">Send Email</option>
-                                        <option value="group">Disbursed Loan</option>
-                                        <option value="delete">Delete User</option>
-                                    </select>
-                                </div>
-                                <div class="btn-wrap">
-                                    <span class="d-none d-md-block"><button class="btn btn-dim btn-outline-light disabled">Apply</button></span>
-                                    <span class="d-md-none"><button class="btn btn-dim btn-outline-light btn-icon disabled"><em class="icon ni ni-arrow-right"></em></button></span>
-                                </div>
-                            </div><!-- .form-inline -->
-                        </div><!-- .card-tools -->
                         <div class="card-tools me-n1">
                             <ul class="btn-toolbar gx-1">
                                 <li>
@@ -131,71 +103,6 @@
                                             <ul class="btn-toolbar gx-1">
                                                 <li class="toggle-close">
                                                     <a href="#" class="btn btn-icon btn-trigger toggle" data-target="cardTools"><em class="icon ni ni-arrow-left"></em></a>
-                                                </li><!-- li -->
-                                                <li>
-                                                    <div class="dropdown">
-                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
-                                                            <div class="dot dot-primary"></div>
-                                                            <em class="icon ni ni-filter-alt"></em>
-                                                        </a>
-                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
-                                                            <div class="dropdown-head">
-                                                                <span class="sub-title dropdown-title">Filter Borrower</span>
-                                                                <div class="dropdown">
-                                                                    <a href="#" class="btn btn-sm btn-icon">
-                                                                        <em class="icon ni ni-more-h"></em>
-                                                                    </a>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-body dropdown-body-rg">
-                                                                <div class="row gx-6 gy-3">
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Category</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="education">Education</option>
-                                                                                <option value="emergency">Emergency</option>
-                                                                                <option value="daily">Daily</option>
-                                                                                <option value="kibaba">Kibaba</option>
-                                                                                <option value="bilashi">Bilashi</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Interest</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="5">5%</option>
-                                                                                <option value="7">7%</option>
-                                                                                <option value="10">10%</option>
-                                                                                <option value="15">15%</option>
-                                                                                <option value="20">20%</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Status</label>
-                                                                            <select class="form-select form-select-sm js-select2">
-                                                                                <option value="approved">Approved</option>
-                                                                                <option value="pending">Pending</option>
-                                                                                <option value="rejected">Rejected</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <button type="button" class="btn btn-secondary">Filter</button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-foot between">
-                                                                <a class="clickable" href="#">Reset Filter</a>
-                                                                <a href="#">Save Filter</a>
-                                                            </div>
-                                                        </div><!-- .filter-wg -->
-                                                    </div><!-- .dropdown -->
                                                 </li><!-- li -->
                                                 <li>
                                                     <div class="dropdown">
@@ -352,8 +259,6 @@
                                                 <div class="dropdown-menu dropdown-menu-end">
                                                     <ul class="link-list-opt no-bdr">
                                                         <li><a href="/statussummary/@report.AccountNo"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
-                                                        <li><a href="#edit-loan" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>View Account</span></a></li>
-                                                        @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
                                                     </ul>
                                                 </div>
                                             </div>
@@ -457,109 +362,3 @@
         </div><!-- .card -->
     </div><!-- .nk-block -->
 </div>
-
-<div class="modal fade" tabindex="-1" id="edit-loan">
-    <div class="modal-dialog modal-md" role="document">
-        <div class="modal-content">
-            <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
-                <em class="icon ni ni-cross-sm"></em>
-            </a>
-            <div class="modal-body modal-body-md">
-                <h5 class="modal-title">Update Loan</h5>
-                <form action="#" class="mt-2">
-                    <div class="row g-gs">
-                        <div class="col-12">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-name">Borrower Name</label>
-                                <div class="form-control-wrap">
-                                    <input type="text" class="form-control" id="edit-name" value="Abu Bin Ishtiyak" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-acc">Account No.</label>
-                                <div class="form-control-wrap">
-                                    <input type="text" class="form-control" id="edit-acc" value="100567" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label">Category</label>
-                                <div class="form-control-wrap">
-                                    <select class="form-select js-select2">
-                                        <option value="education">Education</option>
-                                        <option value="emergency">Emergency</option>
-                                        <option value="daily">Daily</option>
-                                        <option value="kibaba">Kibaba</option>
-                                        <option value="bilashi">Bilashi</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-amount">Amount</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-amount" value="20000" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-interest">Interest(%)</label>
-                                <div class="form-control-wrap">
-                                    <select class="form-select js-select2">
-                                        <option value="5">5%</option>
-                                        <option value="7">7%</option>
-                                        <option value="10">10%</option>
-                                        <option value="15">15%</option>
-                                        <option value="20">20%</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-month">Month</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-month" value="6" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-income">Borrower Income</label>
-                                <div class="form-control-wrap">
-                                    <input type="number" class="form-control" id="edit-income" value="10000" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label" for="edit-date">Date</label>
-                                <div class="form-control-wrap">
-                                    <div class="form-icon form-icon-left">
-                                        <em class="icon ni ni-calendar"></em>
-                                    </div>
-                                    <input type="text" id="edit-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
-                                <li>
-                                    <a href="#" data-bs-dismiss="modal" class="btn btn-lg btn-primary">Update Loan</a>
-                                </li>
-                                <li>
-                                    <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div><!-- .Edit Modal-Content -->

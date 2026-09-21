@@ -41,7 +41,8 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            await SetViewBags(settings, "approver");
+            await SetViewBags(settings, "approver", searchTerm);
+            ViewBag.PageSize = pageSize;
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
@@ -52,11 +53,14 @@ namespace Ranalo.Controllers
                 return View(paymentSummaries);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
-            var dealerId = Convert.ToInt32(dealer.DealerReference); 
+            var dealerId = Convert.ToInt32(dealer.DealerReference);
+            var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
 
-            var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(null, dealerId, page, pageSize, searchTerm.Trim());
+            var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(null, dealerId, page, pageSize, searchTerm.Trim(), agentUserId);
 
             return View(delaerStatusReport);
 
@@ -86,7 +90,9 @@ namespace Ranalo.Controllers
                 return View(allPaymentSummaries);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
@@ -131,7 +137,9 @@ namespace Ranalo.Controllers
                 return View(allPaymentSummaries);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
@@ -155,6 +163,11 @@ namespace Ranalo.Controllers
             if (settings == null)
             {
                 return RedirectToAction("Index", "Login");
+            }
+
+            if (settings.RoleId == UserRole.Agent || settings.RoleId == UserRole.Approver)
+            {
+                return RedirectToAction("Collections", "Reports");
             }
 
             await SetViewBags(settings, "collector");
@@ -219,7 +232,9 @@ namespace Ranalo.Controllers
             }
             else
             {
-                var dealer = await _userService.GetDealerByUserId(settings.UserId);
+                var dealer = settings.RoleId == UserRole.Agent
+                    ? await _userService.GetDealerByDealerId(settings.DealerId)
+                    : await _userService.GetDealerByUserId(settings.UserId);
 
                 var dealerId = Convert.ToInt32(dealer.DealerReference);
                 var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(accountId, dealerId);
@@ -248,6 +263,11 @@ namespace Ranalo.Controllers
             if (settings == null)
             {
                 return RedirectToAction("Index", "Login");
+            }
+
+            if (settings.RoleId == UserRole.Approver)
+            {
+                return RedirectToAction("ManualRestructuredReport", "Reports");
             }
 
             //We need to get the current contract info and do the checks
@@ -300,7 +320,9 @@ namespace Ranalo.Controllers
                 return View(allPaymentSummaries);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
@@ -330,7 +352,9 @@ namespace Ranalo.Controllers
                 return View(allPaymentSummaries);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
@@ -345,6 +369,7 @@ namespace Ranalo.Controllers
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+            ViewBag.IsAgent = settings.RoleId == UserRole.Agent;
             ViewBag.SearchTerm = searchTerm.Trim();
 
             ViewBag.UserName = settings.KnownAs;

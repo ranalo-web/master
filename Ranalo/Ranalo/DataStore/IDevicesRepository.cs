@@ -4,8 +4,8 @@ namespace Ranalo.DataStore
 {
     public interface IDevicesRepository
     {
-        Task<DevicesWithDealerViewModel> GetDevicesWithNoOrders(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "");
-        Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "");
+        Task<DevicesWithDealerViewModel> GetDevicesWithNoOrders(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null);
+        Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null);
         Task<long> GetMetaDataByKeyForOrderNumber(int orderNumber, string metadataKey);
         Task<(string AccountNo, long? DeviceId)> GetOrderLinksAsync(long orderId);
         Task<bool> MpesaCodeIsAlreadyLinked(string newMpesa);
@@ -19,7 +19,7 @@ namespace Ranalo.DataStore
         Task<Device?> GetDeviceByAccountId(long accountId);
         Task<DevicesWithDealerViewModel> GetAllDevicesAsync(int? dealerId, int page, int pageSize, string searchTerm);
 
-        Task<DevicesWithDealerViewModel> GetDevicesWithNoPayments(int? dealerId, int page, int pageSize, string searchTerm);
+        Task<DevicesWithDealerViewModel> GetDevicesWithNoPayments(int? dealerId, int page, int pageSize, string searchTerm, int? agentUserId = null);
         Task<DevicesWithDealerViewModel> GetAllDevicesByUserAccountIdAsync(int userId, int page, int pageSize, string searchTerm);
     }
 }

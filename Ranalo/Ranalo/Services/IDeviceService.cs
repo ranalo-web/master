@@ -4,8 +4,8 @@ namespace Ranalo.Services
 {
     public interface IDeviceService
     {
-        Task<DevicesWithDealerViewModel> GetDevicesWithNoOrders(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "");
-        Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "");
+        Task<DevicesWithDealerViewModel> GetDevicesWithNoOrders(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null);
+        Task<DevicesWithDealerViewModel> GetDevicesWithNoContracts(long dealerReference = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null);
 
         Task<(string AccountNo, long? DeviceId)> GetCheckOrderIdLinkedAsync(long orderId);
 
@@ -16,7 +16,7 @@ namespace Ranalo.Services
         Task<bool> MpesaCodeIsLinkedAsync(string newMpesa);
         Task<DevicesWithDealerViewModel> GetAllDevicesAsync(int? dealerId, string searchTerm, int page, int pageSize);
 
-        Task<DevicesWithDealerViewModel> GetAllDevicesWithNoPaymentsAsync(int? dealerId, string searchTerm, int page, int pageSize);
+        Task<DevicesWithDealerViewModel> GetAllDevicesWithNoPaymentsAsync(int? dealerId, string searchTerm, int page, int pageSize, int? agentUserId = null);
         Task<DevicesWithDealerViewModel> GetAllDevicesByUserAccountIdAsync(int userId, string searchTerm, int page, int pageSize);
     }
 }

@@ -9,7 +9,7 @@
 @functions{
     private string FormartUtcDate(string? date)
     {
-        if (date == null) return DateTime.MinValue.ToString("dd/MM/yyyy HH:mm:ss");
+        if (date == null) return "-";
         // Parse using exact format and culture
         DateTime parsedDate = DateTime.ParseExact(
             date.Replace(" UTC", ""),   // remove UTC label before parsing
@@ -52,7 +52,7 @@
 
     public string FormartDateWithT(string? input)
     {
-        if (input == null) return DateTime.MinValue.ToString("dd/MM/yyyy HH:mm:ss");
+        if (string.IsNullOrWhiteSpace(input)) return "-";
         input = input.Replace("T", " ");
 
         // Parse it
@@ -66,6 +66,8 @@
         return parsedDate.ToString("dd/MM/yyyy HH:mm:ss");
     }
 }
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=2">
 
 <div class="nk-content-body">
 
@@ -138,67 +140,6 @@
                                                 <li>
                                                     <div class="dropdown">
                                                         <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
-                                                            <div class="dot dot-primary"></div>
-                                                            <em class="icon ni ni-filter-alt"></em>
-                                                        </a>
-                                                        <div class="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-end">
-                                                            <div class="dropdown-head">
-                                                                <span class="sub-title dropdown-title">Filter Customers</span>
-                                                            </div>
-                                                            <div class="dropdown-body dropdown-body-rg">
-                                                                <div class="row gx-6 gy-3">
-                                                                    <div class="col-6">
-                                                                        <div class="custom-control custom-control-sm custom-checkbox">
-                                                                            <input type="checkbox" class="custom-control-input" id="hasBalance">
-                                                                            <label class="custom-control-label" for="hasBalance"> Have Balance</label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="custom-control custom-control-sm custom-checkbox">
-                                                                            <input type="checkbox" class="custom-control-input" id="hasKYC">
-                                                                            <label class="custom-control-label" for="hasKYC"> KYC Verified</label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Card Type</label>
-                                                                            <select class="form-select js-select2">
-                                                                                <option value="any">Any Card</option>
-                                                                                <option value="Visa">Visa</option>
-                                                                                <option value="Mastercard">Mastercard</option>
-                                                                                <option value="AmericanExpress">American Express</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-6">
-                                                                        <div class="form-group">
-                                                                            <label class="overline-title overline-title-alt">Status</label>
-                                                                            <select class="form-select js-select2">
-                                                                                <option value="any">Any Status</option>
-                                                                                <option value="new">New</option>
-                                                                                <option value="active">Active</option>
-                                                                                <option value="suspend">Suspend</option>
-                                                                                <option value="deleted">Deleted</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="col-12">
-                                                                        <div class="form-group">
-                                                                            <button type="button" class="btn btn-secondary">Filter</button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="dropdown-foot between">
-                                                                <a class="clickable" href="#">Reset Filter</a>
-                                                                <a href="#">Save Filter</a>
-                                                            </div>
-                                                        </div><!-- .filter-wg -->
-                                                    </div><!-- .dropdown -->
-                                                </li><!-- li -->
-                                                <li>
-                                                    <div class="dropdown">
-                                                        <a href="#" class="btn btn-trigger btn-icon dropdown-toggle" data-bs-toggle="dropdown">
                                                             <em class="icon ni ni-setting"></em>
                                                         </a>
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
@@ -250,92 +191,37 @@
                         }
                     }
 
-                    <table class="table table-tranx">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="devices-no-contract" data-page-size="@Model?.PageSize">
                         <thead>
-                            <tr class="tb-tnx-head">
-                                <th class="tb-tnx-id"><span class="">Account No</span></th>
-                                <th class="tb-tnx-info">
-                                    <span class="tb-tnx-desc d-none d-sm-inline-block">
-                                        <span>ImeiNo</span>
-                                    </span>
-                                </th>
-                                <th class="tb-tnx-info">
-                                    <span>Dealer Id</span>
-                                </th>
-                                <th class="tb-tnx-info">
-                                    <span>
-                                        <span>Dealer Name</span>
-                                    </span>
-                                </th>
-                                <th class="tb-tnx-info">
-                                    <span>
-                                        <span>Enrolled On</span>
-                                    </span>
-                                </th>
-                                <th class="tb-tnx-info">
-                                    <span>
-                                        <span>Last Connected</span>
-                                    </span>
-                                </th>
-                                <th class="tb-tnx-info">
-                                    <span>
-                                        <span>Next Lock</span>
-                                    </span>
-                                </th>
-
-                                <th class="tb-tnx-info">
-                                    <span>
-                                        <span>Status</span>
-                                    </span>
-                                </th>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Account No</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">IMEI</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer ID</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer Name</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Enrolled On</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Connected</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Next Lock</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                            </tr>
                         </thead>
+                        <tbody>
                         @if (Model?.Devices != null)
                         {
                             foreach (var devices in Model.Devices)
                             {
-                                <tr class="tb-tnx-item">
-                                    <td class="tb-tnx-id">
-                                        <a href="#"><span>@devices.DeviceId</span></a>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-desc">
-                                            <span class="title">@devices.ImeiNo</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="title">@devices.DealerId</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="title">@devices.DealerName</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="title">@FormartUtcDate(devices.EnrolledOn)</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="title">@FormartUtcDate(devices.LastConnectedAt)</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="title">@FormartDateWithT(devices?.NextLockDateIsoFormat)</span>
-                                        </div>
-                                    </td>
-                                    <td class="tb-tnx-info">
-                                        <div class="tb-tnx-text">
-                                            <span class="@SetLockStatusBadge(devices.Locked)">@SetLockStatusTextBadge(devices.Locked)</span>
-                                        </div>
-                                    </td>
+                                <tr>
+                                    <td><a href="/account-details/@devices.DeviceId" class="fw-medium">@devices.DeviceId</a></td>
+                                    <td>@(string.IsNullOrWhiteSpace(devices.ImeiNo) ? "-" : devices.ImeiNo)</td>
+                                    <td>@devices.DealerId</td>
+                                    <td>@devices.DealerName</td>
+                                    <td>@FormartUtcDate(devices.EnrolledOn)</td>
+                                    <td>@FormartUtcDate(devices.LastConnectedAt)</td>
+                                    <td>@FormartDateWithT(devices?.NextLockDateIsoFormat)</td>
+                                    <td><span class="@SetLockStatusBadge(devices.Locked)">@SetLockStatusTextBadge(devices.Locked)</span></td>
                                 </tr>
-                                <!-- tb-tnx-item -->
                             }
                         }
+                        </tbody>
                     </table>
                 </div><!-- .card-inner -->
                 <div class="card-inner">

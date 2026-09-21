@@ -35,13 +35,19 @@ namespace Ranalo.Controllers
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
                 var contracts = await _contractService.GetAllContractsAsync(page: page, pageSize: pageSize, searchTerm.Trim());
-                
+
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
                 return View(contracts);
             }
 
-            return View();
+            // Dealer role previously fell through to View() with no model at
+            // all, so the view's @foreach (var report in Model.Contracts)
+            // threw a NullReferenceException for every dealer.
+            var dealerContracts = await _contractService.GetAllContractsByDealerAsync(settings.DealerId, page, pageSize, searchTerm.Trim());
+
+            ViewData["OrdersStatus"] = "Waiting Approval";
+            return View(dealerContracts);
 
         }
 
@@ -123,6 +129,7 @@ namespace Ranalo.Controllers
             {
                 var dealer = await _userService.GetDealerByUserId(settings.UserId);
                 ViewBag.UserName = dealer.CompanyName;
+                settings.DealerId = dealer.DealerId;
             }
         }
     }

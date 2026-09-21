@@ -76,7 +76,8 @@ namespace Ranalo.DataStore
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalRecords = totalRecords
             };
         }
 
@@ -129,22 +130,25 @@ namespace Ranalo.DataStore
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalRecords = totalRecords
             };
         }
 
-        public async Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<AwaitingApprovalViewModel> GetAllOrdersByUserAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10, int? agentUserId = null)
         {
             var offset = (page - 1) * pageSize;
 
-            var countSql = @"SELECT COUNT(*) 
+            var countSql = @"SELECT COUNT(*)
                 FROM [dbo].[Woo_Orders] wo
 	                    INNER JOIN KosePayments kp
 	                    ON kp.MpesaCode = wo.MpesaDepositRef
 	                    INNER JOIN Devices d on kp.AccountNoBigint = d.Id
 	                    INNER JOIN Dealers dl on dl.DealerReference = d.DeviceGroupId
-                        WHERE dl.DealerId = @dealerId
+	                    LEFT JOIN Contract_Info ci on ci.ID = d.Id
+                        WHERE (@dealerId IS NULL OR dl.DealerId = @dealerId)
                         AND d.[Status] = 'enrolled'
+                        AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
                         AND (
                         @SearchTerm IS NULL
                         OR WO.FirstName LIKE '%' + @SearchTerm + '%'
@@ -154,7 +158,7 @@ namespace Ranalo.DataStore
                         OR CAST(WO.[OrderID] AS VARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                     )";
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
-            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchParam, dealerId });
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchParam, dealerId, AgentUserId = agentUserId });
 
             var sql = @"SELECT wo.[Id]
                             ,[OrderID]
@@ -173,8 +177,10 @@ namespace Ranalo.DataStore
 	                    ON kp.MpesaCode = wo.MpesaDepositRef
 	                    INNER JOIN Devices d on kp.AccountNoBigint = d.Id
 	                    INNER JOIN Dealers dl on dl.DealerReference = d.DeviceGroupId
-                        WHERE dl.DealerId = @dealerId
+	                    LEFT JOIN Contract_Info ci on ci.ID = d.Id
+                        WHERE (@dealerId IS NULL OR dl.DealerId = @dealerId)
                         AND d.[Status] = 'enrolled'
+                        AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
                         AND (
                         @SearchTerm IS NULL
                         OR WO.FirstName LIKE '%' + @SearchTerm + '%'
@@ -184,25 +190,26 @@ namespace Ranalo.DataStore
                         OR CAST(WO.[OrderID] AS VARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                     )
                         ORDER BY [DateCreated] DESC
-                        OFFSET @Offset ROWS 
+                        OFFSET @Offset ROWS
                         FETCH NEXT @pageSize ROWS ONLY";
 
-            var records = await _db.QueryAsync<AwaitingApprovalDto>(sql, new { SearchTerm = searchParam, dealerId, offset, pageSize });
+            var records = await _db.QueryAsync<AwaitingApprovalDto>(sql, new { SearchTerm = searchParam, dealerId, offset, pageSize, AgentUserId = agentUserId });
 
             return new AwaitingApprovalViewModel()
             {
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalRecords = totalRecords
             };
         }
 
-        public async Task<AllAccountsViewModel> GetAllAccountsByUserAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<AllAccountsViewModel> GetAllAccountsByUserAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10, int? agentUserId = null)
         {
             var offset = (page - 1) * pageSize;
 
-            var countSql = @"WITH 
+            var countSql = @"WITH
                         ValidPayments AS (
                             SELECT *
                             FROM KosePayments
@@ -246,13 +253,14 @@ namespace Ranalo.DataStore
                              AND p.PaymentDateValue = t2.First_Payment_Date
                         ),
                         ContractInf0 AS (
-                        	select d.Id, 
+                        	select d.Id,
 							ci.TotalAmount,
 							ci.First_Name as CustomerName,
                             ci.Daily,
                             ci.Deposit,
                             ci.Weekly,
-                            ci.Monthly
+                            ci.Monthly,
+                            ci.AssignedAgentId
                         	from Devices d
                         	INNER join KosePayments p on p.AccountNoBigint = d.Id
                         	INNER join Contract_Info ci on ci.ID = p.AccountNoBigint
@@ -263,22 +271,25 @@ namespace Ranalo.DataStore
                             ci.Daily,
                             ci.Deposit,
                             ci.Weekly,
-                            ci.Monthly
-                        )                
-					  
-                        SELECT 
+                            ci.Monthly,
+                            ci.AssignedAgentId
+                        )
+
+                        SELECT
                             COUNT(*)
                         FROM PTable1 t1
-                        left JOIN Devices d 
+                        left JOIN Devices d
                           ON t1.AccountNo = d.Id
-                        left JOIN PTable5 t5 
+                        left JOIN Dealers dl
+                          ON dl.DealerReference = d.DeviceGroupId
+                        left JOIN PTable5 t5
                           ON t1.AccountNo = t5.AccountNo
-                        left JOIN PTable4 t4 
+                        left JOIN PTable4 t4
                           ON t1.AccountNo = t4.AccountNo
                         left JOIN ContractInf0 t6
                         	ON t1.AccountNo = t6.Id
                         WHERE d.[Status] = 'enrolled'
-                          AND t6.TotalAmount is not null
+                          AND t6.Id is not null
 						    AND (
 							@SearchTerm IS NULL
 							OR t6.CustomerName LIKE '%' + @SearchTerm + '%'
@@ -286,7 +297,10 @@ namespace Ranalo.DataStore
 							OR t5.First_MPesaCode LIKE '%' + @SearchTerm + '%'
 							)
 							AND (@DealerId IS NULL
-							OR d.DeviceGroupId = @DealerId
+							OR dl.DealerId = @DealerId
+							)
+							AND (@AgentUserId IS NULL
+							OR t6.AssignedAgentId = @AgentUserId
 							)
 							GROUP BY t1.AccountNo,
                             t1.Total_Paid,
@@ -314,9 +328,9 @@ namespace Ranalo.DataStore
 							ORDER BY t5.FirstPaidDate DESC
 							";
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
-            var queryRecords = await _db.QueryAsync<int>(countSql, new { SearchTerm = searchParam, dealerId});
+            var queryRecords = await _db.QueryAsync<int>(countSql, new { SearchTerm = searchParam, dealerId, AgentUserId = agentUserId });
             var totalRecords = queryRecords.Count();
-            var sql = @"WITH 
+            var sql = @"WITH
                 ValidPayments AS (
                     SELECT *
                     FROM KosePayments
@@ -360,30 +374,32 @@ namespace Ranalo.DataStore
                         AND p.PaymentDate = t2.First_Payment_Date
                 ),
                 ContractInf0 AS (
-                    select d.Id, 
+                    select d.Id,
                 	ci.TotalAmount ,
                 	ci.First_Name as CustomerName,
                     ci.Deposit,
                     ci.Daily,
                     ci.Weekly,
                     ci.Monthly,
-                	ci.Term_in_Months AS TermsInMonths
+                	ci.Term_in_Months AS TermsInMonths,
+                    ci.AssignedAgentId
                     from Devices d
                     INNER join KosePayments p on p.AccountNoBigint = d.Id
                     INNER join Contract_Info ci on ci.ID = p.AccountNoBigint
                     AND ci.EndDate IS NULL
                     --where  wo.MpesaDepositRef is not null
                     where d.[Status] = 'enrolled'
-                    GROUP BY 
-                    d.Id, 
-                    ci.TotalAmount, 
+                    GROUP BY
+                    d.Id,
+                    ci.TotalAmount,
                     ci.First_Name,
                     ci.Daily,
                     ci.Deposit,
                     ci.Weekly,
                     ci.Monthly,
-                	ci.Term_in_Months
-                )                
+                	ci.Term_in_Months,
+                    ci.AssignedAgentId
+                )
                 					  
                 SELECT 
                     t1.AccountNo,
@@ -412,16 +428,18 @@ namespace Ranalo.DataStore
                     t6.Monthly,
                 	t6.TermsInMonths
                 FROM PTable1 t1
-                left JOIN Devices d 
+                left JOIN Devices d
                     ON t1.AccountNo = d.Id
-                left JOIN PTable5 t5 
+                left JOIN Dealers dl
+                    ON dl.DealerReference = d.DeviceGroupId
+                left JOIN PTable5 t5
                     ON t1.AccountNo = t5.AccountNo
-                left JOIN PTable4 t4 
+                left JOIN PTable4 t4
                     ON t1.AccountNo = t4.AccountNo
                 left JOIN ContractInf0 t6
                     ON t1.AccountNo = t6.Id
                 WHERE d.[Status] = 'enrolled'
-                    AND t6.TotalAmount is not null
+                    AND t6.Id is not null
                 	AND (
                 	@SearchTerm IS NULL
                 	OR t6.CustomerName LIKE '%' + @SearchTerm + '%'
@@ -429,7 +447,10 @@ namespace Ranalo.DataStore
                 	OR t5.First_MPesaCode LIKE '%' + @SearchTerm + '%'
                 	)
                 	AND (@DealerId IS NULL
-                	OR d.DeviceGroupId = @DealerId
+                	OR dl.DealerId = @DealerId
+                	)
+                	AND (@AgentUserId IS NULL
+                	OR t6.AssignedAgentId = @AgentUserId
                 	)
                 	GROUP BY t1.AccountNo,
                     t1.Total_Paid,
@@ -460,7 +481,7 @@ namespace Ranalo.DataStore
                 	OFFSET @Offset ROWS 
                 	FETCH NEXT @pageSize ROWS ONLY";
 
-            var records = await _db.QueryAsync<AllAccounts>(sql, new { SearchTerm = searchParam, dealerId, offset, pageSize });
+            var records = await _db.QueryAsync<AllAccounts>(sql, new { SearchTerm = searchParam, dealerId, offset, pageSize, AgentUserId = agentUserId });
 
             return new AllAccountsViewModel()
             {
@@ -468,6 +489,18 @@ namespace Ranalo.DataStore
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
             };
+        }
+
+        public async Task<bool> IsAccountAssignedToAgentAsync(long accountId, int agentUserId)
+        {
+            var sql = @"SELECT COUNT(1)
+                FROM Contract_Info ci
+                WHERE ci.ID = @AccountId
+                AND ci.AssignedAgentId = @AgentUserId
+                AND ci.EndDate IS NULL";
+
+            var count = await _db.ExecuteScalarAsync<int>(sql, new { AccountId = accountId, AgentUserId = agentUserId });
+            return count > 0;
         }
 
 
@@ -530,7 +563,8 @@ namespace Ranalo.DataStore
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalRecords = totalRecords
             };
         }
 
@@ -575,15 +609,15 @@ namespace Ranalo.DataStore
                         )
                         SELECT COUNT(*)
                         FROM PaymentsLinkedToOrphaned plo
-                        LEFT JOIN Devices d 
+                        LEFT JOIN Devices d
                             ON d.Id = plo.AccountNoBigint
                         WHERE d.Id IS NULL
                         AND (
                         @SearchTerm IS NULL
                          OR plo.FirstName LIKE '%' + @SearchTerm + '%'
-                         OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
-                         OR plo.AccountNoBigint LIKE '%' + @SearchTerm + '%'
-                         OR plo.OrphanedAccountNoBigint LIKE '%' + @SearchTerm + '%'
+                         OR CAST(d.DeviceGroupId AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                         OR CAST(plo.AccountNoBigint AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                         OR CAST(plo.OrphanedAccountNoBigint AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                          OR plo.MpesaCode LIKE '%' + @SearchTerm + '%'
                         );";
 
@@ -607,19 +641,19 @@ namespace Ranalo.DataStore
                         -- Step 3: remove any payment that now has a device
                         SELECT plo.*
                         FROM PaymentsLinkedToOrphaned plo
-                        LEFT JOIN Devices d 
+                        LEFT JOIN Devices d
                         on d.Id = plo.AccountNoBigint
 	                    WHERE d.Id IS NULL
                         AND (
                         @SearchTerm IS NULL
                          OR plo.FirstName LIKE '%' + @SearchTerm + '%'
-                         OR d.DeviceGroupId LIKE '%' + @SearchTerm + '%'
-                         OR plo.AccountNoBigint LIKE '%' + @SearchTerm + '%'
-                         OR plo.OrphanedAccountNoBigint LIKE '%' + @SearchTerm + '%'
+                         OR CAST(d.DeviceGroupId AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                         OR CAST(plo.AccountNoBigint AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                         OR CAST(plo.OrphanedAccountNoBigint AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                          OR plo.MpesaCode LIKE '%' + @SearchTerm + '%'
                         )
                         ORDER BY plo.PaymentDateValue DESC
-                        OFFSET @Offset ROWS 
+                        OFFSET @Offset ROWS
                         FETCH NEXT @pageSize ROWS ONLY";
 
             var payments = await _db.QueryAsync<KosePayments>(sql, new { SearchTerm = searchTearm, offset, pageSize });
@@ -629,19 +663,26 @@ namespace Ranalo.DataStore
             {
                 CurrentPage = page,
                 Payments = payments.ToList(),
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                TotalRecords = totalRecords
             };
 
 
         }
 
-        public async Task<PaymentsSummaryTotalsViewModel> GetPaymentsSummaryAsync(string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<PaymentsSummaryTotalsViewModel> GetPaymentsSummaryAsync(string searchTerm = "", int page = 1, int pageSize = 10, DateTime? fromDate = null, DateTime? toDateExclusive = null)
         {
             var offset = (page - 1) * pageSize;
 
+            // fromDate/toDateExclusive scope the whole rollup (which accounts
+            // appear at all, and their Total/First/Last) to payments made
+            // within the selected period -- not just a filter on top of the
+            // all-time totals.
             var countsql = @" SELECT COUNT(DISTINCT kp.AccountNoBigint)
                                 FROM KosePayments kp
-                                WHERE (
+                                WHERE (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
+                                  AND (@ToDate IS NULL OR kp.PaymentDateValue < @ToDate)
+                                  AND (
                                     @SearchTerm IS NULL
                                     OR kp.AccountNo LIKE '%' + @SearchTerm + '%'
                                     OR CAST(kp.AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
@@ -651,7 +692,7 @@ namespace Ranalo.DataStore
                         ";
 
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
-            var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { SearchTerm = searchParam });
+            var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { SearchTerm = searchParam, FromDate = fromDate, ToDate = toDateExclusive });
 
             var sql = @" SELECT
                             a.AccountNoBigint AS Account,
@@ -669,6 +710,8 @@ namespace Ranalo.DataStore
                             SELECT DISTINCT AccountNoBigint
                             FROM dbo.KosePayments
                             WHERE AccountNoBigint IS NOT NULL
+                              AND (@FromDate IS NULL OR PaymentDateValue >= @FromDate)
+                              AND (@ToDate IS NULL OR PaymentDateValue < @ToDate)
                         ) a
 
                         OUTER APPLY
@@ -676,6 +719,8 @@ namespace Ranalo.DataStore
                             SELECT SUM(AmountValue) AS TotalPaid
                             FROM dbo.KosePayments kp
                             WHERE kp.AccountNoBigint = a.AccountNoBigint
+                              AND (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
+                              AND (@ToDate IS NULL OR kp.PaymentDateValue < @ToDate)
                         ) totals
 
                         OUTER APPLY
@@ -685,6 +730,8 @@ namespace Ranalo.DataStore
                                 PaymentDateValue
                             FROM dbo.KosePayments kp
                             WHERE kp.AccountNoBigint = a.AccountNoBigint
+                              AND (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
+                              AND (@ToDate IS NULL OR kp.PaymentDateValue < @ToDate)
                             ORDER BY PaymentDateValue ASC
                         ) fp
 
@@ -695,50 +742,58 @@ namespace Ranalo.DataStore
                                 PaymentDateValue
                             FROM dbo.KosePayments kp
                             WHERE kp.AccountNoBigint = a.AccountNoBigint
+                              AND (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
+                              AND (@ToDate IS NULL OR kp.PaymentDateValue < @ToDate)
                             ORDER BY PaymentDateValue DESC
                         ) lp
 
                         ORDER BY lp.PaymentDateValue DESC
-                        OFFSET @Offset ROWS 
+                        OFFSET @Offset ROWS
                         FETCH NEXT @pageSize ROWS ONLY";
 
-            var payments = await _db.QueryAsync<PaymentsSummaryTotals>(sql, new { SearchTerm = searchParam, offset, pageSize });
+            var payments = await _db.QueryAsync<PaymentsSummaryTotals>(sql, new { SearchTerm = searchParam, offset, pageSize, FromDate = fromDate, ToDate = toDateExclusive });
 
             return new PaymentsSummaryTotalsViewModel()
             {
                 CurrentPage = page,
                 Payments = payments.ToList(),
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                TotalRecords = totalRecords
             };
         }
 
-        public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<KosePaymentsViewModel> GetAllPaymentsAsync(int? dealerId, string searchTerm = "", int page = 1, int pageSize = 10, DateTime? fromDate = null, DateTime? toDateExclusive = null, int? agentUserId = null)
         {
             var offset = (page - 1) * pageSize;
 
-            var countsql = @" SELECT COUNT(*) 
+            var countsql = @" SELECT COUNT(*)
                                 FROM [dbo].[KosePayments] kp
-                        LEFT JOIN Devices d 
+                        LEFT JOIN Devices d
                             ON kp.AccountNoBigint = d.Id
-                        LEFT JOIN Dealers dl 
+                        LEFT JOIN Dealers dl
                             ON dl.DealerReference = d.DeviceGroupId
+                        LEFT JOIN Contract_Info ci
+                            ON ci.ID = d.Id
                         WHERE
                             -- Dealer filter (only applies if provided)
                             (
-                                @dealerId IS NULL 
+                                @dealerId IS NULL
                                 OR dl.DealerId = @dealerId
                             )
+                            AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+                            AND (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
+                            AND (@ToDate IS NULL OR kp.PaymentDateValue < @ToDate)
                             -- Search filter
                             AND (
                                 @SearchTerm IS NULL
-                                OR kp.AccountNoBigint LIKE '%' + @SearchTerm + '%'
+                                OR CAST(kp.AccountNoBigint AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                                 OR CAST(kp.AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                                 OR CAST(kp.PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                                 OR kp.MpesaCode LIKE '%' + @SearchTerm + '%'
                             );";
 
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
-            var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { dealerId, SearchTerm = searchParam });
+            var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { dealerId, SearchTerm = searchParam, FromDate = fromDate, ToDate = toDateExclusive, AgentUserId = agentUserId });
 
             var sql = @"SELECT kp.[Id]
                             ,[AccountNo]
@@ -747,60 +802,68 @@ namespace Ranalo.DataStore
                             ,[PaymentDate]
                             ,[AmountValue]
                             ,[PaymentDateValue]
-                            ,[Created]
+                            ,kp.[Created]
                             ,kp.FirstName
                         FROM [dbo].[KosePayments] kp
-                        LEFT JOIN Devices d 
+                        LEFT JOIN Devices d
                             ON kp.AccountNoBigint = d.Id
-                        LEFT JOIN Dealers dl 
+                        LEFT JOIN Dealers dl
                             ON dl.DealerReference = d.DeviceGroupId
+                        LEFT JOIN Contract_Info ci
+                            ON ci.ID = d.Id
                         WHERE
                             -- Dealer filter (only applies if provided)
                             (
-                                @dealerId IS NULL 
+                                @dealerId IS NULL
                                 OR dl.DealerId = @dealerId
                             )
+                            AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+                            AND (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
+                            AND (@ToDate IS NULL OR kp.PaymentDateValue < @ToDate)
                             -- Search filter
                             AND (
                                 @SearchTerm IS NULL
-                                OR kp.AccountNoBigint LIKE '%' + @SearchTerm + '%'
+                                OR CAST(kp.AccountNoBigint AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                                 OR CAST(kp.AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                                 OR CAST(kp.PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                                 OR kp.MpesaCode LIKE '%' + @SearchTerm + '%'
                             )
                         ORDER BY PaymentDateValue DESC
-                        OFFSET @Offset ROWS 
+                        OFFSET @Offset ROWS
                         FETCH NEXT @pageSize ROWS ONLY";
 
-            var payments = await _db.QueryAsync<KosePayments>(sql, new { dealerId, offset, pageSize, SearchTerm = searchParam });
+            var payments = await _db.QueryAsync<KosePayments>(sql, new { dealerId, offset, pageSize, SearchTerm = searchParam, FromDate = fromDate, ToDate = toDateExclusive, AgentUserId = agentUserId });
 
             return new KosePaymentsViewModel()
             {
                 CurrentPage = page,
                 Payments = payments.ToList(),
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                TotalRecords = totalRecords
             };
         }
 
-        public async Task<KosePaymentsViewModel> GetAllPaymentsByDealerIdAsync(int dealerId, string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<KosePaymentsViewModel> GetAllPaymentsByDealerIdAsync(int dealerId, string searchTerm = "", int page = 1, int pageSize = 10, DateTime? fromDate = null, DateTime? toDateExclusive = null)
         {
             var offset = (page - 1) * pageSize;
 
-            var countsql = @" SELECT COUNT(*) 
+            var countsql = @" SELECT COUNT(*)
                         FROM [dbo].[KosePayments] kp
                         INNER JOIN Devices d on kp.AccountNoBigint = d.Id
                         INNER JOIN Dealers dl on dl.DealerReference = d.DeviceGroupId
                         WHERE dl.DealerId = @dealerId
                         AND d.[Status] = 'enrolled'
+                        AND (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
+                        AND (@ToDate IS NULL OR kp.PaymentDateValue < @ToDate)
                         AND (
                         @SearchTerm IS NULL
                         OR AccountNo LIKE '%' + @SearchTerm + '%'
-                        OR AmountValue LIKE '%' + @SearchTerm + '%'
-                        OR PaymentDateValue LIKE '%' + @SearchTerm + '%'
+                        OR CAST(AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                        OR CAST(PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                         OR MpesaCode LIKE '%' + @SearchTerm + '%')";
 
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
-            var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { dealerId, SearchTerm = searchParam });
+            var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { dealerId, SearchTerm = searchParam, FromDate = fromDate, ToDate = toDateExclusive });
 
             var sql = @"SELECT kp.[Id]
                              ,[AccountNo]
@@ -810,28 +873,32 @@ namespace Ranalo.DataStore
                              ,[AmountValue]
                              ,[PaymentDateValue]
                              ,[Created]
+                             ,kp.FirstName
                         FROM [dbo].[KosePayments] kp
                         INNER JOIN Devices d on kp.AccountNoBigint = d.Id
                         INNER JOIN Dealers dl on dl.DealerReference = d.DeviceGroupId
                         WHERE dl.DealerId = @dealerId
                         AND d.[Status] = 'enrolled'
+                        AND (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
+                        AND (@ToDate IS NULL OR kp.PaymentDateValue < @ToDate)
                         AND (
                         @SearchTerm IS NULL
                         OR AccountNo LIKE '%' + @SearchTerm + '%'
-                        OR AmountValue LIKE '%' + @SearchTerm + '%'
-                        OR PaymentDateValue LIKE '%' + @SearchTerm + '%'
+                        OR CAST(AmountValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
+                        OR CAST(PaymentDateValue AS NVARCHAR(50)) LIKE '%' + @SearchTerm + '%'
                         OR MpesaCode LIKE '%' + @SearchTerm + '%')
                         ORDER BY PaymentDateValue desc
-                        OFFSET @Offset ROWS 
+                        OFFSET @Offset ROWS
                         FETCH NEXT @pageSize ROWS ONLY";
 
-            var payments = await _db.QueryAsync<KosePayments>(sql, new { dealerId, offset, pageSize, SearchTerm = searchParam });
+            var payments = await _db.QueryAsync<KosePayments>(sql, new { dealerId, offset, pageSize, SearchTerm = searchParam, FromDate = fromDate, ToDate = toDateExclusive });
 
             return new KosePaymentsViewModel()
             {
                 CurrentPage = page,
                 Payments = payments.ToList(),
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                TotalRecords = totalRecords
             };
         }
 
@@ -1435,12 +1502,12 @@ namespace Ranalo.DataStore
             throw new NotImplementedException();
         }
 
-        public async Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "")
+        public async Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null)
         {
             var offset = (page - 1) * pageSize;
 
             var countQuery = SetPaymentSummaryQuery();
-            var totalRecords = await _db.QuerySingleAsync<int>(countQuery, new { DealerId = deviceGroupId, searchParam = searchTerm, AccountId = accountId });
+            var totalRecords = await _db.QuerySingleAsync<int>(countQuery, new { DealerId = deviceGroupId, searchParam = searchTerm, AccountId = accountId, AgentUserId = agentUserId });
 
             var sql = @";WITH ValidPayments AS
 (
@@ -1564,6 +1631,7 @@ JOIN Contract_Info ci
 WHERE d.Status = 'enrolled'
 AND (@DealerId = 0 OR d.DeviceGroupId = @DealerId)
 AND (@AccountId IS NULL OR d.Id = @AccountId)
+AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
 AND (
     @searchParam IS NULL
     OR CAST(d.Id AS NVARCHAR(50)) LIKE '%' + @searchParam + '%'
@@ -1572,11 +1640,11 @@ AND (
 )
 
 ORDER BY lp.PaymentDateValue DESC
-                        	OFFSET @offset ROWS 
+                        	OFFSET @offset ROWS
                         	FETCH NEXT @pageSize ROWS ONLY;";
 
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
-            var payments = await _db.QueryAsync<PaymentSummary>(sql, new { DealerId = deviceGroupId, offset, pageSize, searchParam, AccountId = accountId });
+            var payments = await _db.QueryAsync<PaymentSummary>(sql, new { DealerId = deviceGroupId, offset, pageSize, searchParam, AccountId = accountId, AgentUserId = agentUserId });
 
             return new PaymentsViewModel() 
             { 
@@ -1608,6 +1676,8 @@ FROM
     AND (@DealerId = 0 OR d.DeviceGroupId = @DealerId)
 
     AND (@AccountId IS NULL OR kp.AccountNoBigint = @AccountId)
+
+    AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
 
     AND (
         @searchParam IS NULL
@@ -1771,7 +1841,8 @@ FROM
                 AwaitingApprovals = records.ToList(),
                 CurrentPage = page,
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                PageSize = pageSize
+                PageSize = pageSize,
+                TotalRecords = totalRecords
             };
         }
 
@@ -2284,7 +2355,8 @@ FROM
             {
                 CurrentPage = page,
                 Payments = payments.ToList(),
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                TotalRecords = totalRecords
             };
         }
 
@@ -2466,59 +2538,6 @@ FROM
 
             return summaries.ToList();
         }
-
-        public async Task<KosePaymentsViewModel> GetAllPaymentAccountsByUserIdAsync(int userId, string searchTerm, int page, int pageSize)
-        {
-            var offset = (page - 1) * pageSize;
-
-            var countsql = @" SELECT COUNT(*) 
-                            FROM [dbo].[KosePayments] kp
-                            INNER JOIN Devices d on kp.AccountNoBigint = d.Id
-                            INNER JOIN Contract_Info ci on d.Id = ci.ID
-                            WHERE ci.AssignedAgentId = @userId
-                            AND d.[Status] = 'enrolled'
-                            AND (
-                            @SearchTerm IS NULL
-                            OR AccountNo LIKE '%' + @SearchTerm + '%'
-                            OR AmountValue LIKE '%' + @SearchTerm + '%'
-                            OR PaymentDateValue LIKE '%' + @SearchTerm + '%'
-                            OR MpesaCode LIKE '%' + @SearchTerm + '%')";
-
-            var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
-            var totalRecords = await _db.QuerySingleAsync<int>(countsql, new { userId, SearchTerm = searchParam });
-
-            var sql = @"SELECT kp.[Id]
-                                ,[AccountNo]
-                                ,[MpesaCode]
-                                ,[Amount]
-                                ,[PaymentDate]
-                                ,[AmountValue]
-                                ,[PaymentDateValue]
-                                ,kp.[Created]
-                        FROM [dbo].[KosePayments] kp
-                        INNER JOIN Devices d on kp.AccountNoBigint = d.Id
-                        INNER JOIN Contract_Info ci on d.Id = ci.ID
-                        WHERE ci.AssignedAgentId = @userId
-                        AND d.[Status] = 'enrolled'
-                        AND (
-                        @SearchTerm IS NULL
-                        OR AccountNo LIKE '%' + @SearchTerm + '%'
-                        OR AmountValue LIKE '%' + @SearchTerm + '%'
-                        OR PaymentDateValue LIKE '%' + @SearchTerm + '%'
-                        OR MpesaCode LIKE '%' + @SearchTerm + '%')
-                        ORDER BY PaymentDateValue desc
-                        OFFSET @Offset ROWS 
-                        FETCH NEXT @pageSize ROWS ONLY";
-
-            var payments = await _db.QueryAsync<KosePayments>(sql, new { userId, offset, pageSize, SearchTerm = searchParam });
-
-            return new KosePaymentsViewModel()
-            {
-                CurrentPage = page,
-                Payments = payments.ToList(),
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
-            };
-    }
 
     #endregion
 

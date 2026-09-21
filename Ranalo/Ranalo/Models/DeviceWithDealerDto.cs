@@ -27,6 +27,14 @@ namespace Ranalo.Models
 
         public string DealerId { get; set; } = string.Empty;   // dealer.DealerReference
         public string DealerName { get; set; } = string.Empty; // dealer.CompanyName
+
+        // Good/Slow/Arrears/Non-Payer -- same mutually-exclusive tiers as the
+        // Dealer Dashboard's My Portfolio doughnut (<=0 days past lock Good,
+        // 1-7 Slow, 8-90 Arrears, >90 Non-Payer), computed by
+        // DevicesController from NextLockDateIsoFormat above. Not persisted;
+        // set after the repository call.
+        public string LockStatusLabel { get; set; } = "";
+        public string LockStatusBadgeClass { get; set; } = "";
         private DateTime ParseDate(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw))
