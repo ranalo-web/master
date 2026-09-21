@@ -224,6 +224,36 @@ namespace Ranalo.DataStore
             }
         }
 
+        // Same KosePayments -> Devices -> Dealers linkage and "this calendar
+        // month" window as ComputeKpiRollupAsync's RevenueByDealer CTE, but
+        // grouped by dl.CompanyName instead of dl.DealerId so the result can
+        // be joined directly against DashboardAccountDetailRow.DealerName
+        // (which only carries the name, not the id) for the Approver
+        // Dashboard's Dealer Performance table.
+        public async Task<List<DashboardDealerRevenueRow>> GetRevenueThisMonthByDealerAsync()
+        {
+            const string sql = @"
+                SELECT
+                    dl.CompanyName AS DealerName,
+                    SUM(CASE WHEN MONTH(kp.PaymentDateValue) = MONTH(GETDATE()) AND YEAR(kp.PaymentDateValue) = YEAR(GETDATE())
+                             THEN kp.AmountValue ELSE 0 END) AS RevenueThisMonth
+                FROM KosePayments kp
+                INNER JOIN Devices d ON d.Id = kp.AccountNoBigint
+                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                GROUP BY dl.CompanyName";
+
+            try
+            {
+                var rows = await _db.QueryAsync<DashboardDealerRevenueRow>(sql);
+                return rows.ToList();
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Revenue-by-dealer computation failed");
+                return new List<DashboardDealerRevenueRow>();
+            }
+        }
+
         public async Task<DashboardRevenuePeriodRow> GetDealerRevenueForPeriodAsync(
             int? dealerId,
             DateTime periodStart,

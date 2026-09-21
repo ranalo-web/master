@@ -100,6 +100,10 @@ namespace Ranolo.Web.Tests
 
         public Task<List<DashboardKpiRollupRow>> ComputeKpiRollupAsync() => Task.FromResult(KpiRollupToReturn);
 
+        public List<DashboardDealerRevenueRow> RevenueByDealerToReturn { get; set; } = new();
+
+        public Task<List<DashboardDealerRevenueRow>> GetRevenueThisMonthByDealerAsync() => Task.FromResult(RevenueByDealerToReturn);
+
         public Task UpsertSnapshotKpiAsync(DashboardScope scope, decimal? revenueThisMonth, decimal? revenueGrowthPct, int? newThisMonth, int? totalAccounts)
         {
             UpsertedSnapshots.Add((scope, revenueThisMonth, revenueGrowthPct, newThisMonth, totalAccounts));

@@ -162,6 +162,12 @@ namespace Ranalo.Models
         public List<DealerAgentPerformance> AgentPerformance { get; set; } = new();
         public List<DealerContract> ContractsEndingSoon { get; set; } = new();
 
+        // Approver Dashboard only: replaces My Contracts there (a flat,
+        // system-wide contract listing has no natural owner for an Approver
+        // overseeing every dealer) with a per-dealer ranking, same Active%/
+        // arrears shape as Agent Performance one level up the hierarchy.
+        public List<DealerPerformance> DealerPerformance { get; set; } = new();
+
         public List<DealerCommissionReceived> CommissionsReceived { get; set; } = new();
         public List<DealerCommissionPaid> CommissionsPaid { get; set; } = new();
         public List<DealerDeviceStock> DeviceStock { get; set; } = new();
@@ -231,6 +237,16 @@ namespace Ranalo.Models
         public int Accounts { get; set; }
         public decimal ActivePct { get; set; }
         public decimal PctOfTarget { get; set; }
+    }
+
+    public class DealerPerformance
+    {
+        public int Rank { get; set; }
+        public string DealerName { get; set; } = "";
+        public int Accounts { get; set; }
+        public decimal ActivePct { get; set; }
+        public decimal ArrearsTotal { get; set; }
+        public decimal RevenueThisMonth { get; set; }
     }
 
     public class DealerCommissionReceived

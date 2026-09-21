@@ -388,8 +388,11 @@ namespace Ranalo.Services
             model.SlowPayers = BuildSlowPayers(accountDetails);
             model.GoodPayers = BuildGoodPayers(accountDetails);
             model.AgentPerformance = BuildAgentPerformance(accountDetails);
-            model.Contracts = BuildContracts(accountDetails);
             model.ContractsEndingSoon = BuildContractsEndingSoon(accountDetails);
+
+            var revenueByDealer = (await _repository.GetRevenueThisMonthByDealerAsync())
+                .ToDictionary(r => r.DealerName, r => r.RevenueThisMonth);
+            model.DealerPerformance = BuildDealerPerformance(accountDetails, revenueByDealer);
 
             var ordersAwaitingApproval = await _repository.GetOrdersAwaitingApprovalSummaryAsync();
             model.OrdersAwaitingApprovalCount = ordersAwaitingApproval.Count;
@@ -568,6 +571,37 @@ namespace Ranalo.Services
             })
             .OrderByDescending(a => a.Accounts)
             .Select((a, i) => { a.Rank = i + 1; return a; })
+            .ToList();
+
+        // Dealer Performance (Approver Dashboard only): same Active% shape as
+        // Agent Performance, grouped by DealerName instead of AssignedAgentId
+        // -- a system-wide "My Contracts" listing has no natural owner for an
+        // Approver overseeing every dealer, so this ranking replaces it there.
+        // ArrearsTotal is each dealer's accrual shortfall summed across its
+        // accounts (same ArrearsAmount formula as everywhere else on this
+        // page); RevenueThisMonth comes from GetRevenueThisMonthByDealerAsync
+        // since accountDetails only carries account-level data, not payments.
+        private static List<DealerPerformance> BuildDealerPerformance(
+            List<DashboardAccountDetailRow> rows, Dictionary<string, decimal> revenueByDealer) => rows
+            .Where(r => !string.IsNullOrWhiteSpace(r.DealerName))
+            .GroupBy(r => r.DealerName!)
+            .Select(g =>
+            {
+                var total = g.Count();
+                var good = g.Count(r => LockDays(r) <= 0);
+                var arrears = g.Count(r => LockDays(r) > 7);
+                var activeDenominator = good + arrears;
+                return new DealerPerformance
+                {
+                    DealerName = g.Key,
+                    Accounts = total,
+                    ActivePct = activeDenominator > 0 ? Math.Round(100m * good / activeDenominator, 1) : 0,
+                    ArrearsTotal = g.Sum(r => Math.Max(0, -r.ArrearsAmount)),
+                    RevenueThisMonth = revenueByDealer.TryGetValue(g.Key, out var rev) ? rev : 0,
+                };
+            })
+            .OrderByDescending(d => d.Accounts)
+            .Select((d, i) => { d.Rank = i + 1; return d; })
             .ToList();
 
         // My Contracts: every active account, current status/next-due from

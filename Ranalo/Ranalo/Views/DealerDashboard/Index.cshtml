@@ -370,6 +370,7 @@
         int ContractsMoreCount = Math.Max(0, Model.Contracts.Count - tablePageSize);
         int EndingSoonMoreCount = Math.Max(0, Model.ContractsEndingSoon.Count - tablePageSize);
         int DeviceMoreCount = Math.Max(0, Model.DeviceStock.Count - tablePageSize);
+        int DealerPerformanceMoreCount = Math.Max(0, Model.DealerPerformance.Count - tablePageSize);
 
         // My Portfolio below folds in Device Performance and Completed
         // Contracts (previously their own cards/tables) -- Non-Payers/Slow-
@@ -636,6 +637,8 @@
         </div>
     </div><!-- .nk-block -->
 
+    @if (!(ViewBag.IsApprover is true))
+    {
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -687,6 +690,61 @@
             </div>
         </div>
     </div><!-- .nk-block -->
+    }
+    else
+    {
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title">Dealer Performance</h6>
+                            <p class="text-soft">Active % excludes Slow Payers (Good vs Good+Non-Paying); ranked by account count</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="dealer-performance" data-page-size="@tablePageSize">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Rank</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Active %</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Arrears</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Revenue This Month</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.DealerPerformance.Count; i++)
+                            {
+                                var d = Model.DealerPerformance[i];
+                                <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealer-performance">
+                                    <td>@d.Rank</td>
+                                    <td><span class="fw-medium">@d.DealerName</span></td>
+                                    <td>@d.Accounts</td>
+                                    <td>@d.ActivePct.ToString("0")%</td>
+                                    <td class="@(d.ArrearsTotal > 0 ? "text-danger" : "")">KES @d.ArrearsTotal.ToString("N0")</td>
+                                    <td>KES @d.RevenueThisMonth.ToString("N0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    </div>
+                    @if (DealerPerformanceMoreCount > 0)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="dealer-performance" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'dealer-performance', @tablePageSize);">Show @Math.Min(tablePageSize, DealerPerformanceMoreCount) more</a>
+                            <a href="#" class="link link-primary" data-less-for="dealer-performance" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'dealer-performance', @tablePageSize);">Show less</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+    }
 
     <div class="nk-block">
         <div class="card card-bordered card-stretch">

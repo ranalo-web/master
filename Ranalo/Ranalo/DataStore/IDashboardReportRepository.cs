@@ -27,6 +27,13 @@ namespace Ranalo.DataStore
         // (DealerId == null), not a per-dealer loop over the ledger.
         Task<List<DashboardKpiRollupRow>> ComputeKpiRollupAsync();
 
+        // Live (not rollup-backed) per-dealer revenue this month, keyed by
+        // Dealers.CompanyName -- same source/spelling as
+        // DashboardAccountDetailRow.DealerName, for the Approver Dashboard's
+        // Dealer Performance table (GetApproverDashboardAsync), which only
+        // has DealerName (not DealerId) to join against.
+        Task<List<DashboardDealerRevenueRow>> GetRevenueThisMonthByDealerAsync();
+
         // Same single-pass GROUPING SETS pattern as ComputeKpiRollupAsync, for
         // the arrears/portfolio classification (see DashboardPortfolioRollupRow
         // for the exact tier definitions).
