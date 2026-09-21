@@ -64,6 +64,15 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
+
+            // The Agents tab (dealer-wide list of every agent's assigned
+            // accounts) serves no purpose for an Agent -- they only need
+            // their own accounts, already covered by Collections/Orders/etc.
+            if (settings.RoleId == UserRole.Agent)
+            {
+                return RedirectToAction("Index", "Agents");
+            }
+
             //Page Origin ViewBad
             ViewBag.PageOrigin = "assigned";
             await SetViewBags(settings, "approver");
@@ -127,6 +136,14 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
+
+            // The Agents tab serves no purpose for an Agent -- see
+            // AssignedCollections above.
+            if (settings.RoleId == UserRole.Agent)
+            {
+                return RedirectToAction("Index", "Agents");
+            }
+
             ViewBag.PageOrigin = "unassigned";
 
             await SetViewBags(settings, "approver");

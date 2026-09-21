@@ -53,7 +53,7 @@ namespace Ranalo.Services
 
         Task<CustomerDetails?> GetCustomerDetailsByAccountIdAsync(int accountId);
 
-        Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, bool assigned, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm);
+        Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, bool assigned, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, int? agentUserId = null);
         Task<KosePaymentsViewModel> GetAssignedPaymentsAsync(string searchTerm, int page, int pageSize);
         Task CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo);
 

@@ -77,47 +77,61 @@
                                         <span class="nk-menu-text">Watchlist</span>
                                     </a>
                                 </li>
-                                <li class="nk-menu-item has-sub">
-                                    <a class="nk-menu-link nk-menu-toggle" href="collections">
-                                        <span class="nk-menu-icon">
-                                            <em class="icon ni ni-briefcase-fill"></em>
-                                        </span>
-                                        <span class="nk-menu-text">Collections</span>
-                                    </a>
-                                    <ul class="nk-menu-sub">
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/assigned-collections">
-                                                <span class="nk-menu-text">Assigned Collections</span>
-                                            </a>
-                                        </li>
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/unassigned-collections">
-                                                <span class="nk-menu-text">Unassigned Collections</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
+                                @if (ViewBag.IsAgent is true)
+                                {
+                                    <li class="nk-menu-item">
+                                        <a class="nk-menu-link" href="/assigned-collections">
+                                            <span class="nk-menu-icon">
+                                                <em class="icon ni ni-briefcase-fill"></em>
+                                            </span>
+                                            <span class="nk-menu-text">Collections</span>
+                                        </a>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="collections">
+                                            <span class="nk-menu-icon">
+                                                <em class="icon ni ni-briefcase-fill"></em>
+                                            </span>
+                                            <span class="nk-menu-text">Collections</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/assigned-collections">
+                                                    <span class="nk-menu-text">Assigned Collections</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/unassigned-collections">
+                                                    <span class="nk-menu-text">Unassigned Collections</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
 
-                                <li class="nk-menu-item has-sub">
-                                    <a class="nk-menu-link nk-menu-toggle" href="agents">
-                                        <span class="nk-menu-icon">
-                                            <em class="icon ni ni-user-list-fill"></em>
-                                        </span>
-                                        <span class="nk-menu-text">Agents</span>
-                                    </a>
-                                    <ul class="nk-menu-sub">
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/assigned-accounts">
-                                                <span class="nk-menu-text">Assigned Accounts</span>
-                                            </a>
-                                        </li>
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/unassigned-accounts">
-                                                <span class="nk-menu-text">Unassigned Accounts</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="agents">
+                                            <span class="nk-menu-icon">
+                                                <em class="icon ni ni-user-list-fill"></em>
+                                            </span>
+                                            <span class="nk-menu-text">Agents</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/assigned-accounts">
+                                                    <span class="nk-menu-text">Assigned Accounts</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/unassigned-accounts">
+                                                    <span class="nk-menu-text">Unassigned Accounts</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                }
 
 
 

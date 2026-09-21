@@ -189,6 +189,15 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
+            // Collections is a single table for an Agent -- just the
+            // accounts assigned to them (Contract_Info.AssignedAgentId), not
+            // the dealer-wide notPaid90/assigned-to-a-collector queue.
+            if (settings.RoleId == UserRole.Agent)
+            {
+                var agentCollections = await _applicationReportService.CallQualifyingFunc(false, false, false, null, dealerId, page, pageSize, searchTerm.Trim(), agentUserId: settings.UserId);
+                return View(agentCollections);
+            }
+
             var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, true, true, null, dealerId, page, pageSize, searchTerm.Trim());
 
             return View(allDelaerStatusReport);
@@ -205,6 +214,14 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
+
+            // Collections is a single table for an Agent (their own assigned
+            // accounts) -- there's no separate "unassigned" view for them.
+            if (settings.RoleId == UserRole.Agent)
+            {
+                return RedirectToAction("AssignedCollections", new { searchTerm, page, pageSize });
+            }
+
             ViewBag.PageOrigin = "unassigned";
             await SetViewBags(settings, "approver");
 

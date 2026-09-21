@@ -392,7 +392,7 @@ namespace Ranalo.Services
             return mobileStatusReports;
         }
 
-        public async Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, bool assigned, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm)
+        public async Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, bool assigned, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, int? agentUserId = null)
         {
             deviceGroupId ??= 0;
 
@@ -410,7 +410,8 @@ namespace Ranalo.Services
                         deviceGroupId.Value,
                         pageNumber,
                         pageSize,
-                        searchTerm
+                        searchTerm,
+                        agentUserId
                     );
 
                     // Apply your business transformation (IsInArrears calc)
