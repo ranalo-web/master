@@ -98,6 +98,22 @@ namespace Ranalo.Services
                 model.PortfolioNonPayingPct = Math.Round(100m * lockClassification.NonPayingCount / lockTotal, 2);
             }
 
+            // Collection Rate / Portfolio at Risk (PAR30): same live cohort
+            // computation as the Dealer Dashboard's default "month" view
+            // (ComputeCohortRates, count-based -- of accounts that started
+            // this month, what % are in good standing vs 30+ days past their
+            // lock date). Previously only recomputed live when the top-of-
+            // page period filter was toggled (the /admin-dashboard/revenue
+            // AJAX endpoint); the initial page load stayed on the stale
+            // rollup snapshot until now.
+            if (TryResolvePeriodWindow("month", out var monthWindow))
+            {
+                var (collectionRatePct, portfolioAtRiskPct) = ComputeCohortRates(
+                    accountDetails, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive);
+                model.CollectionRatePct = collectionRatePct;
+                model.PortfolioAtRiskPct = portfolioAtRiskPct;
+            }
+
             // Total Arrears / Bad Debt cards: same live "true arrears" call
             // as the Dealer/Approver Dashboards (GetDealerArrearsClassificationAsync
             // -- only accounts genuinely locked past NextLockDate, not every
