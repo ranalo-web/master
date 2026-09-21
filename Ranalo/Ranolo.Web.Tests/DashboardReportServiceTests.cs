@@ -389,7 +389,6 @@ namespace Ranolo.Web.Tests
                     RevenueThisMonth = 1_000_000m,
                     TotalAccounts = 5000,
                     NonPayingChange = -25,
-                    RevenueTargetThisMonth = 1_200_000m,
                 },
             };
             var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
@@ -399,7 +398,31 @@ namespace Ranolo.Web.Tests
             Assert.That(result.RevenueThisMonth, Is.EqualTo(1_000_000m));
             Assert.That(result.TotalAccounts, Is.EqualTo(5000));
             Assert.That(result.NonPayingAccountsChange, Is.EqualTo(-25));
-            Assert.That(result.RevenueTargetThisMonth, Is.EqualTo(1_200_000m));
+        }
+
+        [Test]
+        public async Task GetAdminDashboardAsync_ComputesRevenueTargetAndGrowthLiveForCurrentMonth()
+        {
+            // RevenueTargetThisMonth/RevenueGrowthPct are no longer
+            // snapshot-sourced -- both are recomputed live for the current
+            // month on every page load (same call the top-of-page period
+            // filter's AJAX endpoint already uses), matching the Dealer/
+            // Approver Dashboards' own default-view behavior.
+            var fakeRepo = new FakeDashboardReportRepository
+            {
+                RevenuePeriodToReturn = new DashboardRevenuePeriodRow
+                {
+                    RevenueThisPeriod = 110_000m,
+                    RevenueLastPeriod = 100_000m,
+                    TargetRevenue = 150_000m,
+                },
+            };
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
+
+            var result = await service.GetAdminDashboardAsync();
+
+            Assert.That(result.RevenueTargetThisMonth, Is.EqualTo(150_000m));
+            Assert.That(result.RevenueGrowthPct, Is.EqualTo(10.0m));
         }
 
         [Test]

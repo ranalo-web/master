@@ -98,20 +98,26 @@ namespace Ranalo.Services
                 model.PortfolioNonPayingPct = Math.Round(100m * lockClassification.NonPayingCount / lockTotal, 2);
             }
 
-            // Collection Rate / Portfolio at Risk (PAR30): same live cohort
-            // computation as the Dealer Dashboard's default "month" view
-            // (ComputeCohortRates, count-based -- of accounts that started
-            // this month, what % are in good standing vs 30+ days past their
-            // lock date). Previously only recomputed live when the top-of-
-            // page period filter was toggled (the /admin-dashboard/revenue
-            // AJAX endpoint); the initial page load stayed on the stale
-            // rollup snapshot until now.
+            // Collection Rate / PAR30 and Revenue Target/Growth: same live
+            // "month" window the top-of-page period filter's AJAX endpoint
+            // already computes on demand -- the initial page load never
+            // called it, so these stayed on the stale rollup snapshot until
+            // a user manually touched the filter. RevenueThisMonth itself
+            // is left alone (already live via GetRevenueThisMonthByDealerAsync
+            // above); this only fills in the two figures that had no live
+            // source at all on load: the target and the month-over-month
+            // growth %.
             if (TryResolvePeriodWindow("month", out var monthWindow))
             {
                 var (collectionRatePct, portfolioAtRiskPct) = ComputeCohortRates(
                     accountDetails, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive);
                 model.CollectionRatePct = collectionRatePct;
                 model.PortfolioAtRiskPct = portfolioAtRiskPct;
+
+                var monthRevenueRow = await _repository.GetDealerRevenueForPeriodAsync(
+                    null, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive, monthWindow.PriorPeriodStart, monthWindow.PriorPeriodEndExclusive);
+                model.RevenueTargetThisMonth = monthRevenueRow.TargetRevenue;
+                model.RevenueGrowthPct = ScheduledDashboardRollup.CalculateGrowthPct(monthRevenueRow.RevenueThisPeriod, monthRevenueRow.RevenueLastPeriod) ?? model.RevenueGrowthPct;
             }
 
             // Total Arrears / Bad Debt cards: same live "true arrears" call
