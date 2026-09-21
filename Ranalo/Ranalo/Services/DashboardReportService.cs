@@ -81,11 +81,19 @@ namespace Ranalo.Services
             model.PayingAccounts = lockClassification.GoodCount;
             model.NonPayingAccounts = lockClassification.ArrearsCount;
 
-            // Bad Debt / Write-offs card: was never written by the rollup at
-            // all (not just stale), always a flat mock constant (28,500).
-            // Same live accrual-based classification and >90-day-past-lock
-            // threshold as the Approver Dashboard's Bad Debt card.
+            // Total Arrears / Bad Debt cards: same live "true arrears" call
+            // as the Dealer/Approver Dashboards (GetDealerArrearsClassificationAsync
+            // -- only accounts genuinely locked past NextLockDate, not every
+            // account's accrual shortfall). Previously only BadDebtThisMonth
+            // was wired to this; ArrearsTotal was left on the stale rollup
+            // snapshot's older, broader accrual-based definition, so the two
+            // cards silently disagreed with each other and with the
+            // Approver Dashboard's live figure for the same thing. Bad Debt
+            // is a subset of this same classification (>90 days past lock),
+            // so the two cards are now guaranteed consistent with each other.
             var arrearsClassification = await _repository.GetDealerArrearsClassificationAsync(null);
+            model.ArrearsTotal = arrearsClassification.TrueArrearsTotal;
+            model.ArrearsTrueCount = arrearsClassification.TrueArrearsCount;
             model.BadDebtThisMonth = arrearsClassification.BadDebtTotal;
 
             model.NonPayers = BuildNonPayers(accountDetails).Select(ToAdminWatchlistEntry).ToList();

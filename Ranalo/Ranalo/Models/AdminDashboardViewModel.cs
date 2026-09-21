@@ -16,6 +16,16 @@ namespace Ranalo.Models
         public decimal ArrearsTotal { get; set; }
         public decimal ArrearsChangePct { get; set; }
 
+        // Accounts contributing to ArrearsTotal (live, from
+        // GetDealerArrearsClassificationAsync -- same source as ArrearsTotal
+        // itself) -- replaces the "vs last month" trend on the Total
+        // Arrears card, which has no live recompute path (ArrearsChangePct
+        // stays rollup-backed/stale; comparing it against the now-live
+        // ArrearsTotal would be a meaningless mismatched baseline, same
+        // reasoning the Dealer/Approver Dashboards already applied to their
+        // own Total Arrears card).
+        public int ArrearsTrueCount { get; set; }
+
         public List<string> GrowthMonths { get; set; } = new();
         public List<decimal> RevenueByMonth { get; set; } = new();
         public List<int> AccountsByMonth { get; set; } = new();
