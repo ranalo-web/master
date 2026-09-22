@@ -50,6 +50,9 @@
     SELECT 'Column', 'AgentCommissionPayments.ContractId', 'Commissions/001_create_agent_commission_payments.sql',
         CASE WHEN EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AgentCommissionPayments') AND name = 'ContractId') THEN 'OK' ELSE 'MISSING' END
     UNION ALL
+    SELECT 'Column', 'AgentCommissionPayments.PaymentDate', 'AdHoc/fix_agent_commission_payments_paymentdate.sql',
+        CASE WHEN EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AgentCommissionPayments') AND name = 'PaymentDate') THEN 'OK' ELSE 'MISSING' END
+    UNION ALL
     SELECT 'Source column', 'DealerCommissionPayments.AmountPaid', '(pre-existing)',
         CASE WHEN EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('DealerCommissionPayments') AND name = 'AmountPaid') THEN 'OK' ELSE 'MISSING' END
     UNION ALL
