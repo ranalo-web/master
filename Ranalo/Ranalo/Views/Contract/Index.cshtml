@@ -104,6 +104,8 @@
     }
 }
 
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
 <div class="nk-content-body">
 
     <div class="nk-block-head nk-block-head-sm">
@@ -212,135 +214,56 @@
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
                 <div class="card-inner p-0">
-                    <div class="nk-tb-list nk-tb-ulist">
-                        <div class="nk-tb-item nk-tb-head">
-                            <div class="nk-tb-col nk-tb-col-check">
-                                <div class="custom-control custom-control-sm custom-checkbox notext">
-                                    <input type="checkbox" class="custom-control-input" id="uid">
-                                    <label class="custom-control-label" for="uid"></label>
-                                </div>
-                            </div>
-                            <div class="nk-tb-col"><span class="sub-text">Account</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Deposit</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Daily</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Weekly</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Monthly</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Term</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Total Loan</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Total Costs</span></div>
-
-                            <div class="nk-tb-col nk-tb-col-tools text-end">
-                                <div class="dropdown">
-                                    <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-offset="0,5"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
-                                        <ul class="link-tidy sm no-bdr">
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" checked="" id="bl">
-                                                    <label class="custom-control-label" for="bl">Category</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" checked="" id="ph">
-                                                    <label class="custom-control-label" for="ph">Amount</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" id="vri">
-                                                    <label class="custom-control-label" for="vri">Interest</label>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div><!-- .nk-tb-item -->
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="contracts" data-page-size="10">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Account</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Deposit</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Daily</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Weekly</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Monthly</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Term</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Loan</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Costs</th>
+                                <th class="wl-th"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
                         @foreach (var report in Model.Contracts)
                         {
-                            <div class="nk-tb-item">
-                                <div class="nk-tb-col nk-tb-col-check">
-                                    <div class="custom-control custom-control-sm custom-checkbox notext">
-                                        <input type="checkbox" class="custom-control-input" id="uid1">
-                                        <label class="custom-control-label" for="uid1"></label>
-                                    </div>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <a href="/account-details/@report.ID">
-                                        <div class="user-card">
-                                            <div class="user-avatar bg-primary">
-                                                <span>AB</span>
-                                            </div>
-                                            <div class="user-info">
-                                                <span class="tb-lead">@report.FirstName</span>
-                                                <span>AC: @report.ID</span>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-
-                                <div class="nk-tb-col">
-                                    <span>@report.Deposit</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.Daily</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.Weekly</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.Monthly</span>
-                                </div>
-                                 <div class="nk-tb-col">
-                                    <span>@report.TermInMonths</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.TotalLoan</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.TotalCost</span>
-                                </div>
-
-                                <div class="nk-tb-col nk-tb-col-tools">
-                                    <ul class="nk-tb-actions gx-2">
-                                        <li class="nk-tb-action-hidden">
-                                            <a href="/account-details/@report.ID" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Disbursed Loan">
-                                                <em class="icon ni ni-user-check-fill"></em>
-                                            </a>
-                                        </li>
+                            <tr>
+                                <td>
+                                    <a href="/account-details/@report.ID" class="fw-medium">@report.FirstName</a>
+                                    <span class="d-block sub-text">AC: @report.ID</span>
+                                </td>
+                                <td>@report.Deposit</td>
+                                <td>@report.Daily</td>
+                                <td>@report.Weekly</td>
+                                <td>@report.Monthly</td>
+                                <td>@report.TermInMonths</td>
+                                <td>@report.TotalLoan</td>
+                                <td>@report.TotalCost</td>
+                                <td class="text-end">
+                                    <ul class="nk-tb-actions gx-2 justify-content-end">
                                         <li>
                                             <div class="drodown">
                                                 <a href="#" class="btn btn-sm btn-icon btn-trigger dropdown-toggle" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
                                                 <div class="dropdown-menu dropdown-menu-end">
                                                     <ul class="link-list-opt no-bdr">
-                                                            <li><a href="#edit-contract"
-                                                                    data-bs-toggle="modal"
-                                                                    data-id="@report.ID"
-                                                                    data-name="@report.FirstName"
-                                                               data-deposit="@report.Deposit"
-                                                               data-interval="@report.RePaymentIntervals"
-                                                               data-daily="@report.Daily"
-                                                               data-weekly="@report.Weekly"
-                                                               data-monthly="@report.Monthly"
-                                                                data-loan="@report.TotalLoan"
-                                                               data-cost="@report.TotalAmount"
-                                                               data-term="@report.TermInMonths"
-                                                               data-totalcost="@report.TotalCost"
-                                                                data-buyingPrice="@report.BuyingPrice">
-                                                            <em class="icon ni ni-eye"></em><span>Edit Contract</span></a></li>
-                                                            <li><a type="button" href="#add-contract" data-bs-toggle="modal"><em class="icon ni ni-edit"></em><span>Add Contract</span></a></li>
-                                                        @*  <li><a href="#archive-loan" data-bs-toggle="modal"><em class="icon ni ni-archive"></em><span>Archive Loan</span></a></li> *@
+                                                        <li><a href="/account-details/@report.ID"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
+                                                        <li><a href="#edit-contract" data-bs-toggle="modal" data-id="@report.ID" data-name="@report.FirstName" data-deposit="@report.Deposit" data-interval="@report.RePaymentIntervals" data-daily="@report.Daily" data-weekly="@report.Weekly" data-monthly="@report.Monthly" data-loan="@report.TotalLoan" data-cost="@report.TotalAmount" data-term="@report.TermInMonths" data-totalcost="@report.TotalCost" data-buyingPrice="@report.BuyingPrice"><em class="icon ni ni-edit"></em><span>Edit Contract</span></a></li>
                                                     </ul>
                                                 </div>
                                             </div>
                                         </li>
                                     </ul>
-                                </div>
-                            </div>
+                                </td>
+                            </tr>
                         }
-
-                    </div><!-- .nk-tb-list -->
+                        </tbody>
+                    </table>
+                    </div><!-- .table-responsive -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
                     <div class="nk-block-between-md g-3">
@@ -624,6 +547,7 @@
 
 @section Scripts
 {
+    <script src="~/js/watchlist-table.js"></script>
         <script>
     document.addEventListener("DOMContentLoaded", function () {
         // Populate the modal fields directly from the triggering link's

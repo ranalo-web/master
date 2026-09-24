@@ -64,6 +64,8 @@
 
 }
 
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
 <div class="nk-content-body">
 
     <div class="nk-block-head nk-block-head-sm">
@@ -151,95 +153,49 @@
                 </div><!-- .card-inner -->
                 <div class="card-inner p-0">
                     <div class="table-responsive">
-                    <div class="nk-tb-list nk-tb-ulist">
-                        <div class="nk-tb-item nk-tb-head">
-                            <div class="nk-tb-col nk-tb-col-check">
-                                <div class="custom-control custom-control-sm custom-checkbox notext">
-                                    <input type="checkbox" class="custom-control-input" id="uid">
-                                    <label class="custom-control-label" for="uid"></label>
-                                </div>
-                            </div>
-                            <div class="nk-tb-col"><span class="sub-text">Account No</span></div>
-                                <div class="nk-tb-col"><span class="sub-text">Daily</span></div>
-                                <div class="nk-tb-col"><span class="sub-text">Date Agreed</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Amount R</span></div>
-                                <div class="nk-tb-col"><span class="sub-text">Auto Lock</span></div>
-                                <div class="nk-tb-col"><span class="sub-text">Last Conn</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Days R</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Total Due R</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Total Paid R</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Arrears R</span></div>
-                                <div class="nk-tb-col"><span class="sub-text">Last Paid Date</span></div>
-                                <div class="nk-tb-col"><span class="sub-text">Last Paid Amnt</span></div>
-                            <div class="nk-tb-col nk-tb-col-tools text-end"></div>
-                        </div><!-- .nk-tb-item -->
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="manual-restructured" data-page-size="10">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Account No</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Daily</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Date Agreed</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Amount R</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Auto Lock</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Conn</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Days R</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Due R</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Paid R</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Arrears R</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Paid Date</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Paid Amnt</th>
+                                <th class="wl-th"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
                         @foreach (var report in Model.Records)
                         {
-                            <div class="nk-tb-item">
-                                <div class="nk-tb-col nk-tb-col-check">
-                                    <div class="custom-control custom-control-sm custom-checkbox notext">
-                                        <input type="checkbox" class="custom-control-input" id="uid1">
-                                        <label class="custom-control-label" for="uid1"></label>
-                                    </div>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <a href="/account-details/@report.AccountNo">
-                                        <div class="user-card">
-                                            <div class="user-avatar bg-primary">
-                                                <span>AB</span>
-                                            </div>
-                                            <div class="user-info">
-                                                <span class="tb-lead">@report.AccountNo</span>
-                                                <span>#: @report.AccountNo</span>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                                    <div class="nk-tb-col">
-                                        <span>@report.Daily</span>
-                                    </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.DateAgreed.ToString("dd MMM yyyy HH:mm")</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.AmountRes</span>
-                                </div>
-                                    <div class="nk-tb-col">
-                                        <span>@report.AutoLockDatePmtR.ToString("dd MMM yyyy HH:mm")</span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span>@ConvertUTCDate(report.LastConnectedAt)</span>
-                                    </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.DaysRestructured</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.TotalDueR</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@report.TotalPaidR</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                        <span class="@SetStatusBadge(report.ArrearsR)">@report.ArrearsR</span>
-                                </div>
-                                    <div class="nk-tb-col">
-                                        <span>@report.LastResPaymentDate</span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span>@report.LastPaidAmount</span>
-                                    </div>
-                                <div class="nk-tb-col nk-tb-col-tools">
-                                    <ul class="nk-tb-actions gx-2">
-                                        <li>
-                                            <a href="/account-details/@report.AccountNo" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="View Details">
-                                                <em class="icon ni ni-eye"></em>
-                                            </a>
-                                        </li>
+                            <tr>
+                                <td><a href="/account-details/@report.AccountNo" class="fw-medium">@report.AccountNo</a></td>
+                                <td>@report.Daily</td>
+                                <td>@report.DateAgreed.ToString("dd MMM yyyy HH:mm")</td>
+                                <td>@report.AmountRes</td>
+                                <td>@report.AutoLockDatePmtR.ToString("dd MMM yyyy HH:mm")</td>
+                                <td>@ConvertUTCDate(report.LastConnectedAt)</td>
+                                <td>@report.DaysRestructured</td>
+                                <td>@report.TotalDueR</td>
+                                <td>@report.TotalPaidR</td>
+                                <td><span class="@SetStatusBadge(report.ArrearsR)">@report.ArrearsR</span></td>
+                                <td>@report.LastResPaymentDate</td>
+                                <td>@report.LastPaidAmount</td>
+                                <td class="text-end">
+                                    <ul class="nk-tb-actions gx-2 justify-content-end">
+                                        <li><a href="/account-details/@report.AccountNo" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"><em class="icon ni ni-eye"></em></a></li>
                                     </ul>
-                                </div>
-                            </div>
+                                </td>
+                            </tr>
                         }
-                        </div>
+                        </tbody>
+                    </table>
                     </div>
                 </div><!-- .card-inner -->
                 <div class="card-inner">
@@ -391,4 +347,9 @@
         </div>
     </div>
 </div>
+}
+
+@section Scripts
+{
+    <script src="~/js/watchlist-table.js"></script>
 }

@@ -59,6 +59,8 @@
     }
 }
 
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
 <div class="nk-content-body">
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
@@ -156,105 +158,48 @@
                 </div><!-- .card-inner -->
                 <div class="card-inner p-0">
                     <div class="table-responsive">
-                    <div class="nk-tb-list nk-tb-ulist">
-                        <div class="nk-tb-item nk-tb-head">
-                            <div class="nk-tb-col nk-tb-col-check">
-                                <div class="custom-control custom-control-sm custom-checkbox notext">
-                                    <input type="checkbox" class="custom-control-input" id="cid">
-                                    <label class="custom-control-label" for="cid"></label>
-                                </div>
-                            </div>
-
-                            <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Email</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Phone</span></div>
-                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Dealer Name</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Order No</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Joined</span></div>
-                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Status</span></div>
-                            <div class="nk-tb-col text-end"><span class="sub-text">Actions</span></div>
-                        </div><!-- .nk-tb-item -->
-                        @{
-                            foreach (var order in Model.AwaitingApprovals)
-                            {
-
-                                <div class="nk-tb-item">
-                                    <div class="nk-tb-col nk-tb-col-check">
-                                        <div class="custom-control custom-control-sm custom-checkbox notext">
-                                            <input type="checkbox" class="custom-control-input" id="cid1">
-                                            <label class="custom-control-label" for="cid1"></label>
-                                        </div>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <a href="/account-details/@order.OrderId">
-                                            <div class="user-card">
-                                                <div class="user-avatar xs bg-primary">
-                                                    <span>@GetInitials(order.FirstName + " " + order.LastName)</span>
-                                                </div>
-                                                <div class="user-name">
-                                                    <span class="tb-lead">@order.FirstName @order.LastName  <span class="dot dot-success d-lg-none ms-1"></span></span>
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="missing-mpesa" data-page-size="10">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Email</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer Name</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Order No</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Joined</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                                <th class="wl-th"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var order in Model.AwaitingApprovals)
+                        {
+                            <tr>
+                                <td><a href="/account-details/@order.OrderId" class="fw-medium">@order.FirstName @order.LastName</a></td>
+                                <td>@order.Email</td>
+                                <td>@order.Phone</td>
+                                <td>@order.DealerRef</td>
+                                <td>@order.OrderId</td>
+                                <td>@order.DateCreated.ToString("dd MMM yyyy")</td>
+                                <td><span class="@SetStatusBadge(order.Status)">@order.Status</span></td>
+                                <td class="text-end">
+                                    <ul class="nk-tb-actions gx-2 justify-content-end">
+                                        <li>
+                                            <div class="drodown">
+                                                <a href="#" class="dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                                <div class="dropdown-menu dropdown-menu-end">
+                                                    <ul class="link-list-opt no-bdr">
+                                                        <li><a href="/order-details/@order.OrderId"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
+                                                    </ul>
                                                 </div>
                                             </div>
-                                        </a>
-                                    </div>
-                                    <div class="nk-tb-col tb-col-sm">
-                                        <span class="sub-text">@order.Email</span>
-                                    </div>
-                                    <div class="nk-tb-col tb-col-md">
-                                        <span class="sub-text">@order.Phone</span>
-                                    </div>
-                                    <div class="nk-tb-col tb-col-lg">
-                                        <span class="sub-text">@order.DealerRef</span>
-                                    </div>
-                                    <div class="nk-tb-col tb-col-md">
-                                        <div class="icon-text">
-                                            <span class="sub-text">@order.OrderId</span>
-                                        </div>
-                                    </div>
-                                    <div class="nk-tb-col tb-col-xxl">
-                                        <span class="sub-text">@order.DateCreated</span>
-                                    </div>
-                                    <div class="nk-tb-col tb-col-lg">
-                                        <span class="@SetStatusBadge(order.Status)">@order.Status</span>
-                                    </div>
-                                    <div class="nk-tb-col nk-tb-col-tools">
-                                        <ul class="nk-tb-actions gx-1">
-                                            @* <li class="nk-tb-action-hidden">
-                                                <a href="/customer-details/@order.OrderId" class="btn btn-trigger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Details">
-                                                    <em class="icon ni ni-eye-fill"></em>
-                                                </a>
-                                            </li>
-                                            <li class="nk-tb-action-hidden">
-                                                <a href="#" class="btn btn-trigger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Send Email">
-                                                    <em class="icon ni ni-mail-fill"></em>
-                                                </a>
-                                            </li>
-                                            <li class="nk-tb-action-hidden">
-                                                <a href="#" class="btn btn-trigger btn-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Suspend">
-                                                    <em class="icon ni ni-cross-fill-c"></em>
-                                                </a>
-                                            </li>*@
-                                            <li>
-                                                <div class="drodown">
-                                                    <a href="#" class="dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
-                                                    <div class="dropdown-menu dropdown-menu-end">
-                                                        <ul class="link-list-opt no-bdr">
-                                                            <li><a href="/order-details/@order.OrderId"><em class="icon ni ni-eye"></em><span>View Details</span></a></li>
-                                                            @* <li><a href="#"><em class="icon ni ni-mail"></em><span>Send Mail</span></a></li>
-                                                            // <li><a href="#"><em class="icon ni ni-cart"></em><span>Orders</span></a></li>
-                                                            // <li><a href="#"><em class="icon ni ni-na"></em><span>Suspend</span></a></li> *@
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            }
+                                        </li>
+                                    </ul>
+                                </td>
+                            </tr>
                         }
-
-
-                        </div><!-- .nk-tb-list -->
+                        </tbody>
+                    </table>
                     </div><!-- .nk-tb-list -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
@@ -340,3 +285,8 @@
     </div><!-- .nk-block -->
 </div>
 
+
+@section Scripts
+{
+    <script src="~/js/watchlist-table.js"></script>
+}

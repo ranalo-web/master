@@ -7,6 +7,8 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
 <div class="nk-content-body">
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
@@ -59,88 +61,63 @@
                         </div>
                     </div>
                     <div class="card-inner p-0 border-top">
-                        <div class="nk-tb-list nk-tb-orders">
-                            <div class="nk-tb-item nk-tb-head">
-                                <div class="nk-tb-col"><span>Account No.</span></div>
-                                <div class="nk-tb-col tb-col-sm"><span>Customer</span></div>
-                                <div class="nk-tb-col tb-col-md"><span>Date</span></div>
-                                <div class="nk-tb-col tb-col-lg"><span>Dealer</span></div>
-                                <div class="nk-tb-col"><span>Amount</span></div>
-                                <div class="nk-tb-col"><span>Deposit</span></div>
-                                <div class="nk-tb-col"><span>Paid</span></div>
-                                <div class="nk-tb-col"><span>D Thresh</span></div>
-                                <div class="nk-tb-col"><span>D Commission</span></div>
-                                <div class="nk-tb-col"><span>A Commission</span></div>
-                                <div class="nk-tb-col"><span class="d-none d-sm-inline">Eligible</span></div>
-                                <div class="nk-tb-col"><span>&nbsp;</span></div>
-                            </div>
-
+                        <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="commissions-overview" data-page-size="10">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Account No</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Date</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Amount</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Deposit</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">D Thresh</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">D Commission</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">A Commission</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Eligible</th>
+                                    <th class="wl-th"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
                             @foreach (var commission in Model.FullCommissions.Items)
                             {
-                                <div class="nk-tb-item">
-                                    <div class="nk-tb-col">
-                                            <span class="tb-lead"><a href="/account-details/@commission.AccountNo">#@commission.AccountNo</a></span>
-                                    </div>
-                                    <div class="nk-tb-col tb-col-sm">
-                                        <div class="user-card">
-                                            <div class="user-avatar user-avatar-sm bg-purple">
-                                                <span>AB</span>
-                                            </div>
-                                            <div class="user-name">
-                                                <span class="tb-lead">@commission.First_Name</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="nk-tb-col tb-col-md">
-                                        <span class="tb-sub">@commission.Created</span>
-                                    </div>
-                                    <div class="nk-tb-col tb-col-lg">
-                                        <span class="tb-sub text-primary">@commission.DeviceGroupId</span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="tb-sub tb-amount">@commission.TotalAmount <span>KSE</span></span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="tb-sub tb-amount">@commission.Deposit <span>KSE</span></span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="tb-sub tb-amount">@commission.TotalPaid <span>KSE</span></span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="tb-sub tb-amount">@commission.DealerThreshold <span>KSE</span></span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="tb-sub tb-amount">@commission.DealerCommission <span>KSE</span></span>
-                                    </div>
-                                    <div class="nk-tb-col">
-                                        <span class="tb-sub tb-amount">@commission.AgentCommission <span>KSE</span></span>
-                                    </div>
-                                    <div class="nk-tb-col">
+                                <tr>
+                                    <td><a href="/account-details/@commission.AccountNo" class="fw-medium">#@commission.AccountNo</a></td>
+                                    <td>@commission.First_Name</td>
+                                    <td>@commission.Created</td>
+                                    <td>@commission.DeviceGroupId</td>
+                                    <td>@commission.TotalAmount KSE</td>
+                                    <td>@commission.Deposit KSE</td>
+                                    <td>@commission.TotalPaid KSE</td>
+                                    <td>@commission.DealerThreshold KSE</td>
+                                    <td>@commission.DealerCommission KSE</td>
+                                    <td>@commission.AgentCommission KSE</td>
+                                    <td>
                                         @if (commission.DealerEligible)
                                         {
                                             <span class="badge badge-dot badge-dot-xs bg-success">YES</span>
-                                        }else
+                                        }
+                                        else
                                         {
                                             <span class="badge badge-dot badge-dot-xs bg-warning">NO</span>
                                         }
-
-                                    </div>
-                                    <div class="nk-tb-col nk-tb-col-action">
+                                    </td>
+                                    <td class="text-end">
                                         <div class="dropdown">
                                             <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
                                             <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
                                                 <ul class="link-list-plain">
-                                                            <li><a href="#pay-commission"
-                                                               data-bs-toggle="modal"
-                                                                data-id="@commission.ContractID">Pay Commission</a></li>
+                                                    <li><a href="#pay-commission" data-bs-toggle="modal" data-id="@commission.ContractID">Pay Commission</a></li>
                                                 </ul>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    </td>
+                                </tr>
                             }
-                           
-                        </div>
+                            </tbody>
+                        </table>
+                        </div><!-- .table-responsive -->
                     </div>
                     <div class="card-inner-sm border-top text-center d-sm-none">
                         <a href="#" class="btn btn-link btn-block">See History</a>
@@ -515,3 +492,8 @@
         </div>
     </div>
 </div><!-- .Edit Modal-Content -->
+
+@section Scripts
+{
+    <script src="~/js/watchlist-table.js"></script>
+}
