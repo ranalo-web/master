@@ -1,0 +1,52 @@
+/* App-wide formatting for list UIs (v3).
+   Two list styles are used across Ranalo:
+     1. plain <table class="table ...">   -> wrapped in .table-responsive
+     2. DashLite div-based .nk-tb-list     -> handled here
+
+   .nk-tb-list is display:table, so columns share a fixed width and long
+   cell text spills into the neighbouring column -> headings/values look
+   like they overlap. The fix (applied at ALL widths now, so desktop reads
+   the same as mobile): let the list size to its content and scroll inside
+   its card, keep each cell on one line, and give the columns breathing room
+   so neighbours never touch. Lists that fit still fill the card and don't
+   scroll; crowded lists scroll instead of colliding.
+
+   The :has() selector targets the .card-inner that directly wraps a list
+   (supported by all current browsers). */
+.card-inner:has(> .nk-tb-list) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.nk-tb-list {
+    width: auto;
+    min-width: 100%;
+}
+
+.nk-tb-list .nk-tb-col {
+    white-space: nowrap;
+}
+
+/* Keep each column's label/value clear of its neighbour. */
+.nk-tb-list .nk-tb-col:not(:last-child) {
+    padding-right: 16px;
+}
+
+/* Page-header row ("Title" + description on the left, page tools on the
+   right). It's a flex space-between row; on a phone the description ends up
+   in a lone flex item sized to its max-content, so a long line overflows
+   the viewport and clips instead of wrapping. On small screens let the two
+   halves stack so the description wraps to the available width. */
+@media (max-width: 767.98px) {
+    .nk-block-head .nk-block-between {
+        display: block;
+    }
+
+    .nk-block-head .nk-block-between > .nk-block-head-content + .nk-block-head-content {
+        margin-top: 10px;
+    }
+
+    .nk-block-des p {
+        white-space: normal;
+    }
+}

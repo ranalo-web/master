@@ -10,7 +10,7 @@
 {
     private string ConvertUTCDate(string dateString)
     {
-        if (string.IsNullOrEmpty(dateString)) return DateTime.MinValue.ToString("dd/MM/yy HH:mm"); ;
+        if (string.IsNullOrEmpty(dateString)) return DateTime.MinValue.ToString("dd MMM yyyy HH:mm"); ;
         DateTime dt = DateTime.ParseExact(
             dateString,
             "dd-MM-yy HH:mm:ss 'UTC'",
@@ -18,7 +18,7 @@
             System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal
         );
 
-        return dt.ToString("dd/MM/yy HH:mm");
+        return dt.ToString("dd MMM yyyy HH:mm");
     }
     private string SetStatusBadge(decimal notPaid)
     {
@@ -199,13 +199,13 @@
                                         <span>@report.Daily</span>
                                     </div>
                                 <div class="nk-tb-col">
-                                    <span>@report.DateAgreed.ToString("dd/MM/yy HH:mm")</span>
+                                    <span>@report.DateAgreed.ToString("dd MMM yyyy HH:mm")</span>
                                 </div>
                                 <div class="nk-tb-col">
                                     <span>@report.AmountRes</span>
                                 </div>
                                     <div class="nk-tb-col">
-                                        <span>@report.AutoLockDatePmtR.ToString("dd/MM/yy HH:mm")</span>
+                                        <span>@report.AutoLockDatePmtR.ToString("dd MMM yyyy HH:mm")</span>
                                     </div>
                                     <div class="nk-tb-col">
                                         <span>@ConvertUTCDate(report.LastConnectedAt)</span>

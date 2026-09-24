@@ -88,7 +88,7 @@
         System.Globalization.DateTimeStyles.None,
         out DateTime dt);
 
-        return dt.ToString("dd/MM/yy HH:mm");
+        return dt.ToString("dd MMM yyyy HH:mm");
     }
 
     private string ConvertUTCDate(string dateString)
@@ -100,7 +100,7 @@
             System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal
         );
 
-        return dt.ToString("dd/MM/yy HH:mm");
+        return dt.ToString("dd MMM yyyy HH:mm");
     }
 }
 

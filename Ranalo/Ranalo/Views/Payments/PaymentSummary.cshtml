@@ -88,8 +88,8 @@
                                 <tr>
                                     <td><span class="fw-medium">@payment.Account</span></td>
                                     <td>KES @payment.TotalPaid.ToString("N0")</td>
-                                    <td>@(payment.First?.ToString("MMM d, yyyy") ?? "-")</td>
-                                    <td>@(payment.Last?.ToString("MMM d, yyyy") ?? "-")</td>
+                                    <td>@(payment.First?.ToString("dd MMM yyyy") ?? "-")</td>
+                                    <td>@(payment.Last?.ToString("dd MMM yyyy") ?? "-")</td>
                                     <td>@(payment.FirstPayment.HasValue ? "KES " + payment.FirstPayment.Value.ToString("N0") : "-")</td>
                                     <td>@(payment.LastPayment.HasValue ? "KES " + payment.LastPayment.Value.ToString("N0") : "-")</td>
                                     <td><a href="/account-details/@payment.Account" class="link link-primary">View</a></td>

@@ -5,6 +5,8 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
 <div class="nk-content-body">
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
@@ -37,29 +39,35 @@
                         }
                         else
                         {
-                            <div class="nk-tb-list nk-tb-ulist is-compact">
-                                <div class="nk-tb-item nk-tb-head">
-                                    <div class="nk-tb-col"><span class="sub-text">Account No</span></div>
-                                    <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                                    <div class="nk-tb-col"><span class="sub-text">Device</span></div>
-                                    <div class="nk-tb-col nk-tb-col-tools text-end"></div>
-                                </div>
+                            <div class="table-responsive">
+                            <table class="table mb-0" style="white-space:nowrap;" data-key="watchlist-search" data-page-size="10">
+                                <thead>
+                                    <tr>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Account No</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Device</th>
+                                        <th class="wl-th"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                                 @foreach (var account in Model.SearchResults)
                                 {
-                                    <div class="nk-tb-item">
-                                        <div class="nk-tb-col">@account.AccountNo</div>
-                                        <div class="nk-tb-col">@account.CustomerName</div>
-                                        <div class="nk-tb-col">@account.Make @account.Model</div>
-                                        <div class="nk-tb-col nk-tb-col-tools text-end">
+                                    <tr>
+                                        <td><span class="fw-medium">@account.AccountNo</span></td>
+                                        <td>@account.CustomerName</td>
+                                        <td>@account.Make @account.Model</td>
+                                        <td class="text-end">
                                             <form action="/watchlist/add" method="post">
                                                 <input type="hidden" name="accountId" value="@account.AccountNo">
                                                 <input type="hidden" name="searchTerm" value="@Model.SearchTerm">
                                                 <button type="submit" class="btn btn-sm btn-outline-primary">Add to watchlist</button>
                                             </form>
-                                        </div>
-                                    </div>
+                                        </td>
+                                    </tr>
                                 }
-                            </div>
+                                </tbody>
+                            </table>
+                            </div><!-- .table-responsive -->
                         }
                     </div>
                 }
@@ -81,26 +89,30 @@
                 }
                 else
                 {
-                    <div class="nk-tb-list nk-tb-ulist is-compact">
-                        <div class="nk-tb-item nk-tb-head">
-                            <div class="nk-tb-col"><span class="sub-text">Account</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Dealer</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Agent</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Added By</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Added</span></div>
-                            <div class="nk-tb-col nk-tb-col-tools text-end"></div>
-                        </div>
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="watchlist" data-page-size="10">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Account</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Added By</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Added</th>
+                                <th class="wl-th"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
                         @foreach (var entry in Model.Watchlist)
                         {
-                            <div class="nk-tb-item">
-                                <div class="nk-tb-col">@entry.AccountId</div>
-                                <div class="nk-tb-col">@entry.CustomerName</div>
-                                <div class="nk-tb-col tb-col-md">@entry.DealerName</div>
-                                <div class="nk-tb-col tb-col-md">@(entry.AgentName ?? "-")</div>
-                                <div class="nk-tb-col tb-col-md">@entry.AddedByName <span class="text-soft">(@entry.AddedByRole)</span></div>
-                                <div class="nk-tb-col tb-col-sm">@entry.AddedAtUtc.ToString("dd MMM yyyy")</div>
-                                <div class="nk-tb-col nk-tb-col-tools text-end">
+                            <tr>
+                                <td><span class="fw-medium">@entry.AccountId</span></td>
+                                <td>@entry.CustomerName</td>
+                                <td>@entry.DealerName</td>
+                                <td>@(entry.AgentName ?? "-")</td>
+                                <td>@entry.AddedByName <span class="text-soft">(@entry.AddedByRole)</span></td>
+                                <td>@entry.AddedAtUtc.ToString("dd MMM yyyy")</td>
+                                <td class="text-end">
                                     @if (entry.CanCurrentUserRemove)
                                     {
                                         <form action="/watchlist/remove" method="post">
@@ -108,12 +120,19 @@
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
                                         </form>
                                     }
-                                </div>
-                            </div>
+                                </td>
+                            </tr>
                         }
-                    </div>
+                        </tbody>
+                    </table>
+                    </div><!-- .table-responsive -->
                 }
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts
+{
+    <script src="~/js/watchlist-table.js"></script>
+}

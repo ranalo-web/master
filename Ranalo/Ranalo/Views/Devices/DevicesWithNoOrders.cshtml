@@ -7,7 +7,7 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<link rel="stylesheet" href="~/css/watchlist-table.css?v=2">
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
 
 <div class="nk-content-body">
 
@@ -131,7 +131,8 @@
                         }
                     }
 
-                    <table class="table mb-0" data-key="devices-no-orders" data-page-size="@Model?.PageSize">
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="devices-no-orders" data-page-size="@Model?.PageSize">
                         <thead>
                             <tr>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Account No</th>
@@ -154,12 +155,16 @@
                                     <td>@devices.DealerId</td>
                                     <td>@devices.DealerName</td>
                                     <td>
-                                        <form action="/correct-mpesa" class="form-validate d-flex gap-2" novalidate="novalidate" method="post">
+                                        <form action="/correct-mpesa" class="form-validate wl-fix-form" novalidate="novalidate" method="post">
                                             <input type="hidden" name="accountno" value="@devices.DeviceId" />
                                             <input type="hidden" name="page" value="@Model.CurrentPage" />
                                             <input type="hidden" name="pageSize" value="10" />
-                                            <input type="number" name="orderNumber" class="form-control" placeholder="Order #" required style="width:110px;">
-                                            <input type="text" name="newMpesa" class="form-control" placeholder="Mpesa code" required style="width:130px;">
+                                            <div class="form-control-wrap">
+                                                <input type="number" name="orderNumber" class="form-control" placeholder="Order #" required>
+                                            </div>
+                                            <div class="form-control-wrap">
+                                                <input type="text" name="newMpesa" class="form-control" placeholder="Mpesa code" required>
+                                            </div>
                                             <button type="submit" class="btn btn-outline-primary btn-dim">Save</button>
                                         </form>
                                     </td>
@@ -168,6 +173,7 @@
                         }
                         </tbody>
                     </table>
+                    </div><!-- .table-responsive -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
                     <div class="nk-block-between-md g-3">

@@ -38,3 +38,49 @@ table[data-key] td .fw-medium {
     font-weight: 500;
     color: #364a63 !important;
 }
+
+/* Orphaned Devices: the last column holds an inline "Fix Order / Mpesa"
+   form (order number + mpesa code + Save). The table now sits in a
+   .table-responsive wrapper so it scrolls within its card instead of
+   forcing the whole page wider than a phone screen -- which was pushing
+   this form off the right edge, out of reach. Keep the three controls on
+   one line at a compact, still-tappable width so the row height stays
+   normal and the form is only a short horizontal scroll away on mobile. */
+.wl-fix-form {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+}
+.wl-fix-form .form-control-wrap {
+    position: relative;
+    width: 108px;
+    flex: 0 0 auto;
+}
+.wl-fix-form .form-control {
+    width: 100%;
+}
+.wl-fix-form .btn {
+    flex: 0 0 auto;
+}
+
+/* jQuery-Validate ("This field is required.") attaches its message to the
+   input's parent. Anchor it to each field's .form-control-wrap and pin it
+   just under that box -- absolutely positioned so it reads as belonging to
+   the field instead of being shoved into the flex row as a stray sibling,
+   and so showing it never changes the table row's height. */
+.wl-fix-form .form-control.invalid {
+    border-color: #e85347;
+}
+.wl-fix-form .form-control-wrap span.invalid,
+.wl-fix-form .form-control-wrap label.invalid,
+.wl-fix-form .form-control-wrap label.error {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    z-index: 1;
+    font-size: 11px;
+    line-height: 1.2;
+    color: #e85347;
+    white-space: nowrap;
+}
