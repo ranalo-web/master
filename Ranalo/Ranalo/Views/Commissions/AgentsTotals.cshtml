@@ -1,0 +1,82 @@
+@using Ranalo.Models.ViewModels
+@model CommissionsMaster
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    const int pageSize = 20;
+    const string key = "agents-totals";
+    var rows = Model.AgentTotalsCommissions?.Items?.ToList() ?? new();
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Agents Totals</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Commission per assigned agent across every dealer. Earned is 50% of each deposit plus 25% once the contract is 90 days old and not past its lock date. Arrears on accounts past their lock date are withheld. Same formula as the dashboards.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner p-0">
+                    @if (rows.Count == 0)
+                    {
+                        <div class="card-inner text-soft">No agent-assigned accounts found.</div>
+                    }
+                    else
+                    {
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="@key" data-page-size="@pageSize">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Contracts</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Deposits</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Earned</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on accounts past their lock date">Withheld</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Earned - withheld - paid, never below 0">Owed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < rows.Count; i++)
+                                {
+                                    var a = rows[i];
+                                    <tr class="@(i >= pageSize ? "d-none" : "")" data-watchlist-row="@key">
+                                        <td><span class="fw-medium">@(string.IsNullOrWhiteSpace(a.AgentName) ? $"Agent #{a.AgentId}" : a.AgentName)</span></td>
+                                        <td>@a.DealerName</td>
+                                        <td>@a.TotalContracts</td>
+                                        <td>KES @a.TotalDeposits.ToString("N0")</td>
+                                        <td>KES @a.TotalAgentCommission.ToString("N0")</td>
+                                        <td class="@(a.Withheld > 0 ? "text-warning" : "")">KES @a.Withheld.ToString("N0")</td>
+                                        <td>KES @a.Paid.ToString("N0")</td>
+                                        <td class="fw-medium @(a.Owed > 0 ? "text-danger" : "")">KES @a.Owed.ToString("N0")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (rows.Count > pageSize)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="@key" onclick="event.preventDefault(); Ranalo.showMoreRows(this, '@key', @pageSize);">Show @Math.Min(pageSize, rows.Count - pageSize) more</a>
+                            <a href="#" class="link link-primary" data-less-for="@key" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, '@key', @pageSize);">Show less</a>
+                        </div>
+                    }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/watchlist-table.js"></script>
+}

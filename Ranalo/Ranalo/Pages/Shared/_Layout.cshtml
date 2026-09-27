@@ -400,6 +400,49 @@
                                                 <span class="nk-menu-text">Manual Restructured</span>
                                             </a>
                                         </li>
+                                        @if (ViewBag.IsDealer is true || ViewBag.IsAgent is true)
+                                        {
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/non-payers">
+                                                    <span class="nk-menu-text">Non-Payers</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/slow-payers">
+                                                    <span class="nk-menu-text">Slow Payers</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/good-payers">
+                                                    <span class="nk-menu-text">Good Payers</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/agent-performance">
+                                                    <span class="nk-menu-text">Agent Performance</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/contracts">
+                                                    <span class="nk-menu-text">My Contracts</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/contracts-ending-soon">
+                                                    <span class="nk-menu-text">Contracts Ending Soon</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/device-performance">
+                                                    <span class="nk-menu-text">Device Performance</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/completed-contracts">
+                                                    <span class="nk-menu-text">Completed Contracts</span>
+                                                </a>
+                                            </li>
+                                        }
                                         @if (ViewBag.IsAdmin || ViewBag.IsApprover)
                                         {
                                                 <li class="nk-menu-item ">

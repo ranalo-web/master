@@ -29,7 +29,13 @@
                         <thead>
                             <tr>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                @if (!(ViewBag.IsAgent is true))
+                                {
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                }
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Next of Kin</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">2nd Next of Kin</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Payments Ahead</th>
                             </tr>
                         </thead>
@@ -38,8 +44,46 @@
                             {
                                 var e = Model[i];
                                 <tr class="@(i >= pageSize ? "d-none" : "")" data-watchlist-row="@key">
-                                    <td><span class="fw-medium">@e.CustomerName</span></td>
-                                    <td>@e.AgentName</td>
+                                    <td>
+                                        <a href="/account-details/@e.AccountId" class="fw-medium">@e.CustomerName</a>
+                                        <span class="d-block sub-text">AC: @e.AccountId</span>
+                                    </td>
+                                    @if (!(ViewBag.IsAgent is true))
+                                    {
+                                        <td>@(string.IsNullOrWhiteSpace(e.AgentName) ? "Unassigned" : e.AgentName)</td>
+                                    }
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(e.Phone))
+                                        {
+                                            <span class="text-soft">-</span>
+                                        }
+                                        else
+                                        {
+                                            <a href="tel:@e.Phone">@e.Phone</a>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(e.NextOfKinPhone))
+                                        {
+                                            <span class="text-soft">-</span>
+                                        }
+                                        else
+                                        {
+                                            <a href="tel:@e.NextOfKinPhone">@e.NextOfKinPhone</a>
+                                            <span class="d-block sub-text">@e.NextOfKinName</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(e.NextOfKin2Phone))
+                                        {
+                                            <span class="text-soft">-</span>
+                                        }
+                                        else
+                                        {
+                                            <a href="tel:@e.NextOfKin2Phone">@e.NextOfKin2Phone</a>
+                                            <span class="d-block sub-text">@e.NextOfKin2Name</span>
+                                        }
+                                    </td>
                                     <td><span class="text-success">@e.Detail</span></td>
                                 </tr>
                             }

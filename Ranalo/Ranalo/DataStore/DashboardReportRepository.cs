@@ -826,6 +826,10 @@ namespace Ranalo.DataStore
             public decimal? BuyingPrice { get; set; }
             public DateTime? LastPaymentDate { get; set; }
             public bool IsManuallyRestructured { get; set; }
+            public string? NextOfKinName { get; set; }
+            public string? NextOfKinPhone { get; set; }
+            public string? NextOfKin2Name { get; set; }
+            public string? NextOfKin2Phone { get; set; }
         }
 
         public async Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int? dealerId, int? agentUserId = null)
@@ -867,6 +871,10 @@ namespace Ranalo.DataStore
                     ci.StartDate,
                     dl.CompanyName AS DealerName,
                     ph.Phone AS CustomerPhone,
+                    nk1.[Name] AS NextOfKinName,
+                    nk1.Phone AS NextOfKinPhone,
+                    nk2.[Name] AS NextOfKin2Name,
+                    nk2.Phone AS NextOfKin2Phone,
                     ci.BuyingPrice,
                     pt.LastPaymentDate,
                     -- Manual restructures are the only ones stored; auto
@@ -890,12 +898,24 @@ namespace Ranalo.DataStore
                     -- dataset -- Woo_Orders.Phone (via KosePayments.MpesaCode)
                     -- is the only reliably-populated phone source, so pull
                     -- whichever of this account's orders is most recent.
-                    SELECT TOP 1 wo.Phone
+                    SELECT TOP 1 wo.Phone, wo.OrderID
                     FROM KosePayments kpPhone
                     INNER JOIN Woo_Orders wo ON wo.MpesaDepositRef = kpPhone.MpesaCode
                     WHERE kpPhone.AccountNoBigint = ci.ID
                     ORDER BY wo.DateCreated DESC
                 ) ph
+                -- Next of kin captured on that same order (primary and second),
+                -- same table and IsPrimary flag as the customer details pages.
+                OUTER APPLY (
+                    SELECT TOP 1 nk.[Name], nk.Phone
+                    FROM Woo_Orders_NextOfKin nk
+                    WHERE nk.OrderId = ph.OrderID AND nk.IsPrimary = 1
+                ) nk1
+                OUTER APPLY (
+                    SELECT TOP 1 nk.[Name], nk.Phone
+                    FROM Woo_Orders_NextOfKin nk
+                    WHERE nk.OrderId = ph.OrderID AND nk.IsPrimary = 0
+                ) nk2
                 WHERE (@DealerId IS NULL OR dl.DealerId = @DealerId) AND ci.StartDate IS NOT NULL
                 AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
 
@@ -922,6 +942,10 @@ namespace Ranalo.DataStore
                     BuyingPrice = row.BuyingPrice,
                     LastPaymentDate = row.LastPaymentDate,
                     IsManuallyRestructured = row.IsManuallyRestructured,
+                    NextOfKinName = row.NextOfKinName,
+                    NextOfKinPhone = row.NextOfKinPhone,
+                    NextOfKin2Name = row.NextOfKin2Name,
+                    NextOfKin2Phone = row.NextOfKin2Phone,
                 }).ToList();
             }
             catch (SqlException ex)
