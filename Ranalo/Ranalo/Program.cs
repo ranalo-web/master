@@ -115,7 +115,6 @@ builder.Services.AddScoped<IPaymentsService, PaymentsService>();
 builder.Services.AddScoped<IEnrolmentService, EnrolmentService>();
 builder.Services.AddScoped<IEnrolmentRepository, EnrolmentRepository>();
 builder.Services.AddScoped<ICommissionsReportsService, CommissionsReportsService>();
-builder.Services.AddScoped<ICommissionsRepository, CommissionsRepository>();
 
 //IPaymentsService
 

@@ -16,11 +16,11 @@
                 <div class="nk-block-des text-soft">
                     @if (agentView)
                     {
-                        <p>Your commission on each of your accounts. Upfront is 50% of the deposit. The bonus is 25% of the deposit once the contract is 90 days old. Arrears on an account past its lock date are deducted.</p>
+                        <p>Your commission on each of your accounts. Upfront is 50% of the deposit. The bonus is a further 25% of the deposit once the contract is 90 days old and the account is not past its lock date. Arrears on an account past its lock date are deducted.</p>
                     }
                     else
                     {
-                        <p>Agent commission: 50% of the deposit upfront, plus a 25% bonus once the contract is 90 days old, minus arrears on accounts past their lock date. Dealer commission: 30% of (total paid &minus; buying price &minus; agent commission).</p>
+                        <p>Agent: 50% of the deposit upfront, plus 25% once the contract is 90 days old and the account is not past its lock date. Dealer: 30% of (total paid &minus; buying price &minus; agent commission), growing with each payment. Arrears on accounts past their lock date are deducted from both. Accounts with no buying price earn no dealer commission until it is entered.</p>
                     }
                 </div>
             </div>
@@ -32,59 +32,66 @@
             <div class="col-6 col-lg-3">
                 <div class="card card-bordered h-100"><div class="card-inner">
                     <span class="sub-text">Agent commission earned</span>
-                    <span class="d-block fs-5 fw-bold">KES @Model.AgentEarnedTotal.ToString("N0")</span>
-                    <span class="d-block text-soft small">Upfront + bonus, before deductions</span>
+                    <span class="d-block fs-5 fw-bold ">KES @Model.Agent.Earned.ToString("N0")</span>
+                    <span class="d-block text-soft small">Upfront + bonus</span>
                 </div></div>
             </div>
             <div class="col-6 col-lg-3">
                 <div class="card card-bordered h-100"><div class="card-inner">
-                    <span class="sub-text">Arrears deducted</span>
-                    <span class="d-block fs-5 fw-bold text-warning">KES @Model.AgentDeductedTotal.ToString("N0")</span>
-                    <span class="d-block text-soft small">Accounts past their lock date</span>
+                    <span class="sub-text">Agent withheld</span>
+                    <span class="d-block fs-5 fw-bold text-warning">KES @Model.Agent.Withheld.ToString("N0")</span>
+                    <span class="d-block text-soft small">Arrears on accounts past lock date</span>
                 </div></div>
             </div>
             <div class="col-6 col-lg-3">
                 <div class="card card-bordered h-100"><div class="card-inner">
                     <span class="sub-text">Paid to @(agentView ? "you" : "agents")</span>
-                    <span class="d-block fs-5 fw-bold text-success">KES @Model.AgentPaidTotal.ToString("N0")</span>
+                    <span class="d-block fs-5 fw-bold text-success">KES @Model.Agent.Paid.ToString("N0")</span>
                     <span class="d-block text-soft small">Commission payments recorded</span>
                 </div></div>
             </div>
             <div class="col-6 col-lg-3">
                 <div class="card card-bordered h-100"><div class="card-inner">
-                    <span class="sub-text">Agent net balance</span>
-                    <span class="d-block fs-5 fw-bold @(Model.AgentNetTotal < 0 ? "text-danger" : "")">KES @Model.AgentNetTotal.ToString("N0")</span>
-                    <span class="d-block text-soft small">Earned &minus; deducted &minus; paid</span>
+                    <span class="sub-text">Owed to @(agentView ? "you" : "agents")</span>
+                    <span class="d-block fs-5 fw-bold text-danger">KES @Model.Agent.Owed.ToString("N0")</span>
+                    <span class="d-block text-soft small">Earned &minus; withheld &minus; paid</span>
                 </div></div>
             </div>
             @if (!agentView)
             {
                 <div class="col-6 col-lg-3">
                     <div class="card card-bordered h-100"><div class="card-inner">
-                        <span class="sub-text">Dealer commission</span>
-                        <span class="d-block fs-5 fw-bold">KES @Model.DealerCommissionTotal.ToString("N0")</span>
+                        <span class="sub-text">Dealer commission earned</span>
+                        <span class="d-block fs-5 fw-bold ">KES @Model.Dealer.Earned.ToString("N0")</span>
                         <span class="d-block text-soft small">30% of dealer base</span>
                     </div></div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card card-bordered h-100"><div class="card-inner">
+                        <span class="sub-text">Dealer withheld</span>
+                        <span class="d-block fs-5 fw-bold text-warning">KES @Model.Dealer.Withheld.ToString("N0")</span>
+                        <span class="d-block text-soft small">Arrears on accounts past lock date</span>
+                    </div></div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card card-bordered h-100"><div class="card-inner">
                         <span class="sub-text">Paid to dealer</span>
-                        <span class="d-block fs-5 fw-bold text-success">KES @Model.DealerPaidTotal.ToString("N0")</span>
+                        <span class="d-block fs-5 fw-bold text-success">KES @Model.Dealer.Paid.ToString("N0")</span>
                         <span class="d-block text-soft small">Dealer commission payments recorded</span>
                     </div></div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card card-bordered h-100"><div class="card-inner">
-                        <span class="sub-text">Dealer balance</span>
-                        <span class="d-block fs-5 fw-bold">KES @Model.DealerBalanceTotal.ToString("N0")</span>
-                        <span class="d-block text-soft small">Commission &minus; paid</span>
+                        <span class="sub-text">Owed to dealer</span>
+                        <span class="d-block fs-5 fw-bold text-danger">KES @Model.Dealer.Owed.ToString("N0")</span>
+                        <span class="d-block text-soft small">Earned &minus; withheld &minus; paid</span>
                     </div></div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="card card-bordered h-100"><div class="card-inner">
                         <span class="sub-text">Missing buying price</span>
                         <span class="d-block fs-5 fw-bold @(Model.MissingBuyingPriceCount > 0 ? "text-warning" : "")">@Model.MissingBuyingPriceCount</span>
-                        <span class="d-block text-soft small">Accounts with no dealer commission yet</span>
+                        <span class="d-block text-soft small">No dealer commission until entered</span>
                     </div></div>
                 </div>
             }
@@ -116,8 +123,8 @@
                                     }
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Deposit</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)" title="50% of deposit">Agent Upfront</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="25% of deposit once the contract is 90 days old">Agent Bonus</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on this account while it is past its lock date">Arrears Deducted</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="25% of deposit once 90 days old and not past lock date">Agent Bonus</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on this account while it is past its lock date">Agent Arrears</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent Paid</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Upfront + bonus - arrears deducted - paid">Agent Net</th>
                                     @if (!agentView)
@@ -126,8 +133,9 @@
                                         <th class="wl-th" onclick="Ranalo.sortTable(this)">Buying Price</th>
                                         <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Total paid - buying price - agent commission">Dealer Base</th>
                                         <th class="wl-th" onclick="Ranalo.sortTable(this)" title="30% of dealer base">Dealer Comm.</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on this account while it is past its lock date">Dealer Arrears</th>
                                         <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer Paid</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission - dealer paid">Dealer Balance</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission - dealer arrears - dealer paid">Dealer Balance</th>
                                     }
                                 </tr>
                             </thead>
@@ -135,6 +143,7 @@
                                 @for (var i = 0; i < Model.Rows.Count; i++)
                                 {
                                     var r = Model.Rows[i];
+                                    var c = r.Commission;
                                     var noAgent = r.AgentName == null;
                                     <tr class="@(i >= pageSize ? "d-none" : "")" data-watchlist-row="@key">
                                         <td>
@@ -160,20 +169,24 @@
                                         }
                                         else
                                         {
-                                            <td>KES @r.AgentUpfront.ToString("N0")</td>
+                                            <td>KES @c.AgentUpfront.ToString("N0")</td>
                                             <td>
-                                                @if (r.AgentBonusEarned)
+                                                @if (c.BonusEarned)
                                                 {
-                                                    <span>KES @r.AgentBonus.ToString("N0")</span>
+                                                    <span>KES @c.AgentBonus.ToString("N0")</span>
+                                                }
+                                                else if (c.BonusAtRisk)
+                                                {
+                                                    <span class="text-warning">Held: past lock date</span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-soft">in @r.DaysToBonus days</span>
+                                                    <span class="text-soft">in @c.DaysToBonus days</span>
                                                 }
                                             </td>
-                                            <td class="@(r.ArrearsDeducted > 0 ? "text-danger" : "")">KES @r.ArrearsDeducted.ToString("N0")</td>
-                                            <td>KES @r.AgentPaid.ToString("N0")</td>
-                                            <td class="fw-medium @(r.AgentNet < 0 ? "text-danger" : "")">KES @r.AgentNet.ToString("N0")</td>
+                                            <td class="@(c.AgentArrearsDeducted > 0 ? "text-danger" : "")">KES @c.AgentArrearsDeducted.ToString("N0")</td>
+                                            <td>KES @c.AgentPaid.ToString("N0")</td>
+                                            <td class="fw-medium @(c.AgentNet < 0 ? "text-danger" : "")">KES @c.AgentNet.ToString("N0")</td>
                                         }
                                         @if (!agentView)
                                         {
@@ -181,17 +194,19 @@
                                             @if (r.BuyingPrice.HasValue)
                                             {
                                                 <td>KES @r.BuyingPrice.Value.ToString("N0")</td>
-                                                <td class="@(r.DealerBase < 0 ? "text-danger" : "")">KES @r.DealerBase!.Value.ToString("N0")</td>
-                                                <td>KES @r.DealerCommission!.Value.ToString("N0")</td>
-                                                <td>KES @r.DealerPaid.ToString("N0")</td>
-                                                <td class="fw-medium @(r.DealerBalance < 0 ? "text-danger" : "")">KES @r.DealerBalance!.Value.ToString("N0")</td>
+                                                <td class="@(c.DealerBase < 0 ? "text-danger" : "")">KES @c.DealerBase!.Value.ToString("N0")</td>
+                                                <td>KES @c.DealerCommission!.Value.ToString("N0")</td>
+                                                <td class="@(c.DealerArrearsDeducted > 0 ? "text-danger" : "")">KES @c.DealerArrearsDeducted.ToString("N0")</td>
+                                                <td>KES @c.DealerPaid.ToString("N0")</td>
+                                                <td class="fw-medium @(c.DealerBalance < 0 ? "text-danger" : "")">KES @c.DealerBalance!.Value.ToString("N0")</td>
                                             }
                                             else
                                             {
                                                 <td class="text-warning">Not set</td>
                                                 <td class="text-soft">-</td>
                                                 <td class="text-soft">-</td>
-                                                <td>KES @r.DealerPaid.ToString("N0")</td>
+                                                <td class="text-soft">-</td>
+                                                <td>KES @c.DealerPaid.ToString("N0")</td>
                                                 <td class="text-soft">-</td>
                                             }
                                         }

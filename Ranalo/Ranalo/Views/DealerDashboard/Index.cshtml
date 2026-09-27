@@ -354,7 +354,7 @@
                                 <span class="text-soft">KES @Model.CommissionReceived.ToString("N0") earned to date</span>
                                 <span class="text-soft">@Model.DealerCommissionAccountCount.ToString("N0") accounts &middot; KES <span id="dealerCommissionPaidThisPeriod">@Model.DealerCommissionPaidThisPeriod.ToString("N0")</span> paid <span id="dealerCommissionPaidPeriodLabel">this month</span></span>
                                 <span class="@(Model.DealerCommissionMissingCostCount > 0 ? "text-warning" : "text-soft")">@Model.DealerCommissionMissingCostCount.ToString("N0") accounts missing cost data</span>
-                                <span class="text-soft">KES @Model.DealerCommissionWithheldForArrears.ToString("N0") potential if arrears collected</span>
+                                <span class="text-soft">KES @Model.DealerCommissionWithheldForArrears.ToString("N0") withheld (arrears)</span>
                             </div>
                         </div>
                     </div>

@@ -2,6 +2,7 @@ using System.Data;
 using Dapper;
 using System.Data.SqlClient;
 using Ranalo.Models;
+using Ranalo.Services;
 
 namespace Ranalo.DataStore
 {
@@ -1414,7 +1415,9 @@ namespace Ranalo.DataStore
             // contribute to DealerCommissionEarned (see the query comment
             // below), just never enter the per-agent pooling.
             public int? AssignedAgentId { get; set; }
-            public decimal AgentGrossCommission { get; set; }
+            public string? ContractId { get; set; }
+            public DateTime StartDate { get; set; }
+            public decimal? TotalCost { get; set; }
             public decimal TotalPaid { get; set; }
 
             // Null (not 0) when Contract_Info.BuyingPrice was never recorded
@@ -1431,16 +1434,13 @@ namespace Ranalo.DataStore
             public decimal AgentPaid { get; set; }
             public decimal DealerPaid { get; set; }
 
-            // Days since Contract_Info.StartDate, for the Performance Bonus
-            // Tracker card (GetAgentBonusTrackerAsync) -- not used by
-            // AgentGrossCommission's own 90-day check, which is done in SQL.
+            // Days since Contract_Info.StartDate; drives the 90-day bonus.
             public int DaysSinceStart { get; set; }
         }
 
-        // Shared by ComputeCommissionSnapshotRollupAsync (dealer-wide nightly
-        // rollup, no filters) and GetAgentCommissionSummaryAsync (a single
-        // agent's live Commission card on their own dashboard) so the
-        // AgentGrossCommission/Arrears formula only exists once.
+        // The raw per-account commission inputs used by every commission
+        // figure in the app. Commission itself is calculated from these rows
+        // by Services.CommissionCalculator (see Breakdown below).
         private async Task<List<AgentCommissionAccountRow>> FetchAgentCommissionAccountRowsAsync(int? dealerId = null, int? agentUserId = null)
         {
             const string sql = @"
@@ -1470,15 +1470,11 @@ namespace Ranalo.DataStore
                         -- dealer commission calc, not silently treated as a
                         -- free device (see AgentCommissionAccountRow.BuyingPrice).
                         ci.BuyingPrice AS BuyingPrice,
-                        -- Computed unconditionally for EVERY account, agent
-                        -- assigned or not (see the class comment above) --
-                        -- this is the dealer's cost-of-sale deduction, not a
-                        -- claim that a real agent is owed this amount. Only
-                        -- PerAgent below (filtered to AssignedAgentId IS NOT
-                        -- NULL) treats it as money actually owed to someone.
-                        (ci.Deposit * 0.50)
-                            + (CASE WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) >= 90 THEN ci.Deposit * 0.25 ELSE 0 END)
-                            AS AgentGrossCommission,
+                        -- Commission itself is calculated in C# by
+                        -- Services.CommissionCalculator, the one formula for the app.
+                        ci.StartDate,
+                        ci.Total_Cost AS TotalCost,
+                        CAST(ci.ContractID AS NVARCHAR(50)) AS ContractIdText,
                         ISNULL(pt.TotalPaid, 0)
                             - (
                                 ci.Deposit
@@ -1512,7 +1508,7 @@ namespace Ranalo.DataStore
                 -- What Ranalo has actually paid the dealer, joined via
                 -- ContractId (like AgentPaymentsAgg) rather than
                 -- DealerCommissionPayments.DealerId -- existing usage
-                -- elsewhere in this codebase (CommissionsRepository.cs)
+                -- elsewhere in this codebase (the former CommissionsRepository)
                 -- deliberately does the same, since that column's semantics
                 -- aren't confirmed (only ContractId/AmountPaid are).
                 DealerPaymentsAgg AS (
@@ -1528,7 +1524,9 @@ namespace Ranalo.DataStore
                     ac.DealerName,
                     ac.Deposit,
                     ac.AssignedAgentId,
-                    ac.AgentGrossCommission,
+                    ac.ContractIdText AS ContractId,
+                    ac.StartDate,
+                    ac.TotalCost,
                     ac.TotalPaid,
                     ac.BuyingPrice,
                     ac.Arrears,
@@ -1544,32 +1542,31 @@ namespace Ranalo.DataStore
             return rows.ToList();
         }
 
-        // A single agent's own Commission card (Agent Dashboard) -- the
-        // exact same AgentGrossCommission/Arrears/Withheld formula as the
-        // dealer-wide nightly rollup below, just filtered to this agent's
-        // accounts and computed live (no per-agent rollup row exists yet;
-        // DashboardScope.ForAgent is unused/unpopulated). See the "perAgent"
-        // step inside ComputeCommissionSnapshotRollupAsync for the same math.
+        // Runs one account row through the app-wide commission formula.
+        private static CommissionBreakdown Breakdown(AgentCommissionAccountRow r, DateTime now) =>
+            CommissionCalculator.Calculate(new CommissionInputs
+            {
+                Deposit = r.Deposit,
+                DaysSinceStart = r.DaysSinceStart,
+                IsPastLockDate = IsPastLockDate(r.LockDate, now),
+                Arrears = r.Arrears,
+                TotalPaid = r.TotalPaid,
+                BuyingPrice = r.BuyingPrice,
+                HasAgent = r.AssignedAgentId.HasValue,
+                AgentPaid = r.AgentPaid,
+                DealerPaid = r.DealerPaid,
+            });
+
+        // A single agent's own Commission card (Agent Dashboard), live.
         public async Task<(decimal CommissionOutstanding, int CommissionAccountCount, decimal CommissionWithheldForArrears)> GetAgentCommissionSummaryAsync(int dealerId, int agentUserId)
         {
             var rows = await FetchAgentCommissionAccountRowsAsync(dealerId, agentUserId);
             var now = DateTime.Now;
-
-            var gross = rows.Sum(r => r.AgentGrossCommission);
-            var trueArrearsDeduction = rows
-                .Where(r => IsPastLockDate(r.LockDate, now))
-                .Sum(r => r.Arrears < 0 ? -r.Arrears : 0);
-            var paid = rows.Sum(r => r.AgentPaid);
-            var withheld = Math.Min(trueArrearsDeduction, gross);
-            var netCommission = gross - trueArrearsDeduction;
-
-            return (Math.Max(0, netCommission - paid), rows.Count, withheld);
+            var pool = CommissionCalculator.PoolAgent(rows.Select(r => Breakdown(r, now)));
+            return (pool.Owed, rows.Count, pool.Withheld);
         }
 
-        // Commissions section: one row per agent-assigned account with the
-        // same gross commission / true-arrears deduction / agent-paid figures
-        // the Agent Commissions card pools per agent (see the perAgent step in
-        // ComputeCommissionSnapshotRollupAsync). Computed live.
+        // Dashboard Commissions section: one row per agent-assigned account.
         public async Task<List<DashboardAccountCommissionRow>> GetAccountCommissionsAsync(int? dealerId, int? agentUserId = null)
         {
             try
@@ -1579,13 +1576,17 @@ namespace Ranalo.DataStore
 
                 return rows
                     .Where(r => r.AssignedAgentId.HasValue)
-                    .Select(r => new DashboardAccountCommissionRow
+                    .Select(r =>
                     {
-                        AccountId = r.AccountId,
-                        AgentId = r.AssignedAgentId!.Value,
-                        Earned = r.AgentGrossCommission,
-                        ArrearsDeducted = IsPastLockDate(r.LockDate, now) && r.Arrears < 0 ? -r.Arrears : 0,
-                        Paid = r.AgentPaid,
+                        var b = Breakdown(r, now);
+                        return new DashboardAccountCommissionRow
+                        {
+                            AccountId = r.AccountId,
+                            AgentId = r.AssignedAgentId!.Value,
+                            Earned = b.AgentEarned,
+                            ArrearsDeducted = b.AgentArrearsDeducted,
+                            Paid = b.AgentPaid,
+                        };
                     })
                     .ToList();
             }
@@ -1596,132 +1597,64 @@ namespace Ranalo.DataStore
             }
         }
 
-        // Account Commissions page: every account's raw commission inputs,
-        // from the same query (and so the same formulas) as the dashboard
-        // commission cards. The service turns these into the displayed
-        // calculation.
-        public async Task<List<CommissionAccountInputRow>> GetCommissionAccountInputsAsync(int? dealerId, int? agentUserId = null)
+        // Every account with its full commission breakdown. Backs the
+        // Account Commissions page and the admin Commissions pages.
+        public async Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null)
         {
             try
             {
                 var rows = await FetchAgentCommissionAccountRowsAsync(dealerId, agentUserId);
                 var now = DateTime.Now;
-                return rows.Select(r => new CommissionAccountInputRow
+                return rows.Select(r => new CommissionAccount
                 {
                     AccountId = r.AccountId,
+                    ContractId = r.ContractId,
                     CustomerName = r.CustomerName ?? "",
                     AgentId = r.AssignedAgentId,
                     AgentName = r.AgentName,
+                    DealerId = r.DealerId,
                     DealerName = r.DealerName ?? "",
-                    Deposit = r.Deposit,
+                    StartDate = r.StartDate,
                     DaysSinceStart = r.DaysSinceStart,
+                    Deposit = r.Deposit,
+                    TotalCost = r.TotalCost,
                     TotalPaid = r.TotalPaid,
                     BuyingPrice = r.BuyingPrice,
-                    AgentGrossCommission = r.AgentGrossCommission,
-                    ArrearsDeducted = IsPastLockDate(r.LockDate, now) && r.Arrears < 0 ? -r.Arrears : 0,
-                    AgentPaid = r.AgentPaid,
-                    DealerPaid = r.DealerPaid,
+                    Commission = Breakdown(r, now),
                 }).ToList();
             }
             catch (SqlException ex)
             {
-                _logger.LogError(ex, "Commission account inputs query failed for dealer {DealerId}", dealerId);
-                return new List<CommissionAccountInputRow>();
+                _logger.LogError(ex, "Commission accounts query failed for dealer {DealerId}", dealerId);
+                return new List<CommissionAccount>();
             }
         }
 
         // Performance Bonus Tracker card (Agent Dashboard): lifetime
-        // commission actually paid to this agent, plus their accounts'
-        // standing against the 25%-of-deposit performance bonus that vests
-        // at the 90-day mark (see AgentGrossCommission above). "Earned" is
-        // past 90 days and currently performing (not past its NextLockDate,
-        // same test as GetAgentCommissionSummaryAsync's arrears deduction);
-        // "at risk" is past 90 days but in true arrears -- the bonus portion
-        // is being withheld, not necessarily lost forever; "upcoming" is
-        // 60-89 days in, i.e. within 30 days of the milestone.
+        // commission paid to this agent, plus their accounts' standing against
+        // the 90-day bonus. Earned / at risk use CommissionCalculator's rule;
+        // "upcoming" is 60-89 days in, within 30 days of the milestone.
         public async Task<(decimal CommissionPaidLifetime, int BonusEarnedAccountCount, int BonusAtRiskAccountCount, int BonusUpcomingAccountCount)> GetAgentBonusTrackerAsync(int dealerId, int agentUserId)
         {
             var rows = await FetchAgentCommissionAccountRowsAsync(dealerId, agentUserId);
             var now = DateTime.Now;
+            var breakdowns = rows.Select(r => Breakdown(r, now)).ToList();
 
             var paidLifetime = rows.Sum(r => r.AgentPaid);
-            var earned = rows.Count(r => r.DaysSinceStart >= 90 && !IsPastLockDate(r.LockDate, now));
-            var atRisk = rows.Count(r => r.DaysSinceStart >= 90 && IsPastLockDate(r.LockDate, now));
-            var upcoming = rows.Count(r => r.DaysSinceStart >= 60 && r.DaysSinceStart < 90);
+            var earned = breakdowns.Count(b => b.BonusEarned);
+            var atRisk = breakdowns.Count(b => b.BonusAtRisk);
+            var upcoming = rows.Count(r => r.DaysSinceStart >= CommissionCalculator.BonusDays - 30 && r.DaysSinceStart < CommissionCalculator.BonusDays);
 
             return (paidLifetime, earned, atRisk, upcoming);
         }
 
         public async Task<List<DashboardCommissionRollupRow>> ComputeCommissionSnapshotRollupAsync()
         {
-            // AgentGrossCommission per account: 50% of Deposit vests immediately
-            // (StartDate), plus 25% once 90+ days have passed -- both based on
-            // CURRENT elapsed time, recomputed fresh each run (no historical
-            // "was it in arrears exactly at day 90" snapshot is stored).
-            // Computed the SAME way for every account regardless of whether
-            // ci.AssignedAgentId is set -- deliberately NOT zeroed out for
-            // direct dealer sales. If it were, a dealer's earned commission
-            // would jump the moment an agent was unassigned from a contract
-            // (or never assigned in the first place), creating a fraud
-            // incentive to skip agent assignment purely to inflate
-            // DealerCommissionEarned below. Since this "standard" 50%+25%
-            // agent-fee rate is fixed/known regardless of whether a real
-            // agent collects it, applying it uniformly makes the dealer's
-            // commission blind to agent-assignment status, as it should be.
-            // Only PerAgent (below, filtered to AssignedAgentId IS NOT NULL)
-            // treats this figure as money actually owed to a specific agent.
-            //
-            // DealerCommissionEarned per account: 0.30 x (lifetime TotalPaid -
-            // BuyingPrice - AgentGrossCommission), floored at 0 -- i.e. once
-            // TotalPaid clears the (BuyingPrice + AgentGrossCommission)
-            // threshold, the dealer earns 30% of everything paid beyond it.
-            // Based on actual TotalPaid, not an overdue estimate, so
-            // unaffected by the restructuring issue below. Computed for
-            // EVERY paid account (StartDate IS NOT NULL), not just
-            // agent-assigned ones -- dealer commission is independent of
-            // agent commission and is earned on all of a dealer's sales,
-            // including direct ones with no agent. (This population was
-            // previously wrongly restricted to AssignedAgentId IS NOT NULL,
-            // the same filter agent commission needs -- given how few
-            // accounts have an agent assigned at all, that undercounted
-            // almost every dealer's earned commission.)
-            //
-            // Computed in C# (not SQL) specifically so an account with no
-            // recorded BuyingPrice can be EXCLUDED from the sum entirely,
-            // rather than ISNULL'd to 0 -- a missing device cost is a data
-            // gap that should be visibly flagged (DealerCommissionMissingCostCount)
-            // and fixed at the source, not silently treated as "this device
-            // was free", which would understate cost and overstate the
-            // dealer's commission the same way the agent-assignment bug did.
-            //
-            // Per-agent NetCommission pools (sums) AgentGrossCommission across
-            // ALL of that agent's accounts, then subtracts dollar arrears --
-            // but only from accounts that are genuinely "true arrears" (more
-            // than 0 days past Devices.NextLockDateIsoFormat), same
-            // methodology as GetDealerArrearsClassificationAsync/the Total
-            // Arrears card, not the old accrual-based figure for every
-            // account regardless of restructuring status. Deliberately
-            // switched off SQL-side aggregation for this one step (pulls
-            // per-account rows and aggregates in C#) because NextLockDate
-            // needs the same tolerant multi-format parse ParseNextLockDate
-            // already uses elsewhere -- not reliably convertible in T-SQL.
-            // Runs once nightly across the whole system, so the per-row pull
-            // is not a live-request cost.
-            //
-            // CommissionOutstanding (agent-facing, dealer's liability to pay
-            // out) floors each agent's (NetCommission - Paid) at 0 before
-            // summing across agents -- one agent's arrears wiping out their
-            // own pool must not offset a genuinely-owed balance on another
-            // agent. DealerCommissionOutstanding (Ranalo's liability to the
-            // dealer) is CommissionReceived minus DealerCommissionPayments,
-            // also floored at 0; distinct field, not to be confused with the
-            // agent-facing one above.
-            //
-            // The account-level SQL/formula itself lives in
-            // FetchAgentCommissionAccountRowsAsync (shared with
-            // GetAgentCommissionSummaryAsync, a single agent's live
-            // Commission card) -- called here with no filters for the
-            // dealer-wide, all-dealers nightly rollup.
+            // Nightly Agent Commissions / Dealer Commissions card figures for
+            // every dealer. Each account goes through CommissionCalculator (the
+            // one formula for the app), then agent figures are pooled per agent
+            // and dealer figures per dealer. Accounts with no buying price add no
+            // dealer commission until it is entered and are counted separately.
             try
             {
                 var accountRows = await FetchAgentCommissionAccountRowsAsync();
@@ -1736,69 +1669,33 @@ namespace Ranalo.DataStore
                         // below (dealerGroup, unfiltered), but never enter
                         // the per-agent pool -- there's no agent to net
                         // arrears against or pay out.
-                        var perAgent = dealerGroup
-                            .Where(r => r.AssignedAgentId.HasValue)
-                            .GroupBy(r => r.AssignedAgentId!.Value)
-                            .Select(agentGroup =>
-                            {
-                                var gross = agentGroup.Sum(r => r.AgentGrossCommission);
-                                var trueArrearsDeduction = agentGroup
-                                    .Where(r => IsPastLockDate(r.LockDate, now))
-                                    .Sum(r => r.Arrears < 0 ? -r.Arrears : 0);
-                                var paid = agentGroup.Sum(r => r.AgentPaid);
-                                // Can't withhold more than the agent actually
-                                // earned -- deduction beyond gross just means
-                                // the pool is fully wiped, not "negatively withheld".
-                                var withheld = Math.Min(trueArrearsDeduction, gross);
-                                return (NetCommission: gross - trueArrearsDeduction, Paid: paid, Withheld: withheld);
-                            })
+                        var breakdowns = dealerGroup.Select(r => (Row: r, Commission: Breakdown(r, now))).ToList();
+
+                        // Agent side: pooled per agent (direct sales have no agent).
+                        var perAgent = breakdowns
+                            .Where(x => x.Row.AssignedAgentId.HasValue)
+                            .GroupBy(x => x.Row.AssignedAgentId!.Value)
+                            .Select(g => CommissionCalculator.PoolAgent(g.Select(x => x.Commission)))
                             .ToList();
 
-                        // Rows with no recorded BuyingPrice are excluded from
-                        // DealerCommissionEarned/DealerCommissionAccountCount
-                        // entirely (see AgentCommissionAccountRow.BuyingPrice)
-                        // and counted separately so the gap is visible.
-                        var withCost = dealerGroup.Where(r => r.BuyingPrice.HasValue).ToList();
-                        var commissionReceived = withCost.Sum(r =>
-                            Math.Max(0, r.TotalPaid - r.BuyingPrice!.Value - r.AgentGrossCommission) * 0.30m);
-                        var totalDealerPaid = dealerGroup.Sum(r => r.DealerPaid);
-
-                        // Incentive figure: how much MORE dealer commission
-                        // would be unlocked if every true-arrears account
-                        // (locked, more than 0 days past NextLockDate) paid
-                        // off its shortfall today. Approximates the marginal
-                        // commission on that shortfall as a flat 30% -- exact
-                        // for accounts already past their (BuyingPrice +
-                        // AgentGrossCommission) threshold, a slight
-                        // overstatement for ones still climbing toward it,
-                        // same class of simplification as the Agent
-                        // Commissions card's own "withheld" figure.
-                        var dealerCommissionWithheldForArrears = withCost
-                            .Where(r => IsPastLockDate(r.LockDate, now))
-                            .Sum(r => (r.Arrears < 0 ? -r.Arrears : 0) * 0.30m);
+                        // Dealer side: pooled across the dealer. Accounts with no
+                        // buying price contribute no commission until it is entered.
+                        var dealerPool = CommissionCalculator.PoolDealer(breakdowns.Select(x => x.Commission));
 
                         return new DashboardCommissionRollupRow
                         {
                             DealerId = dealerGroup.Key,
-                            CommissionReceived = commissionReceived,
+                            CommissionReceived = dealerPool.Earned,
                             CommissionPaidToAgents = perAgent.Sum(a => a.Paid),
-                            // Floored per agent before summing: one agent's
-                            // arrears wiping out their own pool shouldn't
-                            // offset what's genuinely still owed to a
-                            // different agent.
-                            CommissionOutstanding = perAgent.Sum(a => Math.Max(0, a.NetCommission - a.Paid)),
-                            DealerCommissionOutstanding = Math.Max(0, commissionReceived - totalDealerPaid),
-                            // Agent Commissions card: only agent-assigned
-                            // accounts (the pool population). Dealer
-                            // Commissions card's own count (below) covers
-                            // every paid account with a recorded cost,
-                            // including direct sales -- but not the
-                            // missing-cost ones, which get their own count.
+                            // Owed is floored per agent, so one agent's arrears
+                            // never offset what another agent is owed.
+                            CommissionOutstanding = perAgent.Sum(a => a.Owed),
+                            DealerCommissionOutstanding = dealerPool.Owed,
                             CommissionAccountCount = dealerGroup.Count(r => r.AssignedAgentId.HasValue),
-                            DealerCommissionAccountCount = withCost.Count,
+                            DealerCommissionAccountCount = dealerGroup.Count(r => r.BuyingPrice.HasValue),
                             DealerCommissionMissingCostCount = dealerGroup.Count(r => !r.BuyingPrice.HasValue),
                             CommissionWithheldForArrears = perAgent.Sum(a => a.Withheld),
-                            DealerCommissionWithheldForArrears = dealerCommissionWithheldForArrears,
+                            DealerCommissionWithheldForArrears = dealerPool.Withheld,
                         };
                     })
                     .ToList();
@@ -2018,89 +1915,6 @@ namespace Ranalo.DataStore
             catch (SqlException ex)
             {
                 _logger.LogError(ex, "Dealer commission-paid-for-period query failed for dealer {DealerId}", dealerId);
-                return 0;
-            }
-        }
-
-        public async Task<int> RefreshAgentCommissionListAsync(int topNPerScope = 20)
-        {
-            const string sql = @"
-                DELETE FROM DashboardPerformanceEntry WHERE EntryType = 'AgentCommission';
-
-                ;WITH ValidPayments AS (
-                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue
-                    FROM KosePayments kp
-                    LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
-                ),
-                PaymentTotals AS (
-                    SELECT AccountNo, SUM(AmountValue) AS TotalPaid
-                    FROM ValidPayments
-                    GROUP BY AccountNo
-                ),
-                AccountCommission AS (
-                    SELECT
-                        dl.DealerId,
-                        ci.AssignedAgentId,
-                        ci.ContractID,
-                        (ci.Deposit * 0.50)
-                            + (CASE WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) >= 90 THEN ci.Deposit * 0.25 ELSE 0 END)
-                            AS AgentGrossCommission,
-                        ISNULL(pt.TotalPaid, 0)
-                            - (
-                                ci.Deposit
-                                + ci.Daily * DaysAccrued.Days
-                                + ci.Weekly * (DaysAccrued.Days / 7.0)
-                                + ci.Monthly * (DaysAccrued.Days / 30.0)
-                              ) AS Arrears
-                    FROM Contract_Info ci
-                    INNER JOIN Devices d ON d.Id = ci.ID
-                    INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
-                    CROSS APPLY (
-                        SELECT CASE
-                            WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) < CAST(ci.Term_in_Months * 30 AS INT)
-                                THEN DATEDIFF(DAY, ci.StartDate, GETDATE())
-                            ELSE CAST(ci.Term_in_Months * 30 AS INT)
-                        END AS Days
-                    ) DaysAccrued
-                    WHERE ci.StartDate IS NOT NULL AND ci.AssignedAgentId IS NOT NULL
-                ),
-                AgentPaymentsAgg AS (
-                    SELECT ContractId, SUM(ISNULL(AmountPaid, 0)) AS TotalAgentPaid
-                    FROM AgentCommissionPayments
-                    GROUP BY ContractId
-                ),
-                PerAgent AS (
-                    SELECT
-                        ac.DealerId,
-                        ac.AssignedAgentId AS AgentId,
-                        u.[Name] + ' ' + u.[LastName] AS AgentName,
-                        COUNT(*) AS Accounts,
-                        SUM(ac.AgentGrossCommission) - SUM(CASE WHEN ac.Arrears < 0 THEN -ac.Arrears ELSE 0 END) AS NetCommission,
-                        SUM(ISNULL(ap.TotalAgentPaid, 0)) AS Paid
-                    FROM AccountCommission ac
-                    INNER JOIN Users u ON u.UserId = ac.AssignedAgentId
-                    LEFT JOIN AgentPaymentsAgg ap ON ap.ContractId = ac.ContractID
-                    GROUP BY ac.DealerId, ac.AssignedAgentId, u.[Name], u.[LastName]
-                ),
-                Ranked AS (
-                    SELECT *, ROW_NUMBER() OVER (PARTITION BY DealerId ORDER BY (NetCommission - Paid) DESC) AS Rn
-                    FROM PerAgent
-                )
-                INSERT INTO DashboardPerformanceEntry
-                    (ScopeDealerId, ScopeAgentId, EntryType, Rank, SubjectId, SubjectName, ParentName, Accounts, ActivePct, Revenue, CommissionPaid, CommissionDue, PctOfTarget)
-                SELECT DealerId, NULL, 'AgentCommission', Rn, AgentId, AgentName, NULL, Accounts, 0, NULL, Paid, NetCommission, 0
-                FROM Ranked WHERE Rn <= @TopN;
-
-                SELECT @@ROWCOUNT;";
-
-            try
-            {
-                return await _db.QuerySingleAsync<int>(sql, new { TopN = topNPerScope });
-            }
-            catch (SqlException ex) when (IsMissingTable(ex))
-            {
-                _logger.LogWarning(ex, "DashboardPerformanceEntry table not found; skipping agent commission list refresh. Apply Database/Dashboard/001_create_dashboard_tables.sql first.");
                 return 0;
             }
         }

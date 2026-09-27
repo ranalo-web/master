@@ -153,17 +153,11 @@ namespace Ranalo.DataStore
         // "widen to nullable" pattern as GetDealerAccountDetailsAsync etc.).
         Task<decimal> GetDealerCommissionPaidForPeriodAsync(int? dealerId, DateTime periodStart, DateTime periodEndExclusive);
 
-        // Same full-replace pattern as RefreshCompletedContractsAsync/
-        // RefreshDeviceStockAsync, writing DashboardPerformanceEntry rows with
-        // EntryType = AgentCommission (deliberately not "Agent" -- see that
-        // constant's doc comment). Dealer-only.
-        Task<int> RefreshAgentCommissionListAsync(int topNPerScope = 20);
-
         // Live per-account agent commission figures for the dashboard Commissions section.
         Task<List<DashboardAccountCommissionRow>> GetAccountCommissionsAsync(int? dealerId, int? agentUserId = null);
 
-        // Raw per-account commission inputs for the Account Commissions page.
-        Task<List<CommissionAccountInputRow>> GetCommissionAccountInputsAsync(int? dealerId, int? agentUserId = null);
+        // Every account with its full commission breakdown (CommissionCalculator).
+        Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null);
 
         // Live (not rollup-backed) revenue query for the Dealer Dashboard's
         // date-range filter -- the nightly rollup only knows "this month" /

@@ -1,31 +1,27 @@
 namespace Ranalo.Models
 {
-    // Raw inputs per account, from DashboardReportRepository.GetCommissionAccountInputsAsync.
-    public class CommissionAccountInputRow
+    // One account with its full commission breakdown, from
+    // DashboardReportRepository.GetCommissionAccountsAsync.
+    public class CommissionAccount
     {
         public long AccountId { get; set; }
+        public string? ContractId { get; set; }
         public string CustomerName { get; set; } = "";
         public int? AgentId { get; set; }
         public string? AgentName { get; set; }
+        public int DealerId { get; set; }
         public string DealerName { get; set; } = "";
-        public decimal Deposit { get; set; }
+        public DateTime StartDate { get; set; }
         public int DaysSinceStart { get; set; }
+        public decimal Deposit { get; set; }
+        public decimal? TotalCost { get; set; }
         public decimal TotalPaid { get; set; }
         public decimal? BuyingPrice { get; set; }
-        public decimal AgentGrossCommission { get; set; }
-        public decimal ArrearsDeducted { get; set; }
-        public decimal AgentPaid { get; set; }
-        public decimal DealerPaid { get; set; }
+        public Ranalo.Services.CommissionBreakdown Commission { get; set; } = new();
     }
 
-    // One row of the Account Commissions page, with each step of the
-    // calculation broken out. Same formulas as the dashboard cards:
-    //   Agent upfront  = 50% of deposit
-    //   Agent bonus    = 25% of deposit once the contract is 90+ days old
-    //   Agent net      = upfront + bonus - arrears deducted - paid to agent
-    //   Dealer base    = total paid - buying price - agent commission (upfront + bonus)
-    //   Dealer comm.   = 30% of dealer base (never below 0; blank without a buying price)
-    //   Dealer balance = dealer commission - paid to dealer
+    // One row of the Account Commissions page. The figures come from
+    // Services.CommissionCalculator; see its header for the formulas.
     public class AccountCommissionRow
     {
         public long AccountId { get; set; }
@@ -33,22 +29,10 @@ namespace Ranalo.Models
         public string? AgentName { get; set; }
         public string DealerName { get; set; } = "";
         public int DaysSinceStart { get; set; }
-
         public decimal Deposit { get; set; }
-        public decimal AgentUpfront { get; set; }
-        public decimal AgentBonus { get; set; }
-        public bool AgentBonusEarned { get; set; }
-        public int DaysToBonus { get; set; }
-        public decimal ArrearsDeducted { get; set; }
-        public decimal AgentPaid { get; set; }
-        public decimal AgentNet { get; set; }
-
         public decimal TotalPaid { get; set; }
         public decimal? BuyingPrice { get; set; }
-        public decimal? DealerBase { get; set; }
-        public decimal? DealerCommission { get; set; }
-        public decimal DealerPaid { get; set; }
-        public decimal? DealerBalance { get; set; }
+        public Ranalo.Services.CommissionBreakdown Commission { get; set; } = new();
     }
 
     public class AccountCommissionsViewModel
@@ -60,13 +44,10 @@ namespace Ranalo.Models
 
         public List<AccountCommissionRow> Rows { get; set; } = new();
 
-        public decimal AgentEarnedTotal { get; set; }
-        public decimal AgentDeductedTotal { get; set; }
-        public decimal AgentPaidTotal { get; set; }
-        public decimal AgentNetTotal { get; set; }
-        public decimal DealerCommissionTotal { get; set; }
-        public decimal DealerPaidTotal { get; set; }
-        public decimal DealerBalanceTotal { get; set; }
+        // Pooled like the dashboard cards: arrears on one account reduce what
+        // is owed on the others, and Owed is never below 0.
+        public Ranalo.Services.CommissionPool Agent { get; set; } = new();
+        public Ranalo.Services.CommissionPool Dealer { get; set; } = new();
         public int MissingBuyingPriceCount { get; set; }
     }
 }

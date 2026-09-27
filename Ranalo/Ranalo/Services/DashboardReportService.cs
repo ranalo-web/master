@@ -744,67 +744,61 @@ namespace Ranalo.Services
             .Select((a, i) => { a.Rank = i + 1; return a; })
             .ToList();
 
-        // Account Commissions page (sidebar). See AccountCommissionRow for
-        // the formulas, which mirror the dashboard commission cards.
+        // Account Commissions page (sidebar). Every figure comes from
+        // CommissionCalculator via the repository.
         public async Task<AccountCommissionsViewModel> GetAccountCommissionsPageAsync(int? dealerId, int? agentUserId, bool showDealer)
         {
-            const int BonusDays = 90;
-            var inputs = await _repository.GetCommissionAccountInputsAsync(dealerId, agentUserId);
+            var accounts = await _repository.GetCommissionAccountsAsync(dealerId, agentUserId);
 
-            var rows = inputs.Select(i =>
-            {
-                var bonusEarned = i.DaysSinceStart >= BonusDays;
-                var upfront = i.Deposit * 0.50m;
-                var bonus = bonusEarned ? i.Deposit * 0.25m : 0;
-                var hasAgent = i.AgentId.HasValue;
-                decimal? dealerBase = i.BuyingPrice.HasValue ? i.TotalPaid - i.BuyingPrice.Value - i.AgentGrossCommission : null;
-                decimal? dealerCommission = dealerBase.HasValue ? Math.Max(0, dealerBase.Value) * 0.30m : null;
-
-                return new AccountCommissionRow
+            var rows = accounts
+                .Select(a => new AccountCommissionRow
                 {
-                    AccountId = i.AccountId,
-                    CustomerName = i.CustomerName,
-                    AgentName = hasAgent ? i.AgentName : null,
-                    DealerName = i.DealerName,
-                    DaysSinceStart = i.DaysSinceStart,
-                    Deposit = i.Deposit,
-                    // Direct dealer sales have no agent, so nothing is paid out
-                    // as agent commission (it is still a cost in the dealer base).
-                    AgentUpfront = hasAgent ? upfront : 0,
-                    AgentBonus = hasAgent ? bonus : 0,
-                    AgentBonusEarned = bonusEarned,
-                    DaysToBonus = Math.Max(0, BonusDays - i.DaysSinceStart),
-                    ArrearsDeducted = hasAgent ? i.ArrearsDeducted : 0,
-                    AgentPaid = i.AgentPaid,
-                    AgentNet = hasAgent ? upfront + bonus - i.ArrearsDeducted - i.AgentPaid : 0,
-                    TotalPaid = i.TotalPaid,
-                    BuyingPrice = i.BuyingPrice,
-                    DealerBase = dealerBase,
-                    DealerCommission = dealerCommission,
-                    DealerPaid = i.DealerPaid,
-                    DealerBalance = dealerCommission.HasValue ? dealerCommission.Value - i.DealerPaid : null,
-                };
-            })
-            .OrderBy(r => r.AgentName == null)
-            .ThenBy(r => r.AgentName)
-            .ThenByDescending(r => r.AccountId)
-            .ToList();
+                    AccountId = a.AccountId,
+                    CustomerName = a.CustomerName,
+                    AgentName = a.AgentId.HasValue ? a.AgentName : null,
+                    DealerName = a.DealerName,
+                    DaysSinceStart = a.DaysSinceStart,
+                    Deposit = a.Deposit,
+                    TotalPaid = a.TotalPaid,
+                    BuyingPrice = a.BuyingPrice,
+                    Commission = a.Commission,
+                })
+                .OrderBy(r => r.AgentName == null)
+                .ThenBy(r => r.AgentName)
+                .ThenByDescending(r => r.AccountId)
+                .ToList();
+
+            // Agent totals pool per agent (like the Agent Commissions card), then add up.
+            var agentPools = accounts
+                .Where(a => a.AgentId.HasValue)
+                .GroupBy(a => a.AgentId!.Value)
+                .Select(g => CommissionCalculator.PoolAgent(g.Select(a => a.Commission)))
+                .ToList();
+
+            var dealerPools = accounts
+                .GroupBy(a => a.DealerId)
+                .Select(g => CommissionCalculator.PoolDealer(g.Select(a => a.Commission)))
+                .ToList();
 
             return new AccountCommissionsViewModel
             {
                 IsAgentView = agentUserId.HasValue,
                 ShowDealer = showDealer,
                 Rows = rows,
-                AgentEarnedTotal = rows.Sum(r => r.AgentUpfront + r.AgentBonus),
-                AgentDeductedTotal = rows.Sum(r => r.ArrearsDeducted),
-                AgentPaidTotal = rows.Sum(r => r.AgentPaid),
-                AgentNetTotal = rows.Sum(r => r.AgentNet),
-                DealerCommissionTotal = rows.Sum(r => r.DealerCommission ?? 0),
-                DealerPaidTotal = rows.Sum(r => r.DealerPaid),
-                DealerBalanceTotal = rows.Sum(r => r.DealerBalance ?? 0),
-                MissingBuyingPriceCount = rows.Count(r => !r.BuyingPrice.HasValue),
+                Agent = SumPools(agentPools),
+                Dealer = SumPools(dealerPools),
+                MissingBuyingPriceCount = accounts.Count(a => !a.BuyingPrice.HasValue),
             };
         }
+
+        private static CommissionPool SumPools(List<CommissionPool> pools) => new()
+        {
+            Earned = pools.Sum(p => p.Earned),
+            Deducted = pools.Sum(p => p.Deducted),
+            Withheld = pools.Sum(p => p.Withheld),
+            Paid = pools.Sum(p => p.Paid),
+            Owed = pools.Sum(p => p.Owed),
+        };
 
         // Commissions section. The summary pools each agent's accounts the
         // same way the Agent Commissions card does (deduction capped at what
@@ -819,21 +813,14 @@ namespace Ranalo.Services
 
             var perAgent = rows
                 .GroupBy(r => r.AgentId)
-                .Select(g =>
-                {
-                    var gross = g.Sum(r => r.Earned);
-                    var deduction = g.Sum(r => r.ArrearsDeducted);
-                    var paid = g.Sum(r => r.Paid);
-                    return (Gross: gross, Withheld: Math.Min(deduction, gross), Paid: paid,
-                            Owed: Math.Max(0, gross - deduction - paid));
-                })
+                .Select(g => CommissionCalculator.Pool(g.Select(r => (r.Earned, r.ArrearsDeducted, r.Paid))))
                 .ToList();
 
             var summary = new DashboardCommissionSummary
             {
                 Agents = perAgent.Count,
                 Accounts = rows.Count,
-                Earned = perAgent.Sum(a => a.Gross),
+                Earned = perAgent.Sum(a => a.Earned),
                 Withheld = perAgent.Sum(a => a.Withheld),
                 Paid = perAgent.Sum(a => a.Paid),
                 Owed = perAgent.Sum(a => a.Owed),

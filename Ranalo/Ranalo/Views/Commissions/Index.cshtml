@@ -15,7 +15,7 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Commissions Overview</h3>
                 <div class="nk-block-des text-soft">
-                    <p>Welcome to Commissions Dashboard.</p>
+                    <p>Agent: 50% of the deposit upfront, plus 25% once the contract is 90 days old and the account is not past its lock date. Dealer: 30% of (total paid &minus; buying price &minus; agent commission). Arrears on accounts past their lock date are deducted from both. Same formula as the dashboards.</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -67,15 +67,18 @@
                                 <tr>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Account No</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Date</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Start Date</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Amount</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Deposit</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">D Thresh</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">D Commission</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">A Commission</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Eligible</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Buying Price</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="50% of deposit + 25% after 90 days if performing">Agent Comm.</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="30% of (paid - buying price - agent commission)">Dealer Comm.</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Deducted from agent and dealer while past lock date">Arrears Deducted</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission - arrears - paid to dealer">Dealer Balance</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer balance above 0">Ready To Pay</th>
                                     <th class="wl-th"></th>
                                 </tr>
                             </thead>
@@ -85,14 +88,17 @@
                                 <tr>
                                     <td><a href="/account-details/@commission.AccountNo" class="fw-medium">#@commission.AccountNo</a></td>
                                     <td>@commission.First_Name</td>
-                                    <td>@commission.Created</td>
-                                    <td>@commission.DeviceGroupId</td>
-                                    <td>@commission.TotalAmount KSE</td>
-                                    <td>@commission.Deposit KSE</td>
-                                    <td>@commission.TotalPaid KSE</td>
-                                    <td>@commission.DealerThreshold KSE</td>
-                                    <td>@commission.DealerCommission KSE</td>
-                                    <td>@commission.AgentCommission KSE</td>
+                                    <td>@commission.StartDate.ToString("dd MMM yyyy")</td>
+                                    <td>@commission.DealerName</td>
+                                    <td>@(commission.AgentName ?? "Direct sale")</td>
+                                    <td>@(commission.TotalAmount.HasValue ? "KES " + commission.TotalAmount.Value.ToString("N0") : "-")</td>
+                                    <td>KES @commission.Deposit.ToString("N0")</td>
+                                    <td>KES @commission.TotalPaid.ToString("N0")</td>
+                                    <td class="@(commission.BuyingPrice.HasValue ? "" : "text-warning")">@(commission.BuyingPrice.HasValue ? "KES " + commission.BuyingPrice.Value.ToString("N0") : "Not set")</td>
+                                    <td>KES @commission.AgentCommission.ToString("N0")</td>
+                                    <td>@(commission.DealerCommission.HasValue ? "KES " + commission.DealerCommission.Value.ToString("N0") : "-")</td>
+                                    <td class="@(commission.DealerArrearsDeducted > 0 || commission.AgentArrearsDeducted > 0 ? "text-danger" : "")">KES @Math.Max(commission.AgentArrearsDeducted, commission.DealerArrearsDeducted).ToString("N0")</td>
+                                    <td class="@(commission.DealerBalance < 0 ? "text-danger" : "")">@(commission.DealerBalance.HasValue ? "KES " + commission.DealerBalance.Value.ToString("N0") : "-")</td>
                                     <td>
                                         @if (commission.DealerEligible)
                                         {

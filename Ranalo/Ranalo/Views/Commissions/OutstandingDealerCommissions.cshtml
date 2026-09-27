@@ -68,12 +68,13 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Account No</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Amount</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer Thresh</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Earned Commission</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Paid</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Balance</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Buying Price</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="30% of (paid - buying price - agent commission)">Dealer Comm.</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer Paid</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission - paid, before arrears">Outstanding</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Held back while past lock date">Arrears Deducted</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Outstanding - arrears deducted">Balance</th>
                                 <th class="wl-th"></th>
                             </tr>
                         </thead>
@@ -81,15 +82,16 @@
                         @foreach (var commission in Model.OutstandingDealerCommissions.Items)
                         {
                             <tr>
-                                <td><a href="#" class="fw-medium">#@commission.AccountNo</a></td>
+                                <td><a href="/account-details/@commission.AccountNo" class="fw-medium">#@commission.AccountNo</a></td>
                                 <td>@commission.First_Name</td>
-                                <td>@commission.DeviceGroupId</td>
-                                <td>@commission.TotalAmount KSE</td>
-                                <td>@commission.TotalPaid KSE</td>
-                                <td>@commission.DealerThreshold KSE</td>
-                                <td>@commission.EarnedDealerCommission KSE</td>
-                                <td>@commission.TotalDealerPaid KSE</td>
-                                <td>@commission.RemainingDealerBalance KSE</td>
+                                <td>@commission.DealerName</td>
+                                <td>KES @commission.TotalPaid.ToString("N0")</td>
+                                <td>KES @commission.BuyingPrice.ToString("N0")</td>
+                                <td>KES @commission.EarnedDealerCommission.ToString("N0")</td>
+                                <td>KES @commission.TotalDealerPaid.ToString("N0")</td>
+                                <td>KES @commission.Outstanding.ToString("N0")</td>
+                                <td class="@(commission.ArrearsDeducted > 0 ? "text-danger" : "")">KES @commission.ArrearsDeducted.ToString("N0")</td>
+                                <td class="fw-medium @(commission.RemainingDealerBalance < 0 ? "text-danger" : "")">KES @commission.RemainingDealerBalance.ToString("N0")</td>
                                 <td class="text-end">
                                     <div class="dropdown">
                                         <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
