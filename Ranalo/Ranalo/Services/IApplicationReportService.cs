@@ -46,7 +46,7 @@ namespace Ranalo.Services
         Task<List<TransactionHistory>> GetTransactionHistoryAsync(int dealerId = 0);
 
         Task CreateRestructuredAsync(RestructuredRecord record);
-        Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10);
+        Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10, int? dealerId = null, int? agentUserId = null);
         Task<List<RestructuredRecord>> GetAllRestructuredForAccount(long accountId);
 
         Task<CustomerDetails?> GetCustomerDetailsByFirstMpesaCodeAsync(string? firstMPesaCode);

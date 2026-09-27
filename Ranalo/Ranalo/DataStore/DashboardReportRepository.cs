@@ -823,6 +823,8 @@ namespace Ranalo.DataStore
             public string? DealerName { get; set; }
             public string? CustomerPhone { get; set; }
             public decimal? BuyingPrice { get; set; }
+            public DateTime? LastPaymentDate { get; set; }
+            public bool IsManuallyRestructured { get; set; }
         }
 
         public async Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int? dealerId, int? agentUserId = null)
@@ -838,12 +840,12 @@ namespace Ranalo.DataStore
             // C# via ClassifyLock, same as everywhere else in this file.
             const string sql = @"
                 ;WITH ValidPayments AS (
-                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue
+                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue, kp.PaymentDateValue
                     FROM KosePayments kp
                     LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
                 ),
                 PaymentTotals AS (
-                    SELECT AccountNo, SUM(AmountValue) AS TotalPaid
+                    SELECT AccountNo, SUM(AmountValue) AS TotalPaid, MAX(PaymentDateValue) AS LastPaymentDate
                     FROM ValidPayments
                     GROUP BY AccountNo
                 )
@@ -864,7 +866,12 @@ namespace Ranalo.DataStore
                     ci.StartDate,
                     dl.CompanyName AS DealerName,
                     ph.Phone AS CustomerPhone,
-                    ci.BuyingPrice
+                    ci.BuyingPrice,
+                    pt.LastPaymentDate,
+                    -- Manual restructures are the only ones stored; auto
+                    -- restructures are derived in C# (see DashboardReportService.IsRestructured).
+                    CASE WHEN EXISTS (SELECT 1 FROM RestructuredRecords rr WHERE rr.AccountNo = ci.ID)
+                         THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsManuallyRestructured
                 FROM Contract_Info ci
                 INNER JOIN Devices d ON d.Id = ci.ID
                 INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
@@ -912,6 +919,8 @@ namespace Ranalo.DataStore
                     DealerName = row.DealerName,
                     CustomerPhone = row.CustomerPhone,
                     BuyingPrice = row.BuyingPrice,
+                    LastPaymentDate = row.LastPaymentDate,
+                    IsManuallyRestructured = row.IsManuallyRestructured,
                 }).ToList();
             }
             catch (SqlException ex)
@@ -1395,6 +1404,11 @@ namespace Ranalo.DataStore
         private class AgentCommissionAccountRow
         {
             public int DealerId { get; set; }
+            public long AccountId { get; set; }
+            public string? CustomerName { get; set; }
+            public string? AgentName { get; set; }
+            public string? DealerName { get; set; }
+            public decimal Deposit { get; set; }
 
             // Null for direct dealer sales with no agent -- these still
             // contribute to DealerCommissionEarned (see the query comment
@@ -1443,8 +1457,13 @@ namespace Ranalo.DataStore
                 AccountCommission AS (
                     SELECT
                         dl.DealerId,
+                        ci.ID AS AccountId,
                         ci.AssignedAgentId,
                         ci.ContractID,
+                        ci.First_Name AS CustomerName,
+                        au.[Name] + ' ' + au.[LastName] AS AgentName,
+                        dl.CompanyName AS DealerName,
+                        ci.Deposit,
                         ISNULL(pt.TotalPaid, 0) AS TotalPaid,
                         -- NOT wrapped in ISNULL(..., 0) -- a missing
                         -- BuyingPrice needs to be visibly excluded from the
@@ -1472,6 +1491,7 @@ namespace Ranalo.DataStore
                     FROM Contract_Info ci
                     INNER JOIN Devices d ON d.Id = ci.ID
                     INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                    LEFT JOIN Users au ON au.UserId = ci.AssignedAgentId
                     LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
                     CROSS APPLY (
                         SELECT CASE
@@ -1502,6 +1522,11 @@ namespace Ranalo.DataStore
                 )
                 SELECT
                     ac.DealerId,
+                    ac.AccountId,
+                    ac.CustomerName,
+                    ac.AgentName,
+                    ac.DealerName,
+                    ac.Deposit,
                     ac.AssignedAgentId,
                     ac.AgentGrossCommission,
                     ac.TotalPaid,
@@ -1539,6 +1564,70 @@ namespace Ranalo.DataStore
             var netCommission = gross - trueArrearsDeduction;
 
             return (Math.Max(0, netCommission - paid), rows.Count, withheld);
+        }
+
+        // Commissions section: one row per agent-assigned account with the
+        // same gross commission / true-arrears deduction / agent-paid figures
+        // the Agent Commissions card pools per agent (see the perAgent step in
+        // ComputeCommissionSnapshotRollupAsync). Computed live.
+        public async Task<List<DashboardAccountCommissionRow>> GetAccountCommissionsAsync(int? dealerId, int? agentUserId = null)
+        {
+            try
+            {
+                var rows = await FetchAgentCommissionAccountRowsAsync(dealerId, agentUserId);
+                var now = DateTime.Now;
+
+                return rows
+                    .Where(r => r.AssignedAgentId.HasValue)
+                    .Select(r => new DashboardAccountCommissionRow
+                    {
+                        AccountId = r.AccountId,
+                        AgentId = r.AssignedAgentId!.Value,
+                        Earned = r.AgentGrossCommission,
+                        ArrearsDeducted = IsPastLockDate(r.LockDate, now) && r.Arrears < 0 ? -r.Arrears : 0,
+                        Paid = r.AgentPaid,
+                    })
+                    .ToList();
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Account commission query failed for dealer {DealerId}", dealerId);
+                return new List<DashboardAccountCommissionRow>();
+            }
+        }
+
+        // Account Commissions page: every account's raw commission inputs,
+        // from the same query (and so the same formulas) as the dashboard
+        // commission cards. The service turns these into the displayed
+        // calculation.
+        public async Task<List<CommissionAccountInputRow>> GetCommissionAccountInputsAsync(int? dealerId, int? agentUserId = null)
+        {
+            try
+            {
+                var rows = await FetchAgentCommissionAccountRowsAsync(dealerId, agentUserId);
+                var now = DateTime.Now;
+                return rows.Select(r => new CommissionAccountInputRow
+                {
+                    AccountId = r.AccountId,
+                    CustomerName = r.CustomerName ?? "",
+                    AgentId = r.AssignedAgentId,
+                    AgentName = r.AgentName,
+                    DealerName = r.DealerName ?? "",
+                    Deposit = r.Deposit,
+                    DaysSinceStart = r.DaysSinceStart,
+                    TotalPaid = r.TotalPaid,
+                    BuyingPrice = r.BuyingPrice,
+                    AgentGrossCommission = r.AgentGrossCommission,
+                    ArrearsDeducted = IsPastLockDate(r.LockDate, now) && r.Arrears < 0 ? -r.Arrears : 0,
+                    AgentPaid = r.AgentPaid,
+                    DealerPaid = r.DealerPaid,
+                }).ToList();
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Commission account inputs query failed for dealer {DealerId}", dealerId);
+                return new List<CommissionAccountInputRow>();
+            }
         }
 
         // Performance Bonus Tracker card (Agent Dashboard): lifetime

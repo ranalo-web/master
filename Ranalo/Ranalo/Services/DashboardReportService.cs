@@ -160,6 +160,9 @@ namespace Ranalo.Services
 
             model.DealerPerformance = BuildAdminDealerPerformance(accountDetails, revenueByDealer, commissionByDealer);
             model.AgentPerformance = BuildAdminAgentPerformance(accountDetails);
+            model.Collections = BuildCollections(accountDetails);
+            (model.CommissionSummary, model.CommissionAccounts) = BuildCommissions(
+                await _repository.GetAccountCommissionsAsync(null), accountDetails);
 
             // Cost of Devices This Month: Contract_Info.BuyingPrice
             // (manually entered per-contract device cost -- see
@@ -475,28 +478,12 @@ namespace Ranalo.Services
             model.SlowPayers = BuildSlowPayers(accountDetails);
             model.GoodPayers = BuildGoodPayers(accountDetails);
             model.AgentPerformance = BuildAgentPerformance(accountDetails);
+            model.Collections = BuildCollections(accountDetails);
             model.Contracts = BuildContracts(accountDetails);
             model.ContractsEndingSoon = BuildContractsEndingSoon(accountDetails);
 
-            var agentCommissions = await _repository.GetPerformanceAsync(scope, DashboardPerformanceEntryType.AgentCommission);
-            if (agentCommissions.Count > 0)
-            {
-                model.CommissionsPaid = agentCommissions.Select(c =>
-                {
-                    var due = c.CommissionDue ?? 0;
-                    var paid = c.CommissionPaid ?? 0;
-                    var outstanding = due - paid;
-                    return new DealerCommissionPaid
-                    {
-                        AgentName = c.SubjectName,
-                        Accounts = c.Accounts,
-                        Due = due,
-                        Paid = paid,
-                        Outstanding = outstanding,
-                        Status = outstanding <= 0 ? "Settled" : "Outstanding",
-                    };
-                }).ToList();
-            }
+            (model.CommissionSummary, model.CommissionAccounts) = BuildCommissions(
+                await _repository.GetAccountCommissionsAsync(dealerId, agentUserId), accountDetails);
 
             model.DeviceStock = await BuildDeviceStockAsync(dealerId, scope);
             model.CompletedContracts = BuildCompletedContracts(await _repository.GetCompletedContractsAsync(scope, DealerScopeTakeAll));
@@ -752,23 +739,202 @@ namespace Ranalo.Services
         private static List<DealerAgentPerformance> BuildAgentPerformance(List<DashboardAccountDetailRow> rows) => rows
             .Where(r => r.AssignedAgentId.HasValue)
             .GroupBy(r => r.AssignedAgentId!.Value)
-            .Select(g =>
-            {
-                var total = g.Count();
-                var good = g.Count(r => LockDays(r) <= 0);
-                var arrears = g.Count(r => LockDays(r) > 7);
-                var activeDenominator = good + arrears;
-                return new DealerAgentPerformance
-                {
-                    AgentName = g.First().AgentName ?? "",
-                    Accounts = total,
-                    ActivePct = activeDenominator > 0 ? Math.Round(100m * good / activeDenominator, 1) : 0,
-                    PctOfTarget = total > 0 ? Math.Round(100m * (total - arrears) / total, 1) : 0,
-                };
-            })
+            .Select(g => FillAgentMetrics(new DealerAgentPerformance(), g.ToList()))
             .OrderByDescending(a => a.Accounts)
             .Select((a, i) => { a.Rank = i + 1; return a; })
             .ToList();
+
+        // Account Commissions page (sidebar). See AccountCommissionRow for
+        // the formulas, which mirror the dashboard commission cards.
+        public async Task<AccountCommissionsViewModel> GetAccountCommissionsPageAsync(int? dealerId, int? agentUserId, bool showDealer)
+        {
+            const int BonusDays = 90;
+            var inputs = await _repository.GetCommissionAccountInputsAsync(dealerId, agentUserId);
+
+            var rows = inputs.Select(i =>
+            {
+                var bonusEarned = i.DaysSinceStart >= BonusDays;
+                var upfront = i.Deposit * 0.50m;
+                var bonus = bonusEarned ? i.Deposit * 0.25m : 0;
+                var hasAgent = i.AgentId.HasValue;
+                decimal? dealerBase = i.BuyingPrice.HasValue ? i.TotalPaid - i.BuyingPrice.Value - i.AgentGrossCommission : null;
+                decimal? dealerCommission = dealerBase.HasValue ? Math.Max(0, dealerBase.Value) * 0.30m : null;
+
+                return new AccountCommissionRow
+                {
+                    AccountId = i.AccountId,
+                    CustomerName = i.CustomerName,
+                    AgentName = hasAgent ? i.AgentName : null,
+                    DealerName = i.DealerName,
+                    DaysSinceStart = i.DaysSinceStart,
+                    Deposit = i.Deposit,
+                    // Direct dealer sales have no agent, so nothing is paid out
+                    // as agent commission (it is still a cost in the dealer base).
+                    AgentUpfront = hasAgent ? upfront : 0,
+                    AgentBonus = hasAgent ? bonus : 0,
+                    AgentBonusEarned = bonusEarned,
+                    DaysToBonus = Math.Max(0, BonusDays - i.DaysSinceStart),
+                    ArrearsDeducted = hasAgent ? i.ArrearsDeducted : 0,
+                    AgentPaid = i.AgentPaid,
+                    AgentNet = hasAgent ? upfront + bonus - i.ArrearsDeducted - i.AgentPaid : 0,
+                    TotalPaid = i.TotalPaid,
+                    BuyingPrice = i.BuyingPrice,
+                    DealerBase = dealerBase,
+                    DealerCommission = dealerCommission,
+                    DealerPaid = i.DealerPaid,
+                    DealerBalance = dealerCommission.HasValue ? dealerCommission.Value - i.DealerPaid : null,
+                };
+            })
+            .OrderBy(r => r.AgentName == null)
+            .ThenBy(r => r.AgentName)
+            .ThenByDescending(r => r.AccountId)
+            .ToList();
+
+            return new AccountCommissionsViewModel
+            {
+                IsAgentView = agentUserId.HasValue,
+                ShowDealer = showDealer,
+                Rows = rows,
+                AgentEarnedTotal = rows.Sum(r => r.AgentUpfront + r.AgentBonus),
+                AgentDeductedTotal = rows.Sum(r => r.ArrearsDeducted),
+                AgentPaidTotal = rows.Sum(r => r.AgentPaid),
+                AgentNetTotal = rows.Sum(r => r.AgentNet),
+                DealerCommissionTotal = rows.Sum(r => r.DealerCommission ?? 0),
+                DealerPaidTotal = rows.Sum(r => r.DealerPaid),
+                DealerBalanceTotal = rows.Sum(r => r.DealerBalance ?? 0),
+                MissingBuyingPriceCount = rows.Count(r => !r.BuyingPrice.HasValue),
+            };
+        }
+
+        // Commissions section. The summary pools each agent's accounts the
+        // same way the Agent Commissions card does (deduction capped at what
+        // the agent earned, owed floored at 0 per agent), so it matches the
+        // card. The table shows each account's own figures.
+        private static (DashboardCommissionSummary Summary, List<DashboardCommissionAccount> Accounts) BuildCommissions(
+            List<DashboardAccountCommissionRow> rows, List<DashboardAccountDetailRow> accountDetails)
+        {
+            var details = accountDetails
+                .GroupBy(a => a.AccountId)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var perAgent = rows
+                .GroupBy(r => r.AgentId)
+                .Select(g =>
+                {
+                    var gross = g.Sum(r => r.Earned);
+                    var deduction = g.Sum(r => r.ArrearsDeducted);
+                    var paid = g.Sum(r => r.Paid);
+                    return (Gross: gross, Withheld: Math.Min(deduction, gross), Paid: paid,
+                            Owed: Math.Max(0, gross - deduction - paid));
+                })
+                .ToList();
+
+            var summary = new DashboardCommissionSummary
+            {
+                Agents = perAgent.Count,
+                Accounts = rows.Count,
+                Earned = perAgent.Sum(a => a.Gross),
+                Withheld = perAgent.Sum(a => a.Withheld),
+                Paid = perAgent.Sum(a => a.Paid),
+                Owed = perAgent.Sum(a => a.Owed),
+            };
+
+            var accounts = rows
+                .Select(r =>
+                {
+                    details.TryGetValue(r.AccountId, out var d);
+                    var net = r.Earned - r.ArrearsDeducted - r.Paid;
+                    return new DashboardCommissionAccount
+                    {
+                        AccountId = r.AccountId,
+                        CustomerName = d?.CustomerName ?? "",
+                        AgentName = d?.AgentName ?? $"Agent #{r.AgentId}",
+                        DealerName = d?.DealerName,
+                        Earned = r.Earned,
+                        ArrearsDeducted = r.ArrearsDeducted,
+                        Paid = r.Paid,
+                        Net = net,
+                        Status = r.ArrearsDeducted > 0 ? "Withheld" : net > 0 ? "Owed" : "Paid",
+                    };
+                })
+                .OrderByDescending(c => c.Net)
+                .ToList();
+
+            return (summary, accounts);
+        }
+
+        // Needs Collection threshold, shared with FillAgentMetrics so the
+        // Collections table and the per-agent count always agree.
+        private const int CollectionDaysPastLock = 30;
+
+        // Anyone who paid within this many days is still paying, not a collection case.
+        private const int RecentPaymentDays = 7;
+
+        // Restructured = a manual restructure on record, or the dashboard's
+        // existing "being managed" rule (shortfall but lock date not yet
+        // passed -- see GetDealerArrearsClassificationAsync), which is where
+        // auto-restructured payers land once their lock date is pushed out.
+        private static bool IsRestructured(DashboardAccountDetailRow r) =>
+            r.IsManuallyRestructured || (r.ArrearsAmount < 0 && LockDays(r) <= 0);
+
+        private static bool PaidRecently(DashboardAccountDetailRow r) =>
+            r.LastPaymentDate.HasValue && r.LastPaymentDate.Value >= DateTime.Now.AddDays(-RecentPaymentDays);
+
+        private static bool NeedsCollection(DashboardAccountDetailRow r) =>
+            LockDays(r) >= CollectionDaysPastLock && !IsRestructured(r) && !PaidRecently(r);
+
+        private static List<DashboardCollectionEntry> BuildCollections(List<DashboardAccountDetailRow> rows) => rows
+            .Where(NeedsCollection)
+            .Select(r => (Row: r, Days: LockDays(r)))
+            .OrderByDescending(x => x.Days)
+            .ThenBy(x => x.Row.ArrearsAmount)
+            .Select(x => new DashboardCollectionEntry
+            {
+                AccountId = x.Row.AccountId,
+                CustomerName = x.Row.CustomerName,
+                AgentName = x.Row.AgentName ?? "",
+                DealerName = x.Row.DealerName,
+                DeviceName = x.Row.DeviceName,
+                DaysPastLock = (int)Math.Floor(x.Days),
+                OverdueAmount = Math.Max(0, -x.Row.ArrearsAmount),
+                LockDate = DashboardReportRepository.ParseNextLockDate(x.Row.NextLockDateRaw),
+                LastPaymentDate = x.Row.LastPaymentDate,
+            })
+            .ToList();
+
+        // Shared by the Dealer and Admin Agent Performance tables so both
+        // classify an agent's book identically.
+        private static T FillAgentMetrics<T>(T target, List<DashboardAccountDetailRow> accounts)
+            where T : DealerAgentPerformance
+        {
+            var total = accounts.Count;
+            var restructured = accounts.Count(IsRestructured);
+            // Lock buckets cover the rest of the book, so restructured
+            // accounts are not also counted as Good/Slow/Arrears/Bad.
+            var days = accounts.Where(r => !IsRestructured(r)).Select(LockDays).ToList();
+            var good = days.Count(d => d <= 0);
+            var slow = days.Count(d => d is > 0 and <= 7);
+            var bad = days.Count(d => d > 90);
+            var overdue = days.Count(d => d > 7); // Arrears + Bad
+            var activeDenominator = good + overdue;
+
+            var collected = accounts.Sum(r => r.TotalPaid);
+            // ArrearsAmount is paid minus due, so due to date = paid - ArrearsAmount.
+            var dueToDate = accounts.Sum(r => r.TotalPaid - r.ArrearsAmount);
+
+            target.AgentName = accounts[0].AgentName ?? "";
+            target.Accounts = total;
+            target.ActivePct = activeDenominator > 0 ? Math.Round(100m * good / activeDenominator, 1) : 0;
+            target.PctOfTarget = total > 0 ? Math.Round(100m * (total - overdue) / total, 1) : 0;
+            target.GoodCount = good;
+            target.RestructuredCount = restructured;
+            target.SlowCount = slow;
+            target.ArrearsCount = overdue - bad;
+            target.BadCount = bad;
+            target.NeedsCollectionCount = accounts.Count(NeedsCollection);
+            target.RepaymentPct = dueToDate > 0 ? Math.Round(100m * collected / dueToDate, 1) : 0;
+            return target;
+        }
 
         // Dealer Performance (Approver Dashboard only): same Active% shape as
         // Agent Performance, grouped by DealerName instead of AssignedAgentId
@@ -809,21 +975,8 @@ namespace Ranalo.Services
         private static List<AdminAgentPerformance> BuildAdminAgentPerformance(List<DashboardAccountDetailRow> rows) => rows
             .Where(r => r.AssignedAgentId.HasValue)
             .GroupBy(r => r.AssignedAgentId!.Value)
-            .Select(g =>
-            {
-                var total = g.Count();
-                var good = g.Count(r => LockDays(r) <= 0);
-                var arrears = g.Count(r => LockDays(r) > 7);
-                var activeDenominator = good + arrears;
-                return new AdminAgentPerformance
-                {
-                    AgentName = g.First().AgentName ?? "",
-                    DealerName = g.First().DealerName ?? "",
-                    Accounts = total,
-                    ActivePct = activeDenominator > 0 ? Math.Round(100m * good / activeDenominator, 1) : 0,
-                    PctOfTarget = total > 0 ? Math.Round(100m * (total - arrears) / total, 1) : 0,
-                };
-            })
+            .Select(g => FillAgentMetrics(
+                new AdminAgentPerformance { DealerName = g.First().DealerName ?? "" }, g.ToList()))
             .OrderByDescending(a => a.Accounts)
             .Select((a, i) => { a.Rank = i + 1; return a; })
             .ToList();

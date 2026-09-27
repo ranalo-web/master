@@ -92,6 +92,13 @@ namespace Ranalo.Models
 
         public List<AdminDealerPerformance> DealerPerformance { get; set; } = new();
         public List<AdminAgentPerformance> AgentPerformance { get; set; } = new();
+
+        // Commissions section across every dealer: totals plus account-by-account detail.
+        public DashboardCommissionSummary CommissionSummary { get; set; } = new();
+        public List<DashboardCommissionAccount> CommissionAccounts { get; set; } = new();
+
+        // Every dealer's accounts 30+ days past lock, most overdue first.
+        public List<DashboardCollectionEntry> Collections { get; set; } = new();
         public List<AdminProductPerformance> ProductPerformance { get; set; } = new();
         public List<AdminCompletedContract> CompletedContracts { get; set; } = new();
     }
@@ -116,14 +123,10 @@ namespace Ranalo.Models
         public decimal PctOfTarget { get; set; }
     }
 
-    public class AdminAgentPerformance
+    // Same metrics as the Dealer Dashboard's agent rows, plus the dealer.
+    public class AdminAgentPerformance : DealerAgentPerformance
     {
-        public int Rank { get; set; }
-        public string AgentName { get; set; } = "";
         public string DealerName { get; set; } = "";
-        public int Accounts { get; set; }
-        public decimal ActivePct { get; set; }
-        public decimal PctOfTarget { get; set; }
     }
 
     public class AdminProductPerformance

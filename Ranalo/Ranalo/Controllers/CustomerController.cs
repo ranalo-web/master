@@ -125,6 +125,7 @@ namespace Ranalo.Controllers
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+            ViewBag.IsAgent = settings.RoleId == UserRole.Agent;
             ViewBag.UserName = settings.KnownAs;
             if (settings.RoleId == UserRole.Dealer)
             {

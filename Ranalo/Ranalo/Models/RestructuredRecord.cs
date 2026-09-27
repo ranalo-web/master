@@ -34,6 +34,7 @@
         public decimal LoanBalance { get; set; }
 
         public int? LockGroup { get; set; }
+        public bool Locked { get; set; }
         public string? ImeiNo { get; internal set; }
     }
 }

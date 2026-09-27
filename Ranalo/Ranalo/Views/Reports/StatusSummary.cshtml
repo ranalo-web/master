@@ -359,11 +359,14 @@
                             </div>
                         </div><!-- .nk-block -->
                         <div class="nk-divider divider md"></div>
-                        <div class="nk-block">
-                            <div class="nk-block-head nk-block-head-sm">
-                                <button type="button" data-bs-toggle="modal" data-bs-target="#modalRestructure" class="link link-primary ms-auto">Restructure</button>
-                            </div><!-- .nk-block-head -->
-                        </div>
+                        @if (!(ViewBag.IsDealer is true || ViewBag.IsAgent is true))
+                        {
+                            <div class="nk-block">
+                                <div class="nk-block-head nk-block-head-sm">
+                                    <button type="button" data-bs-toggle="modal" data-bs-target="#modalRestructure" class="link link-primary ms-auto">Restructure</button>
+                                </div><!-- .nk-block-head -->
+                            </div>
+                        }
                         <div class="nk-divider divider md"></div>
                         @if(Model.RestructuredRecords.Any())
                         {

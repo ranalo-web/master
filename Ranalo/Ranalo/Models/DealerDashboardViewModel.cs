@@ -199,6 +199,28 @@ namespace Ranalo.Models
         // GetCustomersToContactAsync) -- Detail carries the formatted
         // arrears amount, Phone/DealerName above carry the rest.
         public List<DealerWatchlistEntry> CustomersToContact { get; set; } = new();
+
+        // Truly overdue accounts: 30+ days past lock, not restructured, and
+        // no payment in the last 7 days -- the same population as Agent
+        // Performance's Needs Collection count. Most overdue first.
+        public List<DashboardCollectionEntry> Collections { get; set; } = new();
+
+        // Commissions section: totals plus account-by-account detail.
+        public DashboardCommissionSummary CommissionSummary { get; set; } = new();
+        public List<DashboardCommissionAccount> CommissionAccounts { get; set; } = new();
+    }
+
+    public class DashboardCollectionEntry
+    {
+        public long AccountId { get; set; }
+        public string CustomerName { get; set; } = "";
+        public string AgentName { get; set; } = "";
+        public string? DealerName { get; set; }
+        public string DeviceName { get; set; } = "";
+        public int DaysPastLock { get; set; }
+        public decimal OverdueAmount { get; set; }
+        public DateTime? LockDate { get; set; }
+        public DateTime? LastPaymentDate { get; set; }
     }
 
     public class DealerWatchlistEntry
@@ -237,6 +259,27 @@ namespace Ranalo.Models
         public int Accounts { get; set; }
         public decimal ActivePct { get; set; }
         public decimal PctOfTarget { get; set; }
+
+        // Account mix by days past lock date -- the same exclusive buckets as
+        // DashboardReportRepository.ClassifyLock plus its >90 NonPaying split:
+        // Good <= 0, Slow 1-7, Arrears 8-90, Bad > 90. These four sum to Accounts.
+        public int GoodCount { get; set; }
+
+        // Manually restructured, or in arrears but still before the lock
+        // date (on a new plan). Taken out of the lock buckets, so Good, Restructured,
+        // Slow, Arrears and Bad together sum to Accounts.
+        public int RestructuredCount { get; set; }
+        public int SlowCount { get; set; }
+        public int ArrearsCount { get; set; }
+        public int BadCount { get; set; }
+
+        // Same rule as the Collections table: 30+ days past lock, not
+        // restructured, and no payment in the last 7 days. Overlaps Arrears
+        // and Bad -- it is a call-list size, not a bucket.
+        public int NeedsCollectionCount { get; set; }
+
+        // Total paid to date as a share of what is due to date.
+        public decimal RepaymentPct { get; set; }
     }
 
     public class DealerPerformance
@@ -264,6 +307,45 @@ namespace Ranalo.Models
         public decimal Due { get; set; }
         public decimal Paid { get; set; }
         public decimal Outstanding { get; set; }
+        public string Status { get; set; } = "";
+    }
+
+    // Raw per-account figures from GetAccountCommissionsAsync.
+    public class DashboardAccountCommissionRow
+    {
+        public long AccountId { get; set; }
+        public int AgentId { get; set; }
+        public decimal Earned { get; set; }
+        public decimal ArrearsDeducted { get; set; }
+        public decimal Paid { get; set; }
+    }
+
+    // Commissions section totals. Pooled per agent exactly like the Agent
+    // Commissions card, so Owed here equals the card's figure.
+    public class DashboardCommissionSummary
+    {
+        public int Agents { get; set; }
+        public int Accounts { get; set; }
+        public decimal Earned { get; set; }
+        public decimal Withheld { get; set; }
+        public decimal Paid { get; set; }
+        public decimal Owed { get; set; }
+    }
+
+    // One Commissions table row per agent-assigned account. Net = Earned -
+    // ArrearsDeducted - Paid for this account alone; it can be negative when
+    // the account's arrears exceed its commission, which reduces what the
+    // agent is owed on their other accounts.
+    public class DashboardCommissionAccount
+    {
+        public long AccountId { get; set; }
+        public string CustomerName { get; set; } = "";
+        public string AgentName { get; set; } = "";
+        public string? DealerName { get; set; }
+        public decimal Earned { get; set; }
+        public decimal ArrearsDeducted { get; set; }
+        public decimal Paid { get; set; }
+        public decimal Net { get; set; }
         public string Status { get; set; } = "";
     }
 

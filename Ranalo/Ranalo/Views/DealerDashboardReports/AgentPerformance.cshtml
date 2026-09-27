@@ -12,7 +12,7 @@
         <div class="nk-block-between">
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Agent Performance</h3>
-                <div class="nk-block-des text-soft"><p>Active % is Good accounts as a share of Good+Non-Paying (Slow excluded), same as the Paying vs Non-Paying card. % of Target is the whole book not in default.</p></div>
+                <div class="nk-block-des text-soft"><p>Active % is Good accounts as a share of Good+Non-Paying (Slow excluded), same as the Paying vs Non-Paying card. % of Target is the whole book not in default.</p><p class="small">Good: not past lock &middot; Restructured: manual restructure, or in arrears on a new plan &middot; Slow: 1-7 days &middot; Arrears: 8-90 days &middot; Bad: 90+ days &middot; Needs Collection: 30+ days past lock, not restructured, no payment in 7 days</p></div>
             </div>
             <div class="nk-block-head-content">
                 <a href="/@(ViewBag.BackLink)" class="btn btn-outline-light btn-white"><em class="icon ni ni-arrow-left"></em><span>Back to Dashboard</span></a>
@@ -25,30 +25,44 @@
             <div class="card-inner-group">
                 <div class="card-inner p-0">
                     <div class="table-responsive">
-                    <table class="table mb-0" style="white-space:nowrap;" data-key="@key" data-page-size="@pageSize">
-                        <thead>
-                            <tr>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Rank</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Active %</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">% of Target</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (var i = 0; i < Model.Count; i++)
-                            {
-                                var a = Model[i];
-                                <tr class="@(i >= pageSize ? "d-none" : "")" data-watchlist-row="@key">
-                                    <td>@a.Rank</td>
-                                    <td><span class="fw-medium">@a.AgentName</span></td>
-                                    <td>@a.Accounts</td>
-                                    <td>@a.ActivePct.ToString("0.0")%</td>
-                                    <td><span class="@(a.PctOfTarget >= 100 ? "text-success" : "text-danger")">@a.PctOfTarget.ToString("0.0")%</span></td>
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="@key" data-page-size="@pageSize">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Rank</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Not past lock date">Good</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Manually restructured, or in arrears but on a new plan before the lock date">Restructured</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="1-7 days past lock date">Slow</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="8-90 days past lock date">Arrears</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Over 90 days past lock date">Bad</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="30+ days past lock, not restructured, no payment in 7 days">Needs Collection</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Paid as a share of amount due to date">Repayment %</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Active %</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">% of Target</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.Count; i++)
+                                {
+                                    var a = Model[i];
+                                    <tr class="@(i >= pageSize ? "d-none" : "")" data-watchlist-row="@key">
+                                        <td>@a.Rank</td>
+                                        <td><span class="fw-medium">@a.AgentName</span></td>
+                                        <td>@a.Accounts</td>
+                                        <td class="text-success">@a.GoodCount</td>
+                                        <td class="text-info">@a.RestructuredCount</td>
+                                        <td class="text-warning">@a.SlowCount</td>
+                                        <td class="text-danger">@a.ArrearsCount</td>
+                                        <td class="text-danger fw-bold">@a.BadCount</td>
+                                        <td>@a.NeedsCollectionCount</td>
+                                        <td><span class="@(a.RepaymentPct >= 90 ? "text-success" : a.RepaymentPct >= 70 ? "text-warning" : "text-danger")">@a.RepaymentPct.ToString("0.0")%</span></td>
+                                        <td>@a.ActivePct.ToString("0.0")%</td>
+                                        <td><span class="@(a.PctOfTarget >= 100 ? "text-success" : "text-danger")">@a.PctOfTarget.ToString("0.0")%</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
                     @if (Model.Count > pageSize)
                     {

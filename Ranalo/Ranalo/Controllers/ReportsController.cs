@@ -237,9 +237,14 @@ namespace Ranalo.Controllers
                     : await _userService.GetDealerByUserId(settings.UserId);
 
                 var dealerId = Convert.ToInt32(dealer.DealerReference);
-                var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(accountId, dealerId);
+                var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
+                var delaerStatusReport = await _applicationReportService.GetStatusReportByDealer(accountId, dealerId, agentUserId: agentUserId);
 
-                viewDetails = delaerStatusReport?.StatusReports?.First();
+                viewDetails = delaerStatusReport?.StatusReports?.FirstOrDefault();
+                if (viewDetails == null)
+                {
+                    return NotFound();
+                }
 
             }
 
@@ -265,7 +270,7 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            if (settings.RoleId == UserRole.Approver)
+            if (!CanRestructure(settings.RoleId))
             {
                 return RedirectToAction("ManualRestructuredReport", "Reports");
             }
@@ -326,7 +331,9 @@ namespace Ranalo.Controllers
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, false, false, null, dealerId, page, pageSize, searchTerm.Trim());
+            var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
+
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, false, false, null, dealerId, page, pageSize, searchTerm.Trim(), agentUserId);
 
             return View(allDelaerStatusReport);
         }
@@ -357,11 +364,17 @@ namespace Ranalo.Controllers
                 : await _userService.GetDealerByUserId(settings.UserId);
 
             var dealerId = Convert.ToInt32(dealer.DealerReference);
+            var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
 
-            var allDelaerStatusReport = await _applicationReportService.GetAllRestructured(searchTerm.Trim(), page, pageSize);
+            var allDelaerStatusReport = await _applicationReportService.GetAllRestructured(searchTerm.Trim(), page, pageSize, dealerId, agentUserId);
 
             return View(allDelaerStatusReport);
         }
+
+        // Dealers and agents can view restructured accounts but cannot create a restructure.
+        // Approvers were already excluded.
+        private static bool CanRestructure(UserRole role) =>
+            role is not (UserRole.Dealer or UserRole.Agent or UserRole.Approver);
 
         private async Task SetViewBags(User settings, string backLink, string searchTerm = "")
         {

@@ -596,10 +596,10 @@ namespace Ranalo.Services
             await _applicationReportRepository.InsertRestructured(record);
         }
 
-        public async Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10)
+        public async Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10, int? dealerId = null, int? agentUserId = null)
         {
             //pageSize = 1000; // We nned to use qualifying records logic here
-            var allRestructuredRecords = await _applicationReportRepository.GetAllRestructured(searchTerm, page, pageSize);
+            var allRestructuredRecords = await _applicationReportRepository.GetAllRestructured(searchTerm, page, pageSize, dealerId, agentUserId);
 
             var accountIds =
             allRestructuredRecords.Records

@@ -593,37 +593,52 @@
                         <div class="card-title">
                             <h6 class="title">Agent Performance</h6>
                             <p class="text-soft">Active % excludes Slow Payers (Good vs Good+Non-Paying); % of Target counts the whole book not in default</p>
+                            <p class="text-soft small mb-0">Good: not past lock &middot; Restructured: manual restructure, or in arrears on a new plan &middot; Slow: 1-7 days &middot; Arrears: 8-90 days &middot; Bad: 90+ days &middot; Needs Collection: 30+ days past lock, not restructured, no payment in 7 days</p>
                         </div>
                     </div>
                 </div>
                 <div class="card-inner p-0">
                     <div class="table-responsive">
-                    <table class="table mb-0" style="white-space:nowrap;" data-key="dealer-agents" data-page-size="@tablePageSize">
-                        <thead>
-                            <tr>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Rank</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Active %</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">vs. Target</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (var i = 0; i < Model.AgentPerformance.Count; i++)
-                            {
-                                var a = Model.AgentPerformance[i];
-                                <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealer-agents">
-                                    <td>@a.Rank</td>
-                                    <td><span class="fw-medium">@a.AgentName</span></td>
-                                    <td>@a.Accounts</td>
-                                    <td>@a.ActivePct.ToString("0")%</td>
-                                    <td>
-                                        <span class="badge @(a.PctOfTarget >= 100 ? "badge-dim bg-success" : "badge-dim bg-warning")">@a.PctOfTarget.ToString("0")% of target</span>
-                                    </td>
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="dealer-agents" data-page-size="@tablePageSize">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Rank</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Not past lock date">Good</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Manually restructured, or in arrears but on a new plan before the lock date">Restructured</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="1-7 days past lock date">Slow</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="8-90 days past lock date">Arrears</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Over 90 days past lock date">Bad</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="30+ days past lock, not restructured, no payment in 7 days">Needs Collection</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Paid as a share of amount due to date">Repayment %</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Active %</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">vs. Target</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.AgentPerformance.Count; i++)
+                                {
+                                    var a = Model.AgentPerformance[i];
+                                    <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealer-agents">
+                                        <td>@a.Rank</td>
+                                        <td><span class="fw-medium">@a.AgentName</span></td>
+                                        <td>@a.Accounts</td>
+                                        <td class="text-success">@a.GoodCount</td>
+                                        <td class="text-info">@a.RestructuredCount</td>
+                                        <td class="text-warning">@a.SlowCount</td>
+                                        <td class="text-danger">@a.ArrearsCount</td>
+                                        <td class="text-danger fw-bold">@a.BadCount</td>
+                                        <td>@a.NeedsCollectionCount</td>
+                                        <td><span class="@(a.RepaymentPct >= 90 ? "text-success" : a.RepaymentPct >= 70 ? "text-warning" : "text-danger")">@a.RepaymentPct.ToString("0.0")%</span></td>
+                                        <td>@a.ActivePct.ToString("0")%</td>
+                                        <td>
+                                            <span class="badge @(a.PctOfTarget >= 100 ? "badge-dim bg-success" : "badge-dim bg-warning")">@a.PctOfTarget.ToString("0")% of target</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
                     @if (AgentMoreCount > 0)
                     {
@@ -636,6 +651,172 @@
             </div>
         </div>
     </div><!-- .nk-block -->
+
+    @if (!(ViewBag.IsApprover is true))
+    {
+        var collectionsMoreCount = Math.Max(0, Model.Collections.Count - tablePageSize);
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title">Collections <span class="badge badge-dim bg-danger ms-1">@Model.Collections.Count</span></h6>
+                            <p class="text-soft">Truly overdue accounts: 30 or more days past lock, not restructured, and no payment in the last 7 days. Most overdue first.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    @if (Model.Collections.Count == 0)
+                    {
+                        <div class="card-inner text-soft">No accounts currently need collection.</div>
+                    }
+                    else
+                    {
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="dealer-collections" data-page-size="@tablePageSize">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Device</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Days Past Lock</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Overdue</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Lock Date</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.Collections.Count; i++)
+                                {
+                                    var c = Model.Collections[i];
+                                    <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealer-collections">
+                                        <td>
+                                            <a href="/account-details/@c.AccountId" class="fw-medium">@c.CustomerName</a>
+                                            <span class="d-block sub-text">AC: @c.AccountId</span>
+                                        </td>
+                                        <td>@(string.IsNullOrWhiteSpace(c.AgentName) ? "Unassigned" : c.AgentName)</td>
+                                        <td>@c.DeviceName</td>
+                                        <td><span class="@(c.DaysPastLock > 90 ? "text-danger fw-bold" : "text-danger")">@c.DaysPastLock</span></td>
+                                        <td>KES @c.OverdueAmount.ToString("N0")</td>
+                                        <td>@(c.LockDate?.ToString("dd MMM yyyy HH:mm") ?? "-")</td>
+                                        <td>@(c.LastPaymentDate?.ToString("dd MMM yyyy HH:mm") ?? "Never")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (collectionsMoreCount > 0)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="dealer-collections" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'dealer-collections', @tablePageSize);">Show @Math.Min(tablePageSize, collectionsMoreCount) more</a>
+                            <a href="#" class="link link-primary" data-less-for="dealer-collections" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'dealer-collections', @tablePageSize);">Show less</a>
+                        </div>
+                    }
+                    }
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+    }
+
+    @if (!(ViewBag.IsApprover is true))
+    {
+        var commissionMoreCount = Math.Max(0, Model.CommissionAccounts.Count - tablePageSize);
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title">Commissions</h6>
+                            <p class="text-soft">Agent commission on each agent-assigned account. @Model.CommissionSummary.Agents agents &middot; @Model.CommissionSummary.Accounts accounts</p>
+                        </div>
+                    </div>
+                    <div class="row g-2 mt-2">
+                        <div class="col-6 col-lg-3">
+                            <div class="border rounded p-2 h-100">
+                                <span class="sub-text">Earned</span>
+                                <span class="d-block fs-5 fw-bold ">KES @Model.CommissionSummary.Earned.ToString("N0")</span>
+                                <span class="d-block text-soft small">Gross agent commission</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="border rounded p-2 h-100">
+                                <span class="sub-text">Withheld</span>
+                                <span class="d-block fs-5 fw-bold text-warning">KES @Model.CommissionSummary.Withheld.ToString("N0")</span>
+                                <span class="d-block text-soft small">Held back for accounts in arrears</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="border rounded p-2 h-100">
+                                <span class="sub-text">Paid</span>
+                                <span class="d-block fs-5 fw-bold text-success">KES @Model.CommissionSummary.Paid.ToString("N0")</span>
+                                <span class="d-block text-soft small">Paid out to agents</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="border rounded p-2 h-100">
+                                <span class="sub-text">Owed</span>
+                                <span class="d-block fs-5 fw-bold text-danger">KES @Model.CommissionSummary.Owed.ToString("N0")</span>
+                                <span class="d-block text-soft small">Still owed to agents</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    @if (Model.CommissionAccounts.Count == 0)
+                    {
+                        <div class="card-inner text-soft">No agent-assigned accounts found.</div>
+                    }
+                    else
+                    {
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="dealer-commissions" data-page-size="@tablePageSize">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Earned</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on this account, deducted because it is past its lock date">Arrears Deducted</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Earned minus arrears deducted minus paid, for this account">Net</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.CommissionAccounts.Count; i++)
+                                {
+                                    var c = Model.CommissionAccounts[i];
+                                    <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealer-commissions">
+                                        <td>
+                                            <a href="/account-details/@c.AccountId" class="fw-medium">@c.CustomerName</a>
+                                            <span class="d-block sub-text">AC: @c.AccountId</span>
+                                        </td>
+                                        <td>@c.AgentName</td>
+                                        <td>KES @c.Earned.ToString("N0")</td>
+                                        <td class="@(c.ArrearsDeducted > 0 ? "text-danger" : "")">KES @c.ArrearsDeducted.ToString("N0")</td>
+                                        <td>KES @c.Paid.ToString("N0")</td>
+                                        <td class="@(c.Net < 0 ? "text-danger" : "")">KES @c.Net.ToString("N0")</td>
+                                        <td><span class="badge badge-dim @(c.Status == "Withheld" ? "bg-warning" : c.Status == "Owed" ? "bg-info" : "bg-success")">@c.Status</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (commissionMoreCount > 0)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="dealer-commissions" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'dealer-commissions', @tablePageSize);">Show @Math.Min(tablePageSize, commissionMoreCount) more</a>
+                            <a href="#" class="link link-primary" data-less-for="dealer-commissions" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'dealer-commissions', @tablePageSize);">Show less</a>
+                        </div>
+                    }
+                    }
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+    }
 
     @if (!(ViewBag.IsApprover is true))
     {
