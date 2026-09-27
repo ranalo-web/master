@@ -451,5 +451,15 @@ namespace Ranalo.Woocommece.Api.DataStore
 
             return device;
         }
+
+        public async Task<Device?> GetDeviceByImeiAsync(string imei)
+        {
+            var sql = @"SELECT * FROM Devices
+                         WHERE [ImeiNo] = @Imei"
+            ;
+            var device = await _db.QueryFirstOrDefaultAsync<Device>(sql, new { Imei = imei });
+
+            return device;
+        }
     }
 }

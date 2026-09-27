@@ -13,6 +13,7 @@
     <!-- StyleSheets  -->
     <link rel="stylesheet" href="./assets/css/dashlite.css?ver=3.3.0">
     <link id="skin-default" rel="stylesheet" href="./assets/css/theme.css?ver=3.3.0">
+    <link rel="stylesheet" href="~/css/responsive-tables.css?v=3">
 </head>
 <body class="nk-body bg-lighter npc-general has-sidebar ">
     <div class="nk-app-root">
@@ -194,6 +195,11 @@
                                                 </a>
                                             </li>
                                             <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/account-commissions">
+                                                    <span class="nk-menu-text">Account Commissions</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
                                                 <a class="nk-menu-link " href="/commissions-dealer-outstanding">
                                                     <span class="nk-menu-text">Dealer Outstanding</span>
                                                 </a>
@@ -352,6 +358,25 @@
                                     </ul>
                                 </li>
 
+                                @if (ViewBag.IsDealer is true || ViewBag.IsAgent is true)
+                                {
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="#">
+                                            <span class="nk-menu-icon">
+                                                <em class="icon ni ni-coins"></em>
+                                            </span>
+                                            <span class="nk-menu-text">Commissions</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/account-commissions">
+                                                    <span class="nk-menu-text">Account Commissions</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                }
+
                                 <li class="nk-menu-item has-sub">
                                     <a class="nk-menu-link nk-menu-toggle" href="reports">
                                         <span class="nk-menu-icon">
@@ -363,6 +388,16 @@
                                         <li class="nk-menu-item ">
                                             <a class="nk-menu-link " href="/statusreport">
                                                 <span class="nk-menu-text">Status Report</span>
+                                            </a>
+                                        </li>
+                                        <li class="nk-menu-item ">
+                                            <a class="nk-menu-link " href="/restructured">
+                                                <span class="nk-menu-text">Auto Restructured</span>
+                                            </a>
+                                        </li>
+                                        <li class="nk-menu-item ">
+                                            <a class="nk-menu-link " href="/manual-restructured">
+                                                <span class="nk-menu-text">Manual Restructured</span>
                                             </a>
                                         </li>
                                         @if (ViewBag.IsAdmin || ViewBag.IsApprover)
@@ -380,17 +415,6 @@
                                             <li class="nk-menu-item ">
                                                 <a class="nk-menu-link " href="/collections">
                                                     <span class="nk-menu-text">Collections 90</span>
-                                                </a>
-                                            </li>
-
-                                                <li class="nk-menu-item ">
-                                                        <a class="nk-menu-link " href="/restructured">
-                                                        <span class="nk-menu-text">Auto Restructured</span>
-                                                    </a>
-                                                </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/manual-restructured">
-                                                    <span class="nk-menu-text">Manual Restructured</span>
                                                 </a>
                                             </li>
                                         }

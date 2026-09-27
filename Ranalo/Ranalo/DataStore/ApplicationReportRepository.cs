@@ -2186,19 +2186,27 @@ FROM
                 await _db.ExecuteAsync(sqlInsert, restructuringRecord);
         }
 
-        public async Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10)
+        public async Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10, int? dealerId = null, int? agentUserId = null)
         {
 
             var offset = (page - 1) * pageSize;
+            // Count uses the same Contract_Info join and dealer/agent scope as the page query.
             var countSql = @"SELECT 
                             COUNT(*)
                         FROM RestructuredRecords wo
+                        INNER JOIN Contract_Info ci
+                            ON ci.ID = wo.AccountNo
+                            AND ci.EndDate IS NULL
                         WHERE (
                         @SearchTerm IS NULL
                         OR WO.AccountNo LIKE '%' + @SearchTerm + '%'
-                    )";
+                    )
+                    AND (@DealerId IS NULL OR EXISTS (
+                        SELECT 1 FROM Devices d
+                        WHERE d.Id = wo.AccountNo AND d.DeviceGroupId = @DealerId))
+                    AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
-            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchParam });
+            var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchParam, DealerId = dealerId, AgentUserId = agentUserId });
 
             var sqlSelectAll = @"
                 SELECT 
@@ -2212,7 +2220,8 @@ FROM
                     ci.Daily,
                     ci.Weekly,
                     ci.Monthly,
-                    ci.First_Name AS FirstName
+                    ci.First_Name AS FirstName,
+                    CAST(ISNULL(dl.Locked, 0) AS bit) AS Locked
                 FROM RestructuredRecords r
                 -- ✅ Merge KosePayments + OrphanedPayments properly
                 LEFT JOIN (
@@ -2230,9 +2239,19 @@ FROM
                 INNER JOIN Contract_Info ci 
                     ON ci.ID = r.AccountNo
                     AND ci.EndDate IS NULL
+                -- Current lock state of the device on this account
+                OUTER APPLY (
+                    SELECT TOP 1 d.Locked
+                    FROM Devices d
+                    WHERE d.Id = r.AccountNo
+                ) dl
                 WHERE 
-                    @SearchTerm IS NULL
-                    OR r.AccountNo LIKE '%' + @SearchTerm + '%'
+                    (@SearchTerm IS NULL
+                    OR r.AccountNo LIKE '%' + @SearchTerm + '%')
+                    AND (@DealerId IS NULL OR EXISTS (
+                        SELECT 1 FROM Devices d
+                        WHERE d.Id = r.AccountNo AND d.DeviceGroupId = @DealerId))
+                    AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
                 GROUP BY 
                     r.AccountNo,
                     r.ID,
@@ -2241,13 +2260,14 @@ FROM
                     ci.Daily,
                     ci.Weekly,
                     ci.Monthly,
-                    ci.First_Name
+                    ci.First_Name,
+                    dl.Locked
                 ORDER BY 
                     r.Date_Agreed DESC
                 OFFSET @Offset ROWS 
                 FETCH NEXT @pageSize ROWS ONLY;";
 
-            var records = await _db.QueryAsync<RestructuredRecord>(sqlSelectAll, new { SearchTerm = searchParam, offset, pageSize });
+            var records = await _db.QueryAsync<RestructuredRecord>(sqlSelectAll, new { SearchTerm = searchParam, offset, pageSize, DealerId = dealerId, AgentUserId = agentUserId });
 
             return new RestructuredViewModel()
             {

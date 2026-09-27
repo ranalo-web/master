@@ -41,6 +41,9 @@ namespace Ranalo.Services
         Task<List<DealerWatchlistEntry>> GetDealerSlowPayersAsync(int dealerId, int? agentUserId = null);
         Task<List<DealerWatchlistEntry>> GetDealerGoodPayersAsync(int dealerId, int? agentUserId = null);
         Task<List<DealerAgentPerformance>> GetDealerAgentPerformanceAsync(int dealerId, int? agentUserId = null);
+
+        // Sidebar Account Commissions page: per-account agent and dealer commission.
+        Task<AccountCommissionsViewModel> GetAccountCommissionsPageAsync(int? dealerId, int? agentUserId, bool showDealer);
         Task<List<DealerContract>> GetDealerContractsAsync(int dealerId, int? agentUserId = null);
         Task<List<DealerContract>> GetDealerContractsEndingSoonAsync(int dealerId, int? agentUserId = null);
         Task<List<DealerDeviceStock>> GetDealerDeviceStockReportAsync(int dealerId);

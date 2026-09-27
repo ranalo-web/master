@@ -97,7 +97,7 @@
                                     <td><span class="fw-medium">@payment.AccountNo</span></td>
                                     <td>@payment.FirstName</td>
                                     <td>@payment.MpesaCode</td>
-                                    <td>@payment.PaymentDateValue.ToString("MMM d, yyyy HH:mm")</td>
+                                    <td>@payment.PaymentDateValue.ToString("dd MMM yyyy HH:mm")</td>
                                     <td>KES @payment.AmountValue.ToString("N0")</td>
                                     <td>@(payment.Imported == true ? "Yes" : "No")</td>
                                     <td><a href="/account-details/@payment.AccountNo" class="link link-primary">View</a></td>

@@ -125,6 +125,7 @@
                 </div><!-- .card-inner -->
 
                 <div class="card-inner p-0">
+                    <div class="table-responsive">
                     <table class="table table-tranx">
                         <thead>
                             <tr class="tb-tnx-head">
@@ -175,7 +176,7 @@
                                     </td>
                                     <td class="tb-tnx-info">
                                         <div class="tb-tnx-date">
-                                            <span>@transaction.PostingDate?.ToString("dd/MM/yy")</span>
+                                            <span>@transaction.PostingDate?.ToString("dd MMM yyyy")</span>
                                         </div>
                                     </td>
                                     <td class="tb-tnx-info">
@@ -221,6 +222,7 @@
                             }
                         }
                     </table>
+                    </div><!-- .table-responsive -->
                 </div><!-- .card-inner -->
                 @*  <div class="card-inner">
                     <div class="nk-block-between-md g-3">

@@ -7,6 +7,8 @@ using Ranalo.Models;
 using Ranalo.Services.Helpers;
 using Ranalo.SumsungKnox;
 using Ranalo.SumsungKnox.Models;
+using Ranalo.PayTrigger;
+using PayTriggerModels = Ranalo.PayTrigger.Models;
 using Ranalo.VeriTechClient;
 using Ranalo.Woocommece.Api.DataStore;
 using Ranalo.Woocommece.Api.Models;
@@ -20,20 +22,29 @@ namespace Ranalo.Services
         private readonly IEnrolmentRepository _enrolmentRepository;
         private readonly IVeritechApiClient _veriTechClient;
         private readonly IKnoxGuardClient _knoxGuardClient;
+        private readonly IPayTriggerClient _payTriggerClient;
         private readonly IKosePaymentsRepository _kosePaymentsRepository;
         private readonly ISyncService _syncService;
-        public EnrolmentService(IEnrolmentRepository enrolmentRepository, 
-            IVeritechApiClient veriTechClient, 
+        public EnrolmentService(IEnrolmentRepository enrolmentRepository,
+            IVeritechApiClient veriTechClient,
             IKnoxGuardClient knoxGuardClient,
+            IPayTriggerClient payTriggerClient,
             IKosePaymentsRepository kosePaymentsRepository,
             ISyncService syncService)
         {
             _enrolmentRepository = enrolmentRepository;
             _veriTechClient = veriTechClient;
             _knoxGuardClient = knoxGuardClient;
+            _payTriggerClient = payTriggerClient;
             _kosePaymentsRepository = kosePaymentsRepository;
             _syncService = syncService;
         }
+
+        // itel/TECNO/Infinix are Transsion-manufactured -- route through
+        // PayTrigger instead of Knox (Samsung-only). See DeviceBrand on the
+        // Enrolment model, set by the enroller via the AddEnrolment form.
+        private static bool IsTranssionBrand(string? brand) =>
+            brand is "itel" or "TECNO" or "Infinix";
 
         public async Task<Enrolment> CreateEnrolmentasync(Enrolment newEnrolment, CustomerDetails? order)
         {
@@ -45,6 +56,11 @@ namespace Ranalo.Services
 
         public async Task<Enrolment> StartEnrolmentasync(Enrolment newEnrolment, CustomerDetails? order)
         {
+            if (IsTranssionBrand(newEnrolment.DeviceBrand))
+            {
+                return await StartEnrolmentasyncPayTrigger(newEnrolment, order);
+            }
+
             //Create Enrolment
             //await _enrolmentRepository.CreateEnrolmentAsync(newEnrolment);
 
@@ -168,6 +184,143 @@ namespace Ranalo.Services
                 SortBy = "updateTime",
                 SortOrder = "descending",
                 Search = imei
+            });
+        }
+
+        // Transsion PayTrigger path -- mirrors StartEnrolmentasync's Knox shape
+        // (background approve call -> device lookup -> write Device row), but
+        // does NOT go through VeriTech first: PayTrigger is called directly.
+        private async Task<Enrolment> StartEnrolmentasyncPayTrigger(Enrolment newEnrolment, CustomerDetails? order)
+        {
+            newEnrolment.Status = EnrolmentStatus.Pending;
+            newEnrolment.Updated = DateTime.UtcNow;
+            newEnrolment.UpdatedBy = "PAYTRIGGER";
+            await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    // preLockFlag=false (don't lock immediately on activation)
+                    // requires an initial Expiration. We don't have a real
+                    // due-date yet at raw enrolment time (same as Knox), so
+                    // this uses a conservative 30-day placeholder -- the
+                    // first ScheduledLockPaying/Restructured run corrects it
+                    // via UpdateRepayInfoAsync once real payment-cycle dates
+                    // are known. TODO: revisit if PayTrigger's activation
+                    // validation needs a tighter initial value.
+                    var placeholderExpiration = DateTimeOffset.UtcNow.AddDays(30).ToUnixTimeSeconds();
+
+                    var enrolResponse = await _payTriggerClient.PreEnrollImeiAsync(
+                        new List<PayTriggerModels.ImeiEnrollItem>
+                        {
+                            new()
+                            {
+                                Imei = newEnrolment.IMEI,
+                                OrderNum = newEnrolment.OrderId.ToString(),
+                                Expiration = placeholderExpiration
+                            }
+                        },
+                        preLockFlag: false);
+
+                    //Now update Enrolment to Approved (or Error if PayTrigger reported a failure)
+                    var failed = enrolResponse.Data?.FirstOrDefault(d => d.Imei == newEnrolment.IMEI);
+                    newEnrolment.Status = enrolResponse.IsSuccess && failed == null
+                        ? EnrolmentStatus.Approved
+                        : EnrolmentStatus.Error;
+                    newEnrolment.Updated = DateTime.UtcNow;
+                    newEnrolment.UpdatedBy = "PAYTRIGGER";
+                    newEnrolment.PayTriggerStatus = enrolResponse.Message;
+                    newEnrolment.PayTriggerResponse = failed?.Message ?? enrolResponse.Message;
+                    await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
+
+                    if (newEnrolment.Status == EnrolmentStatus.Approved)
+                    {
+                        await CreateDeviceFromPayTrigger(newEnrolment);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    newEnrolment.Status = EnrolmentStatus.Error;
+                    newEnrolment.Updated = DateTime.UtcNow;
+                    newEnrolment.UpdatedBy = "PAYTRIGGER";
+                    newEnrolment.PayTriggerStatus = "Error";
+                    newEnrolment.PayTriggerResponse = ex.Message;
+                    await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
+                }
+            }
+            );
+
+            if (order != null)
+            {
+                var newContract = new ContractCreateDto()
+                {
+                    AccountNo = order.AccountId.ToString(),
+                    FirstName = order.FirstName,
+                    MpesaDepositRef = order.MpesaDepositRef,
+                    TotalAmount = order.TotalAmount
+                };
+
+                await _syncService.CreateContractSingle(newContract);
+            }
+
+            return newEnrolment;
+        }
+
+        private async Task CreateDeviceFromPayTrigger(Enrolment newEnrolment)
+        {
+            var lockState = await DoFilterDevicesFromPayTrigger(newEnrolment.IMEI);
+            var newdevice = lockState?.Data;
+
+            if (newdevice != null)
+            {
+                // PayTrigger's findLockState reports MobileStatus/Expiration
+                // directly (1000=locked/2000=unlock) rather than Knox's
+                // relock-timestamp inference, and has no imei2/serial/
+                // androidVersion/isSimControlLocked fields -- those stay
+                // unset here (no equivalent data from this provider).
+                var isLocked = newdevice.MobileStatus == 1000;
+                var expirationMs = newdevice.Expiration.HasValue ? newdevice.Expiration.Value * 1000 : (long?)null;
+
+                //Create a device in our db
+                var deviceToDb = new Ranalo.Woocommece.Api.Models.Device()
+                {
+                    Id = (int)newEnrolment.AccountId,
+                    Name = newEnrolment.FirstName,
+                    ImeiNo = newdevice.Imei,
+                    IsTv = false,
+                    Model = newdevice.Model,
+                    SdkVersion = "",
+                    Status = "enrolled",
+                    AdminLockType = "admin_complete",
+                    LockType = isLocked ? "complete" : "unlocked",
+                    Locked = isLocked,
+                    DeviceGroupId = newEnrolment.DealerId,
+                    AppVersionName = newdevice.ApkVersion,
+                    CreatedAt = newdevice.ActiveTime.HasValue
+                        ? DateTimeOffset.FromUnixTimeSeconds(newdevice.ActiveTime.Value).UtcDateTime.ToString("dd-MM-yy HH:mm:ss 'UTC'")
+                        : DateTime.UtcNow.ToString("dd-MM-yy HH:mm:ss 'UTC'"),
+                    IsActivated = true,
+                    LastConnectedAt = newdevice.LastConnectTime.HasValue
+                        ? DateTimeOffset.FromUnixTimeSeconds(newdevice.LastConnectTime.Value).UtcDateTime.ToString("dd-MM-yy HH:mm:ss 'UTC'")
+                        : null,
+                    EnrollmentStatus = newdevice.LockState == 3000 ? "Completed" : "Pending",
+                    EnrolledOn = newEnrolment.ApprovedDate.ToString("dd-MM-yy HH:mm:ss 'UTC'"),
+                    NextLockDateIsoFormat = expirationMs.HasValue ? TimestampHelper.FormatRelockTimestamp(expirationMs.Value) : null,
+                    NextLockDate = expirationMs.HasValue ? TimestampHelper.FormatDateOnly(expirationMs.Value) : null,
+                    LockGroup = 3 //This is PayTrigger/Transsion
+                };
+                // Write to DB
+                await _kosePaymentsRepository.SaveDeviceToDatabaseAsync(deviceToDb);
+            }
+        }
+
+        private async Task<PayTriggerModels.FindLockStateResponse> DoFilterDevicesFromPayTrigger(string imei)
+        {
+            //Read device details from PayTrigger
+            return await _payTriggerClient.FindLockStateAsync(new PayTriggerModels.FindLockStateRequest
+            {
+                Imei = imei
             });
         }
 
@@ -295,6 +448,72 @@ namespace Ranalo.Services
                 }
             }
 
+        }
+
+        // Payment-driven lock-date extension for Transsion devices -- calls
+        // PayTrigger's real updateRepayInfo endpoint (unlocks the device and
+        // pushes the new due/lock date), unlike Knox's ExecuteDeviceActionsAsync
+        // unlock-then-lock pair. Called by ScheduledLockPaying/Restructured/
+        // AutoRestructured for LockGroup==3 devices.
+        public async Task LockDevicesPayTrigger(List<LockTransaction> devicesToLockPayTrigger)
+        {
+            foreach (var device in devicesToLockPayTrigger)
+            {
+                // Get the enrolment our link to the record
+                var enrolment = await _enrolmentRepository.GetByAccountIdAsync(device.AccountId);
+
+                long unixSeconds = new DateTimeOffset(device.AutoLockDate).ToUnixTimeSeconds();
+                long unixMillis = unixSeconds * 1000;
+
+                var request = new PayTriggerModels.UpdateRepayInfoRequest
+                {
+                    Imei = enrolment.IMEI,
+                    NextRepayTime = unixSeconds
+                };
+
+                await _payTriggerClient.UpdateRepayInfoAsync(request);
+
+                var existingDevice = await _kosePaymentsRepository.GetDeviceByAccountId(device.AccountId);
+
+                if (existingDevice != null)
+                {
+                    existingDevice.LockType = "unlocked";
+                    existingDevice.Locked = false;
+                    existingDevice.NextLockDate = TimestampHelper.FormatDateOnly(unixMillis);
+                    existingDevice.NextLockDateIsoFormat = TimestampHelper.FormatRelockTimestamp(unixMillis);
+
+                    await _kosePaymentsRepository.UpdateDeviceToDatabaseAsync(existingDevice);
+                }
+            }
+        }
+
+        // Full-payoff device release for Transsion devices -- calls
+        // PayTrigger's dedicated removeLock endpoint. PayTrigger has an
+        // explicit lifecycle action for this (unlike Knox, which has no
+        // equivalent wired up at all -- see ScheduledLockFullyPaid.cs's note
+        // on that pre-existing gap).
+        public async Task RemoveDevicesPayTrigger(List<LockTransaction> devicesToRemovePayTrigger)
+        {
+            foreach (var device in devicesToRemovePayTrigger)
+            {
+                var enrolment = await _enrolmentRepository.GetByAccountIdAsync(device.AccountId);
+
+                await _payTriggerClient.RemoveLockAsync(new PayTriggerModels.RemoveLockRequest
+                {
+                    Imei = enrolment.IMEI
+                });
+
+                var existingDevice = await _kosePaymentsRepository.GetDeviceByAccountId(device.AccountId);
+
+                if (existingDevice != null)
+                {
+                    existingDevice.LockType = "unlocked";
+                    existingDevice.Locked = false;
+                    existingDevice.Status = "removed";
+
+                    await _kosePaymentsRepository.UpdateDeviceToDatabaseAsync(existingDevice);
+                }
+            }
         }
 
         public async Task<Enrolment> UpdateEnrolmentasync(Enrolment newEnrolment)

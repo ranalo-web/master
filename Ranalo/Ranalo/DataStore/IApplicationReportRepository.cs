@@ -65,7 +65,7 @@ namespace Ranalo.DataStore
         #region Restructured
         Task InsertRestructured(RestructuredRecord restructuringRecord);
 
-        Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10);
+        Task<RestructuredViewModel> GetAllRestructured(string searchTerm, int page = 1, int pageSize = 10, int? dealerId = null, int? agentUserId = null);
 
         Task<List<RestructuredRecord>> GetAllRestructuredForAccount(long accountId);
         Task<decimal> GetPaymentTotalAfterDate(DateTime agreedDate, long accountId);

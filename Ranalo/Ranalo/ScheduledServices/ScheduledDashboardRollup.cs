@@ -33,15 +33,9 @@ namespace Ranalo.ScheduledServices
     //    device model per dealer instead of per account.
     //  - Commissions (Dealer-only): CommissionReceived/CommissionPaidToAgents/
     //    CommissionOutstanding scalars via ComputeCommissionSnapshotRollupAsync,
-    //    and the CommissionsPaid per-agent list via
-    //    RefreshAgentCommissionListAsync (EntryType = AgentCommission, NOT
-    //    "Agent" -- see DashboardPerformanceEntryType.AgentCommission's doc
-    //    comment for why they're kept separate). Agent commission = 50% of
-    //    Deposit vesting immediately + 25% after 90 days, pooled across all of
-    //    an agent's accounts and reduced (uncapped) by the sum of their
-    //    accounts' current arrears. Dealer commission = 30% of (lifetime
-    //    TotalPaid - BuyingPrice - AgentGrossCommission) per account, floored
-    //    at 0. Deferred: the CommissionsReceived transaction-level list,
+    //    using Services.CommissionCalculator, the one commission formula for
+    //    the app. The per-agent and per-account lists are computed live on
+    //    the dashboard instead. Deferred: the CommissionsReceived transaction-level list,
     //    CommissionsChangePct (no historical comparison point), and Admin's
     //    DealerPerformance leaderboard (a separate, still-deferred feature --
     //    see below).
@@ -109,11 +103,10 @@ namespace Ranalo.ScheduledServices
                     var completedContractsRowCount = await repository.RefreshCompletedContractsAsync();
                     var deviceStockRowCount = await repository.RefreshDeviceStockAsync();
                     var commissionRowCount = await RefreshCommissionSnapshotsAsync(repository);
-                    var agentCommissionListRowCount = await repository.RefreshAgentCommissionListAsync();
 
                     _logger.LogInformation(
-                        "Dashboard rollup completed: refreshed {kpiCount} KPI row(s), {portfolioCount} portfolio row(s), {completedCount} completed-contract row(s), {deviceStockCount} device-stock row(s), {commissionCount} commission snapshot row(s), {agentCommissionCount} agent commission list row(s)",
-                        kpiRowCount, portfolioRowCount, completedContractsRowCount, deviceStockRowCount, commissionRowCount, agentCommissionListRowCount);
+                        "Dashboard rollup completed: refreshed {kpiCount} KPI row(s), {portfolioCount} portfolio row(s), {completedCount} completed-contract row(s), {deviceStockCount} device-stock row(s), {commissionCount} commission snapshot row(s)",
+                        kpiRowCount, portfolioRowCount, completedContractsRowCount, deviceStockRowCount, commissionRowCount);
                 }
                 catch (Exception ex)
                 {

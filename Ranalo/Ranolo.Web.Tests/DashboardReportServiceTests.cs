@@ -186,13 +186,15 @@ namespace Ranolo.Web.Tests
             return Task.CompletedTask;
         }
 
-        public int RefreshAgentCommissionListCallCount { get; private set; }
+        public List<DashboardAccountCommissionRow> AccountCommissionsToReturn { get; set; } = new();
 
-        public Task<int> RefreshAgentCommissionListAsync(int topNPerScope = 20)
-        {
-            RefreshAgentCommissionListCallCount++;
-            return Task.FromResult(PerformanceToReturn.TryGetValue(DashboardPerformanceEntryType.AgentCommission, out var rows) ? rows.Count : 0);
-        }
+        public Task<List<DashboardAccountCommissionRow>> GetAccountCommissionsAsync(int? dealerId, int? agentUserId = null) =>
+            Task.FromResult(AccountCommissionsToReturn);
+
+        public List<CommissionAccount> CommissionAccountsToReturn { get; set; } = new();
+
+        public Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null) =>
+            Task.FromResult(CommissionAccountsToReturn);
     }
 
     // Fake standing in for the DB-backed OperatingExpenseRepository, same
@@ -628,43 +630,47 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
-        public async Task GetDealerDashboardAsync_WithAgentCommissionRows_MapsToCommissionsPaidWithDerivedStatus()
+        public async Task GetDealerDashboardAsync_CommissionSection_PoolsPerAgentAndListsEachAccount()
         {
             var fakeRepo = new FakeDashboardReportRepository
             {
-                PerformanceToReturn = new()
+                AccountCommissionsToReturn = new()
                 {
-                    [DashboardPerformanceEntryType.AgentCommission] = new()
-                    {
-                        new() { Rank = 1, SubjectId = 3, SubjectName = "Fully Settled Agent", Accounts = 10, CommissionDue = 5000m, CommissionPaid = 5000m },
-                        new() { Rank = 2, SubjectId = 4, SubjectName = "Owed Agent", Accounts = 6, CommissionDue = 3000m, CommissionPaid = 1000m },
-                    },
+                    new() { AccountId = 1, AgentId = 3, Earned = 5000m, ArrearsDeducted = 0m, Paid = 5000m },
+                    new() { AccountId = 2, AgentId = 4, Earned = 3000m, ArrearsDeducted = 0m, Paid = 1000m },
+                    // Arrears bigger than this account's own commission: offsets agent 4's other account.
+                    new() { AccountId = 3, AgentId = 4, Earned = 1000m, ArrearsDeducted = 2500m, Paid = 0m },
                 },
             };
             var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
-            Assert.That(result.CommissionsPaid, Has.Count.EqualTo(2));
+            Assert.That(result.CommissionSummary.Agents, Is.EqualTo(2));
+            Assert.That(result.CommissionSummary.Accounts, Is.EqualTo(3));
+            Assert.That(result.CommissionSummary.Earned, Is.EqualTo(9000m));
+            Assert.That(result.CommissionSummary.Paid, Is.EqualTo(6000m));
+            // Agent 3 owes 0; agent 4: 4000 earned - 2500 deducted - 1000 paid = 500.
+            Assert.That(result.CommissionSummary.Owed, Is.EqualTo(500m));
+            Assert.That(result.CommissionSummary.Withheld, Is.EqualTo(2500m));
 
-            var settled = result.CommissionsPaid.Single(c => c.AgentName == "Fully Settled Agent");
-            Assert.That(settled.Outstanding, Is.EqualTo(0m));
-            Assert.That(settled.Status, Is.EqualTo("Settled"));
-
-            var owed = result.CommissionsPaid.Single(c => c.AgentName == "Owed Agent");
-            Assert.That(owed.Outstanding, Is.EqualTo(2000m));
-            Assert.That(owed.Status, Is.EqualTo("Outstanding"));
+            Assert.That(result.CommissionAccounts, Has.Count.EqualTo(3));
+            Assert.That(result.CommissionAccounts.Single(c => c.AccountId == 1).Status, Is.EqualTo("Paid"));
+            Assert.That(result.CommissionAccounts.Single(c => c.AccountId == 2).Status, Is.EqualTo("Owed"));
+            Assert.That(result.CommissionAccounts.Single(c => c.AccountId == 3).Status, Is.EqualTo("Withheld"));
+            Assert.That(result.CommissionAccounts.Single(c => c.AccountId == 3).Net, Is.EqualTo(-1500m));
         }
 
         [Test]
-        public async Task GetDealerDashboardAsync_WithNoAgentCommissionRows_StaysEmpty()
+        public async Task GetDealerDashboardAsync_WithNoCommissionAccounts_StaysEmpty()
         {
             var fakeRepo = new FakeDashboardReportRepository();
             var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
-            Assert.That(result.CommissionsPaid, Is.Empty);
+            Assert.That(result.CommissionAccounts, Is.Empty);
+            Assert.That(result.CommissionSummary.Owed, Is.EqualTo(0m));
         }
     }
 }

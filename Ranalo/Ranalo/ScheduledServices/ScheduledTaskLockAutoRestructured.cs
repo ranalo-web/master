@@ -97,6 +97,7 @@ namespace Ranalo.ScheduledServices
 
             var devicesToLock = new List<LockTransaction>();
             var devicesToLockKnox = new List<LockTransaction>();
+            var devicesToLockPayTrigger = new List<LockTransaction>();
             //Not sure why this removes negative arrears
             //records.Records.RemoveAll(a => a.ArrearsR > 0);
 
@@ -120,6 +121,10 @@ namespace Ranalo.ScheduledServices
                     {
                         devicesToLock.Add(lockDevice);
                     }
+                    if (account.LockGroup == 3)
+                    {
+                        devicesToLockPayTrigger.Add(lockDevice);
+                    }
                 }
 
                 var lockedDevices = await deviceProcessor.ProcessBatchesAsync(devicesToLock, _logger);
@@ -127,6 +132,11 @@ namespace Ranalo.ScheduledServices
                 if (devicesToLockKnox.Any())
                 {
                     await enrolmentService.LockDevicesKnox(devicesToLockKnox);
+                }
+
+                if (devicesToLockPayTrigger.Any())
+                {
+                    await enrolmentService.LockDevicesPayTrigger(devicesToLockPayTrigger);
                 }
 
                 return lockedDevices;

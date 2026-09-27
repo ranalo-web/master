@@ -56,5 +56,11 @@ namespace Ranalo.Models
         // population DealerCommissionMissingCostCount already tracks. Used
         // for the Admin Dashboard's live Cost of Devices figure.
         public decimal? BuyingPrice { get; set; }
+
+        // Most recent payment on the account (KosePayments + OrphanedPayments).
+        public DateTime? LastPaymentDate { get; set; }
+
+        // Has a row in RestructuredRecords (a manually agreed restructure).
+        public bool IsManuallyRestructured { get; set; }
     }
 }

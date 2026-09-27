@@ -75,6 +75,8 @@
     }
 }
 
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
 <div class="nk-content-body">
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
@@ -155,100 +157,35 @@
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
                 <div class="card-inner p-0">
-                    <div class="nk-tb-list nk-tb-ulist is-compact">
-                        <div class="nk-tb-item nk-tb-head">
-                            <div class="nk-tb-col nk-tb-col-check">
-                                <div class="custom-control custom-control-sm custom-checkbox notext">
-                                    <input type="checkbox" class="custom-control-input" id="uid">
-                                    <label class="custom-control-label" for="uid"></label>
-                                </div>
-                            </div>
-                            <div class="nk-tb-col"><span class="sub-text">User</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">National ID</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Name</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Surname</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">IMEI</span></div>
-                            <div class="nk-tb-col tb-col-lg"><span class="sub-text">Date Created</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Date Updated</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Status</span></div>
-                            <div class="nk-tb-col nk-tb-col-tools text-end">
-                                <div class="dropdown">
-                                    <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-offset="0,5"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
-                                        <ul class="link-tidy sm no-bdr">
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" checked="" id="bl">
-                                                    <label class="custom-control-label" for="bl">Balance</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" checked="" id="ph">
-                                                    <label class="custom-control-label" for="ph">Phone</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" id="vri">
-                                                    <label class="custom-control-label" for="vri">Verified</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" id="st">
-                                                    <label class="custom-control-label" for="st">Status</label>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div><!-- .nk-tb-item -->
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="enrolments" data-page-size="10">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">User</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">National ID</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Name</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Surname</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">IMEI</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Date Created</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Date Updated</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                                <th class="wl-th"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
                         @foreach (var enrolment in Model.Enrolments ?? Enumerable.Empty<Enrolment>())
                         {
-                            <div class="nk-tb-item">
-                                <div class="nk-tb-col nk-tb-col-check">
-                                    <div class="custom-control custom-control-sm custom-checkbox notext">
-                                        <input type="checkbox" class="custom-control-input" id="uid1">
-                                        <label class="custom-control-label" for="uid1"></label>
-                                    </div>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <div class="user-card">
-                                        <div class="user-avatar xs bg-primary">
-                                            <span>@GetInitials(enrolment.FirstName + " " + enrolment.LastName)</span>
-                                        </div>
-                                        <div class="user-name">
-                                            <span class="tb-lead">@enrolment.FirstName @enrolment.LastName</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="nk-tb-col tb-col-md">
-                                    <span>@enrolment.AccountId</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-sm">
-                                    <span>@enrolment.FirstName</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-md">
-                                    <span>@enrolment.LastName</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-xxl">
-                                    <span>@enrolment.IMEI</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-lg">
-                                    <ul class="list-status">
-                                        <li><em class="icon text-success"></em> <span>@enrolment.Created</span></li>
-                                    </ul>
-                                </div>
-                                <div class="nk-tb-col tb-col-xxl">
-                                    <span>@enrolment.Updated</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span class="@SetStatusBadge(enrolment.Status)">@SetStatusText(enrolment.Status)</span>
-                                </div>
-                                <div class="nk-tb-col nk-tb-col-tools">
-                                    <ul class="nk-tb-actions gx-2">
+                            <tr>
+                                <td><span class="fw-medium">@enrolment.FirstName @enrolment.LastName</span></td>
+                                <td>@enrolment.AccountId</td>
+                                <td>@enrolment.FirstName</td>
+                                <td>@enrolment.LastName</td>
+                                <td>@enrolment.IMEI</td>
+                                <td>@enrolment.Created.ToString("dd MMM yyyy")</td>
+                                <td>@enrolment.Updated.ToString("dd MMM yyyy")</td>
+                                <td><span class="@SetStatusBadge(enrolment.Status)">@SetStatusText(enrolment.Status)</span></td>
+                                <td class="text-end">
+                                    <ul class="nk-tb-actions gx-2 justify-content-end">
                                         <li class="nk-tb-action-hidden">
                                             <a href="/approve-enrolment/@enrolment.IMEI" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Approve">
                                                 <em class="icon ni ni-file-check-fill"></em>
@@ -265,14 +202,12 @@
                                             </a>
                                         </li>
                                     </ul>
-                                </div>
-                            </div>
-
-                            <!-- .nk-tb-item -->
+                                </td>
+                            </tr>
                         }
-
-
-                    </div><!-- .nk-tb-list -->
+                        </tbody>
+                    </table>
+                    </div><!-- .table-responsive -->
                     @if (Model.Enrolments == null || !Model.Enrolments.Any())
                     {
                         <div class="card-inner text-soft">No enrolments found.</div>
@@ -359,3 +294,8 @@
         </div><!-- .card -->
     </div><!-- .nk-block -->
 </div>
+
+@section Scripts
+{
+    <script src="~/js/watchlist-table.js"></script>
+}

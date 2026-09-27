@@ -67,6 +67,8 @@
     }
 }
 
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
 <div class="nk-content-body">
 
     <div class="nk-block-head nk-block-head-sm">
@@ -178,99 +180,47 @@
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
                 <div class="card-inner p-0">
-                    <div class="nk-tb-list nk-tb-ulist">
-                        <div class="nk-tb-item nk-tb-head">
-                            <div class="nk-tb-col nk-tb-col-check">
-                                <div class="custom-control custom-control-sm custom-checkbox notext">
-                                    <input type="checkbox" class="custom-control-input" id="uid">
-                                    <label class="custom-control-label" for="uid"></label>
-                                </div>
-                            </div>
-                            <div class="nk-tb-col"><span class="sub-text">Customer</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Daily Rate</span></div>
-                            <div class="nk-tb-col"><span class="sub-text">Deposit</span></div>
-                            <div class="nk-tb-col tb-col-sm"><span class="sub-text">Agent Name</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Last Payment</span></div>
-                            <div class="nk-tb-col tb-col-md"><span class="sub-text">Mpesa Code</span></div>
-                            <div class="nk-tb-col tb-col-xxl"><span class="sub-text">Enrolled On</span></div>
-                            <div class="nk-tb-col nk-tb-col-tools text-end">
-                                <div class="dropdown">
-                                    <a href="#" class="btn btn-xs btn-outline-light btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-offset="0,5"><em class="icon ni ni-plus"></em></a>
-                                    <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
-                                        <ul class="link-tidy sm no-bdr">
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" checked="" id="bl">
-                                                    <label class="custom-control-label" for="bl">Category</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" checked="" id="ph">
-                                                    <label class="custom-control-label" for="ph">Amount</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="custom-control custom-control-sm custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" id="vri">
-                                                    <label class="custom-control-label" for="vri">Interest</label>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div><!-- .nk-tb-item -->
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="assigned-accounts" data-page-size="10">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Daily Rate</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Deposit</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent Name</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Payment</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Payment Date</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Mpesa Code</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Enrolled On</th>
+                                <th class="wl-th"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
                         @foreach (var record in Model?.Contracts)
                         {
-                            <div class="nk-tb-item">
-                                <div class="nk-tb-col nk-tb-col-check">
-                                    <div class="custom-control custom-control-sm custom-checkbox notext">
-                                        <input type="checkbox" class="custom-control-input" id="uid1">
-                                        <label class="custom-control-label" for="uid1"></label>
-                                    </div>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <a href="/account-details/@record.ID">
-                                        <div class="user-card">
-                                            <div class="user-avatar bg-primary">
-                                                <span>AB</span>
-                                            </div>
-                                            <div class="user-info">
-                                                <span class="tb-lead">@record.FirstName</span>
-                                                <span>AC: @record.ID</span>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                                <div class="nk-tb-col tb-col-md">
-                                    <span>@record.Daily</span>
-                                </div>
-                                <div class="nk-tb-col">
-                                    <span>@record.Deposit </span>
-                                </div>
-                                <div class="nk-tb-col tb-col-sm">
-                                    <span>@record.AssignedAgentName</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-md">
+                            <tr>
+                                <td>
+                                    <a href="/account-details/@record.ID" class="fw-medium">@record.FirstName</a>
+                                    <span class="d-block sub-text">AC: @record.ID</span>
+                                </td>
+                                <td>@record.Daily</td>
+                                <td>@record.Deposit</td>
+                                <td>@record.AssignedAgentName</td>
+                                <td>
                                     @if (record.LastPaymentDate.HasValue)
                                     {
-                                        <span class="tb-lead">KES @record.LastPaymentAmount?.ToString("N0")</span><br />
-                                        <span class="sub-text">@record.LastPaymentDate?.ToString("MMM d, yyyy")</span>
+                                        <span class="fw-medium">KES @record.LastPaymentAmount?.ToString("N0")</span>
                                     }
                                     else
                                     {
                                         <span class="text-soft">No payments</span>
                                     }
-                                </div>
-                                <div class="nk-tb-col tb-col-md">
-                                    <span>@(record.LastMpesaCode ?? "-")</span>
-                                </div>
-                                <div class="nk-tb-col tb-col-xxl">
-                                    <span>@(record.StartDate?.ToString("MMM d, yyyy") ?? "-")</span>
-                                </div>
-                                <div class="nk-tb-col nk-tb-col-tools">
-                                    <ul class="nk-tb-actions gx-2">
+                                </td>
+                                <td>@(record.LastPaymentDate?.ToString("dd MMM yyyy") ?? "-")</td>
+                                <td>@(record.LastMpesaCode ?? "-")</td>
+                                <td>@(record.StartDate?.ToString("dd MMM yyyy") ?? "-")</td>
+                                <td class="text-end">
+                                    <ul class="nk-tb-actions gx-2 justify-content-end">
                                         @if (!(ViewBag.IsAgent is true) && !(ViewBag.IsApprover is true))
                                         {
                                             <li class="nk-tb-action-hidden">
@@ -312,13 +262,12 @@
                                             </div>
                                         </li>
                                     </ul>
-                                </div>
-                            </div>
+                                </td>
+                            </tr>
                         }
-
-
-
-                    </div><!-- .nk-tb-list -->
+                        </tbody>
+                    </table>
+                    </div><!-- .table-responsive -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
                     <div class="nk-block-between-md g-3">
@@ -593,6 +542,7 @@
 </div><!-- .Edit Modal-Content -->
 @section Scripts
 {
+    <script src="~/js/watchlist-table.js"></script>
     <script>
         // Populate each modal's fields directly from the triggering link's
         // click, rather than the modal's own 'show.bs.modal' event -- this

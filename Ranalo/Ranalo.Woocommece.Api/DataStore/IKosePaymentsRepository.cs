@@ -20,5 +20,6 @@ namespace Ranalo.Woocommece.Api.DataStore
         Task UpdateDeviceToDatabaseAsync(Device device);
 
         Task<Device?> GetDeviceByAccountId(long accountId);
+        Task<Device?> GetDeviceByImeiAsync(string imei);
     }
 }
