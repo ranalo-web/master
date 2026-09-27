@@ -1,4 +1,4 @@
-namespace Ranalo.Models
+﻿namespace Ranalo.Models
 {
     public class DealerDashboardViewModel
     {
@@ -221,10 +221,18 @@ namespace Ranalo.Models
         public decimal OverdueAmount { get; set; }
         public DateTime? LockDate { get; set; }
         public DateTime? LastPaymentDate { get; set; }
+        public string? Phone { get; set; }
+        // Primary and second next of kin from the customer's latest WooCommerce
+        // order (Woo_Orders_NextOfKin). Null when none was captured.
+        public string? NextOfKinName { get; set; }
+        public string? NextOfKinPhone { get; set; }
+        public string? NextOfKin2Name { get; set; }
+        public string? NextOfKin2Phone { get; set; }
     }
 
     public class DealerWatchlistEntry
     {
+        public long AccountId { get; set; }
         public string CustomerName { get; set; } = "";
         public string AgentName { get; set; } = "";
         public string Detail { get; set; } = "";
@@ -234,6 +242,12 @@ namespace Ranalo.Models
         // Slow-Payers/Good-Payers tables, which don't render these columns.
         public string? Phone { get; set; }
         public string? DealerName { get; set; }
+        // Primary and second next of kin from the customer's latest WooCommerce
+        // order (Woo_Orders_NextOfKin). Null when none was captured.
+        public string? NextOfKinName { get; set; }
+        public string? NextOfKinPhone { get; set; }
+        public string? NextOfKin2Name { get; set; }
+        public string? NextOfKin2Phone { get; set; }
     }
 
     public class DealerContract

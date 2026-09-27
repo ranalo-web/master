@@ -37,7 +37,7 @@ var config = builder.Configuration;
 
 builder.Services.AddHttpClient<IVeritechApiClient, VeritechApiClient>(client =>
 {
-    client.BaseAddress = new Uri(config["Veritech:BaseUrl"]);
+    SetBaseAddress(client, config["Veritech:BaseUrl"]);
     client.DefaultRequestHeaders.Add("x-vtkdp-key", config["Veritech:ApiKey"]);
 });
 
@@ -62,7 +62,7 @@ builder.Services.AddHttpClient<IKnoxTokenProvider, KnoxJwtTokenProvider>(
         var settings =
             sp.GetRequiredService<IOptions<KnoxSettings>>().Value;
 
-        client.BaseAddress = new Uri(settings.RegionBaseUrl);
+        SetBaseAddress(client, settings.RegionBaseUrl);
     });
 
 //Transsion PayTrigger -- 3rd lock provider (itel/TECNO/Infinix), alongside
@@ -79,7 +79,7 @@ builder.Services.AddHttpClient<IPayTriggerClient, PayTriggerClient>(
         var settings =
             sp.GetRequiredService<IOptions<PayTriggerSettings>>().Value;
 
-        client.BaseAddress = new Uri(settings.BaseUrl);
+        SetBaseAddress(client, settings.BaseUrl);
     });
 
 // Register your repository
@@ -191,6 +191,20 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
+// A missing external-service address no longer crashes the app (see
+// SetBaseAddress below); log it clearly at startup instead so it shows up in
+// Application Insights. Production values live in Azure App Service >
+// Environment variables, named Section__Key (e.g. PayTrigger__BaseUrl).
+foreach (var key in new[] { "Veritech:BaseUrl", "Knox:RegionBaseUrl", "PayTrigger:BaseUrl" })
+{
+    if (!Uri.TryCreate(app.Configuration[key], UriKind.Absolute, out _))
+    {
+        app.Logger.LogError(
+            "Setting {SettingKey} is missing or not a valid URL. Calls to that service will fail until it is set (Azure name: {AzureName}).",
+            key, key.Replace(":", "__"));
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -221,3 +235,15 @@ app.MapControllerRoute(
 app.MapFallbackToController("Index", "DealerDashboard");
 
 app.Run();
+
+// Sets an HttpClient's base address only when the configured value is a valid
+// absolute URL. A missing setting used to throw here, which broke every page
+// and scheduled job that depended on that client, not just the one service.
+// Now only requests to that service fail; the startup check above logs why.
+static void SetBaseAddress(HttpClient client, string? url)
+{
+    if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+    {
+        client.BaseAddress = uri;
+    }
+}

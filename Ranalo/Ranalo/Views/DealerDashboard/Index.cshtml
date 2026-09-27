@@ -511,6 +511,10 @@
                     <div class="col-12 col-lg-5" style="min-width:0;">
                         <div class="mb-2">
                             <div class="text-soft" style="font-size:12px;">Completed Contracts</div>
+                            @if (!(ViewBag.IsApprover is true))
+                            {
+                                <a href="/dealer-dashboard/reports/completed-contracts" class="link link-primary small">View full report</a>
+                            }
                             <div class="d-flex align-items-baseline" style="column-gap:.5rem;">
                                 <span class="fw-bold" style="font-size:22px; color:#364a63;" id="completedContractsPeriodCount">@Model.CompletedContractsThisMonth.ToString("N0")</span>
                                 <span class="text-soft" style="font-size:11px;" id="completedContractsPeriodLabel">this month</span>
@@ -544,6 +548,10 @@
                     <div class="card-title">
                         <h6 class="title">Device Performance</h6>
                         <p class="text-soft">Units financed, avg. value &amp; repayment health</p>
+                        @if (!(ViewBag.IsApprover is true))
+                        {
+                            <a href="/dealer-dashboard/reports/device-performance" class="link link-primary small">View full report</a>
+                        }
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -585,6 +593,342 @@
     </div><!-- .nk-block -->
     }
 
+
+    @{
+        var dealer_nonpayersMore = Math.Max(0, Model.NonPayers.Count - tablePageSize);
+    }
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title"><span class="dot dot-lg bg-dark me-1"></span>Non-Payers <span class="badge badge-dim bg-light text-dark ms-1">@Model.NonPayers.Count</span></h6>
+                            <p class="text-soft">More than 7 days past their lock date</p>
+                            @if (!(ViewBag.IsApprover is true))
+                            {
+                                <a href="/dealer-dashboard/reports/non-payers" class="link link-primary small">View full report</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    @if (Model.NonPayers.Count == 0)
+                    {
+                        <div class="card-inner text-soft">No non-paying accounts.</div>
+                    }
+                    else
+                    {
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="dealer-nonpayers" data-page-size="@tablePageSize">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                    @if (ViewBag.IsApprover is true)
+                                    {
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                    }
+                                    @if (!(ViewBag.IsAgent is true))
+                                    {
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                    }
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Next of Kin</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">2nd Next of Kin</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.NonPayers.Count; i++)
+                                {
+                                    var e = Model.NonPayers[i];
+                                    <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealer-nonpayers">
+                                        <td>
+                                            <a href="/account-details/@e.AccountId" class="fw-medium">@e.CustomerName</a>
+                                            <span class="d-block sub-text">AC: @e.AccountId</span>
+                                        </td>
+                                        @if (ViewBag.IsApprover is true)
+                                        {
+                                            <td>@e.DealerName</td>
+                                        }
+                                        @if (!(ViewBag.IsAgent is true))
+                                        {
+                                            <td>@(string.IsNullOrWhiteSpace(e.AgentName) ? "Unassigned" : e.AgentName)</td>
+                                        }
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(e.Phone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@e.Phone">@e.Phone</a>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(e.NextOfKinPhone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@e.NextOfKinPhone">@e.NextOfKinPhone</a>
+                                                <span class="d-block sub-text">@e.NextOfKinName</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(e.NextOfKin2Phone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@e.NextOfKin2Phone">@e.NextOfKin2Phone</a>
+                                                <span class="d-block sub-text">@e.NextOfKin2Name</span>
+                                            }
+                                        </td>
+                                        <td><span class="text-danger">@e.Detail</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (dealer_nonpayersMore > 0)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="dealer-nonpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'dealer-nonpayers', @tablePageSize);">Show @Math.Min(tablePageSize, dealer_nonpayersMore) more</a>
+                            <a href="#" class="link link-primary" data-less-for="dealer-nonpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'dealer-nonpayers', @tablePageSize);">Show less</a>
+                        </div>
+                    }
+                    }
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    @{
+        var dealer_slowpayersMore = Math.Max(0, Model.SlowPayers.Count - tablePageSize);
+    }
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title"><span class="dot dot-lg bg-warning me-1"></span>Slow Payers <span class="badge badge-dim bg-light text-dark ms-1">@Model.SlowPayers.Count</span></h6>
+                            <p class="text-soft">1 to 7 days past their lock date, still paying</p>
+                            @if (!(ViewBag.IsApprover is true))
+                            {
+                                <a href="/dealer-dashboard/reports/slow-payers" class="link link-primary small">View full report</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    @if (Model.SlowPayers.Count == 0)
+                    {
+                        <div class="card-inner text-soft">No slow-paying accounts.</div>
+                    }
+                    else
+                    {
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="dealer-slowpayers" data-page-size="@tablePageSize">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                    @if (ViewBag.IsApprover is true)
+                                    {
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                    }
+                                    @if (!(ViewBag.IsAgent is true))
+                                    {
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                    }
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Next of Kin</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">2nd Next of Kin</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.SlowPayers.Count; i++)
+                                {
+                                    var e = Model.SlowPayers[i];
+                                    <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealer-slowpayers">
+                                        <td>
+                                            <a href="/account-details/@e.AccountId" class="fw-medium">@e.CustomerName</a>
+                                            <span class="d-block sub-text">AC: @e.AccountId</span>
+                                        </td>
+                                        @if (ViewBag.IsApprover is true)
+                                        {
+                                            <td>@e.DealerName</td>
+                                        }
+                                        @if (!(ViewBag.IsAgent is true))
+                                        {
+                                            <td>@(string.IsNullOrWhiteSpace(e.AgentName) ? "Unassigned" : e.AgentName)</td>
+                                        }
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(e.Phone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@e.Phone">@e.Phone</a>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(e.NextOfKinPhone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@e.NextOfKinPhone">@e.NextOfKinPhone</a>
+                                                <span class="d-block sub-text">@e.NextOfKinName</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(e.NextOfKin2Phone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@e.NextOfKin2Phone">@e.NextOfKin2Phone</a>
+                                                <span class="d-block sub-text">@e.NextOfKin2Name</span>
+                                            }
+                                        </td>
+                                        <td><span class="text-warning">@e.Detail</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (dealer_slowpayersMore > 0)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="dealer-slowpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'dealer-slowpayers', @tablePageSize);">Show @Math.Min(tablePageSize, dealer_slowpayersMore) more</a>
+                            <a href="#" class="link link-primary" data-less-for="dealer-slowpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'dealer-slowpayers', @tablePageSize);">Show less</a>
+                        </div>
+                    }
+                    }
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    @{
+        var dealer_goodpayersMore = Math.Max(0, Model.GoodPayers.Count - tablePageSize);
+    }
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title"><span class="dot dot-lg bg-success me-1"></span>Good Paying Customers <span class="badge badge-dim bg-light text-dark ms-1">@Model.GoodPayers.Count</span></h6>
+                            <p class="text-soft">Not past their lock date</p>
+                            @if (!(ViewBag.IsApprover is true))
+                            {
+                                <a href="/dealer-dashboard/reports/good-payers" class="link link-primary small">View full report</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    @if (Model.GoodPayers.Count == 0)
+                    {
+                        <div class="card-inner text-soft">No accounts are currently up to date.</div>
+                    }
+                    else
+                    {
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="dealer-goodpayers" data-page-size="@tablePageSize">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                    @if (ViewBag.IsApprover is true)
+                                    {
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                    }
+                                    @if (!(ViewBag.IsAgent is true))
+                                    {
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                    }
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Next of Kin</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">2nd Next of Kin</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.GoodPayers.Count; i++)
+                                {
+                                    var e = Model.GoodPayers[i];
+                                    <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealer-goodpayers">
+                                        <td>
+                                            <a href="/account-details/@e.AccountId" class="fw-medium">@e.CustomerName</a>
+                                            <span class="d-block sub-text">AC: @e.AccountId</span>
+                                        </td>
+                                        @if (ViewBag.IsApprover is true)
+                                        {
+                                            <td>@e.DealerName</td>
+                                        }
+                                        @if (!(ViewBag.IsAgent is true))
+                                        {
+                                            <td>@(string.IsNullOrWhiteSpace(e.AgentName) ? "Unassigned" : e.AgentName)</td>
+                                        }
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(e.Phone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@e.Phone">@e.Phone</a>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(e.NextOfKinPhone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@e.NextOfKinPhone">@e.NextOfKinPhone</a>
+                                                <span class="d-block sub-text">@e.NextOfKinName</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(e.NextOfKin2Phone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@e.NextOfKin2Phone">@e.NextOfKin2Phone</a>
+                                                <span class="d-block sub-text">@e.NextOfKin2Name</span>
+                                            }
+                                        </td>
+                                        <td><span class="text-success">@e.Detail</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (dealer_goodpayersMore > 0)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="dealer-goodpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'dealer-goodpayers', @tablePageSize);">Show @Math.Min(tablePageSize, dealer_goodpayersMore) more</a>
+                            <a href="#" class="link link-primary" data-less-for="dealer-goodpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'dealer-goodpayers', @tablePageSize);">Show less</a>
+                        </div>
+                    }
+                    }
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -593,6 +937,10 @@
                         <div class="card-title">
                             <h6 class="title">Agent Performance</h6>
                             <p class="text-soft">Active % excludes Slow Payers (Good vs Good+Non-Paying); % of Target counts the whole book not in default</p>
+                            @if (!(ViewBag.IsApprover is true))
+                            {
+                                <a href="/dealer-dashboard/reports/agent-performance" class="link link-primary small">View full report</a>
+                            }
                             <p class="text-soft small mb-0">Good: not past lock &middot; Restructured: manual restructure, or in arrears on a new plan &middot; Slow: 1-7 days &middot; Arrears: 8-90 days &middot; Bad: 90+ days &middot; Needs Collection: 30+ days past lock, not restructured, no payment in 7 days</p>
                         </div>
                     </div>
@@ -680,6 +1028,9 @@
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Device</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Next of Kin</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">2nd Next of Kin</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Days Past Lock</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Overdue</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Lock Date</th>
@@ -697,6 +1048,38 @@
                                         </td>
                                         <td>@(string.IsNullOrWhiteSpace(c.AgentName) ? "Unassigned" : c.AgentName)</td>
                                         <td>@c.DeviceName</td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(c.Phone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@c.Phone">@c.Phone</a>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(c.NextOfKinPhone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@c.NextOfKinPhone">@c.NextOfKinPhone</a>
+                                                <span class="d-block sub-text">@c.NextOfKinName</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(c.NextOfKin2Phone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@c.NextOfKin2Phone">@c.NextOfKin2Phone</a>
+                                                <span class="d-block sub-text">@c.NextOfKin2Name</span>
+                                            }
+                                        </td>
                                         <td><span class="@(c.DaysPastLock > 90 ? "text-danger fw-bold" : "text-danger")">@c.DaysPastLock</span></td>
                                         <td>KES @c.OverdueAmount.ToString("N0")</td>
                                         <td>@(c.LockDate?.ToString("dd MMM yyyy HH:mm") ?? "-")</td>
@@ -828,6 +1211,10 @@
                         <div class="card-title">
                             <h6 class="title">My Contracts</h6>
                             <p class="text-soft">All active contracts</p>
+                            @if (!(ViewBag.IsApprover is true))
+                            {
+                                <a href="/dealer-dashboard/reports/contracts" class="link link-primary small">View full report</a>
+                            }
                         </div>
                     </div>
                 </div>
@@ -935,6 +1322,10 @@
                         <div class="card-title">
                             <h6 class="title">Contracts Ending Soon</h6>
                             <p class="text-soft">Not in arrears and 80%+ paid off &mdash; reach out about their next device</p>
+                            @if (!(ViewBag.IsApprover is true))
+                            {
+                                <a href="/dealer-dashboard/reports/contracts-ending-soon" class="link link-primary small">View full report</a>
+                            }
                         </div>
                     </div>
                 </div>

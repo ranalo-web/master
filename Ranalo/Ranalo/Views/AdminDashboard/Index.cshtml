@@ -677,6 +677,9 @@
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Device</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Next of Kin</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">2nd Next of Kin</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Days Past Lock</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Overdue</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Lock Date</th>
@@ -695,6 +698,38 @@
                                         <td>@c.DealerName</td>
                                         <td>@(string.IsNullOrWhiteSpace(c.AgentName) ? "Unassigned" : c.AgentName)</td>
                                         <td>@c.DeviceName</td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(c.Phone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@c.Phone">@c.Phone</a>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(c.NextOfKinPhone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@c.NextOfKinPhone">@c.NextOfKinPhone</a>
+                                                <span class="d-block sub-text">@c.NextOfKinName</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(c.NextOfKin2Phone))
+                                            {
+                                                <span class="text-soft">-</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="tel:@c.NextOfKin2Phone">@c.NextOfKin2Phone</a>
+                                                <span class="d-block sub-text">@c.NextOfKin2Name</span>
+                                            }
+                                        </td>
                                         <td><span class="@(c.DaysPastLock > 90 ? "text-danger fw-bold" : "text-danger")">@c.DaysPastLock</span></td>
                                         <td>KES @c.OverdueAmount.ToString("N0")</td>
                                         <td>@(c.LockDate?.ToString("dd MMM yyyy HH:mm") ?? "-")</td>

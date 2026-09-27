@@ -62,5 +62,12 @@ namespace Ranalo.Models
 
         // Has a row in RestructuredRecords (a manually agreed restructure).
         public bool IsManuallyRestructured { get; set; }
+
+        // Primary and second next of kin from the customer's latest WooCommerce
+        // order (Woo_Orders_NextOfKin). Null when none was captured.
+        public string? NextOfKinName { get; set; }
+        public string? NextOfKinPhone { get; set; }
+        public string? NextOfKin2Name { get; set; }
+        public string? NextOfKin2Phone { get; set; }
     }
 }

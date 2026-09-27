@@ -588,6 +588,10 @@ namespace Ranalo.Services
                     CustomerName = r.CustomerName,
                     AgentName = r.AgentName ?? "",
                     Phone = r.CustomerPhone,
+                NextOfKinName = r.NextOfKinName,
+                NextOfKinPhone = r.NextOfKinPhone,
+                NextOfKin2Name = r.NextOfKin2Name,
+                NextOfKin2Phone = r.NextOfKin2Phone,
                     DealerName = r.DealerName ?? "",
                     Detail = $"KES {Math.Max(0, -r.ArrearsAmount):N0} overdue, {Math.Round(LockDays(r))} days",
                 }).ToList();
@@ -662,10 +666,15 @@ namespace Ranalo.Services
             .Where(r => LockDays(r) > 7)
             .Select(r => new DealerWatchlistEntry
             {
+                AccountId = r.AccountId,
                 CustomerName = r.CustomerName,
                 AgentName = r.AgentName ?? "",
                 DealerName = r.DealerName,
                 Phone = r.CustomerPhone,
+                NextOfKinName = r.NextOfKinName,
+                NextOfKinPhone = r.NextOfKinPhone,
+                NextOfKin2Name = r.NextOfKin2Name,
+                NextOfKin2Phone = r.NextOfKin2Phone,
                 Detail = $"{Math.Round(LockDays(r))} days overdue",
             }).ToList();
 
@@ -673,10 +682,15 @@ namespace Ranalo.Services
             .Where(r => LockDays(r) is > 0 and <= 7)
             .Select(r => new DealerWatchlistEntry
             {
+                AccountId = r.AccountId,
                 CustomerName = r.CustomerName,
                 AgentName = r.AgentName ?? "",
                 DealerName = r.DealerName,
                 Phone = r.CustomerPhone,
+                NextOfKinName = r.NextOfKinName,
+                NextOfKinPhone = r.NextOfKinPhone,
+                NextOfKin2Name = r.NextOfKin2Name,
+                NextOfKin2Phone = r.NextOfKin2Phone,
                 Detail = $"KES {Math.Max(0, -r.ArrearsAmount):N0} due",
             }).ToList();
 
@@ -684,10 +698,15 @@ namespace Ranalo.Services
             .Where(r => LockDays(r) <= 0)
             .Select(r => new DealerWatchlistEntry
             {
+                AccountId = r.AccountId,
                 CustomerName = r.CustomerName,
                 AgentName = r.AgentName ?? "",
                 DealerName = r.DealerName,
                 Phone = r.CustomerPhone,
+                NextOfKinName = r.NextOfKinName,
+                NextOfKinPhone = r.NextOfKinPhone,
+                NextOfKin2Name = r.NextOfKin2Name,
+                NextOfKin2Phone = r.NextOfKin2Phone,
                 Detail = $"{PaymentsAhead(r)} payments ahead",
             }).ToList();
 
@@ -886,6 +905,11 @@ namespace Ranalo.Services
                 OverdueAmount = Math.Max(0, -x.Row.ArrearsAmount),
                 LockDate = DashboardReportRepository.ParseNextLockDate(x.Row.NextLockDateRaw),
                 LastPaymentDate = x.Row.LastPaymentDate,
+                Phone = x.Row.CustomerPhone,
+                NextOfKinName = x.Row.NextOfKinName,
+                NextOfKinPhone = x.Row.NextOfKinPhone,
+                NextOfKin2Name = x.Row.NextOfKin2Name,
+                NextOfKin2Phone = x.Row.NextOfKin2Phone,
             })
             .ToList();
 

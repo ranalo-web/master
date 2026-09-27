@@ -29,6 +29,11 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
+            // Company-wide commission figures: admin menu only.
+            if (settings.RoleId != UserRole.Admin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
             var filter = new CommissionsFilter();
 
             var fullCommissions = await _commissionsService.FullCommissionsReportAsync(filter);
@@ -49,6 +54,11 @@ namespace Ranalo.Controllers
             if (settings == null)
             {
                 return RedirectToAction("Index", "Login");
+            }
+            // Company-wide commission figures: admin menu only.
+            if (settings.RoleId != UserRole.Admin)
+            {
+                return RedirectToAction("Index", "Home");
             }
             var filter = new CommissionsFilter();
 
@@ -71,6 +81,11 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
+            // Company-wide commission figures: admin menu only.
+            if (settings.RoleId != UserRole.Admin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
             var filter = new CommissionsFilter();
 
             var fullCommissions = await _commissionsService.OutstandingDealerCommissionsAsync(filter);
@@ -78,6 +93,32 @@ namespace Ranalo.Controllers
             var response = new CommissionsMaster()
             {
                 OutstandingDealerCommissions = fullCommissions
+            };
+
+            await SetViewBags(settings, "index");
+            return View(response);
+        }
+
+        [Route("agents-totals")]
+        public async Task<IActionResult> AgentsTotals()
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+            // Company-wide commission figures: admin menu only.
+            if (settings.RoleId != UserRole.Admin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+            var filter = new CommissionsFilter();
+
+            var agentTotals = await _commissionsService.AgentsTotalSummaryAsync(filter);
+
+            var response = new CommissionsMaster()
+            {
+                AgentTotalsCommissions = agentTotals
             };
 
             await SetViewBags(settings, "index");
