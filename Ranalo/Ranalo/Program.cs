@@ -100,6 +100,8 @@ builder.Services.AddScoped<IAccountWatchlistService, AccountWatchlistService>();
 builder.Services.AddScoped<IAccountWatchlistRepository, AccountWatchlistRepository>();
 builder.Services.AddScoped<IOperatingExpenseService, OperatingExpenseService>();
 builder.Services.AddScoped<IOperatingExpenseRepository, OperatingExpenseRepository>();
+builder.Services.AddScoped<ICostBackfillService, CostBackfillService>();
+builder.Services.AddScoped<ICostBackfillRepository, CostBackfillRepository>();
 builder.Services.AddScoped<IContractCalculatorService, ContractCalculatorService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IDevicesRepository, DevicesRepository>();

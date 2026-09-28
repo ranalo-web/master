@@ -1,0 +1,271 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model CostBackfillViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var ruleLabel = CostBackfillService.Rules.TryGetValue(Model.Rule, out var rl) ? rl : Model.Rule;
+    var noSuggestion = Model.Contracts.Count - Model.WithSuggestion;
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+<style>
+    .cb-chip { border: 1px solid var(--bs-border-color, #dbdfea); border-radius: 12px; padding: 1px 8px; font-size: 12px; background: transparent; margin: 1px 2px; white-space: nowrap; }
+    .cb-chip:hover { border-color: var(--bs-primary, #6576ff); }
+    .cb-chip.cb-order { border-color: var(--bs-success, #1ee0ac); }
+</style>
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Device Cost Backfill</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Contracts with no buying price. Review the suggested cost for each, change anything that's wrong, tick the rows to save, then Apply. Only empty buying prices are ever filled.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-light btn-white dropdown-toggle" data-bs-toggle="dropdown">
+                        <em class="icon ni ni-setting"></em><span>Pre-fill: @ruleLabel</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <ul class="link-list-opt no-bdr">
+                            @foreach (var rule in CostBackfillService.Rules)
+                            {
+                                <li><a href="/cost-backfill?rule=@rule.Key"><span>@rule.Value</span></a></li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["BackfillResult"] is string backfillResult)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em>
+            <strong>Backfill saved.</strong> @backfillResult
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (Model.WooError != null)
+    {
+        <div class="alert alert-warning alert-icon">
+            <em class="icon ni ni-alert-circle"></em>
+            <strong>WooCommerce costs unavailable.</strong> Couldn't fetch product costs (@Model.WooError), so only similar-device suggestions are shown.
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-6 col-md-3"><div class="card card-bordered"><div class="card-inner">
+                <div class="text-soft small">Contracts without a cost</div>
+                <div class="fs-4 fw-bold">@Model.Contracts.Count.ToString("N0")</div>
+            </div></div></div>
+            <div class="col-6 col-md-3"><div class="card card-bordered"><div class="card-inner">
+                <div class="text-soft small">With a suggestion</div>
+                <div class="fs-4 fw-bold">@Model.WithSuggestion.ToString("N0")</div>
+            </div></div></div>
+            <div class="col-6 col-md-3"><div class="card card-bordered"><div class="card-inner">
+                <div class="text-soft small">No suggestion (enter by hand)</div>
+                <div class="fs-4 fw-bold @(noSuggestion > 0 ? "text-warning" : "")">@noSuggestion.ToString("N0")</div>
+            </div></div></div>
+            <div class="col-6 col-md-3"><div class="card card-bordered"><div class="card-inner">
+                <div class="text-soft small">Devices without a contract</div>
+                <div class="fs-4 fw-bold">@Model.DevicesWithoutContracts.Count.ToString("N0")</div>
+            </div></div></div>
+        </div>
+    </div>
+
+    <form action="/cost-backfill/apply" method="post" id="backfill-form">
+        <input type="hidden" name="rule" value="@Model.Rule" />
+        <div class="nk-block">
+            <div class="card card-bordered">
+                <div class="card-inner card-inner-md d-flex flex-wrap justify-content-between align-items-center" style="gap:12px;">
+                    <div class="d-flex flex-wrap align-items-center" style="gap:8px;">
+                        <span class="text-soft small">Show</span>
+                        <select id="row-filter" class="form-select form-select-sm" style="width:auto;" onchange="filterRows()">
+                            <option value="all">All contracts</option>
+                            <option value="suggested">With a suggestion</option>
+                            <option value="none">No suggestion</option>
+                            <option value="ticked">Ticked</option>
+                        </select>
+                        <input type="search" id="row-search" class="form-control form-control-sm" style="width:220px;" placeholder="Search account, customer, device" oninput="filterRows()" />
+                    </div>
+                    <div class="text-end">
+                        <span class="text-soft small">Ticked: </span><span class="fw-bold" id="ticked-count">0</span>
+                        <span class="text-soft small ms-2">Total: </span><span class="fw-bold" id="ticked-total">KES 0</span>
+                    </div>
+                </div>
+
+                <div class="card-inner p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th"><input type="checkbox" id="tick-all" onchange="tickVisible(this.checked)" title="Tick / untick visible rows" /></th>
+                                    <th class="wl-th">Account</th>
+                                    <th class="wl-th">Customer</th>
+                                    <th class="wl-th">Started</th>
+                                    <th class="wl-th">Device</th>
+                                    <th class="wl-th">Suggestions (click to use)</th>
+                                    <th class="wl-th">Buying price (KES)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.Contracts.Count; i++)
+                                {
+                                    var row = Model.Contracts[i];
+                                    <tr data-suggested="@(row.Suggestions.Any() ? "1" : "0")">
+                                        <td>
+                                            <input type="checkbox" class="row-include" name="rows[@i].Include" value="true" @(row.SelectedCost.HasValue ? "checked" : "") onchange="updateTotals()" />
+                                            <input type="hidden" name="rows[@i].ContractId" value="@row.ContractId" />
+                                        </td>
+                                        <td><a href="/account-details/@row.AccountNo" target="_blank" class="link link-primary">@row.AccountNo</a></td>
+                                        <td>@row.CustomerName</td>
+                                        <td>@row.StartDate?.ToString("dd MMM yyyy")@(row.EndDate.HasValue ? " (ended)" : "")</td>
+                                        <td>@row.DeviceLabel</td>
+                                        <td style="white-space:normal; min-width:260px;">
+                                            @if (row.Suggestions.Count == 0)
+                                            {
+                                                <span class="text-soft small">None -- enter by hand</span>
+                                            }
+                                            @foreach (var s in row.Suggestions)
+                                            {
+                                                <button type="button" class="cb-chip @(s.Source == "order" ? "cb-order" : "")" title="@s.Label" onclick="useCost(this, @s.Cost.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+                                                    @s.Label: <strong>@s.Cost.ToString("N0")</strong>
+                                                </button>
+                                            }
+                                        </td>
+                                        <td><input type="number" class="form-control form-control-sm row-cost" name="rows[@i].BuyingPrice" value="@row.SelectedCost?.ToString(System.Globalization.CultureInfo.InvariantCulture)" min="1" step="1" style="width:130px;" oninput="costEdited(this)" /></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.Contracts.Count == 0)
+                    {
+                        <div class="card-inner text-soft">Every contract has a buying price.</div>
+                    }
+                </div>
+
+                <div class="card-inner d-flex justify-content-between align-items-center">
+                    <span class="text-soft small">Pre-filled from "@ruleLabel". A cost from the contract's own order always takes priority. Nothing is saved until you click Apply.</span>
+                    <button type="submit" class="btn btn-primary" onclick="return confirmApply()">Apply Ticked Costs</button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md">
+                <h6 class="title mb-1">Devices without a contract (@Model.DevicesWithoutContracts.Count.ToString("N0"))</h6>
+                <p class="text-soft mb-0">These have nowhere to store a buying price yet -- a cost can be set once a contract exists for the device.</p>
+            </div>
+            @if (Model.DevicesWithoutContracts.Count > 0)
+            {
+                <div class="card-inner p-0">
+                    <div class="table-responsive" style="max-height:420px; overflow-y:auto;">
+                        <table class="table mb-0" style="white-space:nowrap;">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th">Device ID</th>
+                                    <th class="wl-th">Device</th>
+                                    <th class="wl-th">Customer</th>
+                                    <th class="wl-th">Dealer</th>
+                                    <th class="wl-th">Added</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var d in Model.DevicesWithoutContracts)
+                                {
+                                    <tr>
+                                        <td>@d.DeviceId</td>
+                                        <td>@(string.Join(" ", new[] { d.Make, d.Model }.Where(x => !string.IsNullOrWhiteSpace(x))) is { Length: > 0 } dl ? dl : d.DeviceName)</td>
+                                        <td>@d.CustomerName</td>
+                                        <td>@d.DealerName</td>
+                                        <td>@d.CreatedLabel</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script>
+        function rows() { return Array.from(document.querySelectorAll('#backfill-form tbody tr')); }
+
+        function useCost(button, cost) {
+            var tr = button.closest('tr');
+            tr.querySelector('.row-cost').value = cost;
+            tr.querySelector('.row-include').checked = true;
+            updateTotals();
+        }
+
+        function costEdited(input) {
+            var tr = input.closest('tr');
+            tr.querySelector('.row-include').checked = parseFloat(input.value) > 0;
+            updateTotals();
+        }
+
+        function tickVisible(checked) {
+            rows().filter(function (tr) { return tr.style.display !== 'none'; }).forEach(function (tr) {
+                tr.querySelector('.row-include').checked = checked && parseFloat(tr.querySelector('.row-cost').value) > 0;
+            });
+            updateTotals();
+        }
+
+        function filterRows() {
+            var mode = document.getElementById('row-filter').value;
+            var term = document.getElementById('row-search').value.trim().toLowerCase();
+            rows().forEach(function (tr) {
+                var show = mode === 'all'
+                    || (mode === 'suggested' && tr.dataset.suggested === '1')
+                    || (mode === 'none' && tr.dataset.suggested === '0')
+                    || (mode === 'ticked' && tr.querySelector('.row-include').checked);
+                if (show && term) { show = tr.textContent.toLowerCase().indexOf(term) !== -1; }
+                tr.style.display = show ? '' : 'none';
+            });
+        }
+
+        function updateTotals() {
+            var count = 0, total = 0;
+            rows().forEach(function (tr) {
+                if (tr.querySelector('.row-include').checked) {
+                    count++;
+                    total += parseFloat(tr.querySelector('.row-cost').value) || 0;
+                }
+            });
+            document.getElementById('ticked-count').textContent = count.toLocaleString();
+            document.getElementById('ticked-total').textContent = 'KES ' + total.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        }
+
+        function confirmApply() {
+            var count = parseInt(document.getElementById('ticked-count').textContent.replace(/,/g, ''), 10) || 0;
+            if (count === 0) { return false; }
+            // Only ticked rows are posted, renumbered rows[0..n] -- the model
+            // binder stops reading a list at the first gap in the indexes.
+            var k = 0;
+            rows().forEach(function (tr) {
+                var inputs = tr.querySelectorAll('input');
+                if (!tr.querySelector('.row-include').checked) {
+                    inputs.forEach(function (i) { i.disabled = true; });
+                    return;
+                }
+                inputs.forEach(function (i) { i.name = i.name.replace(/^rows\[\d+\]/, 'rows[' + k + ']'); });
+                k++;
+            });
+            return true;
+        }
+
+        document.addEventListener('DOMContentLoaded', updateTotals);
+    </script>
+}

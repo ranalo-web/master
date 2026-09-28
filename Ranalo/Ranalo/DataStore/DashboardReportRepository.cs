@@ -299,10 +299,11 @@ namespace Ranalo.DataStore
             var rangeStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-(months - 1));
 
             const string sql = @"
-                SELECT YEAR(PaymentDateValue) AS Year, MONTH(PaymentDateValue) AS Month, SUM(AmountValue) AS Total
-                FROM KosePayments
-                WHERE PaymentDateValue >= @RangeStart
-                GROUP BY YEAR(PaymentDateValue), MONTH(PaymentDateValue)";
+                SELECT YEAR(kp.PaymentDateValue) AS Year, MONTH(kp.PaymentDateValue) AS Month, SUM(kp.AmountValue) AS Total
+                FROM KosePayments kp
+                WHERE kp.PaymentDateValue >= @RangeStart
+                  AND " + DevicePaymentFilter + @"
+                GROUP BY YEAR(kp.PaymentDateValue), MONTH(kp.PaymentDateValue)";
 
             try
             {
@@ -345,7 +346,7 @@ namespace Ranalo.DataStore
 
         public async Task<decimal> GetAllTimeRevenueAsync()
         {
-            const string sql = "SELECT ISNULL(SUM(AmountValue), 0) FROM KosePayments";
+            const string sql = "SELECT ISNULL(SUM(kp.AmountValue), 0) FROM KosePayments kp WHERE " + DevicePaymentFilter;
             try
             {
                 return await _db.QuerySingleAsync<decimal>(sql);
@@ -375,14 +376,25 @@ namespace Ranalo.DataStore
             }
         }
 
+        // Financials revenue counts a payment only when it belongs to a device:
+        // its account number is a device, or it was an orphaned payment since
+        // assigned (OrphanedPayments, by MpesaCode) to an account that is a
+        // device. Reversals and stray payments to non-account numbers drop
+        // out. Deliberately no Dealers join -- a device with no dealer
+        // mapping is still company revenue.
+        private const string DevicePaymentFilter = @"(
+                    EXISTS (SELECT 1 FROM Devices d WHERE d.Id = kp.AccountNoBigint)
+                    OR EXISTS (SELECT 1 FROM OrphanedPayments op
+                               INNER JOIN Devices ad ON ad.Id = op.AccountNoBigint
+                               WHERE op.MpesaCode = kp.MpesaCode))";
+
         public async Task<decimal> GetRevenueForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive)
         {
             const string sql = @"
                 SELECT ISNULL(SUM(kp.AmountValue), 0)
                 FROM KosePayments kp
-                INNER JOIN Devices d ON d.Id = kp.AccountNoBigint
-                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                WHERE (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
+                WHERE " + DevicePaymentFilter + @"
+                  AND (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
                   AND (@ToDate IS NULL OR kp.PaymentDateValue < @ToDate)";
 
             try
@@ -401,9 +413,6 @@ namespace Ranalo.DataStore
             const string sql = @"
                 SELECT ISNULL(SUM(dcp.AmountPaid), 0)
                 FROM DealerCommissionPayments dcp
-                INNER JOIN Contract_Info ci ON ci.ContractID = dcp.ContractId
-                INNER JOIN Devices d ON d.Id = ci.ID
-                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
                 WHERE (@FromDate IS NULL OR dcp.PaidDate >= @FromDate)
                   AND (@ToDate IS NULL OR dcp.PaidDate < @ToDate)";
 

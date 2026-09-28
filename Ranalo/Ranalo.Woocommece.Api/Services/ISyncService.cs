@@ -5,6 +5,7 @@ namespace Ranalo.Woocommece.Api.Services
     public interface ISyncService
     {
         Task<int> CreateOrderAsync(List<WooOrder> orders);
+        Task<List<WooProductCost>> GetProductCostsAsync(IEnumerable<long> productIds);
         Task<WooOrder?> GetLastCreatedOrderAsync();
         Task<DataSyncLog?> GetLastSycnLogDetails();
         Task<SyncPaymentsLog?> GetLastTransactionDateAsync();

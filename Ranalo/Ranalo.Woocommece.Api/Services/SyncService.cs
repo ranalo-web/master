@@ -17,6 +17,12 @@ namespace Ranalo.Woocommece.Api.Services
 {
     public class SyncService : ISyncService
     {
+        // Key pair used by the order sync. WooCommerce on this host only
+        // accepts keys in the query string (a Basic auth header gets a 401).
+        private const string OrderSyncConsumerKey = "ck_9bf5ade6a031f04b53bd31938d462895db40e00c";
+        private const string OrderSyncConsumerSecret = "cs_b2d5d61f3eae5093d85b7319905eb5942c614f99";
+        private const string WooApiBaseUrl = "https://ranalocredit.com/wp-json/wc/v3";
+
         private readonly ISyncLogsRepository _syncLogsRepository;
         private readonly IWooOrderRepository _wooOrderRepository;
         private readonly IWooOrderProductRepository _wooOrderProductRepository;
@@ -605,8 +611,8 @@ namespace Ranalo.Woocommece.Api.Services
 
         private async Task<string> SecuredApiGetRequestStringResponse(string iso8601UtcDate, int page = 1)
         {
-            var consumerKey = "ck_9bf5ade6a031f04b53bd31938d462895db40e00c";
-            var consumerSecret = "cs_b2d5d61f3eae5093d85b7319905eb5942c614f99";
+            var consumerKey = OrderSyncConsumerKey;
+            var consumerSecret = OrderSyncConsumerSecret;
             var baseUrl = "https://ranalocredit.com/wp-json/wc/v3";
             var client = new HttpClient();
             var retries = 0;
@@ -993,6 +999,84 @@ namespace Ranalo.Woocommece.Api.Services
                 throw;
             }
             
+        }
+
+        // Current WooCommerce "Cost of goods" (built-in Cost of Goods Sold)
+        // for each product, fetched in batches of 100. Variable products
+        // keep the cost on each variation, so their variations are returned
+        // with their attribute options (e.g. "8GB", "256GB") for matching.
+        public async Task<List<WooProductCost>> GetProductCostsAsync(IEnumerable<long> productIds)
+        {
+            var results = new List<WooProductCost>();
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+
+            foreach (var batch in productIds.Where(id => id > 0).Distinct().Chunk(100))
+            {
+                var products = JArray.Parse(await WooGetAsync(client, "products", new Dictionary<string, string>
+                {
+                    { "include", string.Join(",", batch) },
+                    { "per_page", "100" },
+                }));
+
+                foreach (var product in products)
+                {
+                    var productId = product["id"]!.Value<long>();
+                    results.Add(new WooProductCost
+                    {
+                        ProductId = productId,
+                        Name = product["name"]?.ToString() ?? "",
+                        Cost = ReadDefinedCost(product),
+                    });
+
+                    if (product["type"]?.ToString() != "variable")
+                    {
+                        continue;
+                    }
+
+                    var variations = JArray.Parse(await WooGetAsync(client, $"products/{productId}/variations", new Dictionary<string, string>
+                    {
+                        { "per_page", "100" },
+                    }));
+                    foreach (var variation in variations)
+                    {
+                        results.Add(new WooProductCost
+                        {
+                            ProductId = productId,
+                            VariationId = variation["id"]!.Value<long>(),
+                            Name = product["name"]?.ToString() ?? "",
+                            Attributes = (variation["attributes"] as JArray ?? new JArray())
+                                .Select(a => a["option"]?.ToString() ?? "")
+                                .Where(o => o != "")
+                                .ToList(),
+                            Cost = ReadDefinedCost(variation),
+                        });
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        private static decimal? ReadDefinedCost(JToken productOrVariation)
+        {
+            var token = productOrVariation["cost_of_goods_sold"]?["total_value"];
+            return token != null && token.Type != JTokenType.Null
+                   && decimal.TryParse(token.ToString(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var cost)
+                   && cost > 0
+                ? cost
+                : null;
+        }
+
+        private static async Task<string> WooGetAsync(HttpClient client, string path, Dictionary<string, string> query)
+        {
+            query["consumer_key"] = OrderSyncConsumerKey;
+            query["consumer_secret"] = OrderSyncConsumerSecret;
+            var queryString = await new FormUrlEncodedContent(query).ReadAsStringAsync();
+            var response = await client.GetAsync($"{WooApiBaseUrl}/{path}?{queryString}");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsStringAsync();
         }
 
         // WooCommerce's built-in Cost of Goods Sold (the product's "Cost of
