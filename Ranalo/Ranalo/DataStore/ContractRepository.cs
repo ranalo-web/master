@@ -297,7 +297,10 @@ namespace Ranalo.DataStore
                         newContract, transaction);
 
                     // Record the recovery and propose the old contract's
-                    // write-off (Pending until an admin approves it). Each
+                    // write-off (Pending until an admin approves it) -- unless
+                    // it already has an open write-off (e.g. a 360-day one),
+                    // in which case the recovery row alone adds the resale
+                    // value and repossession cost to that loss. Each
                     // insert is skipped if Database/WriteOffs/001 hasn't been
                     // run yet, so recovering a device never fails over it.
                     if (oldContract != null)
@@ -313,7 +316,9 @@ namespace Ranalo.DataStore
                                      CAST(GETDATE() AS DATE), @ResaleValue, @RepossessionCost, @RecordedByUserId);
 
                             IF OBJECT_ID('dbo.WriteOffs') IS NOT NULL
-                               AND NOT EXISTS (SELECT 1 FROM WriteOffs WHERE ContractId = @OldContractId AND WrittenOffDate = CAST(GETDATE() AS DATE))
+                               AND NOT EXISTS (SELECT 1 FROM WriteOffs
+                                               WHERE ContractId = @OldContractId
+                                                 AND (ReinstatedDate IS NULL OR WrittenOffDate = CAST(GETDATE() AS DATE)))
                                 INSERT INTO WriteOffs
                                     (ContractId, AccountNo, Reason, WrittenOffDate, LastPaymentDate, ContractValue, TotalPaid, OutstandingBalance, Status)
                                 VALUES
