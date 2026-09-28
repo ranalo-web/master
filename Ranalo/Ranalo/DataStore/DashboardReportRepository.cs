@@ -377,13 +377,19 @@ namespace Ranalo.DataStore
         }
 
         // Financials revenue counts a payment only when it belongs to a device:
-        // its account number is a device, or it was an orphaned payment since
-        // assigned (OrphanedPayments, by MpesaCode) to an account that is a
-        // device. Reversals and stray payments to non-account numbers drop
-        // out. Deliberately no Dealers join -- a device with no dealer
-        // mapping is still company revenue.
+        // its account number is a device; or it's a recovered account's
+        // payment, renamed "<device>_R" by ContractRepository.CreateRecoveredAccount
+        // when the device went to a new customer (AccountNoBigint is NULL for
+        // those, so match on the number before "_R"); or it was an orphaned
+        // payment since assigned (OrphanedPayments, by MpesaCode) to an
+        // account that is a device. Reversals and stray payments to
+        // non-account numbers drop out. Deliberately no Dealers join -- a
+        // device with no dealer mapping is still company revenue.
         private const string DevicePaymentFilter = @"(
                     EXISTS (SELECT 1 FROM Devices d WHERE d.Id = kp.AccountNoBigint)
+                    OR (kp.AccountNo LIKE '%\_R' ESCAPE '\'
+                        AND EXISTS (SELECT 1 FROM Devices rd
+                                    WHERE rd.Id = TRY_CAST(LEFT(kp.AccountNo, LEN(kp.AccountNo) - 2) AS BIGINT)))
                     OR EXISTS (SELECT 1 FROM OrphanedPayments op
                                INNER JOIN Devices ad ON ad.Id = op.AccountNoBigint
                                WHERE op.MpesaCode = kp.MpesaCode))";
