@@ -106,6 +106,55 @@ namespace Ranalo.Controllers
             return RedirectToAction("Index", new { status });
         }
 
+        // One-off rebuild of past write-offs from payment history -- preview
+        // first, recorded (as Approved) only when the admin confirms.
+        [HttpGet]
+        [Route("write-offs/history")]
+        public async Task<IActionResult> History()
+        {
+            if (!IsAdmin(out var redirect))
+            {
+                return redirect!;
+            }
+
+            SetLayoutViewBags();
+            try
+            {
+                return View(await _repository.GetHistoryPreviewAsync());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Write-offs: history preview failed");
+                TempData["WriteOffError"] = $"Couldn't build the history preview: {ex.Message}";
+                return RedirectToAction("Index");
+            }
+        }
+
+        [HttpPost]
+        [Route("write-offs/history/record")]
+        public async Task<IActionResult> RecordHistory()
+        {
+            if (!IsAdmin(out var redirect))
+            {
+                return redirect!;
+            }
+            var userId = ((User)HttpContext.Items["UserSettings"]!).UserId;
+
+            try
+            {
+                var (writeOffs, recoveries) = await _repository.RecordHistoryAsync(userId);
+                _logger.LogInformation("Write-offs: user {UserId} recorded history: {WriteOffs} write-off(s), {Recoveries} past recovery record(s)", userId, writeOffs, recoveries);
+                TempData["WriteOffResult"] = $"Recorded {writeOffs:N0} past write-off(s) and {recoveries:N0} past device recovery record(s).";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Write-offs: recording history failed");
+                TempData["WriteOffError"] = $"Recording history failed, nothing was saved: {ex.Message}";
+            }
+
+            return RedirectToAction("Index", new { status = "approved" });
+        }
+
         // Runs the same check as the nightly job, so new proposals can be
         // seen straight away (the job itself only runs on the live server).
         [HttpPost]
