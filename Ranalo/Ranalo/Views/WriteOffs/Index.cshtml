@@ -1,0 +1,209 @@
+@using Ranalo.Models
+@model WriteOffsViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var tabs = new[] { ("pending", "Pending"), ("held", "Held"), ("approved", "Written Off"), ("reinstated", "Reinstated") };
+    var canAct = Model.Status == "pending" || Model.Status == "held";
+    string PageLink(int p) => Url.Action("Index", "WriteOffs", new { status = Model.Status, searchTerm = Model.SearchTerm, page = p })!;
+    var pending = Model.For("pending");
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Write-offs</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Accounts with no payment for 360 days, and repossessed contracts. Nothing is written off until you approve it. Any later payment brings the account back automatically.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <form action="/write-offs/run-check" method="post">
+                    <button type="submit" class="btn btn-outline-primary"><em class="icon ni ni-reload"></em><span>Run Check Now</span></button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["WriteOffResult"] is string result)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em> @result
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["WriteOffError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            @foreach (var (key, label) in tabs)
+            {
+                var s = Model.For(key);
+                <div class="col-6 col-md-3">
+                    <a href="/write-offs?status=@key" class="card card-bordered h-100 @(Model.Status == key ? "border-primary" : "")" style="text-decoration:none;">
+                        <div class="card-inner">
+                            <div class="text-soft small">@label</div>
+                            <div class="fs-4 fw-bold">@s.Count.ToString("N0")</div>
+                            <div class="text-soft small">KES @s.Outstanding.ToString("N0") outstanding</div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md d-flex flex-wrap justify-content-between align-items-center" style="gap:12px;">
+                <form action="/write-offs" method="get" class="d-flex" style="gap:8px;">
+                    <input type="hidden" name="status" value="@Model.Status" />
+                    <input type="search" name="searchTerm" value="@Model.SearchTerm" class="form-control form-control-sm" style="width:240px;" placeholder="Search account, customer, dealer" />
+                    <button type="submit" class="btn btn-sm btn-outline-light">Search</button>
+                </form>
+                @if (Model.Status == "pending" && pending.Count > 0)
+                {
+                    <form action="/write-offs/approve-all" method="post" onsubmit="return confirm('Approve all @pending.Count.ToString("N0") pending write-offs (KES @pending.Outstanding.ToString("N0") outstanding)? Each is dated on the day it crossed 360 days, so past periods on Financials will change.');">
+                        <button type="submit" class="btn btn-sm btn-primary">Approve All @pending.Count.ToString("N0") Pending</button>
+                    </form>
+                }
+            </div>
+
+            <form method="post" id="write-off-form">
+                <input type="hidden" name="status" value="@Model.Status" />
+                @if (canAct)
+                {
+                    <div class="card-inner card-inner-md border-top d-flex flex-wrap align-items-center" style="gap:8px;">
+                        <span class="text-soft small">Selected: <strong id="selected-count">0</strong></span>
+                        <button type="submit" formaction="/write-offs/approve" class="btn btn-sm btn-primary" onclick="return hasSelection()">Approve Selected</button>
+                        <input type="text" name="reason" class="form-control form-control-sm" style="width:280px;" maxlength="300" placeholder="Hold reason, e.g. promised to pay" />
+                        <button type="submit" formaction="/write-offs/hold" class="btn btn-sm btn-outline-warning" onclick="return hasSelection()">Hold Selected</button>
+                    </div>
+                }
+
+                <div class="card-inner p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;">
+                            <thead>
+                                <tr>
+                                    @if (canAct)
+                                    {
+                                        <th class="wl-th"><input type="checkbox" onchange="selectAll(this.checked)" title="Select all on this page" /></th>
+                                    }
+                                    <th class="wl-th">Account</th>
+                                    <th class="wl-th">Customer</th>
+                                    <th class="wl-th">Dealer</th>
+                                    <th class="wl-th">Device</th>
+                                    <th class="wl-th">Reason</th>
+                                    <th class="wl-th">Write-off date</th>
+                                    <th class="wl-th">Last payment</th>
+                                    <th class="wl-th text-end">Contract value</th>
+                                    <th class="wl-th text-end">Paid</th>
+                                    <th class="wl-th text-end">Outstanding</th>
+                                    <th class="wl-th text-end" title="Device cost + commissions + repossession cost - paid - resale value">Real loss</th>
+                                    <th class="wl-th">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in Model.Rows)
+                                {
+                                    <tr>
+                                        @if (canAct)
+                                        {
+                                            <td><input type="checkbox" class="row-select" name="ids" value="@r.Id" onchange="updateSelected()" /></td>
+                                        }
+                                        <td><a href="/account-details/@r.AccountNo" target="_blank" class="link link-primary">@r.AccountNo</a></td>
+                                        <td>@r.CustomerName</td>
+                                        <td>@r.DealerName</td>
+                                        <td>@(r.DeviceName ?? "-")</td>
+                                        <td><span class="badge badge-dim @(r.Reason == "Repossessed" ? "bg-info" : "bg-warning")">@r.ReasonLabel</span></td>
+                                        <td>@r.WrittenOffDate.ToString("dd MMM yyyy")</td>
+                                        <td>@(r.LastPaymentDate?.ToString("dd MMM yyyy") ?? "Never paid")</td>
+                                        <td class="text-end">@r.ContractValue.ToString("N0")</td>
+                                        <td class="text-end">@r.TotalPaid.ToString("N0")</td>
+                                        <td class="text-end fw-medium">@r.OutstandingBalance.ToString("N0")</td>
+                                        <td class="text-end">
+                                            @if (r.RealLoss.HasValue)
+                                            {
+                                                <span class="@(r.RealLoss > 0 ? "text-danger" : "text-success")">@r.RealLoss.Value.ToString("N0")</span>
+                                            }
+                                            else
+                                            {
+                                                <a href="/cost-backfill" class="text-warning small" title="Device buying price not recorded">cost missing</a>
+                                            }
+                                        </td>
+                                        <td class="small text-soft" style="white-space:normal; min-width:180px;">
+                                            @if (r.ReinstatedDate.HasValue)
+                                            {
+                                                <span>Paid @r.ReinstatedDate.Value.ToString("dd MMM yyyy") (@r.ReinstatedMpesaCode)</span>
+                                            }
+                                            else if (r.Status == "Held")
+                                            {
+                                                <span>Held: @r.HoldReason</span>
+                                            }
+                                            @if (r.ResaleValue > 0 || r.RepossessionCost > 0)
+                                            {
+                                                <div>Resold KES @r.ResaleValue.ToString("N0"), repossession KES @r.RepossessionCost.ToString("N0")</div>
+                                            }
+                                            @if (r.ReviewedAtUtc.HasValue)
+                                            {
+                                                <div>@(r.Status == "Held" ? "Held" : "Approved") by @r.ReviewedByName, @r.ReviewedAtUtc.Value.AddHours(3).ToString("dd MMM yyyy")</div>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.Rows.Count == 0)
+                    {
+                        <div class="card-inner text-soft">Nothing here.@(Model.Status == "pending" ? " Click Run Check Now to look for accounts that have crossed 360 days without a payment." : "")</div>
+                    }
+                </div>
+            </form>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="card-inner d-flex justify-content-between align-items-center">
+                    <ul class="pagination">
+                        @if (Model.CurrentPage > 1)
+                        {
+                            <li class="page-item"><a class="page-link" href="@PageLink(Model.CurrentPage - 1)">Prev</a></li>
+                        }
+                        @if (Model.CurrentPage < Model.TotalPages)
+                        {
+                            <li class="page-item"><a class="page-link" href="@PageLink(Model.CurrentPage + 1)">Next</a></li>
+                        }
+                    </ul>
+                    <span class="text-soft small">Page @Model.CurrentPage of @Model.TotalPages (@Model.TotalRecords.ToString("N0") rows)</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script>
+        function selectAll(checked) {
+            document.querySelectorAll('.row-select').forEach(function (cb) { cb.checked = checked; });
+            updateSelected();
+        }
+
+        function updateSelected() {
+            var el = document.getElementById('selected-count');
+            if (el) { el.textContent = document.querySelectorAll('.row-select:checked').length; }
+        }
+
+        function hasSelection() {
+            return document.querySelectorAll('.row-select:checked').length > 0;
+        }
+    </script>
+}

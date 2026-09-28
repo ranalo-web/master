@@ -220,11 +220,17 @@ namespace Ranalo.DataStore
                             paid.LastPaymentDate
                         FROM Contract_Info ci
                         OUTER APPLY (
-                            SELECT SUM(kp.AmountValue) AS TotalPaid, MAX(kp.PaymentDateValue) AS LastPaymentDate
-                            FROM KosePayments kp
-                            WHERE kp.AccountNoBigint = ci.ID
-                               OR EXISTS (SELECT 1 FROM OrphanedPayments op
-                                          WHERE op.MpesaCode = kp.MpesaCode AND op.AccountNoBigint = ci.ID)
+                            SELECT SUM(p.AmountValue) AS TotalPaid, MAX(p.PaymentDateValue) AS LastPaymentDate
+                            FROM (
+                                SELECT kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+                                FROM KosePayments kp
+                                WHERE kp.AccountNoBigint = ci.ID
+                                UNION
+                                SELECT kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+                                FROM OrphanedPayments op
+                                INNER JOIN KosePayments kp ON kp.MpesaCode = op.MpesaCode
+                                WHERE op.AccountNoBigint = ci.ID
+                            ) p
                         ) paid
                         WHERE ci.ID = @Id AND ci.EndDate IS NULL
                         ORDER BY ci.ContractID DESC;
