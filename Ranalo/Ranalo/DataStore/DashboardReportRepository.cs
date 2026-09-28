@@ -840,17 +840,9 @@ namespace Ranalo.DataStore
                         result.RestructuredArrearsTotal += shortfall;
                         result.RestructuredArrearsCount++;
                     }
-
-                    // Independent of lock status -- a write-off is about the
-                    // contract's term being over, not about whether it was
-                    // ever locked.
-                    if (row.IsFullTermElapsed)
-                    {
-                        result.WriteOffTotal += shortfall;
-                        result.WriteOffCount++;
-                        result.WriteOffRecoveredThisMonth += row.PaidThisMonth;
-                    }
                 }
+
+                await ApplyWriteOffRegisterAsync(result, dealerId, agentUserId);
 
                 result.TrueArrearsAvgDaysLocked = result.TrueArrearsCount > 0
                     ? Math.Round(totalDaysLocked / result.TrueArrearsCount, 1)
@@ -865,6 +857,49 @@ namespace Ranalo.DataStore
             {
                 _logger.LogError(ex, "Dealer arrears-classification query failed for dealer {DealerId}", dealerId);
                 return new DashboardArrearsClassificationRow();
+            }
+        }
+
+        // Write-off card figures come from the WriteOffs register (approved,
+        // not reinstated) -- the same definition as Financials and the
+        // Write-offs page -- replacing the old "full term elapsed with a
+        // shortfall" rule. "Recovered this month" is the payments received
+        // this calendar month on write-offs that were reinstated this month.
+        // Left at 0 if Database/WriteOffs/001 hasn't been run.
+        private async Task ApplyWriteOffRegisterAsync(DashboardArrearsClassificationRow result, int? dealerId, int? agentUserId)
+        {
+            const string sql = @"
+                ;WITH scoped AS (
+                    SELECT wo.*
+                    FROM WriteOffs wo
+                    INNER JOIN Devices d ON d.Id = wo.AccountNo
+                    INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                    OUTER APPLY (SELECT TOP 1 c.AssignedAgentId FROM Contract_Info c
+                                 WHERE c.ContractID = wo.ContractId AND c.ID = wo.AccountNo) ci
+                    WHERE wo.Status = 'Approved'
+                      AND (@DealerId IS NULL OR dl.DealerId = @DealerId)
+                      AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+                )
+                SELECT
+                    (SELECT COUNT(*) FROM scoped WHERE ReinstatedDate IS NULL) AS WriteOffCount,
+                    (SELECT ISNULL(SUM(OutstandingBalance), 0) FROM scoped WHERE ReinstatedDate IS NULL) AS WriteOffTotal,
+                    (SELECT ISNULL(SUM(kp.AmountValue), 0)
+                     FROM scoped s
+                     INNER JOIN KosePayments kp ON kp.AccountNoBigint = s.AccountNo
+                     WHERE s.ReinstatedDate >= DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)
+                       AND kp.PaymentDateValue >= DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) AS WriteOffRecoveredThisMonth";
+
+            try
+            {
+                var row = await _db.QuerySingleAsync<(int WriteOffCount, decimal WriteOffTotal, decimal WriteOffRecoveredThisMonth)>(
+                    sql, new { DealerId = dealerId, AgentUserId = agentUserId });
+                result.WriteOffCount = row.WriteOffCount;
+                result.WriteOffTotal = row.WriteOffTotal;
+                result.WriteOffRecoveredThisMonth = row.WriteOffRecoveredThisMonth;
+            }
+            catch (SqlException ex) when (IsMissingTable(ex))
+            {
+                _logger.LogWarning(ex, "WriteOffs table not found; write-off card left at 0. Apply Database/WriteOffs/001_create_write_off_tables.sql.");
             }
         }
 

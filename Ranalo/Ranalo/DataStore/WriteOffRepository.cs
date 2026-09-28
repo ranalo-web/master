@@ -17,6 +17,9 @@ namespace Ranalo.DataStore
 
         Task<List<WriteOffRow>> GetHistoryPreviewAsync();
         Task<(int WriteOffs, int Recoveries)> RecordHistoryAsync(int userId);
+
+        Task<WriteOffPeriodSummary> GetPeriodSummaryAsync(DateTime? fromDate, DateTime? toDateExclusive);
+        Task<List<LoanBookAgeBucket>> GetLoanBookAgeingAsync(DateTime today);
     }
 
     // Maintains the WriteOffs register (Database/WriteOffs/001). See that
@@ -432,6 +435,108 @@ namespace Ranalo.DataStore
 
             transaction.Commit();
             return (writeOffs, recoveries);
+        }
+
+        // --- Financials ------------------------------------------------------
+
+        // Approved write-offs dated in the period (including ones later
+        // reinstated -- they were written off in that period), and approved
+        // write-offs reinstated in the period. Real loss = device cost +
+        // commissions + repossession cost - paid - resale, summed only where
+        // the device cost is known.
+        public async Task<WriteOffPeriodSummary> GetPeriodSummaryAsync(DateTime? fromDate, DateTime? toDateExclusive)
+        {
+            const string sql = @"
+                ;WITH wo AS (
+                    SELECT w.*,
+                        ci.BuyingPrice,
+                        ISNULL((SELECT SUM(AmountPaid) FROM DealerCommissionPayments WHERE ContractId = w.ContractId), 0)
+                          + ISNULL((SELECT SUM(AmountPaid) FROM AgentCommissionPayments WHERE ContractId = w.ContractId), 0) AS CommissionsPaid,
+                        ISNULL((SELECT SUM(RepossessionCost) FROM DeviceRecoveries WHERE OldContractId = w.ContractId), 0) AS RepossessionCost,
+                        ISNULL((SELECT SUM(ResaleValue) FROM DeviceRecoveries WHERE OldContractId = w.ContractId), 0) AS ResaleValue
+                    FROM WriteOffs w
+                    OUTER APPLY (SELECT TOP 1 c.BuyingPrice FROM Contract_Info c
+                                 WHERE c.ContractID = w.ContractId AND c.ID = w.AccountNo) ci
+                    WHERE w.Status = 'Approved'
+                )
+                SELECT
+                    ISNULL(SUM(CASE WHEN InPeriod = 1 THEN 1 ELSE 0 END), 0) AS WrittenOffCount,
+                    ISNULL(SUM(CASE WHEN InPeriod = 1 THEN OutstandingBalance END), 0) AS WrittenOffBalance,
+                    ISNULL(SUM(CASE WHEN InPeriod = 1 AND BuyingPrice IS NOT NULL
+                                    THEN BuyingPrice + CommissionsPaid + RepossessionCost - TotalPaid - ResaleValue END), 0) AS RealLoss,
+                    ISNULL(SUM(CASE WHEN InPeriod = 1 AND BuyingPrice IS NULL THEN 1 ELSE 0 END), 0) AS MissingCostCount,
+                    ISNULL(SUM(CASE WHEN ReinstatedInPeriod = 1 THEN 1 ELSE 0 END), 0) AS ReinstatedCount,
+                    ISNULL(SUM(CASE WHEN ReinstatedInPeriod = 1 THEN OutstandingBalance END), 0) AS ReinstatedBalance
+                FROM (
+                    SELECT wo.*,
+                        CASE WHEN (@FromDate IS NULL OR WrittenOffDate >= @FromDate)
+                              AND (@ToDate IS NULL OR WrittenOffDate < @ToDate) THEN 1 ELSE 0 END AS InPeriod,
+                        CASE WHEN ReinstatedDate IS NOT NULL
+                              AND (@FromDate IS NULL OR ReinstatedDate >= @FromDate)
+                              AND (@ToDate IS NULL OR ReinstatedDate < @ToDate) THEN 1 ELSE 0 END AS ReinstatedInPeriod
+                    FROM wo
+                ) x";
+
+            return await _db.QuerySingleAsync<WriteOffPeriodSummary>(sql,
+                new { FromDate = fromDate, ToDate = toDateExclusive }, commandTimeout: CheckTimeoutSeconds);
+        }
+
+        // Open contracts still owing money, grouped by days since the last
+        // payment (or since the start if never paid) -- the age-of-debt
+        // report and the balance sheet's loan book. Contracts with an
+        // approved, not-reinstated write-off are their own "Written off"
+        // bucket (off the loan book); ones awaiting review are "Pending
+        // write-off". Same payment rules as the write-off check.
+        public async Task<List<LoanBookAgeBucket>> GetLoanBookAgeingAsync(DateTime today)
+        {
+            var sql = @"
+                ;WITH " + DevicePaymentsCte + @",
+                paid AS (
+                    SELECT AccountNo, SUM(AmountValue) AS TotalPaid, MAX(PaymentDateValue) AS LastPaymentDate
+                    FROM device_payments
+                    GROUP BY AccountNo
+                ),
+                open_contracts AS (
+                    SELECT ci.ContractID, ci.ID,
+                        CAST(ci.Deposit + ci.Daily * 30 * ci.Term_in_Months
+                             + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months
+                             + ci.Monthly * ci.Term_in_Months AS DECIMAL(18,2)) - ISNULL(paid.TotalPaid, 0) AS Outstanding,
+                        DATEDIFF(DAY, CAST(COALESCE(paid.LastPaymentDate, ci.StartDate) AS DATE), @Today) AS DaysSince,
+                        (SELECT TOP 1 wo.Status FROM WriteOffs wo
+                         WHERE wo.ContractId = ci.ContractID AND wo.AccountNo = ci.ID AND wo.ReinstatedDate IS NULL
+                         ORDER BY wo.WrittenOffDate DESC) AS OpenWriteOffStatus
+                    FROM Contract_Info ci
+                    LEFT JOIN paid ON paid.AccountNo = ci.ID
+                    WHERE ci.EndDate IS NULL
+                      AND (ci.StartDate IS NOT NULL OR paid.LastPaymentDate IS NOT NULL)
+                ),
+                bucketed AS (
+                    SELECT Outstanding,
+                        CASE
+                            WHEN OpenWriteOffStatus = 'Approved' THEN 7
+                            WHEN OpenWriteOffStatus IS NOT NULL THEN 6
+                            WHEN DaysSince <= 30 THEN 1
+                            WHEN DaysSince <= 90 THEN 2
+                            WHEN DaysSince <= 180 THEN 3
+                            WHEN DaysSince <= 360 THEN 4
+                            ELSE 5
+                        END AS SortOrder
+                    FROM open_contracts
+                    WHERE Outstanding > 0
+                )
+                SELECT SortOrder,
+                    CASE SortOrder
+                        WHEN 1 THEN '0-30 days' WHEN 2 THEN '31-90 days' WHEN 3 THEN '91-180 days'
+                        WHEN 4 THEN '181-360 days' WHEN 5 THEN 'Over 360 days (not yet proposed)'
+                        WHEN 6 THEN 'Pending write-off review' ELSE 'Written off' END AS Label,
+                    COUNT(*) AS Accounts,
+                    SUM(Outstanding) AS Outstanding
+                FROM bucketed
+                GROUP BY SortOrder
+                ORDER BY SortOrder";
+
+            var rows = await _db.QueryAsync<LoanBookAgeBucket>(sql, new { Today = today.Date }, commandTimeout: CheckTimeoutSeconds);
+            return rows.ToList();
         }
     }
 }

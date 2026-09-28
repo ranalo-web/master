@@ -2,6 +2,12 @@ namespace Ranalo.Models
 {
     public class AdminDashboardViewModel
     {
+        // Write-offs card -- the WriteOffs register (approved write-offs
+        // dated this / last calendar month), same definition as Financials.
+        // Set by AdminDashboardController.
+        public WriteOffPeriodSummary WriteOffsThisMonth { get; set; } = new();
+        public WriteOffPeriodSummary WriteOffsLastMonth { get; set; } = new();
+
         public decimal RevenueThisMonth { get; set; }
         public decimal RevenueGrowthPct { get; set; }
         public decimal RevenueTargetThisMonth { get; set; }

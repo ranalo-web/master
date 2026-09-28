@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Ranalo.Configuration;
+using Ranalo.DataStore;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.Services;
@@ -13,6 +14,8 @@ namespace Ranalo.Controllers
     public class FinancialsController : Controller
     {
         private readonly IDashboardReportService _dashboardReportService;
+        private readonly IWriteOffRepository _writeOffRepository;
+        private readonly ILogger<FinancialsController> _logger;
 
         private static readonly Dictionary<string, string> PeriodNames = new()
         {
@@ -22,9 +25,11 @@ namespace Ranalo.Controllers
             ["year"] = "Last 12 Months",
         };
 
-        public FinancialsController(IDashboardReportService dashboardReportService)
+        public FinancialsController(IDashboardReportService dashboardReportService, IWriteOffRepository writeOffRepository, ILogger<FinancialsController> logger)
         {
             _dashboardReportService = dashboardReportService;
+            _writeOffRepository = writeOffRepository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -82,6 +87,18 @@ namespace Ranalo.Controllers
             model.PeriodLabel = periodLabel;
             model.FromDate = period == "custom" ? from : fromDate;
             model.ToDate = period == "custom" ? to : toDateExclusive?.AddDays(-1);
+
+            try
+            {
+                model.WriteOffs = await _writeOffRepository.GetPeriodSummaryAsync(fromDate, toDateExclusive);
+                model.LoanBookAgeing = await _writeOffRepository.GetLoanBookAgeingAsync(DateTime.UtcNow.AddHours(3).Date);
+            }
+            catch (Exception ex)
+            {
+                // e.g. Database/WriteOffs/001 not applied -- the rest of the page still works.
+                _logger.LogError(ex, "Financials: write-off figures unavailable");
+                model.WriteOffsUnavailable = true;
+            }
 
             return View(model);
         }

@@ -302,7 +302,12 @@ namespace Ranalo.Services
             var allTimeCostOfDevices = accountDetails.Sum(r => r.BuyingPrice ?? 0);
             var allTimeOperatingExpenses = opexByMonth.Sum(r => r.Total);
 
-            var allTimeNetBeforeTax = allTimeRevenue - allTimeCostOfDevices - allTimeCommissions - model.BadDebtThisMonth - allTimeOperatingExpenses;
+            // No bad-debt deduction: revenue is counted as cash received and
+            // device cost when the contract starts, so an unpaid balance was
+            // never income -- deducting it again would count the loss twice.
+            // Write-offs only take the balance off the loan book (balance
+            // sheet); their real loss is reported separately on Financials.
+            var allTimeNetBeforeTax = allTimeRevenue - allTimeCostOfDevices - allTimeCommissions - allTimeOperatingExpenses;
             var allTimeTax = Math.Max(0, allTimeNetBeforeTax) * model.TaxRatePct / 100;
             model.RetainedEarningsAllTime = allTimeNetBeforeTax - allTimeTax;
 

@@ -50,6 +50,30 @@ namespace Ranalo.Models
         public decimal Outstanding { get; set; }
     }
 
+    // Financials: write-offs dated in / reinstated in the reporting period.
+    public class WriteOffPeriodSummary
+    {
+        public int WrittenOffCount { get; set; }
+        public decimal WrittenOffBalance { get; set; }
+        public decimal RealLoss { get; set; }
+        public int MissingCostCount { get; set; }
+        public int ReinstatedCount { get; set; }
+        public decimal ReinstatedBalance { get; set; }
+    }
+
+    // Financials age-of-debt report: open contracts still owing money.
+    // SortOrder 1-5 are on the loan book by days since last payment; 6 is
+    // awaiting write-off review (still on the book); 7 is written off.
+    public class LoanBookAgeBucket
+    {
+        public int SortOrder { get; set; }
+        public string Label { get; set; } = "";
+        public int Accounts { get; set; }
+        public decimal Outstanding { get; set; }
+
+        public bool IsWrittenOff => SortOrder == 7;
+    }
+
     public class WriteOffsViewModel
     {
         // pending | held | approved | reinstated
