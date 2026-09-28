@@ -51,6 +51,27 @@
 		</div><!-- .nk-block-between -->
 	</div><!-- .nk-block-head -->
 
+    @if (TempData["ImportSuccess"] is string importSuccess)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em>
+            <strong>Import complete.</strong> @importSuccess
+            @if (TempData["ImportSkipped"] is string importSkipped)
+            {
+                <div class="mt-1 small">Skipped receipts: @importSkipped</div>
+            }
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ImportError"] is string importError)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em>
+            <strong>Import failed.</strong> @importError
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -184,7 +205,7 @@
 <div class="modal fade" tabindex="-1" id="upload-payments">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <button class="close" data-dismiss="modal" aria-label="Close">
+            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <em class="icon ni ni-cross"></em>
             </button>
             <div class="modal-header">
@@ -209,7 +230,7 @@
                     </div><!-- .nk-block -->
                 </div>
                 <div class="modal-footer bg-light">
-                    <button data-bs-dismiss="modal" class="btn btn-lg btn-danger">Cancel</button>
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-lg btn-danger">Cancel</button>
                     <button type="submit" class="btn btn-lg btn-primary">Save</button>
                 </div>
             </form>
