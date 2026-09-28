@@ -188,7 +188,15 @@ namespace Ranalo.DataStore
             return await _db.ExecuteAsync(sql, new { contractId });
         }
 
-        public async Task<int> CreateRecoveredAccount(ContractInfo newContract)
+        private class RecoveredContractSnapshot
+        {
+            public int ContractId { get; set; }
+            public decimal ContractValue { get; set; }
+            public decimal TotalPaid { get; set; }
+            public DateTime? LastPaymentDate { get; set; }
+        }
+
+        public async Task<int> CreateRecoveredAccount(ContractInfo newContract, decimal repossessionCost, int recordedByUserId)
         {
             if (_db.State != ConnectionState.Open)
                 _db.Open();
@@ -197,6 +205,34 @@ namespace Ranalo.DataStore
             {
                 try
                 {
+                    // Snapshot the outgoing contract BEFORE its payments are
+                    // renamed to "_R" below -- what it was worth, what the
+                    // customer had paid (directly or via assigned orphaned
+                    // payments) and when they last paid. Feeds the
+                    // Repossessed write-off recorded after the new contract.
+                    var oldContractQuery = @"
+                        SELECT TOP 1
+                            ci.ContractID AS ContractId,
+                            CAST(ci.Deposit + ci.Daily * 30 * ci.Term_in_Months
+                                 + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months
+                                 + ci.Monthly * ci.Term_in_Months AS DECIMAL(18,2)) AS ContractValue,
+                            ISNULL(paid.TotalPaid, 0) AS TotalPaid,
+                            paid.LastPaymentDate
+                        FROM Contract_Info ci
+                        OUTER APPLY (
+                            SELECT SUM(kp.AmountValue) AS TotalPaid, MAX(kp.PaymentDateValue) AS LastPaymentDate
+                            FROM KosePayments kp
+                            WHERE kp.AccountNoBigint = ci.ID
+                               OR EXISTS (SELECT 1 FROM OrphanedPayments op
+                                          WHERE op.MpesaCode = kp.MpesaCode AND op.AccountNoBigint = ci.ID)
+                        ) paid
+                        WHERE ci.ID = @Id AND ci.EndDate IS NULL
+                        ORDER BY ci.ContractID DESC;
+                    ";
+
+                    var oldContract = await _db.QueryFirstOrDefaultAsync<RecoveredContractSnapshot>(
+                        oldContractQuery, new { Id = newContract.ID }, transaction);
+
                     // Lets Update Payments first
                     var updatePaymentsQuery = @"
                         UPDATE KosePayments
@@ -259,6 +295,46 @@ namespace Ranalo.DataStore
 
                     int newHistoryId = await _db.QuerySingleAsync<int>(insertQuery, 
                         newContract, transaction);
+
+                    // Record the recovery and propose the old contract's
+                    // write-off (Pending until an admin approves it). Each
+                    // insert is skipped if Database/WriteOffs/001 hasn't been
+                    // run yet, so recovering a device never fails over it.
+                    if (oldContract != null)
+                    {
+                        var old = oldContract;
+                        var recordRecoveryQuery = @"
+                            IF OBJECT_ID('dbo.DeviceRecoveries') IS NOT NULL
+                                INSERT INTO DeviceRecoveries
+                                    (AccountNo, OldContractId, NewContractId, RecoveredDate, ResaleValue, RepossessionCost, RecordedByUserId)
+                                VALUES
+                                    (@AccountNo, @OldContractId,
+                                     (SELECT TOP 1 ContractID FROM Contract_Info WHERE ID = @AccountNo AND EndDate IS NULL ORDER BY ContractID DESC),
+                                     CAST(GETDATE() AS DATE), @ResaleValue, @RepossessionCost, @RecordedByUserId);
+
+                            IF OBJECT_ID('dbo.WriteOffs') IS NOT NULL
+                               AND NOT EXISTS (SELECT 1 FROM WriteOffs WHERE ContractId = @OldContractId AND WrittenOffDate = CAST(GETDATE() AS DATE))
+                                INSERT INTO WriteOffs
+                                    (ContractId, AccountNo, Reason, WrittenOffDate, LastPaymentDate, ContractValue, TotalPaid, OutstandingBalance, Status)
+                                VALUES
+                                    (@OldContractId, @AccountNo, 'Repossessed', CAST(GETDATE() AS DATE), @LastPaymentDate,
+                                     @ContractValue, @TotalPaid, @OutstandingBalance, 'Pending');
+                        ";
+
+                        await _db.ExecuteAsync(recordRecoveryQuery, new
+                        {
+                            AccountNo = (long)newContract.ID,
+                            OldContractId = old.ContractId,
+                            ResaleValue = newContract.TotalAmount,
+                            RepossessionCost = repossessionCost,
+                            RecordedByUserId = recordedByUserId,
+                            LastPaymentDate = old.LastPaymentDate,
+                            ContractValue = old.ContractValue,
+                            TotalPaid = old.TotalPaid,
+                            OutstandingBalance = Math.Max(0, old.ContractValue - old.TotalPaid),
+                        }, transaction);
+                    }
+
                     transaction.Commit();
                     return newHistoryId;
                 }
