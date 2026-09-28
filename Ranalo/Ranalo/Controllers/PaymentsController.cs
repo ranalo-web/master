@@ -240,7 +240,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("assign-payments")]
-        public async Task<IActionResult> CreateAssignedPayments(string orphanedNo, string mpesaCode, string accountNo)
+        public async Task<IActionResult> CreateAssignedPayments(string orphanedNo, string mpesaCode, string accountNo, string source = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -249,8 +249,19 @@ namespace Ranalo.Controllers
             }
             await SetViewBags(settings, "index");
 
-            await _applicationReportService.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo);
+            var error = await _applicationReportService.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo);
 
+            if (error != null)
+            {
+                // Send the user back to the page they assigned from so they
+                // can correct the account number and retry.
+                TempData["AssignError"] = error;
+                return source == "orphaned"
+                    ? RedirectToAction("OrphanedPayments", "Payments")
+                    : RedirectToAction("AssignedPayments", "Payments");
+            }
+
+            TempData["AssignSuccess"] = $"Payment {mpesaCode?.Trim()} assigned to account {accountNo?.Trim()}.";
             return RedirectToAction("AssignedPayments", "Payments");
         }
 

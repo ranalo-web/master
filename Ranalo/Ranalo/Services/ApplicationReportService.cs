@@ -749,9 +749,9 @@ namespace Ranalo.Services
             return result;
         }
 
-        public async Task CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo)
+        public async Task<string?> CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo)
         {
-            await _applicationReportRepository.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo);
+            return await _applicationReportRepository.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo);
         }
         #endregion
 
