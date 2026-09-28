@@ -207,30 +207,32 @@ namespace Ranalo.Services
         // classification) instead of the rollup snapshot, so every number on
         // this page is consistently live, not a mix of live and
         // nightly-stale.
-        public async Task<FinancialsViewModel> GetFinancialsAsync()
+        // The Income Statement covers [fromDate, toDateExclusive) -- null
+        // bounds mean unbounded (All Time). The *ThisMonth properties keep
+        // their names but hold totals for the requested period; the monthly
+        // trend and balance sheet below are unaffected by the period.
+        public async Task<FinancialsViewModel> GetFinancialsAsync(DateTime? fromDate, DateTime? toDateExclusive)
         {
             var model = new FinancialsViewModel();
             var now = DateTime.Now;
 
             var accountDetails = await _repository.GetDealerAccountDetailsAsync(null);
 
-            var revenueByDealer = await _repository.GetRevenueThisMonthByDealerAsync();
-            model.RevenueThisMonth = revenueByDealer.Sum(r => r.RevenueThisMonth);
-
-            var commissionByDealer = await _repository.GetDealerCommissionPaidThisMonthByDealerAsync();
-            model.CommissionsPaidThisMonth = commissionByDealer.Sum(c => c.CommissionPaidThisMonth);
+            model.RevenueThisMonth = await _repository.GetRevenueForPeriodAsync(fromDate, toDateExclusive);
+            model.CommissionsPaidThisMonth = await _repository.GetCommissionsPaidForPeriodAsync(fromDate, toDateExclusive);
 
             model.CostOfDevicesThisMonth = accountDetails
-                .Where(r => r.StartDate.Year == now.Year && r.StartDate.Month == now.Month)
+                .Where(r => (fromDate == null || r.StartDate >= fromDate) && (toDateExclusive == null || r.StartDate < toDateExclusive))
                 .Sum(r => r.BuyingPrice ?? 0);
 
+            // Point-in-time classification -- there's no historical recompute,
+            // so this is the current bad-debt figure whatever the period.
             var arrearsClassification = await _repository.GetDealerArrearsClassificationAsync(null);
             model.BadDebtThisMonth = arrearsClassification.BadDebtTotal;
 
+            model.OperatingExpensesThisMonth = await _operatingExpenseRepository.GetTotalAsync(fromDate, toDateExclusive);
+
             var thisMonthStart = new DateTime(now.Year, now.Month, 1);
-            var (_, _, opexThisMonth) = await _operatingExpenseRepository.GetPagedAsync(
-                thisMonthStart, thisMonthStart.AddMonths(1), page: 1, pageSize: 1);
-            model.OperatingExpensesThisMonth = opexThisMonth;
 
             // Kenya's standard resident corporate income tax rate (KRA) --
             // confirmed current as of 2026, not a placeholder. No dividends

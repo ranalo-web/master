@@ -118,6 +118,8 @@ namespace Ranolo.Web.Tests
         public Task<List<DashboardMonthAmountRow>> GetCommissionsPaidByMonthAsync(int months) => Task.FromResult(CommissionsByMonthToReturn);
         public Task<decimal> GetAllTimeRevenueAsync() => Task.FromResult(AllTimeRevenueToReturn);
         public Task<decimal> GetAllTimeCommissionsPaidAsync() => Task.FromResult(AllTimeCommissionsPaidToReturn);
+        public Task<decimal> GetRevenueForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive) => Task.FromResult(RevenueByDealerToReturn.Sum(r => r.RevenueThisMonth));
+        public Task<decimal> GetCommissionsPaidForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive) => Task.FromResult(CommissionByDealerToReturn.Sum(c => c.CommissionPaidThisMonth));
         public Task<(decimal DealerOutstanding, decimal AgentOutstanding)> GetTotalCommissionsOutstandingAsync() => Task.FromResult(CommissionsOutstandingToReturn);
 
         public Task UpsertSnapshotKpiAsync(DashboardScope scope, decimal? revenueThisMonth, decimal? revenueGrowthPct, int? newThisMonth, int? totalAccounts)
@@ -211,6 +213,8 @@ namespace Ranolo.Web.Tests
             Task.CompletedTask;
 
         public Task<bool> RemoveAsync(int id, int removedByUserId) => Task.FromResult(true);
+
+        public Task<decimal> GetTotalAsync(DateTime? fromDate, DateTime? toDateExclusive) => Task.FromResult(PagedToReturn.MonthTotal);
 
         public Task<List<OperatingExpenseMonthlyTotal>> GetMonthlyTotalsAsync(int months) => Task.FromResult(MonthlyTotalsToReturn);
     }

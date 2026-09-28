@@ -14,6 +14,14 @@ namespace Ranalo.Controllers
     {
         private readonly IDashboardReportService _dashboardReportService;
 
+        private static readonly Dictionary<string, string> PeriodNames = new()
+        {
+            ["week"] = "Week",
+            ["month"] = "Month",
+            ["ytd"] = "Year to Date",
+            ["year"] = "Last 12 Months",
+        };
+
         public FinancialsController(IDashboardReportService dashboardReportService)
         {
             _dashboardReportService = dashboardReportService;
@@ -21,7 +29,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("financials")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string period = "month", DateTime? from = null, DateTime? to = null)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -40,7 +48,40 @@ namespace Ranalo.Controllers
             ViewBag.IsDealer = false;
             ViewBag.UserName = settings.KnownAs;
 
-            var model = await _dashboardReportService.GetFinancialsAsync();
+            // Same Week/Month/YTD/Last 12 Months windows as All Payments,
+            // plus "all" and a custom From/To range (e.g. a past year's books).
+            period = (period ?? "month").ToLowerInvariant();
+            DateTime? fromDate, toDateExclusive;
+            string periodLabel;
+            if (period == "custom" && from.HasValue && to.HasValue)
+            {
+                if (to < from)
+                {
+                    (from, to) = (to, from);
+                }
+                fromDate = from.Value.Date;
+                toDateExclusive = to.Value.Date.AddDays(1);
+                periodLabel = $"{from.Value:dd MMM yyyy} – {to.Value:dd MMM yyyy}";
+            }
+            else
+            {
+                if (period == "custom")
+                {
+                    period = "month";
+                }
+                (fromDate, toDateExclusive) = PeriodWindowHelper.Resolve(period);
+                periodLabel = PeriodNames.TryGetValue(period, out var name) ? name : "All Time";
+                if (!PeriodNames.ContainsKey(period))
+                {
+                    period = "all";
+                }
+            }
+
+            var model = await _dashboardReportService.GetFinancialsAsync(fromDate, toDateExclusive);
+            model.Period = period;
+            model.PeriodLabel = periodLabel;
+            model.FromDate = period == "custom" ? from : fromDate;
+            model.ToDate = period == "custom" ? to : toDateExclusive?.AddDays(-1);
 
             return View(model);
         }

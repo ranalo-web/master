@@ -141,7 +141,8 @@ namespace Ranalo.Woocommece.Api.Services
                 RePaymentIntervals = "Daily",
                 TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, termsInMonths),
                 TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, termsInMonths),
-                FirstName = order.FirstName ?? ""
+                FirstName = order.FirstName ?? "",
+                BuyingPrice = order.Products.FirstOrDefault(p => p.BuyingPrice != null)?.BuyingPrice
             };
 
             await _kosePaymentsRepository.AddContractAsync(contract);
@@ -194,7 +195,8 @@ namespace Ranalo.Woocommece.Api.Services
                 TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, order.TermInMonths),
                 FirstName = order.FirstName,
                 TotalAmount = order.TotalAmount,
-                TermInMonths = order.TermInMonths
+                TermInMonths = order.TermInMonths,
+                BuyingPrice = order.BuyingPrice
             };
 
             var contractId = await _kosePaymentsRepository.AddContractAsync(contract);
@@ -993,6 +995,27 @@ namespace Ranalo.Woocommece.Api.Services
             
         }
 
+        // WooCommerce's built-in Cost of Goods Sold (the product's "Cost of
+        // goods" field) is exposed on each order line item as
+        // cost_of_goods_sold.value -- the line total, i.e. unit cost x
+        // quantity. Returns the unit cost, or null when the order was placed
+        // before a cost was set (or the feature was off).
+        private static decimal? ReadCostOfGoods(JToken item)
+        {
+            var token = item["cost_of_goods_sold"]?["value"]
+                        ?? item["meta_data"]?.FirstOrDefault(x => x["key"]?.ToString() == "_cogs_value")?["value"];
+
+            if (token == null || token.Type == JTokenType.Null
+                || !decimal.TryParse(token.ToString(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var lineCost)
+                || lineCost <= 0)
+            {
+                return null;
+            }
+
+            var quantity = item["quantity"]?.Value<int?>() ?? 1;
+            return Math.Round(quantity > 1 ? lineCost / quantity : lineCost, 2);
+        }
+
         private List<OrderProduct> MapOrderProducts(JToken value)
         {
             var products = new List<OrderProduct>();
@@ -1009,7 +1032,8 @@ namespace Ranalo.Woocommece.Api.Services
                     ProductRam = item["meta_data"]?.FirstOrDefault(x => x["display_key"]?.ToString() == "RAM")?["display_value"]?.ToString(),
                     Quantity = item["quantity"]?.Value<int?>() ?? 0,
                     ProductId = item["product_id"]?.Value<long?>() ?? 0,
-                    Sku = item["sku"]?.Value<string?>() ?? ""
+                    Sku = item["sku"]?.Value<string?>() ?? "",
+                    BuyingPrice = ReadCostOfGoods(item)
                 };
 
                 if(productToAdd.ProductColor == null)

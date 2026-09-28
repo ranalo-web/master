@@ -54,6 +54,12 @@ namespace Ranalo.DataStore
         Task<decimal> GetAllTimeRevenueAsync();
         Task<decimal> GetAllTimeCommissionsPaidAsync();
 
+        // Financials Income Statement totals for a reporting period -- same
+        // dealer-linked sources as the "this month" queries above, filtered
+        // to [fromDate, toDateExclusive). A null bound means unbounded.
+        Task<decimal> GetRevenueForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive);
+        Task<decimal> GetCommissionsPaidForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive);
+
         // Sum of DashboardSnapshot.DealerCommissionOutstanding/
         // CommissionOutstanding across every dealer row (WHERE DealerId IS
         // NOT NULL) -- the Financials page's balance sheet liabilities.

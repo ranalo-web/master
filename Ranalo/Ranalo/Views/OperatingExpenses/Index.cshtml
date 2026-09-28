@@ -23,10 +23,29 @@
                     <a href="/operating-expenses?year=@prevMonth.Year&month=@prevMonth.Month" class="btn btn-icon btn-outline-light"><em class="icon ni ni-chevron-left"></em></a>
                     <span class="fw-medium">@monthLabel</span>
                     <a href="/operating-expenses?year=@nextMonth.Year&month=@nextMonth.Month" class="btn btn-icon btn-outline-light"><em class="icon ni ni-chevron-right"></em></a>
+                    <a href="/operating-expenses/template" class="btn btn-outline-light"><em class="icon ni ni-download"></em><span>Download Template</span></a>
+                    <a href="#upload-expenses" data-bs-toggle="modal" class="btn btn-primary"><em class="icon ni ni-upload-cloud"></em><span>Upload Expenses</span></a>
                 </div>
             </div>
         </div>
     </div>
+
+    @if (TempData["ExpenseUploadSuccess"] is string uploadSuccess)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em>
+            <strong>Upload saved.</strong> @uploadSuccess
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ExpenseUploadError"] is string uploadError)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em>
+            <strong>Upload failed.</strong> @uploadError
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
     <div class="nk-block">
         <div class="card card-bordered card-preview">
@@ -129,6 +148,32 @@
                     }
                 }
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" tabindex="-1" id="upload-expenses">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross"></em>
+            </button>
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Expenses</h5>
+            </div>
+            <form action="/operating-expenses/upload" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <p class="text-soft">Fill in the <a href="/operating-expenses/template">template</a> (Date, Category, Description, Amount -- one expense per row) and upload it. You'll review every row and assign categories before anything is saved.</p>
+                    <div class="form-group">
+                        <label class="form-label" for="expensesFile">Select file (.xlsx)</label>
+                        <input type="file" name="file" id="expensesFile" class="form-control" accept=".xlsx,.xlsm" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-lg btn-danger">Cancel</button>
+                    <button type="submit" class="btn btn-lg btn-primary">Upload</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

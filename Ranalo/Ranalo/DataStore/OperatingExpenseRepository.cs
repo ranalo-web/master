@@ -77,6 +77,26 @@ namespace Ranalo.DataStore
             return rowsAffected > 0;
         }
 
+        public async Task<decimal> GetTotalAsync(DateTime? fromDate, DateTime? toDateExclusive)
+        {
+            const string sql = @"
+                SELECT ISNULL(SUM(Amount), 0)
+                FROM OperatingExpenses
+                WHERE RemovedAtUtc IS NULL
+                  AND (@FromDate IS NULL OR ExpenseDate >= @FromDate)
+                  AND (@ToDate IS NULL OR ExpenseDate < @ToDate)";
+
+            try
+            {
+                return await _db.QuerySingleAsync<decimal>(sql, new { FromDate = fromDate, ToDate = toDateExclusive });
+            }
+            catch (SqlException ex) when (IsMissingTable(ex))
+            {
+                _logger.LogWarning(ex, "OperatingExpenses table not found; see Database/OperatingExpenses/001_create_operating_expenses.sql.");
+                return 0;
+            }
+        }
+
         public async Task<List<OperatingExpenseMonthlyTotal>> GetMonthlyTotalsAsync(int months)
         {
             var rangeStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-(months - 1));

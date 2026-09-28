@@ -20,5 +20,8 @@
         public string FirstName { get; set; }
         public decimal TermInMonths { get; set; } = 12.00000m;
         public decimal? DailySalePrice { get; set; }
+        // Unit cost of goods from the order's product (Woo_OrderProduct),
+        // copied onto the new contract's BuyingPrice.
+        public decimal? BuyingPrice { get; set; }
     }
 }

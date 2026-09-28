@@ -375,6 +375,54 @@ namespace Ranalo.DataStore
             }
         }
 
+        public async Task<decimal> GetRevenueForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive)
+        {
+            const string sql = @"
+                SELECT ISNULL(SUM(kp.AmountValue), 0)
+                FROM KosePayments kp
+                INNER JOIN Devices d ON d.Id = kp.AccountNoBigint
+                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                WHERE (@FromDate IS NULL OR kp.PaymentDateValue >= @FromDate)
+                  AND (@ToDate IS NULL OR kp.PaymentDateValue < @ToDate)";
+
+            try
+            {
+                return await _db.QuerySingleAsync<decimal>(sql, new { FromDate = fromDate, ToDate = toDateExclusive });
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Revenue-for-period computation failed");
+                return 0;
+            }
+        }
+
+        public async Task<decimal> GetCommissionsPaidForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive)
+        {
+            const string sql = @"
+                SELECT ISNULL(SUM(dcp.AmountPaid), 0)
+                FROM DealerCommissionPayments dcp
+                INNER JOIN Contract_Info ci ON ci.ContractID = dcp.ContractId
+                INNER JOIN Devices d ON d.Id = ci.ID
+                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                WHERE (@FromDate IS NULL OR dcp.PaidDate >= @FromDate)
+                  AND (@ToDate IS NULL OR dcp.PaidDate < @ToDate)";
+
+            try
+            {
+                return await _db.QuerySingleAsync<decimal>(sql, new { FromDate = fromDate, ToDate = toDateExclusive });
+            }
+            catch (SqlException ex) when (IsMissingTable(ex))
+            {
+                _logger.LogWarning(ex, "DealerCommissionPayments table not found; returning 0 commissions paid for period.");
+                return 0;
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Commissions-paid-for-period computation failed");
+                return 0;
+            }
+        }
+
         public async Task<(decimal DealerOutstanding, decimal AgentOutstanding)> GetTotalCommissionsOutstandingAsync()
         {
             const string sql = @"
