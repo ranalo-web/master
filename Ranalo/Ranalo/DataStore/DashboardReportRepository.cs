@@ -385,11 +385,15 @@ namespace Ranalo.DataStore
         // account that is a device. Reversals and stray payments to
         // non-account numbers drop out. Deliberately no Dealers join -- a
         // device with no dealer mapping is still company revenue.
+        // The LEFT length is clamped because SQL Server may evaluate it before
+        // the LIKE: an AccountNo shorter than 2 chars would make it negative
+        // and fail the whole query ("Invalid length parameter"), depending on
+        // the plan -- which is why it broke only for some period filters.
         private const string DevicePaymentFilter = @"(
                     EXISTS (SELECT 1 FROM Devices d WHERE d.Id = kp.AccountNoBigint)
                     OR (kp.AccountNo LIKE '%\_R' ESCAPE '\'
                         AND EXISTS (SELECT 1 FROM Devices rd
-                                    WHERE rd.Id = TRY_CAST(LEFT(kp.AccountNo, LEN(kp.AccountNo) - 2) AS BIGINT)))
+                                    WHERE rd.Id = TRY_CAST(NULLIF(LEFT(kp.AccountNo, IIF(LEN(kp.AccountNo) > 2, LEN(kp.AccountNo) - 2, 0)), '') AS BIGINT)))
                     OR EXISTS (SELECT 1 FROM OrphanedPayments op
                                INNER JOIN Devices ad ON ad.Id = op.AccountNoBigint
                                WHERE op.MpesaCode = kp.MpesaCode))";
