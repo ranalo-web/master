@@ -287,6 +287,79 @@ namespace Ranalo.Controllers
             return View("~/Views/AdminDashboard/Index.cshtml", model);
         }
 
+        // The real, live figures behind the Admin / Dealer / Agent dashboards
+        // as JSON, for checking them against the database without logging in.
+        // Development only, like everything in this controller.
+        [HttpGet]
+        [Route("dev-preview/dashboard-figures")]
+        public async Task<IActionResult> DashboardFigures([FromServices] Services.IDashboardReportService dashboards,
+            string view = "admin", int dealerId = 0, int? agentUserId = null)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            object model = view switch
+            {
+                "dealer" => await dashboards.GetDealerDashboardAsync(dealerId),
+                "agent" => await dashboards.GetDealerDashboardAsync(dealerId, agentUserId),
+                _ => await dashboards.GetAdminDashboardAsync(),
+            };
+
+            // ?html=true renders the real dashboard page with this data.
+            if (Request.Query["html"] == "true")
+            {
+                ViewBag.IsAdmin = view == "admin";
+                ViewBag.IsDealer = view == "dealer";
+                ViewBag.IsAgent = view == "agent";
+                ViewBag.IsApprover = false;
+                ViewBag.UserName = "Preview";
+                ViewBag.BackLink = view == "admin" ? "admin-dashboard" : view == "agent" ? "agent" : "dealer-dashboard";
+                return View(view == "admin" ? "~/Views/AdminDashboard/Index.cshtml" : "~/Views/DealerDashboard/Index.cshtml", model);
+            }
+            return Json(model);
+        }
+
+        // Dealer Allocation with real data, read-only (the Move form posts to
+        // the real, admin-only endpoint, which needs a login).
+        [HttpGet]
+        [Route("dev-preview/dealer-allocation")]
+        public async Task<IActionResult> DealerAllocation([FromServices] DataStore.IDealerAllocationRepository repository, string? show = null, string? q = null)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var unassignedOnly = show != "all";
+            var (unassigned, noDevice) = await repository.GetUnassignedCountsAsync();
+            var model = new DealerAllocationViewModel
+            {
+                Show = unassignedOnly ? "unassigned" : "all",
+                Search = q,
+                UnassignedCount = unassigned,
+                NoDeviceCount = noDevice,
+                Accounts = await repository.GetAccountsAsync(unassignedOnly, q),
+                Dealers = await repository.GetDealersAsync(),
+            };
+            try
+            {
+                model.RecentChanges = await repository.GetRecentChangesAsync(20);
+            }
+            catch
+            {
+                model.LogUnavailable = true;
+            }
+
+            ViewBag.IsAdmin = true;
+            ViewBag.IsApprover = false;
+            ViewBag.IsDealer = false;
+            ViewBag.UserName = "Preview Admin";
+            ViewBag.BackLink = "dealer-allocation";
+            return View("~/Views/DealerAllocation/Index.cshtml", model);
+        }
+
         // Account Commissions with sample accounts run through the real
         // CommissionCalculator. ?agent=1 shows the agent's view; ?expand=1
         // renders the first rows' detail panels open (for screenshots).

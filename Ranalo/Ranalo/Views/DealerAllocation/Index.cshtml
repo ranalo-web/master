@@ -1,0 +1,240 @@
+@using Ranalo.Models
+@model DealerAllocationViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var unassignedView = Model.Show == "unassigned";
+}
+
+<style>
+    .da-bar { position: sticky; top: 64px; z-index: 5; }
+    @@media (max-width: 767.98px) {
+        .da-md { display: none !important; }
+        .da-table td, .da-table th { padding-left: .5rem; padding-right: .5rem; }
+    }
+</style>
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Dealer Allocation</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Give accounts with no dealer a dealer, or move accounts to a different dealer. An account's dealer decides where its revenue, arrears and dealer commission show up across the app. Commission payments already made stay with the dealer they were paid to. Every change is logged.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["AllocationSuccess"] is string success)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em> @success
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["AllocationError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Accounts with no dealer</span>
+                    <span class="d-block fs-5 fw-bold @(Model.UnassignedCount > 0 ? "text-danger" : "text-success")">@Model.UnassignedCount.ToString("N0")</span>
+                    <span class="d-block text-soft small">Missing from dashboards and commissions</span>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">No device record</span>
+                    <span class="d-block fs-5 fw-bold @(Model.NoDeviceCount > 0 ? "text-warning" : "")">@Model.NoDeviceCount.ToString("N0")</span>
+                    <span class="d-block text-soft small">Can't be assigned until the device is enrolled or the account number is fixed</span>
+                </div></div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <form method="get" action="/dealer-allocation" class="d-flex flex-wrap align-items-center" style="gap:.5rem;">
+                        <div class="btn-group">
+                            <a href="/dealer-allocation" class="btn btn-sm @(unassignedView ? "btn-primary" : "btn-outline-light btn-white")">No dealer</a>
+                            <a href="/dealer-allocation?show=all" class="btn btn-sm @(!unassignedView ? "btn-primary" : "btn-outline-light btn-white")">All accounts</a>
+                        </div>
+                        <input type="hidden" name="show" value="@Model.Show" />
+                        <div class="form-control-wrap flex-grow-1" style="min-width:180px;">
+                            <div class="form-icon form-icon-left"><em class="icon ni ni-search"></em></div>
+                            <input type="search" name="q" value="@Model.Search" class="form-control form-control-sm" placeholder="Account, contract, IMEI, customer or dealer" />
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary">Search</button>
+                    </form>
+                    @if (!unassignedView && string.IsNullOrWhiteSpace(Model.Search))
+                    {
+                        <p class="text-soft small mt-2 mb-0">Showing the 300 newest accounts. Search to find a specific one.</p>
+                    }
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="/dealer-allocation/assign" id="da-form">
+        <input type="hidden" name="show" value="@Model.Show" />
+        <input type="hidden" name="q" value="@Model.Search" />
+
+        <div class="nk-block">
+            <div class="card card-bordered da-bar">
+                <div class="card-inner py-2 d-flex flex-wrap align-items-center" style="gap:.5rem;">
+                    <span class="fw-medium"><span id="da-count">0</span> ticked</span>
+                    <select name="dealerId" id="da-dealer" class="form-select form-select-sm" style="max-width:260px;" required>
+                        <option value="">Move to dealer…</option>
+                        @foreach (var d in Model.Dealers)
+                        {
+                            <option value="@d.DealerId" disabled="@(d.GroupId is null)">@d.CompanyName@(d.GroupId is null ? " (no reference)" : "")</option>
+                        }
+                    </select>
+                    <input type="text" name="note" class="form-control form-control-sm" style="max-width:260px;" maxlength="300" placeholder="Reason (optional)" />
+                    <button type="submit" class="btn btn-sm btn-primary" id="da-submit" disabled>Move</button>
+                    <a href="#" class="link link-primary small ms-auto" id="da-all">Tick all shown</a>
+                    <a href="#" class="link link-primary small" id="da-none">Clear</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="nk-block">
+            <div class="card card-bordered">
+                @if (Model.Accounts.Count == 0)
+                {
+                    <div class="card-inner text-soft">@(unassignedView ? "Every account has a dealer." : "No accounts found.")</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0 da-table" style="font-size:13px;">
+                            <thead>
+                                <tr>
+                                    <th style="width:1%;"></th>
+                                    <th>Account</th>
+                                    <th class="da-md">Device</th>
+                                    <th>Current dealer</th>
+                                    <th class="da-md">Agent</th>
+                                    <th class="text-end da-md">Paid</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in Model.Accounts)
+                                {
+                                    <tr class="@(a.HasDevice ? "" : "text-soft")">
+                                        <td>
+                                            @if (a.HasDevice)
+                                            {
+                                                <input type="checkbox" class="form-check-input da-account" name="accountNos" value="@a.AccountNo" />
+                                            }
+                                        </td>
+                                        <td>
+                                            <a href="/account-details/@a.AccountNo" target="_blank" class="fw-medium">@(string.IsNullOrWhiteSpace(a.CustomerName) ? "(no name)" : a.CustomerName)</a>
+                                            <span class="d-block sub-text">AC @a.AccountNo · contract @a.ContractId · @(a.StartDate?.ToString("dd MMM yyyy") ?? "-")</span>
+                                        </td>
+                                        <td class="da-md">
+                                            @if (a.HasDevice)
+                                            {
+                                                <span>@(a.ProductName ?? "Unknown device")</span>
+                                                <span class="d-block sub-text">IMEI @(a.Imei ?? "-")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-warning">No device record</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (a.DealerName != null)
+                                            {
+                                                <span>@a.DealerName</span>
+                                            }
+                                            else if (a.HasDevice && a.DeviceGroupId.HasValue)
+                                            {
+                                                <span class="text-danger">None</span>
+                                                <span class="d-block sub-text">group @a.DeviceGroupId matches no dealer</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-danger">None</span>
+                                            }
+                                        </td>
+                                        <td class="da-md">@(a.AgentName ?? "-")</td>
+                                        <td class="text-end da-md">@a.TotalPaid.ToString("N0")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </form>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <h6 class="title mb-2">Recent changes</h6>
+                @if (Model.LogUnavailable)
+                {
+                    <p class="text-warning mb-0">The change log isn't set up yet -- run Database/Dealers/001_create_dealer_allocation_log.sql. Moves are blocked until then.</p>
+                }
+                else if (Model.RecentChanges.Count == 0)
+                {
+                    <p class="text-soft mb-0">No changes yet.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0" style="font-size:13px;">
+                            <thead><tr><th>When</th><th>Account</th><th>From</th><th>To</th><th class="da-md">By</th><th class="da-md">Reason</th></tr></thead>
+                            <tbody>
+                                @foreach (var c in Model.RecentChanges)
+                                {
+                                    <tr>
+                                        <td>@c.ChangedAtUtc.AddHours(3).ToString("dd MMM yyyy HH:mm")</td>
+                                        <td>@c.AccountNo</td>
+                                        <td>@(c.OldDealerName ?? (c.OldDeviceGroupId.HasValue ? $"group {c.OldDeviceGroupId}" : "No dealer"))</td>
+                                        <td>@c.NewDealerName</td>
+                                        <td class="da-md">@c.ChangedByName</td>
+                                        <td class="da-md small">@c.Note</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var boxes = Array.prototype.slice.call(document.querySelectorAll('.da-account'));
+            var dealer = document.getElementById('da-dealer');
+            var submit = document.getElementById('da-submit');
+            function update() {
+                var n = boxes.filter(function (b) { return b.checked; }).length;
+                document.getElementById('da-count').textContent = n;
+                submit.disabled = n === 0 || !dealer.value;
+            }
+            boxes.forEach(function (b) { b.addEventListener('change', update); });
+            dealer.addEventListener('change', update);
+            document.getElementById('da-all').addEventListener('click', function (e) { e.preventDefault(); boxes.forEach(function (b) { b.checked = true; }); update(); });
+            document.getElementById('da-none').addEventListener('click', function (e) { e.preventDefault(); boxes.forEach(function (b) { b.checked = false; }); update(); });
+            document.getElementById('da-form').addEventListener('submit', function (e) {
+                var n = boxes.filter(function (b) { return b.checked; }).length;
+                var name = dealer.options[dealer.selectedIndex].text;
+                if (!confirm('Move ' + n + ' account(s) to ' + name + '? Their revenue, arrears and dealer commission will show under ' + name + ' from now on.')) {
+                    e.preventDefault();
+                }
+            });
+            update();
+        })();
+    </script>
+}

@@ -38,5 +38,7 @@ namespace Ranalo.Services
 
         Task<List<Dealer>?> GetAllDealers();
         Task AddDealerAsync(Dealer dealerDetails);
+        Task<string> SuggestDealerReferenceAsync();
+        Task<(bool Ok, string Message)> AddDealerWithLoginAsync(Dealer dealer, User login);
     }
 }
