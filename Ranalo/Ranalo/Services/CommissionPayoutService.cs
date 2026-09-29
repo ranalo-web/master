@@ -264,6 +264,7 @@ namespace Ranalo.Services
                 ContractId = long.TryParse(a.ContractId, out var id) ? id : 0,
                 StartDate = a.StartDate,
                 Earned = isAgent ? c.AgentEarned : c.DealerCommission ?? 0,
+                Upfront = isAgent ? c.AgentUpfront : c.DealerCommission ?? 0,
                 Deducted = isAgent ? c.AgentArrearsDeducted : c.DealerArrearsDeducted,
                 Paid = isAgent ? c.AgentPaid : c.DealerPaid,
             };

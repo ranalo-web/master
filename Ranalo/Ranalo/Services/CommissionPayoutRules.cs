@@ -16,11 +16,14 @@ namespace Ranalo.Services
     //   unpaid commission on the accounts selected).
     //
     // Allocation
-    //   A payout is split across the selected accounts, oldest first: each
-    //   account first gets its own net (earned - its arrears - paid), then
-    //   any remainder goes to accounts with unpaid gross commission, and
-    //   anything still left (an override, e.g. recording an upfront already
-    //   paid at sale) lands on the newest account.
+    //   A payout is recorded against the individual accounts it covers, so
+    //   each account keeps its own paid total (needed when a device is
+    //   moved, repossessed or written off). It's split in two passes, each
+    //   oldest account first: every account's unpaid upfront, then any
+    //   remaining commission (the agent bonus; for dealers the whole
+    //   commission is one pass). Money already paid on an account counts
+    //   toward its upfront first. Anything still left (an override, e.g.
+    //   recording a payment made earlier) lands on the newest account.
     public static class CommissionPayoutRules
     {
         public const decimal SuspensionThresholdPct = 30m;
@@ -33,6 +36,9 @@ namespace Ranalo.Services
         public static decimal Unpaid(PayoutAccount a) => Math.Max(0, a.Earned - a.Paid);
 
         public static decimal OwnNet(PayoutAccount a) => Math.Max(0, a.Earned - a.Deducted - a.Paid);
+
+        // The upfront part still unpaid; what's already been paid covers the upfront first.
+        public static decimal UnpaidUpfront(PayoutAccount a) => Math.Max(0, Math.Min(a.Upfront, a.Earned) - a.Paid);
 
         public static decimal Payable(IReadOnlyCollection<PayoutAccount> allAccounts, IEnumerable<long> selectedContractIds, bool suspended)
         {
@@ -72,7 +78,7 @@ namespace Ranalo.Services
                 }
             }
 
-            Fill(OwnNet);
+            Fill(UnpaidUpfront);
             Fill(Unpaid);
             if (remaining > 0 && ordered.Count > 0)
             {
@@ -92,6 +98,10 @@ namespace Ranalo.Services
         public long ContractId { get; set; }
         public DateTime StartDate { get; set; }
         public decimal Earned { get; set; }
+
+        // Paid ahead of anything else: the agent's 50% upfront. For dealers
+        // it equals Earned, so their commission is allocated in one pass.
+        public decimal Upfront { get; set; }
         public decimal Deducted { get; set; }
         public decimal Paid { get; set; }
     }

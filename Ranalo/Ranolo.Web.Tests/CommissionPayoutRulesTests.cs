@@ -5,11 +5,13 @@ namespace Ranolo.Web.Tests
     // Suspension, payable and allocation rules for paying commissions out.
     public class CommissionPayoutRulesTests
     {
-        private static PayoutAccount Acc(long id, decimal earned, decimal deducted = 0, decimal paid = 0, int daysAgo = 100) => new()
+        // upfront defaults to earned (a dealer account: one pass).
+        private static PayoutAccount Acc(long id, decimal earned, decimal deducted = 0, decimal paid = 0, int daysAgo = 100, decimal? upfront = null) => new()
         {
             ContractId = id,
             StartDate = new DateTime(2026, 9, 1).AddDays(-daysAgo),
             Earned = earned,
+            Upfront = upfront ?? earned,
             Deducted = deducted,
             Paid = paid,
         };
@@ -65,13 +67,33 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
-        public void Allocate_PrefersAccountsWithoutArrears()
+        public void Allocate_PaysEveryUpfrontBeforeAnyBonus()
         {
-            var selected = new[] { Acc(1, 2_000m, deducted: 2_000m, daysAgo: 200), Acc(2, 1_000m, daysAgo: 10) };
+            // Old account: 2,000 upfront + 1,000 bonus. New account: 2,000 upfront, no bonus yet.
+            var selected = new[]
+            {
+                Acc(1, 3_000m, upfront: 2_000m, daysAgo: 200),
+                Acc(2, 2_000m, upfront: 2_000m, daysAgo: 10),
+            };
 
-            var lines = CommissionPayoutRules.Allocate(selected, 1_000m);
+            var lines = CommissionPayoutRules.Allocate(selected, 4_500m);
 
-            Assert.That(lines, Is.EqualTo(new[] { (2L, 1_000m) }));
+            Assert.That(lines, Is.EqualTo(new[] { (1L, 2_500m), (2L, 2_000m) }));
+        }
+
+        [Test]
+        public void Allocate_AlreadyPaidCountsTowardUpfrontFirst()
+        {
+            // Upfront 2,000 already paid at sale; only the 1,000 bonus is left on account 1.
+            var selected = new[]
+            {
+                Acc(1, 3_000m, paid: 2_000m, upfront: 2_000m, daysAgo: 200),
+                Acc(2, 2_000m, upfront: 2_000m, daysAgo: 10),
+            };
+
+            var lines = CommissionPayoutRules.Allocate(selected, 2_000m);
+
+            Assert.That(lines, Is.EqualTo(new[] { (2L, 2_000m) }));
         }
 
         [Test]
