@@ -805,11 +805,15 @@ namespace Ranalo.DataStore
                     END AS Days
                 ) DaysAccrued
                 WHERE (@DealerId IS NULL OR dl.DealerId = @DealerId) AND ci.StartDate IS NOT NULL
-                AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
+                AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+                OPTION (RECOMPILE)";
 
             try
             {
-                var rows = await _db.QueryAsync<AccountArrearsRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId });
+                // RECOMPILE + longer timeout: one query serves an agent, a dealer
+                // and the whole company; a plan cached for one timed out on the
+                // company-wide call (Admin Total Arrears / Bad Debt showed 0).
+                var rows = await _db.QueryAsync<AccountArrearsRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId }, commandTimeout: 90);
                 var now = DateTime.Now;
                 var result = new DashboardArrearsClassificationRow();
                 decimal totalDaysLocked = 0;

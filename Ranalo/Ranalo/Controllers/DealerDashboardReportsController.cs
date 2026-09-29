@@ -126,7 +126,7 @@ namespace Ranalo.Controllers
             var settings = RequireDealerOrAdmin(out var redirect);
             if (settings == null) return redirect!;
 
-            var rows = await _dashboardReportService.GetDealerDeviceStockReportAsync(settings.DealerId);
+            var rows = await _dashboardReportService.GetDealerDeviceStockReportAsync(settings.DealerId, AgentUserId(settings));
             return View(rows);
         }
 

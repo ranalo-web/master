@@ -335,14 +335,21 @@
                             </div>
                             <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                                 <div class="d-flex flex-column">
-                                    <span class="amount">KES @Model.CommissionPaidLifetime.ToString("N0")</span>
-                                    <span class="sub-title d-block mt-1">paid to you, all-time</span>
+                                    <span class="amount">KES @Model.AgentBonusDue.ToString("N0")</span>
+                                    <span class="sub-title d-block mt-1">bonus earned and not yet paid</span>
                                 </div>
                             </div>
                             <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                                <span class="text-success">@Model.BonusEarnedAccountCount.ToString("N0") accounts earning the 90-day bonus</span>
-                                <span class="@(Model.BonusAtRiskAccountCount > 0 ? "text-danger" : "text-soft")">@Model.BonusAtRiskAccountCount.ToString("N0") held &middot; past lock date or no WooCommerce order@(Model.BonusHeldNoWooOrderCount > 0 ? $" ({Model.BonusHeldNoWooOrderCount:N0} no order)" : "")</span>
-                                <span class="text-soft">@Model.BonusUpcomingAccountCount.ToString("N0") approaching the 90-day mark</span>
+                                <span class="text-success">@Model.BonusEarnedAccountCount.ToString("N0") account@(Model.BonusEarnedAccountCount == 1 ? "" : "s") earning the 25% bonus</span>
+                                @if (Model.BonusAtRiskAccountCount > 0)
+                                {
+                                    <span class="text-warning">
+                                        KES @Model.BonusHeldAmount.ToString("N0") held on @Model.BonusAtRiskAccountCount.ToString("N0") account@(Model.BonusAtRiskAccountCount == 1 ? "" : "s"):
+                                        @(Model.BonusHeldPastLockCount > 0 ? $"{Model.BonusHeldPastLockCount} past lock date" : "")@(Model.BonusHeldPastLockCount > 0 && Model.BonusHeldNoWooOrderCount > 0 ? ", " : "")@(Model.BonusHeldNoWooOrderCount > 0 ? $"{Model.BonusHeldNoWooOrderCount} no WooCommerce order" : "")
+                                    </span>
+                                }
+                                <span class="text-soft">@Model.BonusUpcomingAccountCount.ToString("N0") reach 90 days in the next 30 days@(Model.BonusUpcomingAccountCount > 0 ? $" (up to KES {Model.BonusUpcomingValue:N0})" : "")</span>
+                                <span class="text-soft">Bonus = 25% of the deposit, once the account is 90 days old, paying and has a WooCommerce order.</span>
                             </div>
                         </div>
                     </div>
@@ -434,7 +441,7 @@
                                         <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
                                         <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
                                         <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Arrears</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Accounts more than a week of payments behind">Behind</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -571,7 +578,7 @@
                 <div class="card-title-group mb-3">
                     <div class="card-title">
                         <h6 class="title">Device Performance</h6>
-                        <p class="text-soft">Units financed, avg. value &amp; repayment health</p>
+                        <p class="text-soft">Units financed, avg. value, share of money due that has been collected, and accounts behind</p>
                         @if (!(ViewBag.IsApprover is true))
                         {
                             <a href="/dealer-dashboard/reports/device-performance" class="link link-primary small">View full report</a>
@@ -585,8 +592,8 @@
                             <th class="wl-th" onclick="Ranalo.sortTable(this)">Device</th>
                             <th class="wl-th" onclick="Ranalo.sortTable(this)">Units</th>
                             <th class="wl-th" onclick="Ranalo.sortTable(this)">Avg Value</th>
-                            <th class="wl-th" onclick="Ranalo.sortTable(this)">Good</th>
-                            <th class="wl-th" onclick="Ranalo.sortTable(this)">Arrears</th>
+                            <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Money received / money due so far">Collected</th>
+                            <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Accounts more than a week of payments behind">Behind</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -597,8 +604,8 @@
                                 <td><span class="fw-medium">@d.Device</span></td>
                                 <td>@d.Units</td>
                                 <td>KES @d.AvgValue.ToString("N0")</td>
-                                <td><span class="text-success">@d.GoodPct.ToString("0")%</span></td>
-                                <td><span class="text-danger">@d.ArrearsPct.ToString("0")%</span></td>
+                                <td><span class="@(d.CollectedPct >= 90 ? "text-success" : d.CollectedPct >= 70 ? "text-warning" : "text-danger")">@d.CollectedPct.ToString("0")%</span></td>
+                                <td><span class="@(d.BehindCount > 0 ? "text-danger" : "text-soft")">@d.BehindCount of @d.Units</span></td>
                             </tr>
                         }
                     </tbody>
@@ -1185,10 +1192,9 @@
                                 <tr>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Earned</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on this account, deducted because it is past its lock date">Arrears Deducted</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Earned minus arrears deducted minus paid, for this account">Net</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="50% of the deposit">Upfront</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="25% of the deposit, once 90 days old, not past lock date and with a WooCommerce order">Bonus</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="What the customer is behind by; held back from the agent until they catch up">Customer behind</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
                                 </tr>
                             </thead>
@@ -1202,11 +1208,10 @@
                                             <span class="d-block sub-text">AC: @c.AccountId</span>
                                         </td>
                                         <td>@c.AgentName</td>
-                                        <td>KES @c.Earned.ToString("N0")</td>
-                                        <td class="@(c.ArrearsDeducted > 0 ? "text-danger" : "")">KES @c.ArrearsDeducted.ToString("N0")</td>
-                                        <td>KES @c.Paid.ToString("N0")</td>
-                                        <td class="@(c.Net < 0 ? "text-danger" : "")">KES @c.Net.ToString("N0")</td>
-                                        <td><span class="badge badge-dim @(c.Status == "Withheld" ? "bg-warning" : c.Status == "Owed" ? "bg-info" : "bg-success")">@c.Status</span></td>
+                                        <td>KES @c.Upfront.ToString("N0")<span class="d-block sub-text">@(c.UpfrontPaid >= c.Upfront ? "paid" : $"KES {c.Upfront - c.UpfrontPaid:N0} due")</span></td>
+                                        <td>@if (c.BonusState == "earned") { <span>KES @c.Bonus.ToString("N0")</span><span class="d-block sub-text">@(c.BonusPaid >= c.Bonus ? "paid" : "earned, due")</span> } else if (c.BonusState == "held-woo") { <span class="text-warning">Held</span><span class="d-block sub-text">no WooCommerce order</span> } else if (c.BonusState == "held-lock") { <span class="text-warning">Held</span><span class="d-block sub-text">past lock date</span> } else { <span class="text-soft">In @c.DaysToBonus days</span> }</td>
+                                        <td class="@(c.CustomerBehindBy > 0 ? "text-danger" : "text-soft")">@(c.CustomerBehindBy > 0 ? "KES " + c.CustomerBehindBy.ToString("N0") : "Not behind")</td>
+                                        <td><span class="badge badge-dim @(c.Status == "Withheld" ? "bg-warning" : c.Status == "Owed" ? "bg-info" : "bg-success")" title="@(c.Status == "Withheld" ? "Nothing more is paid on this account while the customer is behind" : "")">@(c.Status == "Withheld" ? "Held back" : c.Status == "Owed" ? "Due" : "Paid up")</span></td>
                                     </tr>
                                 }
                             </tbody>
@@ -1265,8 +1270,8 @@
                                     <td>@c.AgentName</td>
                                     <td>@c.Device</td>
                                     <td>KES @c.MonthlyPayment.ToString("N0")</td>
-                                    <td><span class="badge @(c.Status == "Late" ? "badge-dim bg-warning" : "badge-dim bg-success")">@c.Status</span></td>
-                                    <td class="@(c.Status == "Late" ? "text-danger" : "")">@c.NextDue</td>
+                                    <td><span class="badge badge-dim @(c.Status switch { "On track" => "bg-success", "Slightly behind" => "bg-warning", "Restructured · on plan" => "bg-info", _ => "bg-danger" })" title="@(c.Status == "Restructured · on plan" ? "Behind on the original plan but paying on its restructured plan" : "")">@c.Status</span></td>
+                                    <td class="@(c.Status is "Behind" or "Restructured · late" ? "text-danger" : "")">@c.NextDue</td>
                                 </tr>
                             }
                         </tbody>
@@ -1306,7 +1311,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Active %</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Arrears</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Accounts more than a week of payments behind">Behind</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Revenue This Month</th>
                             </tr>
                         </thead>

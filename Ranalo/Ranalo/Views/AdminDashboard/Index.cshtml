@@ -821,10 +821,9 @@
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Earned</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on this account, deducted because it is past its lock date">Arrears Deducted</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Earned minus arrears deducted minus paid, for this account">Net</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="50% of the deposit">Upfront</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="25% of the deposit, once 90 days old, not past lock date and with a WooCommerce order">Bonus</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="What the customer is behind by; held back from the agent until they catch up">Customer behind</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
                                 </tr>
                             </thead>
@@ -839,11 +838,10 @@
                                         </td>
                                         <td>@c.DealerName</td>
                                         <td>@c.AgentName</td>
-                                        <td>KES @c.Earned.ToString("N0")</td>
-                                        <td class="@(c.ArrearsDeducted > 0 ? "text-danger" : "")">KES @c.ArrearsDeducted.ToString("N0")</td>
-                                        <td>KES @c.Paid.ToString("N0")</td>
-                                        <td class="@(c.Net < 0 ? "text-danger" : "")">KES @c.Net.ToString("N0")</td>
-                                        <td><span class="badge badge-dim @(c.Status == "Withheld" ? "bg-warning" : c.Status == "Owed" ? "bg-info" : "bg-success")">@c.Status</span></td>
+                                        <td>KES @c.Upfront.ToString("N0")<span class="d-block sub-text">@(c.UpfrontPaid >= c.Upfront ? "paid" : $"KES {c.Upfront - c.UpfrontPaid:N0} due")</span></td>
+                                        <td>@if (c.BonusState == "earned") { <span>KES @c.Bonus.ToString("N0")</span><span class="d-block sub-text">@(c.BonusPaid >= c.Bonus ? "paid" : "earned, due")</span> } else if (c.BonusState == "held-woo") { <span class="text-warning">Held</span><span class="d-block sub-text">no WooCommerce order</span> } else if (c.BonusState == "held-lock") { <span class="text-warning">Held</span><span class="d-block sub-text">past lock date</span> } else { <span class="text-soft">In @c.DaysToBonus days</span> }</td>
+                                        <td class="@(c.CustomerBehindBy > 0 ? "text-danger" : "text-soft")">@(c.CustomerBehindBy > 0 ? "KES " + c.CustomerBehindBy.ToString("N0") : "Not behind")</td>
+                                        <td><span class="badge badge-dim @(c.Status == "Withheld" ? "bg-warning" : c.Status == "Owed" ? "bg-info" : "bg-success")" title="@(c.Status == "Withheld" ? "Nothing more is paid on this account while the customer is behind" : "")">@(c.Status == "Withheld" ? "Held back" : c.Status == "Owed" ? "Due" : "Paid up")</span></td>
                                     </tr>
                                 }
                             </tbody>

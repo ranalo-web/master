@@ -431,8 +431,13 @@ namespace Ranalo.Services
                 model.CommissionPaidLifetime = breakdowns.Sum(b => b.AgentPaid);
                 model.BonusEarnedAccountCount = breakdowns.Count(b => b.BonusEarned);
                 model.BonusAtRiskAccountCount = breakdowns.Count(b => b.BonusAtRisk);
-                model.BonusUpcomingAccountCount = commissionAccounts.Count(a =>
-                    a.DaysSinceStart >= CommissionCalculator.BonusDays - 30 && a.DaysSinceStart < CommissionCalculator.BonusDays);
+                var upcoming = commissionAccounts.Where(a =>
+                    a.DaysSinceStart >= CommissionCalculator.BonusDays - 30 && a.DaysSinceStart < CommissionCalculator.BonusDays).ToList();
+                model.BonusUpcomingAccountCount = upcoming.Count;
+                model.BonusUpcomingValue = upcoming.Sum(a => a.Deposit * CommissionCalculator.AgentBonusRate);
+                var held = commissionAccounts.Where(a => a.Commission.BonusAtRisk).ToList();
+                model.BonusHeldAmount = held.Sum(a => a.Deposit * CommissionCalculator.AgentBonusRate);
+                model.BonusHeldPastLockCount = held.Count(a => !a.Commission.BonusHeldNoWooOrder);
             }
 
             // Paying vs Non-Paying and My Portfolio cards -- see
@@ -578,7 +583,7 @@ namespace Ranalo.Services
 
             (model.CommissionSummary, model.CommissionAccounts) = BuildCommissions(commissionAccounts, accountDetails);
 
-            model.DeviceStock = await BuildDeviceStockAsync(dealerId, scope);
+            model.DeviceStock = BuildDeviceStock(accountDetails);
             // Completed contracts: live, and only the agent's own on the Agent
             // Dashboard (the rows are per dealer). The completion rate has no
             // agreed definition yet and the portfolio "vs last month" has no
@@ -722,44 +727,35 @@ namespace Ranalo.Services
         // instead of silently truncating at the shared method's default of 20.
         private const int DealerScopeTakeAll = 1000;
 
-        private async Task<List<DealerDeviceStock>> BuildDeviceStockAsync(int dealerId, DashboardScope scope)
-        {
-            var deviceStock = await _repository.GetDeviceStockAsync(scope, DealerScopeTakeAll);
-            if (deviceStock.Count == 0)
+        // Device Performance: live from the same account rows as the rest of
+        // the page, so an agent sees only their own devices. "Collected" is
+        // money received / money due to date (capped at 100%) -- a plain
+        // good-vs-arrears split read 100% whenever slow payers were left out.
+        // "Behind" counts accounts more than a week of instalments behind.
+        private static List<DealerDeviceStock> BuildDeviceStock(List<DashboardAccountDetailRow> rows) => rows
+            .GroupBy(r => string.IsNullOrWhiteSpace(r.DeviceName) ? "Unknown device" : r.DeviceName.Trim())
+            .Select(g =>
             {
-                return new List<DealerDeviceStock>();
-            }
-
-            // Good%/Arrears% per device come from the live NextLockDate
-            // classification below, not d.GoodPct/d.ArrearsPct (accrual-based,
-            // same restructuring issue as PortfolioGoodPct/InDefault) --
-            // Units/AvgValue still come from the rollup row, unaffected.
-            var deviceLock = await _repository.GetDealerDeviceLockClassificationAsync(dealerId);
-
-            return deviceStock.Select(d =>
-            {
-                var goodPct = d.GoodPct;
-                var arrearsPct = d.ArrearsPct;
-                if (deviceLock.TryGetValue(d.DeviceName, out var lockBucket))
-                {
-                    var deviceTotal = lockBucket.GoodCount + lockBucket.ArrearsCount;
-                    if (deviceTotal > 0)
-                    {
-                        goodPct = Math.Round(100m * lockBucket.GoodCount / deviceTotal, 1);
-                        arrearsPct = Math.Round(100m * lockBucket.ArrearsCount / deviceTotal, 1);
-                    }
-                }
-
+                var paid = g.Sum(r => r.TotalPaid);
+                var due = g.Sum(r => Math.Max(0, r.TotalPaid - r.ArrearsAmount));
+                var behind = g.Count(IsBehind);
                 return new DealerDeviceStock
                 {
-                    Device = d.DeviceName,
-                    Units = d.Units,
-                    AvgValue = d.AvgValue,
-                    GoodPct = goodPct,
-                    ArrearsPct = arrearsPct,
+                    Device = g.Key,
+                    Units = g.Count(),
+                    AvgValue = Math.Round(g.Average(r => r.FullContractValue), 0),
+                    CollectedPct = due > 0 ? Math.Min(100m, Math.Round(100m * paid / due, 1)) : 100m,
+                    BehindCount = behind,
+                    GoodPct = Math.Round(100m * (g.Count() - behind) / g.Count(), 1),
+                    ArrearsPct = Math.Round(100m * behind / g.Count(), 1),
                 };
-            }).ToList();
-        }
+            })
+            .OrderByDescending(d => d.Units)
+            .ToList();
+
+        // More than a week of instalments behind on the original schedule.
+        private static bool IsBehind(DashboardAccountDetailRow r) =>
+            r.ArrearsAmount < 0 && -r.ArrearsAmount > Math.Max(0, r.DailyBlendedRate) * 7;
 
         private static List<DealerCompletedContract> BuildCompletedContracts(List<DashboardCompletedContractRow> rows) =>
             rows.Select(c => new DealerCompletedContract
@@ -988,6 +984,16 @@ namespace Ranalo.Services
                         Paid = c.AgentPaid,
                         Net = net,
                         Status = c.AgentArrearsDeducted > 0 ? "Withheld" : net > 0 ? "Owed" : "Paid",
+                        Upfront = c.AgentUpfront,
+                        UpfrontPaid = Math.Min(c.AgentUpfront, Math.Max(0, c.AgentPaid - a.AgentBonusPaid)),
+                        Bonus = c.BonusEarned ? c.AgentBonus : a.Deposit * CommissionCalculator.AgentBonusRate,
+                        BonusPaid = a.AgentBonusPaid,
+                        BonusState = c.BonusEarned ? "earned"
+                            : c.BonusHeldNoWooOrder ? "held-woo"
+                            : c.BonusAtRisk ? "held-lock"
+                            : "not-yet",
+                        DaysToBonus = c.DaysToBonus,
+                        CustomerBehindBy = c.TrueArrears,
                     };
                 })
                 .OrderByDescending(c => c.Net)
@@ -1212,10 +1218,33 @@ namespace Ranalo.Services
                 AgentName = r.AgentName ?? "",
                 Device = r.DeviceName,
                 MonthlyPayment = r.MonthlyPayment,
-                Status = LockDays(r) > 7 ? "Late" : "On Track",
+                Status = ContractStatus(r),
                 NextDue = FormatNextLockDate(r.NextLockDateRaw),
                 DaysLeft = "",
             }).ToList();
+
+        // My Contracts status. "On track" only when the account isn't behind
+        // at all: a restructured account paying on its new plan is its own
+        // status (not green), and a few days late is "Slightly behind".
+        private static string ContractStatus(DashboardAccountDetailRow r)
+        {
+            var lockDays = LockDays(r);
+            if (IsRestructured(r))
+            {
+                return lockDays > 0 ? ContractStatusRestructuredLate : ContractStatusRestructuredOnPlan;
+            }
+            if (lockDays > 7 || IsBehind(r))
+            {
+                return ContractStatusBehind;
+            }
+            return lockDays > 0 || r.ArrearsAmount < 0 ? ContractStatusSlightlyBehind : ContractStatusOnTrack;
+        }
+
+        public const string ContractStatusOnTrack = "On track";
+        public const string ContractStatusSlightlyBehind = "Slightly behind";
+        public const string ContractStatusBehind = "Behind";
+        public const string ContractStatusRestructuredOnPlan = "Restructured · on plan";
+        public const string ContractStatusRestructuredLate = "Restructured · late";
 
         // Contracts Ending Soon (redefined by the dealer): not in arrears
         // (Good or Slow) AND 80%+ of the contract's full value paid off --
@@ -1341,8 +1370,8 @@ namespace Ranalo.Services
         public async Task<List<DealerContract>> GetDealerContractsEndingSoonAsync(int dealerId, int? agentUserId = null) =>
             BuildContractsEndingSoon(await _repository.GetDealerAccountDetailsAsync(dealerId, agentUserId));
 
-        public Task<List<DealerDeviceStock>> GetDealerDeviceStockReportAsync(int dealerId) =>
-            BuildDeviceStockAsync(dealerId, DashboardScope.ForDealer(dealerId));
+        public async Task<List<DealerDeviceStock>> GetDealerDeviceStockReportAsync(int dealerId, int? agentUserId = null) =>
+            BuildDeviceStock(await _repository.GetDealerAccountDetailsAsync(dealerId, agentUserId));
 
         public async Task<List<DealerCompletedContract>> GetDealerCompletedContractsReportAsync(int dealerId) =>
             BuildCompletedContracts(await _repository.GetCompletedContractsAsync(DashboardScope.ForDealer(dealerId), DealerScopeTakeAll));

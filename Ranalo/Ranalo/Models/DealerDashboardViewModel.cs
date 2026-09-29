@@ -91,6 +91,12 @@
         public int BonusAtRiskAccountCount { get; set; }
         public int BonusUpcomingAccountCount { get; set; }
 
+        // Performance Bonus card: the 25% bonus held (count by reason, and
+        // amount), and the value of bonuses due to be reached in the next 30 days.
+        public decimal BonusHeldAmount { get; set; }
+        public int BonusHeldPastLockCount { get; set; }
+        public decimal BonusUpcomingValue { get; set; }
+
         // Dealer Commissions card: independent of Agent Commissions --
         // every paid account contributes here, including direct dealer
         // sales with no assigned agent (wider population than
@@ -388,6 +394,17 @@
         public decimal Paid { get; set; }
         public decimal Net { get; set; }
         public string Status { get; set; } = "";
+
+        // Shown instead of Earned/Net, which mixed the two parts and set the
+        // customer's whole shortfall against one account's commission.
+        public decimal Upfront { get; set; }
+        public decimal UpfrontPaid { get; set; }
+        public decimal Bonus { get; set; }
+        public decimal BonusPaid { get; set; }
+        // "earned", "held-woo", "held-lock" or "not-yet"
+        public string BonusState { get; set; } = "";
+        public int DaysToBonus { get; set; }
+        public decimal CustomerBehindBy { get; set; }
     }
 
     public class DealerDeviceStock
@@ -395,6 +412,12 @@
         public string Device { get; set; } = "";
         public int Units { get; set; }
         public decimal AvgValue { get; set; }
+
+        // Money received / money due to date, capped at 100%; and accounts
+        // more than a week of instalments behind. GoodPct/ArrearsPct are the
+        // not-behind / behind shares of Units.
+        public decimal CollectedPct { get; set; }
+        public int BehindCount { get; set; }
         public decimal GoodPct { get; set; }
         public decimal ArrearsPct { get; set; }
     }

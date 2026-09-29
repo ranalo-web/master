@@ -552,9 +552,11 @@ namespace Ranolo.Web.Tests
         {
             var fakeRepo = new FakeDashboardReportRepository
             {
-                DeviceStockToReturn = new()
+                // Device Performance is built from the (scoped) account rows now.
+                AccountDetailsToReturn = new()
                 {
-                    new() { DeviceName = "Test Phone", Units = 5, AvgValue = 20000, GoodPct = 80, ArrearsPct = 20 },
+                    new() { AccountId = 1, DeviceName = "Test Phone", TotalPaid = 9_000m, ArrearsAmount = -1_000m, DailyBlendedRate = 100m, FullContractValue = 20_000m, StartDate = new DateTime(2026, 1, 1) },
+                    new() { AccountId = 2, DeviceName = "Test Phone", TotalPaid = 10_000m, ArrearsAmount = 0m, DailyBlendedRate = 100m, FullContractValue = 20_000m, StartDate = new DateTime(2026, 1, 1) },
                 },
                 CompletedContractsToReturn = new()
                 {
@@ -567,6 +569,10 @@ namespace Ranolo.Web.Tests
 
             Assert.That(result.DeviceStock, Has.Count.EqualTo(1));
             Assert.That(result.DeviceStock[0].Device, Is.EqualTo("Test Phone"));
+            Assert.That(result.DeviceStock[0].Units, Is.EqualTo(2));
+            // Collected = 19,000 paid / 20,000 due; account 1 is 1,000 behind (over a week at 100/day).
+            Assert.That(result.DeviceStock[0].CollectedPct, Is.EqualTo(95m));
+            Assert.That(result.DeviceStock[0].BehindCount, Is.EqualTo(1));
             Assert.That(result.CompletedContracts, Has.Count.EqualTo(1));
             Assert.That(result.CompletedContracts[0].CompletedDate, Is.EqualTo("Aug 9"));
         }
@@ -719,6 +725,35 @@ namespace Ranolo.Web.Tests
             Assert.That(result.CommissionOutstanding, Is.EqualTo(1500m));
             Assert.That(result.AgentsSuspendedCount, Is.EqualTo(1));
             Assert.That(result.AgentCommissionHeld, Is.EqualTo(3000m));
+        }
+
+        [Test]
+        public async Task GetDealerDashboardAsync_Contracts_OnlyOnTrackWhenNotBehind()
+        {
+            string LockIn(int days) => DateTime.Now.AddDays(days).ToString("dd/MM/yyyy'T'HH:mm:ss");
+            var fakeRepo = new FakeDashboardReportRepository
+            {
+                AccountDetailsToReturn = new()
+                {
+                    // Paid up, next lock date ahead.
+                    new() { AccountId = 1, CustomerName = "OnTrack", ArrearsAmount = 0m, DailyBlendedRate = 100m, NextLockDateRaw = LockIn(5), StartDate = new DateTime(2026, 1, 1) },
+                    // Restructured and paying on the new plan (lock date ahead) -- not green.
+                    new() { AccountId = 2, CustomerName = "Restructured", ArrearsAmount = -5_000m, DailyBlendedRate = 100m, IsManuallyRestructured = true, NextLockDateRaw = LockIn(5), StartDate = new DateTime(2026, 1, 1) },
+                    // A few days past the lock date, small shortfall.
+                    new() { AccountId = 3, CustomerName = "Slightly", ArrearsAmount = -300m, DailyBlendedRate = 100m, NextLockDateRaw = LockIn(-3), StartDate = new DateTime(2026, 1, 1) },
+                    // Weeks past the lock date.
+                    new() { AccountId = 4, CustomerName = "Behind", ArrearsAmount = -4_000m, DailyBlendedRate = 100m, NextLockDateRaw = LockIn(-20), StartDate = new DateTime(2026, 1, 1) },
+                },
+            };
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
+
+            var result = await service.GetDealerDashboardAsync(dealerId: 42);
+
+            string StatusOf(string name) => result.Contracts.Single(c => c.CustomerName == name).Status;
+            Assert.That(StatusOf("OnTrack"), Is.EqualTo("On track"));
+            Assert.That(StatusOf("Restructured"), Is.EqualTo("Restructured · on plan"));
+            Assert.That(StatusOf("Slightly"), Is.EqualTo("Slightly behind"));
+            Assert.That(StatusOf("Behind"), Is.EqualTo("Behind"));
         }
 
         [Test]
