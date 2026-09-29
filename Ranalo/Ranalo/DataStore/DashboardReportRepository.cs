@@ -1562,6 +1562,10 @@ namespace Ranalo.DataStore
 
             // Days since Contract_Info.StartDate; drives the 90-day bonus.
             public int DaysSinceStart { get; set; }
+
+            // Devices.Make + Model and ImeiNo, for display only.
+            public string? ProductName { get; set; }
+            public string? Imei { get; set; }
         }
 
         // The raw per-account commission inputs used by every commission
@@ -1596,6 +1600,8 @@ namespace Ranalo.DataStore
                         -- dealer commission calc, not silently treated as a
                         -- free device (see AgentCommissionAccountRow.BuyingPrice).
                         ci.BuyingPrice AS BuyingPrice,
+                        NULLIF(LTRIM(RTRIM(ISNULL(d.Make, '') + ' ' + ISNULL(d.Model, ''))), '') AS ProductName,
+                        CAST(d.ImeiNo AS NVARCHAR(50)) AS Imei,
                         -- Commission itself is calculated in C# by
                         -- Services.CommissionCalculator, the one formula for the app.
                         ci.StartDate,
@@ -1655,6 +1661,8 @@ namespace Ranalo.DataStore
                     ac.TotalCost,
                     ac.TotalPaid,
                     ac.BuyingPrice,
+                    ac.ProductName,
+                    ac.Imei,
                     ac.Arrears,
                     ac.LockDate,
                     ac.DaysSinceStart,
@@ -1746,6 +1754,9 @@ namespace Ranalo.DataStore
                     TotalCost = r.TotalCost,
                     TotalPaid = r.TotalPaid,
                     BuyingPrice = r.BuyingPrice,
+                    DaysPastLock = DaysPastLock(r.LockDate, now),
+                    ProductName = r.ProductName,
+                    Imei = r.Imei,
                     Commission = Breakdown(r, now),
                 }).ToList();
             }

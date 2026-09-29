@@ -17,6 +17,12 @@ namespace Ranalo.Models
         public decimal? TotalCost { get; set; }
         public decimal TotalPaid { get; set; }
         public decimal? BuyingPrice { get; set; }
+
+        // Days past Devices.NextLockDateIsoFormat (0 or less when not yet
+        // due); over 7 counts toward the payee's default rate.
+        public double DaysPastLock { get; set; }
+        public string? ProductName { get; set; }
+        public string? Imei { get; set; }
         public Ranalo.Services.CommissionBreakdown Commission { get; set; } = new();
     }
 

@@ -1,0 +1,158 @@
+@using Ranalo.Models
+@model CommissionPayoutHistoryViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    const int pageSize = 25;
+    const string key = "commission-payout-history";
+    var admin = Model.IsAdminView;
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">@(admin ? "Commission Payment History" : "My Commission Payments")</h3>
+                <div class="nk-block-des text-soft">
+                    <p>@(admin ? "Every commission payment recorded, with its details. Dealers and agents can confirm receipt on their side." : "Commission payments made to you. Tap Confirm once you've received one -- optional, but it helps keep records straight.")</p>
+                </div>
+            </div>
+            @if (admin)
+            {
+                <div class="nk-block-head-content">
+                    <a href="/commission-payouts" class="btn btn-primary"><em class="icon ni ni-coins"></em><span>Pay Commissions</span></a>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (TempData["PayoutSuccess"] is string success)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em> @success
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["PayoutError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Total paid</span>
+                    <span class="d-block fs-5 fw-bold">KES @Model.Payouts.Sum(p => p.Amount).ToString("N0")</span>
+                    <span class="d-block text-soft small">@Model.Payouts.Count payments</span>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Awaiting confirmation</span>
+                    <span class="d-block fs-5 fw-bold">@Model.Payouts.Count(p => !p.ReceiptConfirmedAtUtc.HasValue)</span>
+                    <span class="d-block text-soft small">Optional</span>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner p-0">
+                @if (Model.Payouts.Count == 0)
+                {
+                    <div class="card-inner text-soft">No commission payments recorded yet.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="@key" data-page-size="@pageSize">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Date</th>
+                                    @if (admin)
+                                    {
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid to</th>
+                                    }
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Amount</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Method</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Reference</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
+                                    <th>Notes</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Receipt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.Payouts.Count; i++)
+                                {
+                                    var p = Model.Payouts[i];
+                                    <tr class="@(i >= pageSize ? "d-none" : "")" data-watchlist-row="@key">
+                                        <td>
+                                            @p.PaidDate.ToString("dd MMM yyyy")
+                                            @if (admin && p.RecordedByName != null)
+                                            {
+                                                <span class="d-block sub-text">by @p.RecordedByName</span>
+                                            }
+                                        </td>
+                                        @if (admin)
+                                        {
+                                            <td>
+                                                @if (p.PayeeType == CommissionPayeeType.Dealer && p.DealerId.HasValue)
+                                                {
+                                                    <a href="/commission-payouts/pay?type=Dealer&id=@p.DealerId" class="fw-medium">@p.PayeeName</a>
+                                                }
+                                                else if (p.AgentUserId.HasValue)
+                                                {
+                                                    <a href="/commission-payouts/pay?type=Agent&id=@p.AgentUserId" class="fw-medium">@p.PayeeName</a>
+                                                }
+                                                <span class="d-block sub-text">@p.PayeeType</span>
+                                            </td>
+                                        }
+                                        <td class="fw-medium">KES @p.Amount.ToString("N0")</td>
+                                        <td>@p.Method</td>
+                                        <td>@p.Reference</td>
+                                        <td>@p.AccountCount</td>
+                                        <td style="white-space:normal; min-width:160px;" class="small">@p.Notes</td>
+                                        <td>
+                                            @if (p.ReceiptConfirmedAtUtc.HasValue)
+                                            {
+                                                <span class="badge badge-dim bg-success">Confirmed</span>
+                                                <span class="d-block sub-text">@p.ReceiptConfirmedAtUtc.Value.AddHours(3).ToString("dd MMM yyyy")</span>
+                                            }
+                                            else if (!admin)
+                                            {
+                                                <form method="post" action="/commission-payouts/@p.Id/confirm" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success">Confirm received</button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-soft">Not confirmed</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.Payouts.Count > pageSize)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="@key" onclick="event.preventDefault(); Ranalo.showMoreRows(this, '@key', @pageSize);">Show @Math.Min(pageSize, Model.Payouts.Count - pageSize) more</a>
+                            <a href="#" class="link link-primary" data-less-for="@key" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, '@key', @pageSize);">Show less</a>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/watchlist-table.js"></script>
+}
