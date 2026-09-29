@@ -49,12 +49,12 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID('AgentCommissionPayments') AND name = 'IX_AgentCommissionPayments_PayoutId')
 BEGIN
-    CREATE INDEX IX_AgentCommissionPayments_PayoutId ON AgentCommissionPayments (PayoutId) WHERE PayoutId IS NOT NULL;
+    CREATE INDEX IX_AgentCommissionPayments_PayoutId ON AgentCommissionPayments (PayoutId);
 END
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID('DealerCommissionPayments') AND name = 'IX_DealerCommissionPayments_PayoutId')
 BEGIN
-    CREATE INDEX IX_DealerCommissionPayments_PayoutId ON DealerCommissionPayments (PayoutId) WHERE PayoutId IS NOT NULL;
+    CREATE INDEX IX_DealerCommissionPayments_PayoutId ON DealerCommissionPayments (PayoutId);
 END
 GO
