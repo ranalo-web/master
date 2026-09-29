@@ -49,11 +49,11 @@ namespace Ranalo.Services
             return await _contractRepository.UpdateContractAsync(contract);
         }
 
-        public async Task<int> CreateRecoveredAccountAsync(ContractCreateDto newContract)
+        public async Task<int> CreateRecoveredAccountAsync(ContractCreateDto newContract, decimal repossessionCost, int recordedByUserId)
         {
             var constructContract = await CreateContractSingle(newContract);
 
-            return await _contractRepository.CreateRecoveredAccount(constructContract);
+            return await _contractRepository.CreateRecoveredAccount(constructContract, repossessionCost, recordedByUserId);
         }
 
         public async Task<ContractInfo> CreateContractSingle(ContractCreateDto order)

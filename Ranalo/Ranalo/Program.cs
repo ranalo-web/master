@@ -100,6 +100,9 @@ builder.Services.AddScoped<IAccountWatchlistService, AccountWatchlistService>();
 builder.Services.AddScoped<IAccountWatchlistRepository, AccountWatchlistRepository>();
 builder.Services.AddScoped<IOperatingExpenseService, OperatingExpenseService>();
 builder.Services.AddScoped<IOperatingExpenseRepository, OperatingExpenseRepository>();
+builder.Services.AddScoped<ICostBackfillService, CostBackfillService>();
+builder.Services.AddScoped<ICostBackfillRepository, CostBackfillRepository>();
+builder.Services.AddScoped<IWriteOffRepository, WriteOffRepository>();
 builder.Services.AddScoped<IContractCalculatorService, ContractCalculatorService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IDevicesRepository, DevicesRepository>();
@@ -169,6 +172,7 @@ if (!builder.Environment.IsDevelopment())
         // back to its existing sample-data/live-recompute path, so this is
         // safe to enable even where the migration hasn't landed yet.
         builder.Services.AddHostedService<ScheduledDashboardRollup>();
+        builder.Services.AddHostedService<ScheduledWriteOffCheck>();
     }
 }
 

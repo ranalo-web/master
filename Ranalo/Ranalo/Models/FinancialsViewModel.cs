@@ -2,7 +2,22 @@ namespace Ranalo.Models
 {
     public class FinancialsViewModel
     {
-        // This month's Income Statement inputs -- same fields/formulas the
+        // Reporting period the Income Statement covers -- "week"/"month"/
+        // "ytd"/"year" (PeriodWindowHelper), "all", or "custom" with
+        // FromDate/ToDate (both inclusive, as the user entered them).
+        public string Period { get; set; } = "month";
+
+        // Write-offs (WriteOffs register) for the reporting period, and the
+        // age-of-debt / loan book as of today -- set by FinancialsController.
+        public WriteOffPeriodSummary WriteOffs { get; set; } = new();
+        public List<LoanBookAgeBucket> LoanBookAgeing { get; set; } = new();
+        public bool WriteOffsUnavailable { get; set; }
+        public string PeriodLabel { get; set; } = "Month";
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
+
+        // The reporting period's Income Statement inputs (named *ThisMonth
+        // from when the page only showed the current month) -- same fields/formulas the
         // Admin Dashboard used before this section moved here. Derived
         // figures (Gross/Operating Profit, EBT, Tax, Net Profit, ratios)
         // are computed in the view, same convention as the rest of this app.

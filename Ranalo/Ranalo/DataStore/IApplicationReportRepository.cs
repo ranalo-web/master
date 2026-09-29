@@ -76,7 +76,7 @@ namespace Ranalo.DataStore
         #region ReminderMessages
         Task<IEnumerable<AccountSummary>?> GetCustomersForReminderLockFullyPaid();
         Task<KosePaymentsViewModel> GetAssignedPaymentsAsync(string searchTerm, int page, int pageSize);
-        Task CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo);
+        Task<string?> CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo);
         Task<List<RestructuredRecord>> GetAllRestructuredFlat();
         #endregion
     }

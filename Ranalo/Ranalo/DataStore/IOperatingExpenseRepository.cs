@@ -11,6 +11,11 @@ namespace Ranalo.DataStore
 
         Task<bool> RemoveAsync(int id, int removedByUserId);
 
+        // Total of non-removed expenses dated in [fromDate, toDateExclusive)
+        // -- the Financials Income Statement's reporting period. A null
+        // bound means unbounded.
+        Task<decimal> GetTotalAsync(DateTime? fromDate, DateTime? toDateExclusive);
+
         // One row per calendar month over the trailing `months` months
         // (including the current one), oldest first -- months with no
         // logged expenses still get a row (Total = 0), so callers don't

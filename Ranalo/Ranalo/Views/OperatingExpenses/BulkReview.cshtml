@@ -1,0 +1,155 @@
+@using Ranalo.Models
+@model OperatingExpenseBulkReviewViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var categories = (IReadOnlyList<string>)ViewBag.Categories;
+    var errorCount = Model.Rows.Count(r => r.Errors.Any());
+    var missingCategory = Model.Rows.Count(r => string.IsNullOrEmpty(r.Category));
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Review Expenses Upload</h3>
+                <div class="nk-block-des text-soft">
+                    <p>@Model.FileName -- @Model.Rows.Count.ToString("N0") rows. Assign a category to each row, fix anything flagged, then Save. Nothing is saved until you do.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/operating-expenses" class="btn btn-outline-light">Cancel</a>
+            </div>
+        </div>
+    </div>
+
+    @if (ViewBag.SaveError is string saveError)
+    {
+        <div class="alert alert-danger alert-icon">
+            <em class="icon ni ni-cross-circle"></em>
+            <strong>Not saved.</strong> @saveError
+        </div>
+    }
+    else if (errorCount > 0 || missingCategory > 0)
+    {
+        <div class="alert alert-warning alert-icon">
+            <em class="icon ni ni-alert-circle"></em>
+            @if (missingCategory > 0) { <span>@missingCategory row(s) need a category. </span> }
+            @if (errorCount > 0) { <span>@errorCount row(s) have problems to fix or untick.</span> }
+        </div>
+    }
+
+    <form action="/operating-expenses/bulk-save" method="post">
+        <input type="hidden" name="FileName" value="@Model.FileName" />
+
+        <div class="nk-block">
+            <div class="card card-bordered">
+                <div class="card-inner card-inner-md">
+                    <div class="d-flex flex-wrap align-items-end justify-content-between" style="gap:12px;">
+                        <div class="d-flex align-items-end" style="gap:8px;">
+                            <div>
+                                <label class="form-label" for="bulk-category">Set category for</label>
+                                <select id="bulk-category" class="form-select">
+                                    @foreach (var category in categories)
+                                    {
+                                        <option value="@category">@category</option>
+                                    }
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary" onclick="applyCategory(false)">Rows without one</button>
+                            <button type="button" class="btn btn-outline-light" onclick="applyCategory(true)">All ticked rows</button>
+                        </div>
+                        <div class="text-end">
+                            <div class="text-soft small">Ticked total</div>
+                            <div class="fw-bold" id="ticked-total">KES 0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-inner p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th"><input type="checkbox" id="tick-all" checked onchange="tickAll(this.checked)" title="Tick / untick all" /></th>
+                                    <th class="wl-th">Row</th>
+                                    <th class="wl-th">Date</th>
+                                    <th class="wl-th">Category</th>
+                                    <th class="wl-th">Description</th>
+                                    <th class="wl-th">Amount (KES)</th>
+                                    <th class="wl-th">Problems</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.Rows.Count; i++)
+                                {
+                                    var row = Model.Rows[i];
+                                    var hasErrors = row.Errors.Any();
+                                    <tr class="@(hasErrors ? "table-danger" : "")">
+                                        <td>
+                                            <input type="checkbox" class="row-include" name="Rows[@i].Include" value="true" @(row.Include ? "checked" : "") onchange="updateTotal()" />
+                                            <input type="hidden" name="Rows[@i].Include" value="false" />
+                                            <input type="hidden" name="Rows[@i].RowNumber" value="@row.RowNumber" />
+                                        </td>
+                                        <td class="text-soft">@row.RowNumber</td>
+                                        <td><input type="date" class="form-control form-control-sm" name="Rows[@i].ExpenseDate" value="@row.ExpenseDate?.ToString("yyyy-MM-dd")" /></td>
+                                        <td>
+                                            <select class="form-select form-select-sm row-category" name="Rows[@i].Category">
+                                                <option value="" selected="@(string.IsNullOrEmpty(row.Category))">-- choose --</option>
+                                                @foreach (var category in categories)
+                                                {
+                                                    <option value="@category" selected="@(row.Category == category)">@category</option>
+                                                }
+                                            </select>
+                                        </td>
+                                        <td><input type="text" class="form-control form-control-sm" name="Rows[@i].Description" value="@row.Description" maxlength="300" style="min-width:260px;" /></td>
+                                        <td><input type="number" class="form-control form-control-sm row-amount" name="Rows[@i].Amount" value="@row.Amount?.ToString(System.Globalization.CultureInfo.InvariantCulture)" min="0.01" step="0.01" onchange="updateTotal()" style="width:130px;" /></td>
+                                        <td class="text-danger small">@string.Join(" ", row.Errors)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-inner d-flex justify-content-end" style="gap:8px;">
+                    <a href="/operating-expenses" class="btn btn-outline-light">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Ticked Expenses</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <script>
+        function tickedRows() {
+            return Array.from(document.querySelectorAll('tbody tr'))
+                .filter(function (tr) { return tr.querySelector('.row-include').checked; });
+        }
+
+        function applyCategory(overwrite) {
+            var value = document.getElementById('bulk-category').value;
+            tickedRows().forEach(function (tr) {
+                var select = tr.querySelector('.row-category');
+                if (overwrite || !select.value) { select.value = value; }
+            });
+        }
+
+        function tickAll(checked) {
+            document.querySelectorAll('.row-include').forEach(function (cb) { cb.checked = checked; });
+            updateTotal();
+        }
+
+        function updateTotal() {
+            var total = tickedRows().reduce(function (sum, tr) {
+                return sum + (parseFloat(tr.querySelector('.row-amount').value) || 0);
+            }, 0);
+            document.getElementById('ticked-total').textContent = 'KES ' + total.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        }
+
+        document.addEventListener('DOMContentLoaded', updateTotal);
+    </script>
+}

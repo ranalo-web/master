@@ -54,6 +54,16 @@ namespace Ranalo.DataStore
         Task<decimal> GetAllTimeRevenueAsync();
         Task<decimal> GetAllTimeCommissionsPaidAsync();
 
+        // Financials Income Statement totals for a reporting period, filtered
+        // to [fromDate, toDateExclusive); a null bound means unbounded.
+        // Revenue counts payments that belong to a device (directly, or via
+        // an assigned orphaned payment) -- the same rule as
+        // GetRevenueByMonthAsync/GetAllTimeRevenueAsync -- but with no Dealers
+        // join, so a device with no dealer mapping still counts. Commissions
+        // count every DealerCommissionPayments row.
+        Task<decimal> GetRevenueForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive);
+        Task<decimal> GetCommissionsPaidForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive);
+
         // Sum of DashboardSnapshot.DealerCommissionOutstanding/
         // CommissionOutstanding across every dealer row (WHERE DealerId IS
         // NOT NULL) -- the Financials page's balance sheet liabilities.

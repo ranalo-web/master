@@ -5,7 +5,10 @@
 
     var totalCommissionsPaid = Model.CommissionsPaidThisMonth;
     var grossProfit = Model.RevenueThisMonth - Model.CostOfDevicesThisMonth - totalCommissionsPaid;
-    var operatingProfit = grossProfit - Model.BadDebtThisMonth;
+    // No bad-debt deduction here: revenue is cash received and device cost is
+    // counted at contract start, so an unpaid balance was never income. The
+    // real cost of bad accounts is shown in the Write-offs card instead.
+    var operatingProfit = grossProfit;
     var ebt = operatingProfit - Model.OperatingExpensesThisMonth;
     var taxThisMonth = Math.Max(0, ebt) * Model.TaxRatePct / 100;
     var netProfitAfterTax = ebt - taxThisMonth;
@@ -15,11 +18,20 @@
     var operatingMarginPct = Model.RevenueThisMonth > 0 ? operatingProfit / Model.RevenueThisMonth * 100 : 0;
     var netMarginPct = Model.RevenueThisMonth > 0 ? netProfitAfterTax / Model.RevenueThisMonth * 100 : 0;
     var costToIncomeRatio = Model.RevenueThisMonth > 0 ? (Model.CostOfDevicesThisMonth + totalCommissionsPaid + Model.OperatingExpensesThisMonth) / Model.RevenueThisMonth * 100 : 0;
-    var badDebtRatio = Model.RevenueThisMonth > 0 ? Model.BadDebtThisMonth / Model.RevenueThisMonth * 100 : 0;
+    var badDebtRatio = Model.RevenueThisMonth > 0 ? Model.WriteOffs.RealLoss / Model.RevenueThisMonth * 100 : 0;
     var dividendPayoutRatio = netProfitAfterTax != 0 ? Model.DividendsPaidThisMonth / netProfitAfterTax * 100 : 0;
     var retentionRatio = netProfitAfterTax != 0 ? retainedEarnings / netProfitAfterTax * 100 : 0;
 
     var totalLiabilities = Model.CommissionsPayableToDealers + Model.CommissionsPayableToAgents;
+
+    var loanBookGross = Model.LoanBookAgeing.Sum(b => b.Outstanding);
+    var loanBookWrittenOff = Model.LoanBookAgeing.Where(b => b.IsWrittenOff).Sum(b => b.Outstanding);
+    var loanBookNet = loanBookGross - loanBookWrittenOff;
+
+    string PeriodLink(string p) => Url.Action("Index", "Financials", new { period = p })!;
+    var periodRange = Model.FromDate.HasValue && Model.ToDate.HasValue
+        ? $"{Model.FromDate.Value:dd MMM yyyy} – {Model.ToDate.Value:dd MMM yyyy}"
+        : "all recorded history";
 }
 
 <div class="nk-content-body">
@@ -32,7 +44,28 @@
                 </div>
             </div>
             <div class="nk-block-head-content">
-                <a href="/operating-expenses" class="btn btn-outline-primary"><em class="icon ni ni-wallet-out"></em><span>Log an Expense</span></a>
+                <ul class="nk-block-tools g-3">
+                    <li>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-light btn-white dropdown-toggle" data-bs-toggle="dropdown">
+                                <em class="icon ni ni-calendar"></em><span>@Model.PeriodLabel</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <ul class="link-list-opt no-bdr">
+                                    <li><a href="@PeriodLink("all")"><span>All Time</span></a></li>
+                                    <li><a href="@PeriodLink("week")"><span>Week</span></a></li>
+                                    <li><a href="@PeriodLink("month")"><span>Month</span></a></li>
+                                    <li><a href="@PeriodLink("ytd")"><span>Year to Date</span></a></li>
+                                    <li><a href="@PeriodLink("year")"><span>Last 12 Months</span></a></li>
+                                    <li><a href="#financials-custom-range" data-bs-toggle="modal"><span>Custom Range…</span></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <a href="/operating-expenses" class="btn btn-outline-primary"><em class="icon ni ni-wallet-out"></em><span>Log an Expense</span></a>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
@@ -45,7 +78,7 @@
                         <div class="card-title-group mb-3">
                             <div class="card-title">
                                 <h6 class="title">Income Statement</h6>
-                                <p class="text-soft">Revenue to retained earnings, this month</p>
+                                <p class="text-soft">Revenue to retained earnings, @periodRange</p>
                             </div>
                         </div>
                         <div class="d-flex flex-column" style="font-size:13px;">
@@ -64,10 +97,6 @@
                             <div class="d-flex justify-content-between py-2 border-bottom">
                                 <span class="fw-medium">Gross Profit</span>
                                 <span class="fw-medium">KES @grossProfit.ToString("N0")</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-soft">Less: Bad debt / write-offs</span>
-                                <span class="text-danger">(@Model.BadDebtThisMonth.ToString("N0"))</span>
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom">
                                 <span class="fw-medium">Operating Profit (EBIT)</span>
@@ -142,7 +171,7 @@
                             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                                 <div>
                                     <div class="fw-medium">Bad Debt Ratio</div>
-                                    <div class="text-soft" style="font-size:11px;">Write-offs &divide; revenue</div>
+                                    <div class="text-soft" style="font-size:11px;">Real loss on write-offs in the period &divide; revenue</div>
                                 </div>
                                 <span class="fw-bold @(badDebtRatio <= 10 ? "text-success" : "text-danger")">@badDebtRatio.ToString("0.0")%</span>
                             </div>
@@ -166,6 +195,91 @@
             </div>
         </div><!-- .row -->
     </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-12 col-lg-5">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group mb-3">
+                            <div class="card-title">
+                                <h6 class="title">Write-offs</h6>
+                                <p class="text-soft">Approved write-offs dated @periodRange</p>
+                            </div>
+                            <div class="card-tools"><a href="/write-offs" class="link link-primary small">Review write-offs</a></div>
+                        </div>
+                        @if (Model.WriteOffsUnavailable)
+                        {
+                            <p class="text-soft mb-0">Write-off figures are unavailable -- has Database/WriteOffs/001 been run?</p>
+                        }
+                        else
+                        {
+                            <div class="d-flex flex-column" style="font-size:13px;">
+                                <div class="d-flex justify-content-between py-2 border-bottom">
+                                    <span>Accounts written off</span>
+                                    <span class="fw-medium">@Model.WriteOffs.WrittenOffCount.ToString("N0")</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 border-bottom">
+                                    <span title="Taken off the loan book (balance sheet) -- not an income statement expense, since it was never counted as revenue">Balance taken off the loan book</span>
+                                    <span class="fw-medium">KES @Model.WriteOffs.WrittenOffBalance.ToString("N0")</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 border-bottom">
+                                    <span title="Device cost + commissions + repossession cost - what the customer paid - resale value">Real loss on those accounts</span>
+                                    <span class="fw-bold text-danger">KES @Model.WriteOffs.RealLoss.ToString("N0")</span>
+                                </div>
+                                @if (Model.WriteOffs.MissingCostCount > 0)
+                                {
+                                    <div class="py-1 text-warning small">
+                                        @Model.WriteOffs.MissingCostCount.ToString("N0") written-off account(s) have no device cost recorded, so they're left out of the real loss -- <a href="/cost-backfill">Device Cost Backfill</a>.
+                                    </div>
+                                }
+                                <div class="d-flex justify-content-between py-2">
+                                    <span>Reinstated (customer paid again)</span>
+                                    <span class="fw-medium text-success">@Model.WriteOffs.ReinstatedCount.ToString("N0") &middot; KES @Model.WriteOffs.ReinstatedBalance.ToString("N0") back on the book</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-7">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group mb-3">
+                            <div class="card-title">
+                                <h6 class="title">Age of Debt</h6>
+                                <p class="text-soft">Open contracts still owing, by days since the last payment -- as of today</p>
+                            </div>
+                        </div>
+                        @if (!Model.WriteOffsUnavailable)
+                        {
+                            <table class="table table-sm mb-0" style="font-size:13px;">
+                                <thead>
+                                    <tr>
+                                        <th>Days since last payment</th>
+                                        <th class="text-end">Accounts</th>
+                                        <th class="text-end">Outstanding (KES)</th>
+                                        <th class="text-end">% of book</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var b in Model.LoanBookAgeing)
+                                    {
+                                        <tr class="@(b.IsWrittenOff ? "text-soft" : "")">
+                                            <td>@b.Label</td>
+                                            <td class="text-end">@b.Accounts.ToString("N0")</td>
+                                            <td class="text-end">@b.Outstanding.ToString("N0")</td>
+                                            <td class="text-end">@(b.IsWrittenOff || loanBookNet <= 0 ? "-" : (b.Outstanding / loanBookNet * 100).ToString("0.0") + "%")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="nk-block">
         <div class="card card-bordered">
@@ -209,7 +323,15 @@
                         <h6 class="overline-title text-soft mb-2">Assets</h6>
                         <div class="d-flex justify-content-between py-2 border-bottom">
                             <span>Outstanding loan book (gross)</span>
-                            <span class="fw-medium">KES @Model.LoanReceivablesGross.ToString("N0")</span>
+                            <span class="fw-medium">KES @loanBookGross.ToString("N0")</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-soft">Less: written off</span>
+                            <span class="text-danger">(@loanBookWrittenOff.ToString("N0"))</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>Net loan book</span>
+                            <span class="fw-medium">KES @loanBookNet.ToString("N0")</span>
                         </div>
                         <div class="d-flex justify-content-between py-2 border-bottom">
                             <span class="text-soft">Cash &amp; bank</span>
@@ -221,7 +343,7 @@
                         </div>
                         <div class="d-flex justify-content-between py-2 fw-bold">
                             <span>Total Assets (known)</span>
-                            <span>KES @Model.LoanReceivablesGross.ToString("N0")</span>
+                            <span>KES @loanBookNet.ToString("N0")</span>
                         </div>
                     </div>
                     <div class="col-12 col-md-4">
@@ -257,6 +379,38 @@
             </div>
         </div>
     </div><!-- .nk-block -->
+</div>
+
+<div class="modal fade" tabindex="-1" id="financials-custom-range">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                <em class="icon ni ni-cross"></em>
+            </button>
+            <div class="modal-header">
+                <h5 class="modal-title">Custom Range</h5>
+            </div>
+            <form action="/financials" method="get">
+                <input type="hidden" name="period" value="custom" />
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="financials-from">From</label>
+                        <input type="date" name="from" id="financials-from" class="form-control" required
+                               value="@(Model.Period == "custom" ? Model.FromDate?.ToString("yyyy-MM-dd") : new DateTime(DateTime.Now.Year - 1, 1, 1).ToString("yyyy-MM-dd"))" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="financials-to">To</label>
+                        <input type="date" name="to" id="financials-to" class="form-control" required
+                               value="@(Model.Period == "custom" ? Model.ToDate?.ToString("yyyy-MM-dd") : new DateTime(DateTime.Now.Year - 1, 12, 31).ToString("yyyy-MM-dd"))" />
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-danger">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Apply</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

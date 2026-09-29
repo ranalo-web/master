@@ -28,11 +28,12 @@ namespace Ranalo.Woocommece.Api.DataStore
            ,[ProductStorage]
            ,[Sku]
            ,[Quantity]
+           ,[BuyingPrice]
            ,[DateCreated]
             )
             VALUES (
                 @OrderId, @ProductId, @ProductName, @ProductColor, @ProductRam,
-                @ProductStorage, @Sku, @Quantity, GETDATE()
+                @ProductStorage, @Sku, @Quantity, @BuyingPrice, GETDATE()
             );
 
             SELECT CAST(SCOPE_IDENTITY() as bigint);
@@ -278,7 +279,10 @@ namespace Ranalo.Woocommece.Api.DataStore
                         	   kp.AccountNo, 
                         	   wo.TotalAmount,
 	                           wo.FirstName,
-                               wo.DailySalePrice
+                               wo.DailySalePrice,
+                               (SELECT TOP 1 wop.BuyingPrice
+                                FROM Woo_OrderProduct wop
+                                WHERE wop.OrderId = wo.Id AND wop.BuyingPrice IS NOT NULL) AS BuyingPrice
                         FROM Woo_Orders wo
                         INNER JOIN KosePayments kp
                             ON kp.MpesaCode = wo.MpesaDepositRef

@@ -157,7 +157,8 @@ namespace Ranalo.Controllers
             string newName,
             string startDate,
             string interval,
-            decimal totalCost)
+            decimal totalCost,
+            decimal repossessionCost = 0)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -179,7 +180,7 @@ namespace Ranalo.Controllers
                 TotalAmount = totalCost,
             };
 
-            var update = await _contractorService.CreateRecoveredAccountAsync(contractToUpdate);
+            var update = await _contractorService.CreateRecoveredAccountAsync(contractToUpdate, Math.Max(0, repossessionCost), settings.UserId);
 
             return RedirectToAction("Collections", "Reports");
         }

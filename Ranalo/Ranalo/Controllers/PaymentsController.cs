@@ -10,15 +10,18 @@ namespace Ranalo.Controllers
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
         private readonly IEnrolmentService _enrolmentService;
+        private readonly ILogger<PaymentsController> _logger;
         public PaymentsController(IPaymentsService paymentsService,
             IApplicationReportService applicationReportService,
             IUserService userService,
-            IEnrolmentService enrolmentService)
+            IEnrolmentService enrolmentService,
+            ILogger<PaymentsController> logger)
         {
             _paymentsService = paymentsService;
             _applicationReportService = applicationReportService;
             _userService = userService;
             _enrolmentService = enrolmentService;
+            _logger = logger;
         }
 
         [HttpPost("upload-payments")]
@@ -38,22 +41,53 @@ namespace Ranalo.Controllers
                 return RedirectToAction("AllPayments", "Payments");
             }
 
+            // The result is shown as a banner on All Payments after the
+            // redirect -- previously every outcome (success, nothing new,
+            // or a swallowed exception) looked identical to the user.
+            if (file == null || file.Length == 0)
+            {
+                TempData["ImportError"] = "No file was selected. Choose a statement and click Save.";
+                return RedirectToAction("AllPayments", "Payments");
+            }
+
+            // ClosedXML only reads Open XML workbooks; a legacy .xls M-Pesa
+            // export fails with "File contains corrupted data".
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (extension != ".xlsx" && extension != ".xlsm")
+            {
+                TempData["ImportError"] = $"'{file.FileName}' is not supported. Open it in Excel, Save As \"Excel Workbook (.xlsx)\" and upload that.";
+                return RedirectToAction("AllPayments", "Payments");
+            }
+
             try
             {
                 var payments = RanaloXlsmUploadParser.Parse(file);
+                var mapped = payments.Any() ? _paymentsService.MapXlsPayments(payments) : new();
+                var inserted = mapped.Any() ? (await _paymentsService.CreatePayments(mapped))?.Count ?? 0 : 0;
 
-                if (payments.Any())
+                // MapXlsPayments drops rows whose account number isn't
+                // numeric; list their receipts so they can be followed up.
+                var skipped = payments
+                    .Where(p => !long.TryParse(p.AccountNumber, out _))
+                    .Select(p => $"{p.ReceiptNo} ('{p.AccountNumber}')")
+                    .ToList();
+
+                _logger.LogInformation("Payments import {FileName}: {Read} read, {Valid} valid, {Inserted} new, {Skipped} skipped",
+                    file.FileName, payments.Count, mapped.Count, inserted, skipped.Count);
+
+                TempData["ImportSuccess"] = $"Imported '{file.FileName}': {payments.Count:N0} rows read, {inserted:N0} new payments added, " +
+                    $"{mapped.Count - inserted:N0} already recorded, {skipped.Count:N0} skipped (invalid account number).";
+                if (skipped.Any())
                 {
-                    var mapped = _paymentsService.MapXlsPayments(payments);
-                    var results = await _paymentsService.CreatePayments(mapped);
+                    TempData["ImportSkipped"] = string.Join(", ", skipped.Take(50)) + (skipped.Count > 50 ? $" and {skipped.Count - 50} more" : "");
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                return RedirectToAction("AllPayments", "Payments");
+                _logger.LogError(ex, "Payments import failed for {FileName}", file.FileName);
+                TempData["ImportError"] = $"Import of '{file.FileName}' failed: {ex.Message}";
             }
-            
+
             return RedirectToAction("AllPayments", "Payments");
         }
 
@@ -206,7 +240,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("assign-payments")]
-        public async Task<IActionResult> CreateAssignedPayments(string orphanedNo, string mpesaCode, string accountNo)
+        public async Task<IActionResult> CreateAssignedPayments(string orphanedNo, string mpesaCode, string accountNo, string source = "")
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -215,8 +249,19 @@ namespace Ranalo.Controllers
             }
             await SetViewBags(settings, "index");
 
-            await _applicationReportService.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo);
+            var error = await _applicationReportService.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo);
 
+            if (error != null)
+            {
+                // Send the user back to the page they assigned from so they
+                // can correct the account number and retry.
+                TempData["AssignError"] = error;
+                return source == "orphaned"
+                    ? RedirectToAction("OrphanedPayments", "Payments")
+                    : RedirectToAction("AssignedPayments", "Payments");
+            }
+
+            TempData["AssignSuccess"] = $"Payment {mpesaCode?.Trim()} assigned to account {accountNo?.Trim()}.";
             return RedirectToAction("AssignedPayments", "Payments");
         }
 

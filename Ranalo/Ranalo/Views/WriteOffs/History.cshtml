@@ -1,0 +1,136 @@
+@using Ranalo.Models
+@model List<WriteOffRow>
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var byYear = Model
+        .GroupBy(r => r.WrittenOffDate.Year)
+        .OrderBy(g => g.Key)
+        .Select(g => new
+        {
+            Year = g.Key,
+            Count = g.Count(),
+            Outstanding = g.Sum(r => r.OutstandingBalance),
+            Reinstated = g.Count(r => r.ReinstatedDate.HasValue),
+            Repossessed = g.Count(r => r.Reason == "Repossessed"),
+        })
+        .ToList();
+    const int shown = 500;
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Past Write-offs</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Write-offs rebuilt from payment history since 2022, using the same rules as the nightly check: day 360 of any gap without a payment (brought back by the payment that ended it), and past repossessions. Nothing is saved until you record them.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/write-offs" class="btn btn-outline-light"><em class="icon ni ni-arrow-left"></em><span>Back to Write-offs</span></a>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="nk-block">
+            <div class="card card-bordered"><div class="card-inner text-soft">No past write-offs left to record -- the history is already in the register.</div></div>
+        </div>
+    }
+    else
+    {
+        <div class="nk-block">
+            <div class="card card-bordered">
+                <div class="card-inner card-inner-md">
+                    <h6 class="title">By year written off</h6>
+                </div>
+                <div class="card-inner p-0">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="wl-th">Year</th>
+                                <th class="wl-th text-end">Write-offs</th>
+                                <th class="wl-th text-end">Outstanding written off (KES)</th>
+                                <th class="wl-th text-end">Later reinstated</th>
+                                <th class="wl-th text-end">Repossessed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var y in byYear)
+                            {
+                                <tr>
+                                    <td class="fw-medium">@y.Year</td>
+                                    <td class="text-end">@y.Count.ToString("N0")</td>
+                                    <td class="text-end">@y.Outstanding.ToString("N0")</td>
+                                    <td class="text-end">@y.Reinstated.ToString("N0")</td>
+                                    <td class="text-end">@y.Repossessed.ToString("N0")</td>
+                                </tr>
+                            }
+                            <tr class="fw-bold">
+                                <td>Total</td>
+                                <td class="text-end">@Model.Count.ToString("N0")</td>
+                                <td class="text-end">@Model.Sum(r => r.OutstandingBalance).ToString("N0")</td>
+                                <td class="text-end">@Model.Count(r => r.ReinstatedDate.HasValue).ToString("N0")</td>
+                                <td class="text-end">@Model.Count(r => r.Reason == "Repossessed").ToString("N0")</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-inner d-flex flex-wrap justify-content-between align-items-center" style="gap:12px;">
+                    <span class="text-soft small">Recording saves these as approved write-offs, each dated on the day it happened, so past periods on Financials will change. Past recoveries also get a recovery record (resale value = the next customer's contract value; repossession cost unknown).</span>
+                    <form action="/write-offs/history/record" method="post" onsubmit="return confirm('Record @Model.Count.ToString("N0") past write-offs (KES @Model.Sum(r => r.OutstandingBalance).ToString("N0"))? Past periods on Financials will change.');">
+                        <button type="submit" class="btn btn-primary">Approve &amp; Record History</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="nk-block">
+            <div class="card card-bordered">
+                <div class="card-inner card-inner-md">
+                    <h6 class="title mb-0">Details@(Model.Count > shown ? $" (first {shown} of {Model.Count:N0})" : "")</h6>
+                </div>
+                <div class="card-inner p-0">
+                    <div class="table-responsive" style="max-height:600px; overflow-y:auto;">
+                        <table class="table mb-0" style="white-space:nowrap;">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th">Account</th>
+                                    <th class="wl-th">Customer</th>
+                                    <th class="wl-th">Dealer</th>
+                                    <th class="wl-th">Reason</th>
+                                    <th class="wl-th">Write-off date</th>
+                                    <th class="wl-th">Last payment before</th>
+                                    <th class="wl-th text-end">Contract value</th>
+                                    <th class="wl-th text-end">Paid by then</th>
+                                    <th class="wl-th text-end">Outstanding</th>
+                                    <th class="wl-th">Reinstated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in Model.Take(shown))
+                                {
+                                    <tr>
+                                        <td><a href="/account-details/@r.AccountNo" target="_blank" class="link link-primary">@r.AccountNo</a></td>
+                                        <td>@r.CustomerName</td>
+                                        <td>@r.DealerName</td>
+                                        <td><span class="badge badge-dim @(r.Reason == "Repossessed" ? "bg-info" : "bg-warning")">@r.ReasonLabel</span></td>
+                                        <td>@r.WrittenOffDate.ToString("dd MMM yyyy")</td>
+                                        <td>@(r.LastPaymentDate?.ToString("dd MMM yyyy") ?? "Never paid")</td>
+                                        <td class="text-end">@r.ContractValue.ToString("N0")</td>
+                                        <td class="text-end">@r.TotalPaid.ToString("N0")</td>
+                                        <td class="text-end fw-medium">@r.OutstandingBalance.ToString("N0")</td>
+                                        <td>@(r.ReinstatedDate.HasValue ? $"{r.ReinstatedDate.Value:dd MMM yyyy} ({r.ReinstatedMpesaCode})" : "-")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

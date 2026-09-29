@@ -592,20 +592,30 @@ namespace Ranalo.DataStore
         {
             var offset = (page - 1) * pageSize;
 
+            // A payment leaves this list once it has been assigned (an
+            // OrphanedPayments row with the same MpesaCode) to an account that
+            // has a device -- the same condition GetAssignedPaymentsAsync uses,
+            // so each payment appears on exactly one of the two lists.
             var countSql = @"WITH PaymentsNoDevice AS (
                             SELECT kp.*
                             FROM KosePayments kp
                             WHERE NOT EXISTS (
-                                SELECT 1 
-                                FROM Devices d 
+                                SELECT 1
+                                FROM Devices d
                                 WHERE d.Id = kp.AccountNoBigint
+                            )
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM OrphanedPayments op
+                                INNER JOIN Devices ad ON ad.Id = op.AccountNoBigint
+                                WHERE op.MpesaCode = kp.MpesaCode
                             )
                         ),
                         PaymentsLinkedToOrphaned AS (
                             SELECT pnd.*, op.AccountNoBigint AS OrphanedAccountNoBigint
                             FROM PaymentsNoDevice pnd
-                            LEFT JOIN OrphanedPayments op 
-                                ON op.OrphanedAccountNo = pnd.AccountNo
+                            LEFT JOIN OrphanedPayments op
+                                ON op.MpesaCode = pnd.MpesaCode
                         )
                         SELECT COUNT(*)
                         FROM PaymentsLinkedToOrphaned plo
@@ -626,17 +636,24 @@ namespace Ranalo.DataStore
                             SELECT kp.*
                             FROM KosePayments kp
                             WHERE NOT EXISTS (
-                                SELECT 1 
-                                FROM Devices d 
+                                SELECT 1
+                                FROM Devices d
                                 WHERE d.Id = kp.AccountNoBigint
+                            )
+                            -- ...and not yet assigned to an account with a device
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM OrphanedPayments op
+                                INNER JOIN Devices ad ON ad.Id = op.AccountNoBigint
+                                WHERE op.MpesaCode = kp.MpesaCode
                             )
                         ),
                         PaymentsLinkedToOrphaned AS (
-                            -- Step 2: link to OrphanedPayments using AccountNo
+                            -- Step 2: link to OrphanedPayments using MpesaCode
                             SELECT pnd.*, op.AccountNoBigint AS OrphanedAccountNoBigint
                             FROM PaymentsNoDevice pnd
-                            LEFT JOIN OrphanedPayments op 
-                                ON op.OrphanedAccountNo = pnd.AccountNo
+                            LEFT JOIN OrphanedPayments op
+                                ON op.MpesaCode = pnd.MpesaCode
                         )
                         -- Step 3: remove any payment that now has a device
                         SELECT plo.*
@@ -2380,22 +2397,52 @@ FROM
             };
         }
 
-        public async Task CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo)
+        // Returns null on success, otherwise a message to show the user.
+        public async Task<string?> CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo)
         {
+            accountNo = accountNo?.Trim() ?? "";
+            mpesaCode = mpesaCode?.Trim() ?? "";
 
-            if(accountNo == "0")
+            if (!long.TryParse(accountNo, out var accountId) || accountId == 0)
             {
-                return;
+                return $"'{accountNo}' is not a valid account number.";
             }
 
-            var existing = @"SELECT * FROM OrphanedPayments
-                            WHERE MpesaCode = @MpesaCode"
-            ;
-            var existingPayments = await _db.QueryFirstOrDefaultAsync<KosePayments>(existing, new { MpesaCode = mpesaCode });
-
-            if (existingPayments != null)
+            var paymentExists = await _db.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM KosePayments WHERE MpesaCode = @MpesaCode", new { MpesaCode = mpesaCode });
+            if (paymentExists == 0)
             {
-                return;
+                return $"No payment with Mpesa code '{mpesaCode}' was found.";
+            }
+
+            var deviceExists = await _db.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM Devices WHERE Id = @Id", new { Id = accountId });
+            if (deviceExists == 0)
+            {
+                return $"Account {accountNo} does not exist -- no device has that account number.";
+            }
+
+            var existingAccountNo = await _db.ExecuteScalarAsync<string?>(
+                "SELECT TOP 1 AccountNo FROM OrphanedPayments WHERE MpesaCode = @MpesaCode", new { MpesaCode = mpesaCode });
+
+            if (existingAccountNo != null)
+            {
+                var assignedToDevice = await _db.ExecuteScalarAsync<int>(
+                    @"SELECT COUNT(1) FROM OrphanedPayments op
+                      INNER JOIN Devices d ON d.Id = op.AccountNoBigint
+                      WHERE op.MpesaCode = @MpesaCode", new { MpesaCode = mpesaCode });
+                if (assignedToDevice > 0)
+                {
+                    return $"Payment {mpesaCode} is already assigned to account {existingAccountNo}.";
+                }
+
+                // A previous assignment pointed at an account with no device,
+                // so the payment is still orphaned -- correct it in place.
+                await _db.ExecuteAsync(@"UPDATE OrphanedPayments
+                                         SET AccountNo = @AccountNo, DateCreated = GETDATE()
+                                         WHERE MpesaCode = @MpesaCode",
+                    new { MpesaCode = mpesaCode, AccountNo = accountNo });
+                return null;
             }
 
             var insertSql = @"INSERT INTO [dbo].[OrphanedPayments]
@@ -2413,6 +2460,7 @@ FROM
 
 
             await _db.ExecuteScalarAsync<int>(insertSql, new { Id = Guid.NewGuid(), OrphanedAccountNo = orphanedNo, MpesaCode = mpesaCode, AccountNo = accountNo });
+            return null;
         }
 
         public async Task<List<RestructuredRecord>> GetAllRestructuredFlat()

@@ -164,7 +164,10 @@
 
     @{
         var totalCommissionsPaid = Model.DealerPerformance.Sum(d => d.CommissionPaid);
-        var netProfitThisMonth = Model.RevenueThisMonth - Model.CostOfDevicesThisMonth - totalCommissionsPaid - Model.BadDebtThisMonth;
+        // No bad-debt deduction (same as Financials): revenue is cash received
+        // and device cost is counted at contract start, so an unpaid balance
+        // was never income. Write-offs are shown in their own card.
+        var netProfitThisMonth = Model.RevenueThisMonth - Model.CostOfDevicesThisMonth - totalCommissionsPaid;
         var profitMarginPct = Model.RevenueThisMonth > 0 ? Math.Round(netProfitThisMonth / Model.RevenueThisMonth * 100, 1) : 0;
         var netProfitUp = Model.NetProfitChangePct >= 0;
         var marginUp = Model.ProfitMarginChangePct >= 0;
@@ -172,9 +175,12 @@
         var commissionsUp = Model.CommissionsChangePct >= 0;
         var commissionsPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(totalCommissionsPaid / Model.RevenueThisMonth * 100, 1) : 0;
         var commissionsPerDealer = Model.DealerPerformance.Count > 0 ? totalCommissionsPaid / Model.DealerPerformance.Count : 0;
-        var badDebtImproved = Model.BadDebtChangePct <= 0;
-        var badDebtPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(Model.BadDebtThisMonth / Model.RevenueThisMonth * 100, 1) : 0;
-        var badDebtPerBadAccount = Model.BadAccounts > 0 ? Model.BadDebtThisMonth / Model.BadAccounts : 0;
+        var writeOffs = Model.WriteOffsThisMonth;
+        var writeOffChangePct = Model.WriteOffsLastMonth.WrittenOffBalance > 0
+            ? Math.Round((writeOffs.WrittenOffBalance - Model.WriteOffsLastMonth.WrittenOffBalance) / Model.WriteOffsLastMonth.WrittenOffBalance * 100, 1)
+            : 0;
+        var writeOffsImproved = writeOffChangePct <= 0;
+        var realLossPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(writeOffs.RealLoss / Model.RevenueThisMonth * 100, 1) : 0;
         var netProfitPerPayingAccount = Model.PayingAccounts > 0 ? netProfitThisMonth / Model.PayingAccounts : 0;
     }
     <div class="nk-block">
@@ -243,18 +249,18 @@
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Bad Debt / Write-offs</h6></div>
+                            <div class="card-title"><h6 class="title">Write-offs <span class="text-soft small">this month</span></h6></div>
                         </div>
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
-                                <span class="amount text-danger">KES @Model.BadDebtThisMonth.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="@(badDebtImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(badDebtImproved ? "down" : "up")"></em>@Math.Abs(Model.BadDebtChangePct).ToString("0.0")%</span> vs last month</span>
+                                <span class="amount text-danger" title="Balance taken off the loan book by approved write-offs dated this month">KES @writeOffs.WrittenOffBalance.ToString("N0")</span>
+                                <span class="sub-title d-block mt-1"><span class="@(writeOffsImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(writeOffsImproved ? "down" : "up")"></em>@Math.Abs(writeOffChangePct).ToString("0.0")%</span> vs last month</span>
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@badDebtPctOfRevenue.ToString("0")% of revenue</span>
-                            <span class="text-soft">KES @badDebtPerBadAccount.ToString("N0") avg / bad account</span>
-                            <a href="/financials" class="text-soft">View full financials &rarr;</a>
+                            <span class="text-soft">@writeOffs.WrittenOffCount.ToString("N0") accounts &middot; real loss KES @writeOffs.RealLoss.ToString("N0") (@realLossPctOfRevenue.ToString("0.0")% of revenue)</span>
+                            <span class="text-soft">@writeOffs.ReinstatedCount.ToString("N0") reinstated this month</span>
+                            <a href="/write-offs" class="text-soft">Review write-offs &rarr;</a>
                         </div>
                     </div>
                 </div>

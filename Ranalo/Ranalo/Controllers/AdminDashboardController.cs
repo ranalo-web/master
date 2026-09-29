@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Ranalo.Configuration;
+using Ranalo.DataStore;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.Services;
@@ -10,10 +11,14 @@ namespace Ranalo.Controllers
     public class AdminDashboardController : Controller
     {
         private readonly IDashboardReportService _dashboardReportService;
+        private readonly IWriteOffRepository _writeOffRepository;
+        private readonly ILogger<AdminDashboardController> _logger;
 
-        public AdminDashboardController(IDashboardReportService dashboardReportService)
+        public AdminDashboardController(IDashboardReportService dashboardReportService, IWriteOffRepository writeOffRepository, ILogger<AdminDashboardController> logger)
         {
             _dashboardReportService = dashboardReportService;
+            _writeOffRepository = writeOffRepository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -38,6 +43,18 @@ namespace Ranalo.Controllers
             ViewBag.UserName = settings.KnownAs;
 
             var model = await _dashboardReportService.GetAdminDashboardAsync();
+
+            try
+            {
+                var thisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                model.WriteOffsThisMonth = await _writeOffRepository.GetPeriodSummaryAsync(thisMonth, thisMonth.AddMonths(1));
+                model.WriteOffsLastMonth = await _writeOffRepository.GetPeriodSummaryAsync(thisMonth.AddMonths(-1), thisMonth);
+            }
+            catch (Exception ex)
+            {
+                // e.g. Database/WriteOffs/001 not applied -- card shows zeros.
+                _logger.LogError(ex, "Admin dashboard: write-off figures unavailable");
+            }
 
             return View(model);
         }

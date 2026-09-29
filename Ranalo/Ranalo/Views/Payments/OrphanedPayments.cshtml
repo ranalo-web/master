@@ -21,6 +21,23 @@
         </div><!-- .nk-block-between -->
     </div><!-- .nk-block-head -->
 
+    @if (TempData["AssignSuccess"] is string assignSuccess)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em>
+            <strong>Payment assigned.</strong> @assignSuccess
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["AssignError"] is string assignError)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em>
+            <strong>Assign failed.</strong> @assignError
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -168,6 +185,7 @@
             <div class="modal-body modal-body-md">
                 <h5 class="modal-title">Assign Payment</h5>
                 <form action="/assign-payments" method="post" class="mt-2">
+                    <input type="hidden" name="source" value="orphaned" />
                     <div class="row g-gs">
                         <div class="col-md-6">
                             <div class="form-group">

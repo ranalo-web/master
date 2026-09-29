@@ -13,7 +13,7 @@ namespace Ranalo.Services
         Task<ContractInfo?> GetContractByDeviceIdAsync(int deviceId);
         Task<ContractInfo?> GetContractByIdAsync(int contractId);
         Task<int> UpdateContractAsync(ContractInfo contract);
-        Task<int> CreateRecoveredAccountAsync(ContractCreateDto newContract);
+        Task<int> CreateRecoveredAccountAsync(ContractCreateDto newContract, decimal repossessionCost, int recordedByUserId);
         Task AssignContractToCollector(int contractId, int collectorUserId);
 
         Task AssignAccountToAgent(int contractId, int agentId);
