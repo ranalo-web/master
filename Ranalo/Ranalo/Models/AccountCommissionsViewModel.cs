@@ -17,6 +17,15 @@ namespace Ranalo.Models
         public decimal? TotalCost { get; set; }
         public decimal TotalPaid { get; set; }
         public decimal? BuyingPrice { get; set; }
+
+        // Days past Devices.NextLockDateIsoFormat (0 or less when not yet
+        // due); over 7 counts toward the payee's default rate.
+        public double DaysPastLock { get; set; }
+        public string? ProductName { get; set; }
+        public string? Imei { get; set; }
+
+        // Of Commission.AgentPaid, what was paid against the bonus; the rest was upfront.
+        public decimal AgentBonusPaid { get; set; }
         public Ranalo.Services.CommissionBreakdown Commission { get; set; } = new();
     }
 
@@ -33,6 +42,15 @@ namespace Ranalo.Models
         public decimal TotalPaid { get; set; }
         public decimal? BuyingPrice { get; set; }
         public Ranalo.Services.CommissionBreakdown Commission { get; set; } = new();
+
+        // Expandable "how it's worked out" panel.
+        public string? ContractId { get; set; }
+        public string? ProductName { get; set; }
+        public string? Imei { get; set; }
+        public DateTime StartDate { get; set; }
+        public decimal? ContractValue { get; set; }
+        public int DaysPastLock { get; set; }
+        public decimal AgentBonusPaid { get; set; }
     }
 
     public class AccountCommissionsViewModel

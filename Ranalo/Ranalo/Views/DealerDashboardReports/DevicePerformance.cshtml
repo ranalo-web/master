@@ -12,7 +12,7 @@
         <div class="nk-block-between">
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Device Performance</h3>
-                <div class="nk-block-des text-soft"><p>Units financed, avg. value &amp; repayment health, by device model.</p></div>
+                <div class="nk-block-des text-soft"><p>Units financed, avg. value, share of money due that has been collected, and accounts behind, by device model.</p></div>
             </div>
             <div class="nk-block-head-content">
                 <a href="/@(ViewBag.BackLink)" class="btn btn-outline-light btn-white"><em class="icon ni ni-arrow-left"></em><span>Back to Dashboard</span></a>
@@ -31,8 +31,8 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Device</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Units</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Avg Value</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Good</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Arrears</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Money received / money due so far">Collected</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Accounts more than a week of payments behind">Behind</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -43,8 +43,8 @@
                                     <td><span class="fw-medium">@d.Device</span></td>
                                     <td>@d.Units</td>
                                     <td>KES @d.AvgValue.ToString("N0")</td>
-                                    <td><span class="text-success">@d.GoodPct.ToString("0")%</span></td>
-                                    <td><span class="text-danger">@d.ArrearsPct.ToString("0")%</span></td>
+                                    <td><span class="@(d.CollectedPct >= 90 ? "text-success" : d.CollectedPct >= 70 ? "text-warning" : "text-danger")">@d.CollectedPct.ToString("0")%</span></td>
+                                    <td><span class="@(d.BehindCount > 0 ? "text-danger" : "text-soft")">@d.BehindCount of @d.Units</span></td>
                                 </tr>
                             }
                         </tbody>

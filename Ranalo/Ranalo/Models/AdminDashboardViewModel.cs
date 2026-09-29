@@ -26,7 +26,7 @@ namespace Ranalo.Models
 
         public int PayingAccounts { get; set; }
         public int NonPayingAccounts { get; set; }
-        public int NonPayingAccountsChange { get; set; }
+        public int? NonPayingAccountsChange { get; set; }
         public decimal ArrearsTotal { get; set; }
         public decimal ArrearsChangePct { get; set; }
 
@@ -53,9 +53,9 @@ namespace Ranalo.Models
         public decimal PortfolioAtRiskPct { get; set; }
 
         // Percentage-point change vs. the prior month.
-        public decimal PortfolioGoodPctChange { get; set; }
-        public decimal CollectionRateChangePct { get; set; }
-        public decimal PortfolioAtRiskChangePct { get; set; }
+        public decimal? PortfolioGoodPctChange { get; set; }
+        public decimal? CollectionRateChangePct { get; set; }
+        public decimal? PortfolioAtRiskChangePct { get; set; }
 
         // Profitability. Net profit and its margin are derived in the view
         // from RevenueThisMonth, DealerPerformance commissions,
@@ -63,10 +63,10 @@ namespace Ranalo.Models
         // drift out of sync with those.
         public decimal CostOfDevicesThisMonth { get; set; }
         public decimal BadDebtThisMonth { get; set; }
-        public decimal NetProfitChangePct { get; set; }
-        public decimal ProfitMarginChangePct { get; set; }
-        public decimal ProfitMarginTargetPct { get; set; }
-        public decimal CommissionsChangePct { get; set; }
+        public decimal? NetProfitChangePct { get; set; }
+        public decimal? ProfitMarginChangePct { get; set; }
+        public decimal? ProfitMarginTargetPct { get; set; }
+        public decimal? CommissionsChangePct { get; set; }
         public decimal BadDebtChangePct { get; set; }
 
         // Full income-statement walk (Revenue -> Retained Earnings). Gross
@@ -80,15 +80,15 @@ namespace Ranalo.Models
         // Customer Performance card.
         public int TotalCustomers { get; set; }
         public int NewCustomersThisMonth { get; set; }
-        public decimal RepeatCustomerRatePct { get; set; }
+        public decimal? RepeatCustomerRatePct { get; set; }
         public decimal AvgCustomerLifetimeValue { get; set; }
-        public decimal ChurnRatePct { get; set; }
+        public decimal? ChurnRatePct { get; set; }
 
         // Completed Contracts (fully paid off).
         public int CompletedContractsThisMonth { get; set; }
-        public decimal CompletedContractsChangePct { get; set; }
-        public decimal ContractCompletionRatePct { get; set; }
-        public decimal ContractCompletionRateChangePct { get; set; }
+        public decimal? CompletedContractsChangePct { get; set; }
+        public decimal? ContractCompletionRatePct { get; set; }
+        public decimal? ContractCompletionRateChangePct { get; set; }
         public decimal AvgTimeToCompletionMonths { get; set; }
         public decimal TotalValueCompletedThisMonth { get; set; }
 
@@ -98,6 +98,16 @@ namespace Ranalo.Models
 
         public List<AdminDealerPerformance> DealerPerformance { get; set; } = new();
         public List<AdminAgentPerformance> AgentPerformance { get; set; } = new();
+
+        // Agent commission paid out this month (AgentCommissionPayments); the
+        // Commissions Paid card adds it to the dealer payouts.
+        public decimal AgentCommissionPaidThisMonth { get; set; }
+
+        // Dealer commission payable now across every dealer, and what's held
+        // for suspended dealers (CommissionPayees).
+        public decimal DealerCommissionPayable { get; set; }
+        public decimal DealerCommissionHeld { get; set; }
+        public int DealersSuspended { get; set; }
 
         // Commissions section across every dealer: totals plus account-by-account detail.
         public DashboardCommissionSummary CommissionSummary { get; set; } = new();

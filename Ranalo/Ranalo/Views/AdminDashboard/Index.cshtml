@@ -130,7 +130,7 @@
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
                                 <span class="amount">@Model.PayingAccounts.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="@(nonPayingImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(nonPayingImproved ? "down" : "up")"></em>@Math.Abs(Model.NonPayingAccountsChange).ToString("N0")</span> non-paying vs last month</span>
+                                @if (Model.NonPayingAccountsChange.HasValue) { <span class="sub-title d-block mt-1"><span class="@(nonPayingImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(nonPayingImproved ? "down" : "up")"></em>@Math.Abs(Model.NonPayingAccountsChange.Value).ToString("N0")</span> non-paying vs last month</span> }
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
@@ -163,7 +163,9 @@
     </div><!-- .nk-block -->
 
     @{
-        var totalCommissionsPaid = Model.DealerPerformance.Sum(d => d.CommissionPaid);
+        // Dealer payouts this month (per dealer) plus agent payouts this month.
+        var dealerCommissionsPaid = Model.DealerPerformance.Sum(d => d.CommissionPaid);
+        var totalCommissionsPaid = dealerCommissionsPaid + Model.AgentCommissionPaidThisMonth;
         // No bad-debt deduction (same as Financials): revenue is cash received
         // and device cost is counted at contract start, so an unpaid balance
         // was never income. Write-offs are shown in their own card.
@@ -171,7 +173,7 @@
         var profitMarginPct = Model.RevenueThisMonth > 0 ? Math.Round(netProfitThisMonth / Model.RevenueThisMonth * 100, 1) : 0;
         var netProfitUp = Model.NetProfitChangePct >= 0;
         var marginUp = Model.ProfitMarginChangePct >= 0;
-        var marginVsTarget = profitMarginPct - Model.ProfitMarginTargetPct;
+        var marginVsTarget = profitMarginPct - (Model.ProfitMarginTargetPct ?? 0);
         var commissionsUp = Model.CommissionsChangePct >= 0;
         var commissionsPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(totalCommissionsPaid / Model.RevenueThisMonth * 100, 1) : 0;
         var commissionsPerDealer = Model.DealerPerformance.Count > 0 ? totalCommissionsPaid / Model.DealerPerformance.Count : 0;
@@ -194,7 +196,7 @@
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
                                 <span class="amount">KES @netProfitThisMonth.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="@(netProfitUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(netProfitUp ? "up" : "down")"></em>@Math.Abs(Model.NetProfitChangePct).ToString("0.0")%</span> vs last month</span>
+                                @if (Model.NetProfitChangePct.HasValue) { <span class="sub-title d-block mt-1"><span class="@(netProfitUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(netProfitUp ? "up" : "down")"></em>@Math.Abs(Model.NetProfitChangePct.Value).ToString("0.0")%</span> vs last month</span> }
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
@@ -214,12 +216,12 @@
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
                                 <span class="amount">@profitMarginPct.ToString("0.0")%</span>
-                                <span class="sub-title d-block mt-1"><span class="@(marginUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(marginUp ? "up" : "down")"></em>@Math.Abs(Model.ProfitMarginChangePct).ToString("0.0")pp</span> vs last month</span>
+                                @if (Model.ProfitMarginChangePct.HasValue) { <span class="sub-title d-block mt-1"><span class="@(marginUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(marginUp ? "up" : "down")"></em>@Math.Abs(Model.ProfitMarginChangePct.Value).ToString("0.0")pp</span> vs last month</span> }
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">vs @Model.ProfitMarginTargetPct.ToString("0")% target</span>
-                            <span class="@(marginVsTarget >= 0 ? "text-success" : "text-danger")">@(marginVsTarget >= 0 ? "+" : "")@marginVsTarget.ToString("0.0")pp @(marginVsTarget >= 0 ? "above" : "below")</span>
+                            @if (Model.ProfitMarginTargetPct.HasValue) { <span class="text-soft">vs @Model.ProfitMarginTargetPct.Value.ToString("0")% target</span> }
+                            @if (Model.ProfitMarginTargetPct.HasValue) { <span class="@(marginVsTarget >= 0 ? "text-success" : "text-danger")">@(marginVsTarget >= 0 ? "+" : "")@marginVsTarget.ToString("0.0")pp @(marginVsTarget >= 0 ? "above" : "below")</span> }
                             <a href="/financials" class="text-soft">View full financials &rarr;</a>
                         </div>
                     </div>
@@ -234,11 +236,12 @@
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
                                 <span class="amount" id="commissionsPaidAmount">KES @totalCommissionsPaid.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="@(commissionsUp ? "text-danger" : "text-success")"><em class="icon ni ni-arrow-long-@(commissionsUp ? "up" : "down")"></em>@Math.Abs(Model.CommissionsChangePct).ToString("0.0")%</span> vs last month</span>
+                                @if (Model.CommissionsChangePct.HasValue) { <span class="sub-title d-block mt-1"><span class="@(commissionsUp ? "text-danger" : "text-success")"><em class="icon ni ni-arrow-long-@(commissionsUp ? "up" : "down")"></em>@Math.Abs(Model.CommissionsChangePct.Value).ToString("0.0")%</span> vs last month</span> }
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
                             <span class="text-soft"><span id="commissionsPctOfRevenue">@commissionsPctOfRevenue.ToString("0")</span>% of revenue</span>
+                            <span class="text-soft">Dealers KES <span id="commissionsPaidDealers">@dealerCommissionsPaid.ToString("N0")</span> &middot; agents KES <span id="commissionsPaidAgents">@Model.AgentCommissionPaidThisMonth.ToString("N0")</span></span>
                             <span class="text-soft">KES <span id="commissionsPerDealer">@commissionsPerDealer.ToString("N0")</span> avg / dealer</span>
                             <a href="/financials" class="text-soft">View full financials &rarr;</a>
                         </div>
@@ -311,7 +314,7 @@
                                         <div style="font-weight:800; font-size:20px; color:#364a63; line-height:1.1;">@Model.PortfolioGoodPct.ToString("0")%</div>
                                         <div style="font-size:10px; color:#8091a7;">good</div>
                                         <div style="font-size:10px;" class="@(goodTrendUp ? "text-success" : "text-danger")">
-                                            <em class="icon ni ni-arrow-long-@(goodTrendUp ? "up" : "down")"></em>@Math.Abs(Model.PortfolioGoodPctChange).ToString("0.0")pp
+                                            @if (Model.PortfolioGoodPctChange.HasValue) { <text><em class="icon ni ni-arrow-long-@(goodTrendUp ? "up" : "down")"></em>@Math.Abs(Model.PortfolioGoodPctChange.Value).ToString("0.0")pp</text> }
                                         </div>
                                     </div>
                                 </div>
@@ -338,30 +341,30 @@
                                 <div class="mb-4">
                                     <div class="d-flex justify-content-between align-items-baseline flex-wrap mb-1">
                                         <span class="text-soft" style="font-size:12px;">Collection Rate</span>
-                                        <span class="fw-bold text-success" style="font-size:12px;" id="collectionRatePctText">@Model.CollectionRatePct.ToString("0.0")%</span>
+                                        <span class="fw-bold text-success" style="font-size:12px;" id="collectionRatePctText" title="Measured on accounts that started in the period">@(Model.NewThisMonth > 0 ? Model.CollectionRatePct.ToString("0.0") + "%" : "No new accounts")</span>
                                     </div>
                                     <div class="progress progress-md progress-alt">
                                         <div class="progress-bar bg-success" id="collectionRateProgressBar" data-progress="@Model.CollectionRatePct.ToString("0.0")"></div>
                                     </div>
                                     <div class="mt-1">
-                                        <div class="text-soft" style="font-size:11px;">of amount due <span id="collectionRatePeriodLabel">this month</span>, collected</div>
+                                        <div class="text-soft" style="font-size:11px;">of accounts started <span id="collectionRatePeriodLabel">this month</span>, currently paying</div>
                                         <div class="@(collectionTrendUp ? "text-success" : "text-danger")" style="font-size:11px;">
-                                            <em class="icon ni ni-arrow-long-@(collectionTrendUp ? "up" : "down")"></em>@Math.Abs(Model.CollectionRateChangePct).ToString("0.0")pp <span class="text-soft">vs last month</span>
+                                            @if (Model.CollectionRateChangePct.HasValue) { <text><em class="icon ni ni-arrow-long-@(collectionTrendUp ? "up" : "down")"></em>@Math.Abs(Model.CollectionRateChangePct.Value).ToString("0.0")pp <span class="text-soft">vs last month</span></text> }
                                         </div>
                                     </div>
                                 </div>
                                 <div>
                                     <div class="d-flex justify-content-between align-items-baseline flex-wrap mb-1">
                                         <span class="text-soft" style="font-size:12px;">Portfolio at Risk (PAR30)</span>
-                                        <span class="fw-bold text-danger" style="font-size:12px;" id="portfolioAtRiskPctText">@Model.PortfolioAtRiskPct.ToString("0.0")%</span>
+                                        <span class="fw-bold text-danger" style="font-size:12px;" id="portfolioAtRiskPctText" title="Measured on accounts that started in the period">@(Model.NewThisMonth > 0 ? Model.PortfolioAtRiskPct.ToString("0.0") + "%" : "No new accounts")</span>
                                     </div>
                                     <div class="progress progress-md progress-alt">
                                         <div class="progress-bar bg-danger" id="portfolioAtRiskProgressBar" data-progress="@Model.PortfolioAtRiskPct.ToString("0.0")"></div>
                                     </div>
                                     <div class="mt-1">
-                                        <div class="text-soft" style="font-size:11px;">outstanding balance 30+ days overdue</div>
+                                        <div class="text-soft" style="font-size:11px;">of accounts started in the period, 30+ days overdue</div>
                                         <div class="@(parImproved ? "text-success" : "text-danger")" style="font-size:11px;">
-                                            <em class="icon ni ni-arrow-long-@(parImproved ? "down" : "up")"></em>@Math.Abs(Model.PortfolioAtRiskChangePct).ToString("0.0")pp <span class="text-soft">vs last month</span>
+                                            @if (Model.PortfolioAtRiskChangePct.HasValue) { <text><em class="icon ni ni-arrow-long-@(parImproved ? "down" : "up")"></em>@Math.Abs(Model.PortfolioAtRiskChangePct.Value).ToString("0.0")pp <span class="text-soft">vs last month</span></text> }
                                         </div>
                                     </div>
                                 </div>
@@ -550,7 +553,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Active %</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Revenue</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Commission Paid / Due</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission paid this month / payable now after arrears (0 while suspended)">Commission Paid (month) / Payable</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">vs. Target</th>
                             </tr>
                         </thead>
@@ -769,6 +772,7 @@
                         <div class="card-title">
                             <h6 class="title">Commissions</h6>
                             <p class="text-soft">All agent-assigned accounts across every dealer. @Model.CommissionSummary.Agents agents &middot; @Model.CommissionSummary.Accounts accounts</p>
+                            <p class="text-soft small mb-0">Dealer commission payable now: <strong>KES @Model.DealerCommissionPayable.ToString("N0")</strong>@(Model.DealersSuspended > 0 ? $" · {Model.DealersSuspended} dealer(s) suspended, KES {Model.DealerCommissionHeld:N0} on hold" : "") &middot; <a href="/commission-payouts">Pay commissions &rarr;</a></p>
                         </div>
                     </div>
                     <div class="row g-2 mt-2">
@@ -795,9 +799,10 @@
                         </div>
                         <div class="col-6 col-lg-3">
                             <div class="border rounded p-2 h-100">
-                                <span class="sub-text">Owed</span>
-                                <span class="d-block fs-5 fw-bold text-danger">KES @Model.CommissionSummary.Owed.ToString("N0")</span>
-                                <span class="d-block text-soft small">Still owed to agents</span>
+                                <span class="sub-text">Payable now</span>
+                                <span class="d-block fs-5 fw-bold text-danger">KES @Model.CommissionSummary.Payable.ToString("N0")</span>
+                                <span class="d-block text-soft small">Owed after arrears@(Model.CommissionSummary.SuspendedAgents > 0 ? $" · {Model.CommissionSummary.SuspendedAgents} suspended, KES {Model.CommissionSummary.HeldSuspended:N0} on hold" : "")</span>
+                                <span class="d-block text-soft small">Upfront due KES @Model.CommissionSummary.UpfrontDue.ToString("N0") · bonus due KES @Model.CommissionSummary.BonusDue.ToString("N0")</span>
                             </div>
                         </div>
                     </div>
@@ -816,10 +821,9 @@
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Earned</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on this account, deducted because it is past its lock date">Arrears Deducted</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Earned minus arrears deducted minus paid, for this account">Net</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="50% of the deposit">Upfront</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="25% of the deposit, once 90 days old, not past lock date and with a WooCommerce order">Bonus</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="What the customer is behind by; held back from the agent until they catch up">Customer behind</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
                                 </tr>
                             </thead>
@@ -834,11 +838,10 @@
                                         </td>
                                         <td>@c.DealerName</td>
                                         <td>@c.AgentName</td>
-                                        <td>KES @c.Earned.ToString("N0")</td>
-                                        <td class="@(c.ArrearsDeducted > 0 ? "text-danger" : "")">KES @c.ArrearsDeducted.ToString("N0")</td>
-                                        <td>KES @c.Paid.ToString("N0")</td>
-                                        <td class="@(c.Net < 0 ? "text-danger" : "")">KES @c.Net.ToString("N0")</td>
-                                        <td><span class="badge badge-dim @(c.Status == "Withheld" ? "bg-warning" : c.Status == "Owed" ? "bg-info" : "bg-success")">@c.Status</span></td>
+                                        <td>KES @c.Upfront.ToString("N0")<span class="d-block sub-text">@(c.UpfrontPaid >= c.Upfront ? "paid" : $"KES {c.Upfront - c.UpfrontPaid:N0} due")</span></td>
+                                        <td>@if (c.BonusState == "earned") { <span>KES @c.Bonus.ToString("N0")</span><span class="d-block sub-text">@(c.BonusPaid >= c.Bonus ? "paid" : "earned, due")</span> } else if (c.BonusState == "held-woo") { <span class="text-warning">Held</span><span class="d-block sub-text">no WooCommerce order</span> } else if (c.BonusState == "held-lock") { <span class="text-warning">Held</span><span class="d-block sub-text">past lock date</span> } else { <span class="text-soft">In @c.DaysToBonus days</span> }</td>
+                                        <td class="@(c.CustomerBehindBy > 0 ? "text-danger" : "text-soft")">@(c.CustomerBehindBy > 0 ? "KES " + c.CustomerBehindBy.ToString("N0") : "Not behind")</td>
+                                        <td><span class="badge badge-dim @(c.Status == "Withheld" ? "bg-warning" : c.Status == "Owed" ? "bg-info" : "bg-success")" title="@(c.Status == "Withheld" ? "Nothing more is paid on this account while the customer is behind" : "")">@(c.Status == "Withheld" ? "Held back" : c.Status == "Owed" ? "Due" : "Paid up")</span></td>
                                     </tr>
                                 }
                             </tbody>
@@ -947,7 +950,7 @@
                                     <div class="fw-medium">Repeat Customer Rate</div>
                                     <div class="text-soft" style="font-size:11px;">Financed more than one device</div>
                                 </div>
-                                <span class="fw-bold">@Model.RepeatCustomerRatePct.ToString("0.0")%</span>
+                                <span class="fw-bold">@(Model.RepeatCustomerRatePct.HasValue ? Model.RepeatCustomerRatePct.Value.ToString("0.0") + "%" : "Not tracked yet")</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                                 <div>
@@ -961,7 +964,7 @@
                                     <div class="fw-medium">Churn Rate</div>
                                     <div class="text-soft" style="font-size:11px;">Stopped paying, no contact</div>
                                 </div>
-                                <span class="fw-bold @(Model.ChurnRatePct <= 5 ? "text-success" : "text-danger")">@Model.ChurnRatePct.ToString("0.0")%</span>
+                                <span class="fw-bold @(Model.ChurnRatePct is null ? "text-soft" : Model.ChurnRatePct <= 5 ? "text-success" : "text-danger")">@(Model.ChurnRatePct.HasValue ? Model.ChurnRatePct.Value.ToString("0.0") + "%" : "Not tracked yet")</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center py-2">
                                 <div>
@@ -1043,7 +1046,7 @@
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
                                 <span class="amount">@Model.CompletedContractsThisMonth.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="@(completedUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(completedUp ? "up" : "down")"></em>@Math.Abs(Model.CompletedContractsChangePct).ToString("0.0")%</span> vs last month</span>
+                                @if (Model.CompletedContractsChangePct.HasValue) { <span class="sub-title d-block mt-1"><span class="@(completedUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(completedUp ? "up" : "down")"></em>@Math.Abs(Model.CompletedContractsChangePct.Value).ToString("0.0")%</span> vs last month</span> }
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
@@ -1056,9 +1059,9 @@
                                 <div class="text-soft" style="font-size:11px;">Contracts reaching full payoff, not written off</div>
                             </div>
                             <div class="text-end">
-                                <div class="fw-bold">@Model.ContractCompletionRatePct.ToString("0.0")%</div>
+                                <div class="fw-bold">@(Model.ContractCompletionRatePct.HasValue ? Model.ContractCompletionRatePct.Value.ToString("0.0") + "%" : "Not tracked yet")</div>
                                 <div class="@(completionRateUp ? "text-success" : "text-danger")" style="font-size:11px;">
-                                    <em class="icon ni ni-arrow-long-@(completionRateUp ? "up" : "down")"></em>@Math.Abs(Model.ContractCompletionRateChangePct).ToString("0.0")pp
+                                    @if (Model.ContractCompletionRateChangePct.HasValue) { <text><em class="icon ni ni-arrow-long-@(completionRateUp ? "up" : "down")"></em>@Math.Abs(Model.ContractCompletionRateChangePct.Value).ToString("0.0")pp</text> }
                                 </div>
                             </div>
                         </div>
@@ -1412,31 +1415,35 @@
                         }
 
                         // Commissions Paid: headline is the company-wide
-                        // dealer-commission total for the selected period
-                        // (data.dealerCommissionPaidThisPeriod); % of revenue
-                        // and avg/dealer are recomputed client-side from the
-                        // same response instead of a second request.
+                        // dealer + agent commission paid in the selected
+                        // period; % of revenue and avg/dealer are recomputed
+                        // client-side from the same response.
+                        var commissionsPaid = data.dealerCommissionPaidThisPeriod + data.commissionPaidThisPeriod;
                         if (commissionsPaidAmountEl) {
-                            commissionsPaidAmountEl.textContent = 'KES ' + Math.round(data.dealerCommissionPaidThisPeriod).toLocaleString();
+                            commissionsPaidAmountEl.textContent = 'KES ' + Math.round(commissionsPaid).toLocaleString();
                         }
+                        var dealersPaidEl = document.getElementById('commissionsPaidDealers');
+                        var agentsPaidEl = document.getElementById('commissionsPaidAgents');
+                        if (dealersPaidEl) dealersPaidEl.textContent = Math.round(data.dealerCommissionPaidThisPeriod).toLocaleString();
+                        if (agentsPaidEl) agentsPaidEl.textContent = Math.round(data.commissionPaidThisPeriod).toLocaleString();
                         if (commissionsPctOfRevenueEl) {
-                            var commissionsPct = data.revenue > 0 ? Math.round(data.dealerCommissionPaidThisPeriod / data.revenue * 100) : 0;
+                            var commissionsPct = data.revenue > 0 ? Math.round(commissionsPaid / data.revenue * 100) : 0;
                             commissionsPctOfRevenueEl.textContent = commissionsPct;
                         }
                         if (commissionsPerDealerEl) {
-                            var perDealer = dealerCount > 0 ? data.dealerCommissionPaidThisPeriod / dealerCount : 0;
+                            var perDealer = dealerCount > 0 ? commissionsPaid / dealerCount : 0;
                             commissionsPerDealerEl.textContent = Math.round(perDealer).toLocaleString();
                         }
 
                         // Collection Rate / PAR30: of accounts that started
                         // within the selected period, count-based -- same
                         // cohort definition as the Dealer/Approver Dashboards.
-                        collectionRatePctTextEl.textContent = data.collectionRatePct.toFixed(1) + '%';
+                        collectionRatePctTextEl.textContent = data.newInPeriod > 0 ? data.collectionRatePct.toFixed(1) + '%' : 'No new accounts';
                         collectionRateProgressBarEl.style.width = data.collectionRatePct + '%';
                         collectionRateProgressBarEl.setAttribute('data-progress', data.collectionRatePct);
                         collectionRatePeriodLabelEl.textContent = data.label;
 
-                        portfolioAtRiskPctTextEl.textContent = data.portfolioAtRiskPct.toFixed(1) + '%';
+                        portfolioAtRiskPctTextEl.textContent = data.newInPeriod > 0 ? data.portfolioAtRiskPct.toFixed(1) + '%' : 'No new accounts';
                         portfolioAtRiskProgressBarEl.style.width = data.portfolioAtRiskPct + '%';
                         portfolioAtRiskProgressBarEl.setAttribute('data-progress', data.portfolioAtRiskPct);
                     })

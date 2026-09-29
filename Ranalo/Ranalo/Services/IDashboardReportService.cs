@@ -46,7 +46,7 @@ namespace Ranalo.Services
         Task<AccountCommissionsViewModel> GetAccountCommissionsPageAsync(int? dealerId, int? agentUserId, bool showDealer);
         Task<List<DealerContract>> GetDealerContractsAsync(int dealerId, int? agentUserId = null);
         Task<List<DealerContract>> GetDealerContractsEndingSoonAsync(int dealerId, int? agentUserId = null);
-        Task<List<DealerDeviceStock>> GetDealerDeviceStockReportAsync(int dealerId);
+        Task<List<DealerDeviceStock>> GetDealerDeviceStockReportAsync(int dealerId, int? agentUserId = null);
         Task<List<DealerCompletedContract>> GetDealerCompletedContractsReportAsync(int dealerId);
     }
 }

@@ -1,0 +1,156 @@
+using Ranalo.Services;
+
+namespace Ranolo.Web.Tests
+{
+    // Suspension, payable and allocation rules for paying commissions out.
+    public class CommissionPayoutRulesTests
+    {
+        // upfront defaults to earned (a dealer account: one pass).
+        private static PayoutAccount Acc(long id, decimal earned, decimal deducted = 0, decimal paid = 0, int daysAgo = 100, decimal? upfront = null) => new()
+        {
+            ContractId = id,
+            StartDate = new DateTime(2026, 9, 1).AddDays(-daysAgo),
+            Earned = earned,
+            Upfront = upfront ?? earned,
+            Deducted = deducted,
+            Paid = paid,
+        };
+
+        [Test]
+        public void DefaultRate_IsShareOfAccountsInArrears()
+        {
+            Assert.That(CommissionPayoutRules.DefaultRatePct(10, 3), Is.EqualTo(30m));
+            Assert.That(CommissionPayoutRules.DefaultRatePct(3, 1), Is.EqualTo(33.3m));
+            Assert.That(CommissionPayoutRules.DefaultRatePct(0, 0), Is.EqualTo(0m));
+        }
+
+        [Test]
+        public void InDefault_WhenMoreThanSevenDaysPastLockDate()
+        {
+            Assert.That(CommissionPayoutRules.IsInDefault(7), Is.False);
+            Assert.That(CommissionPayoutRules.IsInDefault(7.5), Is.True);
+            Assert.That(CommissionPayoutRules.IsInDefault(-3), Is.False);
+        }
+
+        [Test]
+        public void Suspended_OnlyAboveThirtyPercent()
+        {
+            Assert.That(CommissionPayoutRules.IsSuspended(30m), Is.False);
+            Assert.That(CommissionPayoutRules.IsSuspended(30.1m), Is.True);
+        }
+
+        [Test]
+        public void Payable_IsZeroWhileSuspended()
+        {
+            var all = new[] { Acc(1, 2_000m) };
+
+            Assert.That(CommissionPayoutRules.Payable(all, new long[] { 1 }, suspended: true), Is.EqualTo(0m));
+        }
+
+        [Test]
+        public void Payable_DeductsArrearsOnAccountsNotBeingPaid()
+        {
+            // Paying account 1 only; account 2's arrears still come off.
+            var all = new[] { Acc(1, 2_000m), Acc(2, 1_000m, deducted: 1_500m) };
+
+            Assert.That(CommissionPayoutRules.Payable(all, new long[] { 1 }, suspended: false), Is.EqualTo(1_500m));
+        }
+
+        [Test]
+        public void Payable_NeverMoreThanUnpaidOnSelectedAccounts()
+        {
+            var all = new[] { Acc(1, 2_000m, paid: 1_500m), Acc(2, 3_000m) };
+
+            Assert.That(CommissionPayoutRules.Payable(all, new long[] { 1 }, suspended: false), Is.EqualTo(500m));
+        }
+
+        [Test]
+        public void Allocate_DealerCommission_OldestFirst()
+        {
+            var selected = new[] { Acc(2, 1_000m, daysAgo: 10), Acc(1, 2_000m, daysAgo: 200) };
+
+            var lines = CommissionPayoutRules.Allocate(selected, 2_500m);
+
+            Assert.That(lines, Is.EqualTo(new[] { new PayoutLine(1, null, 2_000m), new PayoutLine(2, null, 500m) }));
+        }
+
+        [Test]
+        public void Allocate_Auto_PaysEveryUpfrontBeforeAnyBonus()
+        {
+            // Old account: 2,000 upfront + 1,000 bonus. New account: 2,000 upfront, no bonus yet.
+            var selected = new[]
+            {
+                Acc(1, 3_000m, upfront: 2_000m, daysAgo: 200),
+                Acc(2, 2_000m, upfront: 2_000m, daysAgo: 10),
+            };
+
+            var lines = CommissionPayoutRules.Allocate(selected, 4_500m, CommissionPart.Auto);
+
+            Assert.That(lines, Is.EqualTo(new[]
+            {
+                new PayoutLine(1, CommissionPart.Upfront, 2_000m),
+                new PayoutLine(2, CommissionPart.Upfront, 2_000m),
+                new PayoutLine(1, CommissionPart.Bonus, 500m),
+            }));
+        }
+
+        [Test]
+        public void Allocate_Upfront_NeverTouchesTheBonus()
+        {
+            var selected = new[] { Acc(1, 3_000m, upfront: 2_000m, daysAgo: 200) };
+
+            Assert.That(CommissionPayoutRules.Payable(selected, new long[] { 1 }, false, CommissionPart.Upfront), Is.EqualTo(2_000m));
+            Assert.That(CommissionPayoutRules.Allocate(selected, 2_000m, CommissionPart.Upfront),
+                Is.EqualTo(new[] { new PayoutLine(1, CommissionPart.Upfront, 2_000m) }));
+        }
+
+        [Test]
+        public void Allocate_Bonus_OnlyPaysBonusEarnedAndUnpaid()
+        {
+            // Upfront already paid at sale; 1,000 bonus earned.
+            var paid = Acc(1, 3_000m, paid: 2_000m, upfront: 2_000m, daysAgo: 200);
+            // Bonus not earned yet (earned == upfront).
+            var young = Acc(2, 2_000m, upfront: 2_000m, daysAgo: 10);
+
+            Assert.That(CommissionPayoutRules.Payable(new[] { paid, young }, new long[] { 1, 2 }, false, CommissionPart.Bonus), Is.EqualTo(1_000m));
+            Assert.That(CommissionPayoutRules.Allocate(new[] { paid, young }, 1_000m, CommissionPart.Bonus),
+                Is.EqualTo(new[] { new PayoutLine(1, CommissionPart.Bonus, 1_000m) }));
+        }
+
+        [Test]
+        public void Allocate_BonusAlreadyPaid_IsNotPaidAgain()
+        {
+            var a = Acc(1, 3_000m, paid: 3_000m, upfront: 2_000m, daysAgo: 200);
+            a.BonusPaid = 1_000m;
+
+            Assert.That(CommissionPayoutRules.UnpaidUpfront(a), Is.EqualTo(0m));
+            Assert.That(CommissionPayoutRules.UnpaidBonus(a), Is.EqualTo(0m));
+        }
+
+        [Test]
+        public void Allocate_Upfront_AlreadyPaidCountsTowardUpfront()
+        {
+            // Older payment with no part recorded counts toward the upfront.
+            var selected = new[]
+            {
+                Acc(1, 3_000m, paid: 2_000m, upfront: 2_000m, daysAgo: 200),
+                Acc(2, 2_000m, upfront: 2_000m, daysAgo: 10),
+            };
+
+            var lines = CommissionPayoutRules.Allocate(selected, 2_000m, CommissionPart.Auto);
+
+            Assert.That(lines, Is.EqualTo(new[] { new PayoutLine(2, CommissionPart.Upfront, 2_000m) }));
+        }
+
+        [Test]
+        public void Allocate_OverrideBeyondDueLandsOnNewestAccount()
+        {
+            var selected = new[] { Acc(1, 1_000m, upfront: 1_000m, daysAgo: 200), Acc(2, 0m, upfront: 0m, daysAgo: 10) };
+
+            var lines = CommissionPayoutRules.Allocate(selected, 1_500m, CommissionPart.Upfront);
+
+            Assert.That(lines, Is.EqualTo(new[] { new PayoutLine(1, CommissionPart.Upfront, 1_000m), new PayoutLine(2, CommissionPart.Upfront, 500m) }));
+            Assert.That(lines.Sum(l => l.Amount), Is.EqualTo(1_500m));
+        }
+    }
+}

@@ -74,6 +74,20 @@
                                             <input type="text" name="city" class="form-control" id="default-04" placeholder="Enter a city">
                                         </div>
                                     </div>
+                                    @if (ViewBag.IsAdmin == true && ViewBag.Dealers != null)
+                                    {
+                                        <div class="form-group">
+                                            <label class="form-label" for="user-dealer">Dealer</label>
+                                            <select name="dealerId" id="user-dealer" class="form-control">
+                                                <option value="0">Keep current dealer</option>
+                                                @foreach (var d in (IEnumerable<Ranalo.DataStore.Dealer>)ViewBag.Dealers)
+                                                {
+                                                    <option value="@d.DealerId">@d.CompanyName (ref @d.DealerReference)</option>
+                                                }
+                                            </select>
+                                            <span class="form-note">Leave on "Keep current dealer" unless the user is moving to another dealer.</span>
+                                        </div>
+                                    }
                                     <div class="form-group">
                                         <label class="form-label" for="default-06">Select Main Role</label>
                                         <div class="form-control-wrap ">

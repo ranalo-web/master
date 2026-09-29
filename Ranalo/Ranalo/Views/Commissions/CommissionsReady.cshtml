@@ -20,7 +20,7 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Commissions Ready To Pay</h3>
                 <div class="nk-block-des text-soft">
-                    <p>Welcome to Commissions Ready To Pay View.</p>
+                    <p>Dealer commission payable now on each account, after arrears. Accounts of a dealer with more than 30% of accounts 7+ days past their lock date show as SUSPENDED: held, not payable yet.</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -76,7 +76,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Paid</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Buying Price</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)" title="30% of (paid - buying price - agent commission)">Dealer Comm.</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears while past lock date">Arrears Deducted</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="What the customer is behind by">Arrears Deducted</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer Paid</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission - arrears - paid">Ready To Pay</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
@@ -96,7 +96,7 @@
                                 <td class="@(commission.ArrearsDeducted > 0 ? "text-danger" : "")">KES @commission.ArrearsDeducted.ToString("N0")</td>
                                 <td>KES @commission.TotalDealerPaid.ToString("N0")</td>
                                 <td class="fw-medium">KES @commission.AmountReadyToPay.ToString("N0")</td>
-                                <td><span class="badge badge-dot badge-dot-xs bg-success">@commission.Status</span></td>
+                                <td><span class="badge badge-dot badge-dot-xs @(commission.DealerSuspended ? "bg-danger" : "bg-success")" title="@(commission.DealerSuspended ? "Dealer suspended: over 30% of accounts 7+ days past lock date. Held until the rate drops." : "")">@commission.Status</span></td>
                                 <td class="text-end">
                                     <div class="dropdown">
                                         <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>

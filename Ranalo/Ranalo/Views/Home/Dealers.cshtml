@@ -107,6 +107,10 @@
             </div><!-- .nk-block-head-content -->
         </div><!-- .nk-block-between -->
     </div><!-- .nk-block-head -->
+    @if (TempData["DealerSuccess"] is string dealerSuccess)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible"><em class="icon ni ni-check-circle"></em> @dealerSuccess <button class="close" data-bs-dismiss="alert"></button></div>
+    }
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -186,7 +190,8 @@
                         <thead>
                             <tr>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">User Id</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer Id</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Login User Id</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer Reference</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Email</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
@@ -199,6 +204,7 @@
                         {
                             <tr>
                                 <td><span class="fw-medium">@dealer.CompanyName</span></td>
+                                <td>@dealer.DealerId</td>
                                 <td>@dealer.UserId</td>
                                 <td>@dealer.DealerReference</td>
                                 <td>@dealer.Email</td>

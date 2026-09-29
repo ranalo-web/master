@@ -1,0 +1,482 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model CommissionPayViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var p = Model.Payee;
+    var isAgent = p.PayeeType == CommissionPayeeType.Agent;
+    var threshold = CommissionPayoutRules.SuspensionThresholdPct.ToString("0");
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Pay @p.Name</h3>
+                <div class="nk-block-des text-soft">
+                    <p>@p.PayeeType commission@(p.DealerName != null ? " · " + p.DealerName : "") · @p.Accounts.ToString("N0") accounts</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/commission-payouts" class="btn btn-outline-light btn-white"><em class="icon ni ni-arrow-left"></em><span>All payees</span></a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["PayoutSuccess"] is string success)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em> @success
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["PayoutError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (p.IsSuspended)
+    {
+        <div class="alert alert-warning alert-icon">
+            <em class="icon ni ni-alert-circle"></em>
+            <strong>Commissions suspended.</strong> @p.AccountsInArrears of @p.Accounts accounts (@p.DefaultRatePct.ToString("0.#")%) are more than 7 days past their lock date, above the @threshold% limit.
+            KES @p.Pool.Owed.ToString("N0") is held and becomes payable once the rate is back at @threshold% or below.
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Default rate</span>
+                    <span class="d-block fs-5 fw-bold @(p.IsSuspended ? "text-danger" : "")">@p.DefaultRatePct.ToString("0.#")%</span>
+                    <span class="d-block text-soft small">@p.AccountsInArrears in arrears · limit @threshold%</span>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Earned</span>
+                    <span class="d-block fs-5 fw-bold">KES @p.Pool.Earned.ToString("N0")</span>
+                    <span class="d-block text-soft small">All accounts</span>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Withheld for arrears</span>
+                    <span class="d-block fs-5 fw-bold text-warning">KES @p.Pool.Withheld.ToString("N0")</span>
+                    <span class="d-block text-soft small">Deducted across all accounts</span>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Already paid</span>
+                    <span class="d-block fs-5 fw-bold">KES @p.Pool.Paid.ToString("N0")</span>
+                    <span class="d-block text-soft small">Payable now: <strong class="@(p.Payable > 0 ? "text-success" : "")">KES @p.Payable.ToString("N0")</strong></span>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="/commission-payouts/pay" id="pay-form">
+        <input type="hidden" name="type" value="@p.PayeeType" />
+        <input type="hidden" name="id" value="@p.PayeeId" />
+
+        <div class="nk-block">
+            <div class="row g-gs">
+                <div class="col-12 col-xl-8">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <div class="card-title-group mb-2">
+                                <div class="card-title">
+                                    <h6 class="title">Accounts</h6>
+                                    <p class="text-soft">Tick one account (e.g. an upfront paid at sale) or several to consolidate.</p>
+                                </div>
+                                <div class="card-tools">
+                                    <a href="#" class="link link-primary small" id="select-unpaid">Tick all unpaid</a> ·
+                                    <a href="#" class="link link-primary small" id="select-none">Clear</a>
+                                </div>
+                            </div>
+                            <div class="form-control-wrap">
+                                <div class="form-icon form-icon-left"><em class="icon ni ni-search"></em></div>
+                                <input type="search" id="account-filter" class="form-control form-control-sm" placeholder="Filter by account, contract, customer, phone model or IMEI@(isAgent ? "" : ", agent")" />
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="max-height:480px; overflow-y:auto;">
+                            <table class="table table-sm mb-0" style="white-space:nowrap; font-size:13px;">
+                                <thead style="position:sticky; top:0; background:var(--bs-body-bg, #fff);">
+                                    <tr>
+                                        <th></th>
+                                        <th>Account</th>
+                                        @if (!isAgent)
+                                        {
+                                            <th>Agent</th>
+                                        }
+                                        <th class="text-end">Earned</th>
+                                        <th class="text-end" title="What the customer is behind by">Arrears</th>
+                                        <th class="text-end">Paid</th>
+                                        @if (isAgent)
+                                        {
+                                            <th class="text-end" title="50% upfront not yet paid">Upfront due</th>
+                                            <th class="text-end" title="25% bonus earned and not yet paid">Bonus due</th>
+                                        }
+                                        else
+                                        {
+                                            <th class="text-end" title="Earned - paid, before arrears">Unpaid</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var i = 0; i < Model.Accounts.Count; i++)
+                                    {
+                                        var a = Model.Accounts[i];
+                                        var b = a.Breakdown;
+                                        <tr class="pay-row @(a.Unpaid <= 0 ? "text-soft" : "")" data-row="@i" data-search="@($"{a.AccountId} {a.ContractId} {a.CustomerName} {a.AgentName} {a.ProductName} {a.Imei}".ToLowerInvariant())">
+                                            <td>
+                                                <div class="d-flex align-items-center" style="gap:.4rem;">
+                                                    <a href="#" class="pay-toggle text-soft" data-row="@i" title="Show product and commission details" aria-expanded="false"><em class="icon ni ni-chevron-right"></em></a>
+                                                    @if (a.ContractId > 0)
+                                                    {
+                                                        <input type="checkbox" class="form-check-input pay-account" name="contractIds" value="@a.ContractId" checked="@Model.PreselectedContractIds.Contains(a.ContractId)" data-unpaid="@a.Unpaid.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-upfront-due="@a.UpfrontDue.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-bonus-due="@a.BonusDue.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <a href="/account-details/@a.AccountId" class="fw-medium" target="_blank" title="Opens in a new tab so your ticks are kept">@a.CustomerName</a>
+                                                <span class="d-block sub-text">
+                                                    <span class="text-body">@(a.ProductName ?? "Unknown device")</span> · AC: @a.AccountId · @a.DaysSinceStart days
+                                                    @if (a.Breakdown.IsBehind)
+                                                    {
+                                                        <span class="text-danger"> · behind by KES @a.Breakdown.TrueArrears.ToString("N0")</span>
+                                                    }
+                                                    @if (a.InArrears)
+                                                    {
+                                                        <span class="text-danger" title="Counts toward the suspension default rate"> · @a.DaysPastLock days past lock date</span>
+                                                    }
+                                                    @if (a.MissingBuyingPrice)
+                                                    {
+                                                        <span class="text-warning"> · no buying price</span>
+                                                    }
+                                                </span>
+                                            </td>
+                                            @if (!isAgent)
+                                            {
+                                                <td>@(a.AgentName ?? "Direct sale")</td>
+                                            }
+                                            <td class="text-end">@a.Earned.ToString("N0")</td>
+                                            <td class="text-end @(a.Deducted > 0 ? "text-danger" : "")">@a.Deducted.ToString("N0")</td>
+                                            <td class="text-end">@a.Paid.ToString("N0")</td>
+                                            @if (isAgent)
+                                            {
+                                                <td class="text-end fw-medium @(a.UpfrontDue > 0 ? "" : "text-soft")">@a.UpfrontDue.ToString("N0")</td>
+                                                <td class="text-end fw-medium @(a.BonusDue > 0 ? "" : "text-soft")">@a.BonusDue.ToString("N0")</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-end fw-medium">@a.Unpaid.ToString("N0")</td>
+                                            }
+                                        </tr>
+                                        <tr class="pay-detail d-none" data-row="@i">
+                                            <td colspan="7" style="white-space:normal; background:rgba(101,118,255,.04);">
+                                                <div class="row g-3 py-1" style="font-size:12.5px;">
+                                                    <div class="col-12 col-md-4">
+                                                        <h6 class="overline-title text-soft mb-1">Product</h6>
+                                                        <div class="fw-medium">@(a.ProductName ?? "Unknown device")</div>
+                                                        <div class="text-soft">IMEI: @(a.Imei ?? "-")</div>
+                                                        <div class="text-soft">Contract @a.ContractId</div>
+                                                        <h6 class="overline-title text-soft mb-1 mt-2">Sale</h6>
+                                                        <div class="d-flex justify-content-between"><span class="text-soft">Started</span><span>@a.StartDate.ToString("dd MMM yyyy") (@a.DaysSinceStart days)</span></div>
+                                                        <div class="d-flex justify-content-between"><span class="text-soft">Deposit</span><span>KES @a.Deposit.ToString("N0")</span></div>
+                                                        <div class="d-flex justify-content-between"><span class="text-soft">Buying price</span><span class="@(a.BuyingPrice.HasValue ? "" : "text-warning")">@(a.BuyingPrice.HasValue ? "KES " + a.BuyingPrice.Value.ToString("N0") : "Not set")</span></div>
+                                                        <div class="d-flex justify-content-between"><span class="text-soft">Contract value</span><span>@(a.ContractValue.HasValue ? "KES " + a.ContractValue.Value.ToString("N0") : "-")</span></div>
+                                                        <div class="d-flex justify-content-between"><span class="text-soft">Customer has paid</span><span>KES @a.TotalPaid.ToString("N0")</span></div>
+                                                        <div class="d-flex justify-content-between"><span class="text-soft">Payments</span><span class="@(a.Breakdown.IsBehind ? "text-danger" : "text-success")">@(a.Breakdown.IsBehind ? "Behind by KES " + a.Breakdown.TrueArrears.ToString("N0") : "Up to date")</span></div>
+                                                        <div class="d-flex justify-content-between"><span class="text-soft">Lock date</span><span class="@(a.InArrears ? "text-danger" : "")">@(a.DaysPastLock > 0 ? a.DaysPastLock + " days past" : "Not yet due")</span></div>
+                                                    </div>
+                                                    <div class="col-12 col-md-4">
+                                                        <h6 class="overline-title text-soft mb-1">How the commission is worked out</h6>
+                                                        @if (isAgent)
+                                                        {
+                                                            <div class="d-flex justify-content-between"><span class="text-soft">Upfront (50% of deposit)</span><span>KES @b.AgentUpfront.ToString("N0")</span></div>
+                                                            <div class="d-flex justify-content-between">
+                                                                <span class="text-soft">Bonus (25% of deposit)</span>
+                                                                @if (b.BonusEarned)
+                                                                {
+                                                                    <span>KES @b.AgentBonus.ToString("N0")</span>
+                                                                }
+                                                                else if (b.BonusAtRisk)
+                                                                {
+                                                                    <span class="text-warning">@(b.BonusHeldNoWooOrder ? "Held: no WooCommerce order" : "Held: past lock date")</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="text-soft">in @b.DaysToBonus days</span>
+                                                                }
+                                                            </div>
+                                                            <div class="d-flex justify-content-between fw-medium border-top mt-1 pt-1"><span>Earned</span><span>KES @b.AgentEarned.ToString("N0")</span></div>
+                                                            <div class="d-flex justify-content-between"><span class="text-soft">Less arrears (customer is behind by)</span><span class="text-danger">(@b.AgentArrearsDeducted.ToString("N0"))</span></div>
+                                                            <div class="d-flex justify-content-between"><span class="text-soft">Less already paid</span><span>(@b.AgentPaid.ToString("N0"))</span></div>
+                                                            <div class="d-flex justify-content-between small"><span class="text-soft ps-2">upfront paid / due</span><span>@a.UpfrontPaid.ToString("N0") of @a.Upfront.ToString("N0")</span></div>
+                                                            <div class="d-flex justify-content-between small"><span class="text-soft ps-2">bonus paid / earned</span><span>@a.BonusPaid.ToString("N0") of @a.BonusEarned.ToString("N0")</span></div>
+                                                            <div class="d-flex justify-content-between fw-bold border-top mt-1 pt-1"><span>Net on this account</span><span class="@(b.AgentNet < 0 ? "text-danger" : "")">KES @b.AgentNet.ToString("N0")</span></div>
+                                                        }
+                                                        else if (b.DealerCommission.HasValue)
+                                                        {
+                                                            <div class="d-flex justify-content-between"><span class="text-soft">Customer has paid</span><span>KES @a.TotalPaid.ToString("N0")</span></div>
+                                                            <div class="d-flex justify-content-between"><span class="text-soft">Less buying price</span><span>(@a.BuyingPrice!.Value.ToString("N0"))</span></div>
+                                                            <div class="d-flex justify-content-between"><span class="text-soft">Less agent commission</span><span>(@b.AgentCommission.ToString("N0"))</span></div>
+                                                            <div class="d-flex justify-content-between border-top mt-1 pt-1"><span class="text-soft">Dealer base</span><span class="@(b.DealerBase < 0 ? "text-danger" : "")">KES @b.DealerBase!.Value.ToString("N0")</span></div>
+                                                            <div class="d-flex justify-content-between fw-medium"><span>30% of base = earned</span><span>KES @b.DealerCommission.Value.ToString("N0")</span></div>
+                                                            <div class="d-flex justify-content-between"><span class="text-soft">Less arrears (customer is behind by)</span><span class="text-danger">(@b.DealerArrearsDeducted.ToString("N0"))</span></div>
+                                                            <div class="d-flex justify-content-between"><span class="text-soft">Less already paid</span><span>(@b.DealerPaid.ToString("N0"))</span></div>
+                                                            <div class="d-flex justify-content-between fw-bold border-top mt-1 pt-1"><span>Balance on this account</span><span class="@(b.DealerBalance < 0 ? "text-danger" : "")">KES @b.DealerBalance!.Value.ToString("N0")</span></div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <p class="text-warning mb-0">No buying price recorded, so no dealer commission until it's entered (<a href="/cost-backfill" target="_blank">Device Cost Backfill</a>).</p>
+                                                        }
+                                                    </div>
+                                                    <div class="col-12 col-md-4">
+                                                        <h6 class="overline-title text-soft mb-1">Payments on this account</h6>
+                                                        @if (a.Payments.Count == 0)
+                                                        {
+                                                            <p class="text-soft mb-0">None yet.</p>
+                                                        }
+                                                        else
+                                                        {
+                                                            @foreach (var pay in a.Payments)
+                                                            {
+                                                                <div class="d-flex justify-content-between">
+                                                                    <span class="text-soft">@(pay.PaidDate?.ToString("dd MMM yyyy") ?? "No date")@(pay.Part != null ? " · " + pay.Part : "")@(pay.Method != null ? " · " + pay.Method : "")@(pay.Reference != null ? " · " + pay.Reference : "")</span>
+                                                                    <span>KES @pay.Amount.ToString("N0")</span>
+                                                                </div>
+                                                            }
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-4">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <h6 class="title mb-3">Payment</h6>
+
+                            @if (isAgent)
+                            {
+                                <div class="form-group">
+                                    <label class="form-label">This payment is for</label>
+                                    <div class="d-flex flex-column" style="gap:.35rem;">
+                                        <div class="custom-control custom-radio">
+                                            <input type="radio" class="custom-control-input pay-type" name="paymentType" id="pt-upfront" value="@CommissionPart.Upfront" checked />
+                                            <label class="custom-control-label" for="pt-upfront"><strong>Upfront</strong> &mdash; the 50% sale commission</label>
+                                        </div>
+                                        <div class="custom-control custom-radio">
+                                            <input type="radio" class="custom-control-input pay-type" name="paymentType" id="pt-bonus" value="@CommissionPart.Bonus" />
+                                            <label class="custom-control-label" for="pt-bonus"><strong>Bonus</strong> &mdash; the 25% earned after 90 days</label>
+                                        </div>
+                                        <div class="custom-control custom-radio">
+                                            <input type="radio" class="custom-control-input pay-type" name="paymentType" id="pt-auto" value="@CommissionPart.Auto" />
+                                            <label class="custom-control-label" for="pt-auto"><strong>Auto</strong> &mdash; upfronts first, then bonuses</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="p-3 mb-3" style="background:rgba(101,118,255,.08); border-radius:6px;">
+                                <div class="d-flex justify-content-between"><span class="text-soft">Accounts ticked</span><span id="sel-count">0</span></div>
+                                <div class="d-flex justify-content-between"><span class="text-soft" id="sel-due-label">Still due on ticked accounts</span><span>KES <span id="sel-unpaid">0</span></span></div>
+                                <div class="d-flex justify-content-between"><span class="text-soft">Less arrears / suspension</span><span class="text-danger">KES <span id="sel-less">0</span></span></div>
+                                <div class="d-flex justify-content-between fw-bold mt-1 pt-1 border-top"><span>Total payable</span><span class="text-success">KES <span id="sel-payable">0</span></span></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="pay-amount">Amount paid (KES)</label>
+                                <input type="number" step="0.01" min="0.01" name="amount" id="pay-amount" class="form-control" required />
+                                <span class="form-note">Defaults to the total payable. Changing it pays part of it.</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="pay-date">Date paid</label>
+                                <input type="date" name="paidDate" id="pay-date" class="form-control" required value="@DateTime.Now.ToString("yyyy-MM-dd")" max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="pay-method">Method</label>
+                                <select name="method" id="pay-method" class="form-select" required>
+                                    @foreach (var m in CommissionPayoutMethod.All)
+                                    {
+                                        <option value="@m">@m</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="pay-reference">Reference</label>
+                                <input type="text" name="reference" id="pay-reference" class="form-control" maxlength="100" placeholder="M-Pesa code, bank reference…" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="pay-notes">Notes</label>
+                                <textarea name="notes" id="pay-notes" class="form-control" rows="2" maxlength="500"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" name="recordPastPayment" value="true" id="pay-past" />
+                                    <label class="custom-control-label" for="pay-past">Record a payment already made</label>
+                                </div>
+                                <span class="form-note d-block">For payments made before (e.g. an agent's upfront paid at sale), which may be more than is payable today or made while suspended.</span>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 justify-content-center" id="pay-submit" disabled>Record payment</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <div class="card-title-group mb-2">
+                    <div class="card-title"><h6 class="title">Recent payments to @p.Name</h6></div>
+                    <div class="card-tools"><a href="/commission-payouts/history" class="link link-primary small">All payment history</a></div>
+                </div>
+                @if (Model.RecentPayouts.Count == 0)
+                {
+                    <p class="text-soft mb-0">No payments recorded here yet.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0" style="white-space:nowrap; font-size:13px;">
+                            <thead><tr><th>Date</th><th class="text-end">Amount</th><th>For</th><th>Method</th><th>Reference</th><th>Accounts</th><th>Receipt</th></tr></thead>
+                            <tbody>
+                                @foreach (var r in Model.RecentPayouts)
+                                {
+                                    <tr>
+                                        <td>@r.PaidDate.ToString("dd MMM yyyy")</td>
+                                        <td class="text-end fw-medium">@r.Amount.ToString("N0")</td>
+                                        <td>@(r.PaymentType ?? "-")</td>
+                                        <td>@r.Method</td>
+                                        <td>@r.Reference</td>
+                                        <td>@r.AccountCount</td>
+                                        <td>@(r.ReceiptConfirmedAtUtc.HasValue ? "Confirmed" : "-")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var poolOwed = @p.Pool.Owed.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var suspended = @(p.IsSuspended ? "true" : "false");
+            var boxes = Array.prototype.slice.call(document.querySelectorAll('.pay-account'));
+            var amount = document.getElementById('pay-amount');
+            var past = document.getElementById('pay-past');
+            var submit = document.getElementById('pay-submit');
+            var amountEdited = false;
+            var fmt = function (n) { return Math.round(n).toLocaleString(); };
+
+            // What the chosen payment type can still pay on one account --
+            // same as CommissionPayoutRules.Room. Dealers have no type.
+            function paymentType() {
+                var checked = document.querySelector('.pay-type:checked');
+                return checked ? checked.value : 'Commission';
+            }
+            function room(b) {
+                var unpaid = parseFloat(b.dataset.unpaid || '0');
+                var up = parseFloat(b.dataset.upfrontDue || '0');
+                var bonus = parseFloat(b.dataset.bonusDue || '0');
+                switch (paymentType()) {
+                    case 'Upfront': return up;
+                    case 'Bonus': return bonus;
+                    case 'Auto': return Math.min(unpaid, up + bonus);
+                    default: return unpaid;
+                }
+            }
+            var dueLabels = { Upfront: 'Upfront still due on ticked accounts', Bonus: 'Bonus still due on ticked accounts' };
+
+            // Same rule as CommissionPayoutRules.Payable: arrears on all the
+            // payee's accounts come off, so never more than their pooled Owed.
+            function update() {
+                var ticked = boxes.filter(function (b) { return b.checked; });
+                var unpaid = ticked.reduce(function (s, b) { return s + room(b); }, 0);
+                document.getElementById('sel-due-label').textContent = dueLabels[paymentType()] || 'Still due on ticked accounts';
+                var payable = suspended ? 0 : Math.min(poolOwed, unpaid);
+                document.getElementById('sel-count').textContent = ticked.length;
+                document.getElementById('sel-unpaid').textContent = fmt(unpaid);
+                document.getElementById('sel-less').textContent = fmt(unpaid - payable);
+                document.getElementById('sel-payable').textContent = fmt(payable);
+                if (!amountEdited) {
+                    amount.value = payable > 0 ? payable.toFixed(2) : '';
+                }
+                submit.disabled = ticked.length === 0;
+            }
+
+            // Filter only hides rows; ticked accounts stay ticked and are still paid.
+            document.getElementById('account-filter').addEventListener('input', function () {
+                var term = this.value.trim().toLowerCase();
+                document.querySelectorAll('.pay-row').forEach(function (row) {
+                    var show = !term || row.dataset.search.indexOf(term) >= 0;
+                    row.style.display = show ? '' : 'none';
+                    detailFor(row.dataset.row).style.display = show ? '' : 'none';
+                });
+            });
+
+            function detailFor(i) { return document.querySelector('.pay-detail[data-row="' + i + '"]'); }
+
+            // ▸ toggles the account's detail panel in place, keeping ticks.
+            document.querySelectorAll('.pay-toggle').forEach(function (t) {
+                t.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var open = detailFor(t.dataset.row).classList.toggle('d-none') === false;
+                    t.setAttribute('aria-expanded', open);
+                    t.querySelector('.icon').className = 'icon ni ' + (open ? 'ni-chevron-down' : 'ni-chevron-right');
+                });
+            });
+
+            boxes.forEach(function (b) { b.addEventListener('change', update); });
+            document.querySelectorAll('.pay-type').forEach(function (r) {
+                r.addEventListener('change', function () { amountEdited = false; update(); });
+            });
+            amount.addEventListener('input', function () { amountEdited = amount.value !== ''; });
+            // "Tick all unpaid" ticks the accounts with something due for the chosen type.
+            document.getElementById('select-unpaid').addEventListener('click', function (e) {
+                e.preventDefault();
+                boxes.forEach(function (b) { b.checked = room(b) > 0; });
+                update();
+            });
+            document.getElementById('select-none').addEventListener('click', function (e) {
+                e.preventDefault();
+                boxes.forEach(function (b) { b.checked = false; });
+                amountEdited = false;
+                update();
+            });
+            document.getElementById('pay-form').addEventListener('submit', function (e) {
+                var total = document.getElementById('sel-payable').textContent;
+                if (!confirm('Record KES ' + fmt(parseFloat(amount.value || '0')) + ' paid to @Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(p.Name))?' + (past.checked ? '' : ' (payable: KES ' + total + ')'))) {
+                    e.preventDefault();
+                }
+            });
+            update();
+
+            // Opened from a search match: bring the ticked account into view.
+            var firstTicked = boxes.filter(function (b) { return b.checked; })[0];
+            if (firstTicked) {
+                firstTicked.closest('tr').classList.add('bg-lighter');
+                firstTicked.closest('tr').scrollIntoView({ block: 'nearest' });
+            }
+        })();
+    </script>
+}

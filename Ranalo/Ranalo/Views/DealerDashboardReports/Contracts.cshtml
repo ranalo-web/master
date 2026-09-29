@@ -45,8 +45,8 @@
                                     <td>@c.AgentName</td>
                                     <td>@c.Device</td>
                                     <td>KES @c.MonthlyPayment.ToString("N0")</td>
-                                    <td><span class="badge @(c.Status == "Late" ? "badge-dim bg-warning" : "badge-dim bg-success")">@c.Status</span></td>
-                                    <td class="@(c.Status == "Late" ? "text-danger" : "")">@c.NextDue</td>
+                                    <td><span class="badge badge-dim @(c.Status switch { "On track" => "bg-success", "Slightly behind" => "bg-warning", "Restructured · on plan" => "bg-info", _ => "bg-danger" })" title="@(c.Status == "Restructured · on plan" ? "Behind on the original plan but paying on its restructured plan" : "")">@c.Status</span></td>
+                                    <td class="@(c.Status is "Behind" or "Restructured · late" ? "text-danger" : "")">@c.NextDue</td>
                                 </tr>
                             }
                         </tbody>

@@ -1,0 +1,185 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model CommissionPayeesViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    const int pageSize = 25;
+    const string key = "commission-payees";
+    var filter = Model.PayeeTypeFilter;
+    var suspendedCount = Model.Payees.Count(p => p.IsSuspended);
+    var totalPayable = Model.Payees.Sum(p => p.Payable);
+    var totalHeld = Model.Payees.Where(p => p.IsSuspended).Sum(p => p.Pool.Owed);
+    var search = Model.Search;
+    string FilterLink(string? t) => "/commission-payouts" + Microsoft.AspNetCore.Http.QueryString.Create(new Dictionary<string, string?>
+    {
+        ["type"] = t,
+        ["q"] = string.IsNullOrEmpty(search) ? null : search,
+    }.Where(kv => kv.Value != null));
+    string PayLink(CommissionPayeeSummary p, IEnumerable<long> select) =>
+        $"/commission-payouts/pay?type={p.PayeeType}&id={p.PayeeId}" + string.Concat(select.Where(c => c > 0).Select(c => $"&select={c}"));
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Pay Commissions</h3>
+                <div class="nk-block-des text-soft">
+                    <p>What each dealer and agent can be paid today: commission earned, less whatever their customers are behind by, less what's already been paid. Anyone with more than @CommissionPayoutRules.SuspensionThresholdPct.ToString("0")% of their accounts more than 7 days past their lock date is suspended -- their commission is held until the rate comes back down.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <ul class="nk-block-tools g-3">
+                    <li><a href="/commission-payouts/history" class="btn btn-outline-light btn-white"><em class="icon ni ni-histroy"></em><span>Payment History</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["PayoutError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="nk-block">
+        <form method="get" action="/commission-payouts" class="d-flex flex-wrap" style="gap:.5rem;">
+            @if (filter != null)
+            {
+                <input type="hidden" name="type" value="@filter" />
+            }
+            <div class="form-control-wrap flex-grow-1" style="min-width:220px;">
+                <div class="form-icon form-icon-left"><em class="icon ni ni-search"></em></div>
+                <input type="search" name="q" value="@search" class="form-control" autofocus
+                       placeholder="Search dealer, agent, account number, contract or customer name" />
+            </div>
+            <button type="submit" class="btn btn-primary">Search</button>
+            @if (!string.IsNullOrEmpty(search))
+            {
+                <a href="/commission-payouts@(filter != null ? "?type=" + filter : "")" class="btn btn-outline-light btn-white">Clear</a>
+            }
+        </form>
+        @if (!string.IsNullOrEmpty(search))
+        {
+            <p class="text-soft small mt-2 mb-0">@Model.Payees.Count match@(Model.Payees.Count == 1 ? "" : "es") for "<strong>@search</strong>"</p>
+        }
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-6 col-lg-4">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Payable now</span>
+                    <span class="d-block fs-5 fw-bold text-success">KES @totalPayable.ToString("N0")</span>
+                    <span class="d-block text-soft small">After arrears, excluding suspended</span>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-4">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Held -- suspended</span>
+                    <span class="d-block fs-5 fw-bold text-warning">KES @totalHeld.ToString("N0")</span>
+                    <span class="d-block text-soft small">@suspendedCount suspended over @CommissionPayoutRules.SuspensionThresholdPct.ToString("0")% default rate</span>
+                </div></div>
+            </div>
+            <div class="col-12 col-lg-4">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Show</span>
+                    <div class="btn-group mt-1">
+                        <a href="@FilterLink(null)" class="btn btn-sm @(filter == null ? "btn-primary" : "btn-outline-light btn-white")">All</a>
+                        <a href="@FilterLink(CommissionPayeeType.Dealer)" class="btn btn-sm @(filter == CommissionPayeeType.Dealer ? "btn-primary" : "btn-outline-light btn-white")">Dealers</a>
+                        <a href="@FilterLink(CommissionPayeeType.Agent)" class="btn btn-sm @(filter == CommissionPayeeType.Agent ? "btn-primary" : "btn-outline-light btn-white")">Agents</a>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner p-0">
+                @if (Model.Payees.Count == 0)
+                {
+                    <div class="card-inner text-soft">No commission accounts found.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;" data-key="@key" data-page-size="@pageSize">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Payee</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Accounts more than 7 days past lock date / all accounts">Default Rate</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Earned</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="What their customers are behind by">Withheld</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Payable</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.Payees.Count; i++)
+                                {
+                                    var p = Model.Payees[i];
+                                    <tr class="@(i >= pageSize ? "d-none" : "")" data-watchlist-row="@key">
+                                        <td>
+                                            <span class="fw-medium">@p.Name</span>
+                                            <span class="d-block sub-text">@p.PayeeType@(p.DealerName != null ? " · " + p.DealerName : "")</span>
+                                            @foreach (var m in p.MatchedAccounts.Take(5))
+                                            {
+                                                <a href="@PayLink(p, new[] { m.ContractId })" class="d-block small">
+                                                    <em class="icon ni ni-search"></em> AC @m.AccountId · @m.CustomerName
+                                                </a>
+                                            }
+                                            @if (p.MatchedAccounts.Count > 5)
+                                            {
+                                                <span class="d-block sub-text">+@(p.MatchedAccounts.Count - 5) more matching accounts</span>
+                                            }
+                                        </td>
+                                        <td>@p.Accounts.ToString("N0")</td>
+                                        <td>
+                                            <span class="@(p.IsSuspended ? "text-danger fw-bold" : "")">@p.DefaultRatePct.ToString("0.#")%</span>
+                                            <span class="d-block sub-text">@p.AccountsInArrears in arrears</span>
+                                        </td>
+                                        <td>KES @p.Pool.Earned.ToString("N0")</td>
+                                        <td class="@(p.Pool.Withheld > 0 ? "text-warning" : "")">KES @p.Pool.Withheld.ToString("N0")</td>
+                                        <td>KES @p.Pool.Paid.ToString("N0")</td>
+                                        <td>
+                                            @if (p.IsSuspended)
+                                            {
+                                                <span class="badge badge-dim bg-danger">Suspended</span>
+                                                <span class="d-block sub-text">KES @p.Pool.Owed.ToString("N0") held</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fw-bold @(p.Payable > 0 ? "text-success" : "text-soft")">KES @p.Payable.ToString("N0")</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="@PayLink(p, p.MatchedAccounts.Select(m => m.ContractId))" class="btn btn-sm @(p.Payable > 0 ? "btn-primary" : "btn-outline-light btn-white")">@(p.Payable > 0 ? "Pay" : "View")</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.Payees.Count > pageSize)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="@key" onclick="event.preventDefault(); Ranalo.showMoreRows(this, '@key', @pageSize);">Show @Math.Min(pageSize, Model.Payees.Count - pageSize) more</a>
+                            <a href="#" class="link link-primary" data-less-for="@key" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, '@key', @pageSize);">Show less</a>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/watchlist-table.js"></script>
+}

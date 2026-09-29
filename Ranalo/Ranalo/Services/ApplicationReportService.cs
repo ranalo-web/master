@@ -517,7 +517,17 @@ namespace Ranalo.Services
             {
                 foreach (var account in allAccounts.Accounts)
                 {
-                    var totalDue = _calculatorService.CalculateTotalDue(account.Daily, account.Weekly, account.Monthly, account.Deposit, (DateTime)DateHelper.ParseCustomDate(account.FirstPaidDate), account.TermsInMonths);
+                    // An account that has never been paid has no first payment
+                    // date to measure from: leave Arrears empty rather than
+                    // crash the whole search (Watchlist).
+                    var firstPaid = DateHelper.ParseCustomDate(account.FirstPaidDate);
+                    if (firstPaid == null)
+                    {
+                        account.Arrears = null;
+                        continue;
+                    }
+
+                    var totalDue = _calculatorService.CalculateTotalDue(account.Daily, account.Weekly, account.Monthly, account.Deposit, firstPaid.Value, account.TermsInMonths);
                     account.Arrears = _calculatorService.CalculateArears(account.TotalPaid, totalDue);
                 }
             }

@@ -8,8 +8,9 @@ namespace Ranolo.Web.Tests
         private static CommissionInputs Account(
             decimal deposit = 4_000m, int days = 100, bool pastLock = false, decimal arrears = 0m,
             decimal totalPaid = 12_000m, decimal? buyingPrice = 10_000m, bool hasAgent = true,
-            decimal agentPaid = 0m, decimal dealerPaid = 0m) => new()
+            decimal agentPaid = 0m, decimal dealerPaid = 0m, bool hasWooOrder = true) => new()
         {
+            HasWooOrder = hasWooOrder,
             Deposit = deposit,
             DaysSinceStart = days,
             IsPastLockDate = pastLock,
@@ -59,14 +60,36 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
-        public void ShortfallBeforeLockDate_IsNotDeducted()
+        public void ShortfallBeforeLockDate_IsStillDeducted()
         {
-            // A restructured account on a new plan: behind on the original schedule, lock date still ahead.
+            // Behind, but the lock date is still ahead: lock dates aren't a
+            // reliable sign of being behind, so the whole shortfall comes off.
             var c = CommissionCalculator.Calculate(Account(pastLock: false, arrears: -800m));
 
-            Assert.That(c.AgentArrearsDeducted, Is.EqualTo(0m));
-            Assert.That(c.DealerArrearsDeducted, Is.EqualTo(0m));
-            Assert.That(c.BonusEarned, Is.True);
+            Assert.That(c.AgentArrearsDeducted, Is.EqualTo(800m));
+            Assert.That(c.DealerArrearsDeducted, Is.EqualTo(800m));
+            Assert.That(c.IsBehind, Is.True);
+        }
+
+        [Test]
+        public void NoWooOrder_BonusHeldButUpfrontPaid()
+        {
+            var c = CommissionCalculator.Calculate(Account(days: 100, hasWooOrder: false));
+
+            Assert.That(c.AgentUpfront, Is.EqualTo(2_000m));
+            Assert.That(c.BonusEarned, Is.False);
+            Assert.That(c.BonusAtRisk, Is.True);
+            Assert.That(c.BonusHeldNoWooOrder, Is.True);
+            Assert.That(c.AgentEarned, Is.EqualTo(2_000m));
+        }
+
+        [Test]
+        public void NoWooOrder_BeforeNinetyDays_IsNotYetHeld()
+        {
+            var c = CommissionCalculator.Calculate(Account(days: 60, hasWooOrder: false));
+
+            Assert.That(c.BonusAtRisk, Is.False);
+            Assert.That(c.BonusHeldNoWooOrder, Is.False);
         }
 
         [Test]

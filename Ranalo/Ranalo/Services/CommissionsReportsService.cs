@@ -79,10 +79,13 @@ namespace Ranalo.Services
             return Page(rows, filter);
         }
 
-        // Dealer commission payable now, after arrears are deducted.
+        // Dealer commission payable now, after arrears are deducted. Accounts
+        // of a suspended dealer are listed as SUSPENDED (held, not payable).
         public async Task<PagedResult<DealerCommissionReadyToPayReport>> DealerCommissionsReadyToPayAsync(CommissionsFilter filter)
         {
-            var rows = (await LoadAsync(filter))
+            var accounts = await LoadAsync(filter);
+            var suspendedDealers = CommissionPayees.Dealers(accounts).Where(d => d.IsSuspended).Select(d => d.PayeeId).ToHashSet();
+            var rows = accounts
                 .Where(a => a.Commission.DealerBalance > 0)
                 .Select(a => new DealerCommissionReadyToPayReport
                 {
@@ -95,34 +98,40 @@ namespace Ranalo.Services
                     ArrearsDeducted = a.Commission.DealerArrearsDeducted,
                     TotalDealerPaid = a.Commission.DealerPaid,
                     AmountReadyToPay = a.Commission.DealerBalance!.Value,
-                    Status = a.Commission.DealerPaid > 0 ? "PARTIALLY PAID" : "READY TO PAY",
+                    DealerSuspended = suspendedDealers.Contains(a.DealerId),
+                    Status = suspendedDealers.Contains(a.DealerId) ? "SUSPENDED"
+                        : a.Commission.DealerPaid > 0 ? "PARTIALLY PAID" : "READY TO PAY",
                 })
                 .OrderByDescending(r => r.AmountReadyToPay)
                 .ToList();
             return Page(rows, filter);
         }
 
-        // Per assigned agent, pooled like the Agent Commissions card.
+        // Per assigned agent, pooled like the Agent Commissions card, with
+        // suspension and the upfront / bonus still due (CommissionPayees).
         public async Task<PagedResult<AgentsTotalSummaryReport>> AgentsTotalSummaryAsync(CommissionsFilter filter)
         {
-            var rows = (await LoadAsync(filter))
-                .Where(a => a.AgentId.HasValue)
+            var accounts = await LoadAsync(filter);
+            var deposits = accounts.Where(a => a.AgentId.HasValue)
                 .GroupBy(a => a.AgentId!.Value)
-                .Select(g =>
+                .ToDictionary(g => g.Key, g => g.Sum(a => a.Deposit));
+            var rows = CommissionPayees.Agents(accounts)
+                .Select(s => new AgentsTotalSummaryReport
                 {
-                    var pool = CommissionCalculator.PoolAgent(g.Select(a => a.Commission));
-                    return new AgentsTotalSummaryReport
-                    {
-                        AgentId = g.Key,
-                        AgentName = g.First().AgentName ?? "",
-                        DealerName = g.First().DealerName,
-                        TotalContracts = g.Count(),
-                        TotalDeposits = g.Sum(a => a.Deposit),
-                        TotalAgentCommission = pool.Earned,
-                        Withheld = pool.Withheld,
-                        Paid = pool.Paid,
-                        Owed = pool.Owed,
-                    };
+                    AgentId = s.PayeeId,
+                    AgentName = s.Name,
+                    DealerName = s.DealerName ?? "",
+                    TotalContracts = s.Accounts,
+                    TotalDeposits = deposits.TryGetValue(s.PayeeId, out var dep) ? dep : 0,
+                    TotalAgentCommission = s.Pool.Earned,
+                    Withheld = s.Pool.Withheld,
+                    Paid = s.Pool.Paid,
+                    Owed = s.Pool.Owed,
+                    DefaultRatePct = s.DefaultRatePct,
+                    IsSuspended = s.IsSuspended,
+                    Payable = s.Payable,
+                    UpfrontDue = s.UpfrontDue,
+                    BonusDue = s.BonusDue,
                 })
                 .OrderByDescending(r => r.TotalAgentCommission)
                 .ToList();

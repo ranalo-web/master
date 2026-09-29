@@ -12,5 +12,13 @@ namespace Ranalo.Models.Reports
         public decimal Withheld { get; set; }
         public decimal Paid { get; set; }
         public decimal Owed { get; set; }
+
+        // Suspension and what can be paid now (CommissionPayees), and the
+        // upfront / bonus still due before arrears.
+        public decimal DefaultRatePct { get; set; }
+        public bool IsSuspended { get; set; }
+        public decimal Payable { get; set; }
+        public decimal UpfrontDue { get; set; }
+        public decimal BonusDue { get; set; }
     }
 }

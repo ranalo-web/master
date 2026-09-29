@@ -25,13 +25,16 @@ namespace Ranalo.Services
         private readonly IPayTriggerClient _payTriggerClient;
         private readonly IKosePaymentsRepository _kosePaymentsRepository;
         private readonly ISyncService _syncService;
+        private readonly IRepository _dealers;
         public EnrolmentService(IEnrolmentRepository enrolmentRepository,
             IVeritechApiClient veriTechClient,
             IKnoxGuardClient knoxGuardClient,
             IPayTriggerClient payTriggerClient,
             IKosePaymentsRepository kosePaymentsRepository,
-            ISyncService syncService)
+            ISyncService syncService,
+            IRepository dealers)
         {
+            _dealers = dealers;
             _enrolmentRepository = enrolmentRepository;
             _veriTechClient = veriTechClient;
             _knoxGuardClient = knoxGuardClient;
@@ -132,6 +135,17 @@ namespace Ranalo.Services
             return newEnrolment;
         }
 
+        // A device's group must be its dealer's DealerReference: every page
+        // finds an account's dealer via Devices.DeviceGroupId =
+        // Dealers.DealerReference. Enrolment.DealerId is the Dealers.DealerId
+        // key, which only matched by accident (admin enrolments, DealerId 0 =
+        // Renalo's reference "0000"). No dealer found: keep the id as before.
+        private async Task<int?> DeviceGroupForDealerAsync(int dealerId)
+        {
+            var dealer = await _dealers.GetDealerByDealerIdAsync(dealerId);
+            return dealer != null && int.TryParse(dealer.DealerReference, out var group) ? group : dealerId;
+        }
+
         public async Task CreateDeviceFromKnox(Enrolment newEnrolment)
         {
             ListDevicesResponse deviceDetails = await DoFilterDevicesFromKnox(newEnrolment.IMEI);
@@ -155,7 +169,7 @@ namespace Ranalo.Services
                     AdminLockType = "admin_complete",
                     LockType = SetLockedByRelock(newdevice.RelockTimestamp) == false ? "unlocked" : "complete",
                     Locked = SetLockedByRelock(newdevice.RelockTimestamp),
-                    DeviceGroupId = newEnrolment.DealerId,
+                    DeviceGroupId = await DeviceGroupForDealerAsync(newEnrolment.DealerId),
                     // AppVersionCode = newdevice.AgentVersion,
                     AppVersionName = newdevice.FirmwareVersion,
                     CreatedAt = DateTimeOffset.FromUnixTimeMilliseconds(newdevice.CreateDate).UtcDateTime.ToString("dd-MM-yy HH:mm:ss 'UTC'"),
@@ -295,7 +309,7 @@ namespace Ranalo.Services
                     AdminLockType = "admin_complete",
                     LockType = isLocked ? "complete" : "unlocked",
                     Locked = isLocked,
-                    DeviceGroupId = newEnrolment.DealerId,
+                    DeviceGroupId = await DeviceGroupForDealerAsync(newEnrolment.DealerId),
                     AppVersionName = newdevice.ApkVersion,
                     CreatedAt = newdevice.ActiveTime.HasValue
                         ? DateTimeOffset.FromUnixTimeSeconds(newdevice.ActiveTime.Value).UtcDateTime.ToString("dd-MM-yy HH:mm:ss 'UTC'")

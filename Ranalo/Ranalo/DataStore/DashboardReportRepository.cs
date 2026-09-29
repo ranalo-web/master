@@ -385,11 +385,15 @@ namespace Ranalo.DataStore
         // account that is a device. Reversals and stray payments to
         // non-account numbers drop out. Deliberately no Dealers join -- a
         // device with no dealer mapping is still company revenue.
+        // The LEFT length is clamped because SQL Server may evaluate it before
+        // the LIKE: an AccountNo shorter than 2 chars would make it negative
+        // and fail the whole query ("Invalid length parameter"), depending on
+        // the plan -- which is why it broke only for some period filters.
         private const string DevicePaymentFilter = @"(
                     EXISTS (SELECT 1 FROM Devices d WHERE d.Id = kp.AccountNoBigint)
                     OR (kp.AccountNo LIKE '%\_R' ESCAPE '\'
                         AND EXISTS (SELECT 1 FROM Devices rd
-                                    WHERE rd.Id = TRY_CAST(LEFT(kp.AccountNo, LEN(kp.AccountNo) - 2) AS BIGINT)))
+                                    WHERE rd.Id = TRY_CAST(NULLIF(LEFT(kp.AccountNo, IIF(LEN(kp.AccountNo) > 2, LEN(kp.AccountNo) - 2, 0)), '') AS BIGINT)))
                     OR EXISTS (SELECT 1 FROM OrphanedPayments op
                                INNER JOIN Devices ad ON ad.Id = op.AccountNoBigint
                                WHERE op.MpesaCode = kp.MpesaCode))";
@@ -801,11 +805,15 @@ namespace Ranalo.DataStore
                     END AS Days
                 ) DaysAccrued
                 WHERE (@DealerId IS NULL OR dl.DealerId = @DealerId) AND ci.StartDate IS NOT NULL
-                AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
+                AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+                OPTION (RECOMPILE)";
 
             try
             {
-                var rows = await _db.QueryAsync<AccountArrearsRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId });
+                // RECOMPILE + longer timeout: one query serves an agent, a dealer
+                // and the whole company; a plan cached for one timed out on the
+                // company-wide call (Admin Total Arrears / Bad Debt showed 0).
+                var rows = await _db.QueryAsync<AccountArrearsRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId }, commandTimeout: 90);
                 var now = DateTime.Now;
                 var result = new DashboardArrearsClassificationRow();
                 decimal totalDaysLocked = 0;
@@ -1053,7 +1061,7 @@ namespace Ranalo.DataStore
             }
         }
 
-        public async Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null)
+        public async Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int? dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null)
         {
             const string sql = @"
                 SELECT ISNULL(SUM(acp.AmountPaid), 0)
@@ -1061,7 +1069,7 @@ namespace Ranalo.DataStore
                 INNER JOIN Contract_Info ci ON ci.ContractID = acp.ContractId
                 INNER JOIN Devices d ON d.Id = ci.ID
                 INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                WHERE dl.DealerId = @DealerId
+                WHERE (@DealerId IS NULL OR dl.DealerId = @DealerId)
                   AND acp.PaymentDate >= @PeriodStart AND acp.PaymentDate < @PeriodEnd
                   AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
 
@@ -1554,10 +1562,20 @@ namespace Ranalo.DataStore
             public decimal Arrears { get; set; }
             public string? LockDate { get; set; }
             public decimal AgentPaid { get; set; }
+
+            // Of AgentPaid, lines recorded against the bonus (the rest is upfront).
+            public decimal AgentBonusPaid { get; set; }
             public decimal DealerPaid { get; set; }
 
             // Days since Contract_Info.StartDate; drives the 90-day bonus.
             public int DaysSinceStart { get; set; }
+
+            // Devices.Make + Model and ImeiNo, for display only.
+            public string? ProductName { get; set; }
+            public string? Imei { get; set; }
+
+            // A Woo_Orders row exists for this contract; the agent bonus needs one.
+            public bool HasWooOrder { get; set; }
         }
 
         // The raw per-account commission inputs used by every commission
@@ -1592,6 +1610,10 @@ namespace Ranalo.DataStore
                         -- dealer commission calc, not silently treated as a
                         -- free device (see AgentCommissionAccountRow.BuyingPrice).
                         ci.BuyingPrice AS BuyingPrice,
+                        NULLIF(LTRIM(RTRIM(ISNULL(d.Make, '') + ' ' + ISNULL(d.Model, ''))), '') AS ProductName,
+                        CAST(d.ImeiNo AS NVARCHAR(50)) AS Imei,
+                        CAST(CASE WHEN EXISTS (SELECT 1 FROM Woo_Orders wo WHERE wo.ContractId = ci.ContractID)
+                                  THEN 1 ELSE 0 END AS BIT) AS HasWooOrder,
                         -- Commission itself is calculated in C# by
                         -- Services.CommissionCalculator, the one formula for the app.
                         ci.StartDate,
@@ -1623,7 +1645,8 @@ namespace Ranalo.DataStore
                     AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
                 ),
                 AgentPaymentsAgg AS (
-                    SELECT ContractId, SUM(ISNULL(AmountPaid, 0)) AS TotalAgentPaid
+                    SELECT ContractId, SUM(ISNULL(AmountPaid, 0)) AS TotalAgentPaid,
+                        SUM(CASE WHEN CommissionPart = 'Bonus' THEN ISNULL(AmountPaid, 0) ELSE 0 END) AS AgentBonusPaid
                     FROM AgentCommissionPayments
                     GROUP BY ContractId
                 ),
@@ -1651,16 +1674,25 @@ namespace Ranalo.DataStore
                     ac.TotalCost,
                     ac.TotalPaid,
                     ac.BuyingPrice,
+                    ac.ProductName,
+                    ac.Imei,
+                    ac.HasWooOrder,
                     ac.Arrears,
                     ac.LockDate,
                     ac.DaysSinceStart,
                     ISNULL(ap.TotalAgentPaid, 0) AS AgentPaid,
+                    ISNULL(ap.AgentBonusPaid, 0) AS AgentBonusPaid,
                     ISNULL(dp.TotalDealerPaid, 0) AS DealerPaid
                 FROM AccountCommission ac
                 LEFT JOIN AgentPaymentsAgg ap ON ap.ContractId = ac.ContractID
-                LEFT JOIN DealerPaymentsAgg dp ON dp.ContractId = ac.ContractID";
+                LEFT JOIN DealerPaymentsAgg dp ON dp.ContractId = ac.ContractID
+                OPTION (RECOMPILE)";
 
-            var rows = await _db.QueryAsync<AgentCommissionAccountRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId });
+            // RECOMPILE: the same query serves one agent, one dealer and the
+            // whole company ("@X IS NULL OR ..."), so a cached plan built for
+            // one of those can time out on another (seen on the company-wide
+            // call). Takes ~4s company-wide; a compile is negligible next to that.
+            var rows = await _db.QueryAsync<AgentCommissionAccountRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId }, commandTimeout: 90);
             return rows.ToList();
         }
 
@@ -1677,6 +1709,7 @@ namespace Ranalo.DataStore
                 HasAgent = r.AssignedAgentId.HasValue,
                 AgentPaid = r.AgentPaid,
                 DealerPaid = r.DealerPaid,
+                HasWooOrder = r.HasWooOrder,
             });
 
         // A single agent's own Commission card (Agent Dashboard), live.
@@ -1742,6 +1775,10 @@ namespace Ranalo.DataStore
                     TotalCost = r.TotalCost,
                     TotalPaid = r.TotalPaid,
                     BuyingPrice = r.BuyingPrice,
+                    DaysPastLock = DaysPastLock(r.LockDate, now),
+                    ProductName = r.ProductName,
+                    Imei = r.Imei,
+                    AgentBonusPaid = r.AgentBonusPaid,
                     Commission = Breakdown(r, now),
                 }).ToList();
             }

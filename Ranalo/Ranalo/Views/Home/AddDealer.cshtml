@@ -1,8 +1,8 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
+    var posted = ViewBag.Posted as Microsoft.AspNetCore.Http.IFormCollection;
+    string Val(string key) => posted?[key].ToString() ?? "";
+    var suggested = ViewBag.SuggestedReference as string ?? "";
 }
 
 <div class="nk-content-body">
@@ -11,98 +11,115 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Create Dealer</h3>
                 <div class="nk-block-des text-soft">
-                    <p>On completion you will be redirected to the Dealers list page.</p>
+                    <p>Creates the dealer and their login in one step, linked to each other. The Dealer ID and the login's user ID are generated automatically.</p>
                 </div>
             </div>
-        </div><!-- .nk-block-head -->
-        <div class="nk-block nk-block-lg">
-            <div class="card card-bordered card-preview">
+        </div>
+    </div>
+
+    @if (ViewBag.Error is string error)
+    {
+        <div class="alert alert-danger alert-icon">
+            <em class="icon ni ni-cross-circle"></em> <strong>Not saved.</strong> @error
+        </div>
+    }
+
+    <form action="/adddealer" method="post">
+        <div class="nk-block">
+            <div class="card card-bordered">
                 <div class="card-inner">
-                    <div class="preview-block">
-                        <span class="preview-title-lg overline-title">Dealer Details</span>
-                        <form action="/adddealer" class="form-validate" novalidate="novalidate" method="post">
-                        <div class="row gy-4">
-                            <div class="col-sm-6">
-                                <div class="form-group">
-                                        <label class="form-label" for="default-01">Dealer Name</label>
-                                    <div class="form-control-wrap">
-                                        <div class="form-icon form-icon-left">
-                                            <em class="icon ni ni-user"></em>
-                                        </div>
-                                            <input type="text" name="companyName" class="form-control" id="default-01" placeholder="Enter user first name" required>
-                                    </div>
-                                </div>
+                    <h6 class="overline-title text-soft mb-3">Dealer</h6>
+                    <div class="row gy-3">
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="dealer-name">Dealer name</label>
+                                <input type="text" name="companyName" id="dealer-name" class="form-control" required value="@Val("companyName")" placeholder="e.g. Mali Mali" />
                             </div>
-                            <div class="col-sm-6">
-                                <div class="form-group">
-                                    <label class="form-label" for="default-05">User Id</label>
-                                    <div class="form-control-wrap">
-                                        <div class="form-icon form-icon-left">
-                                            <em class="icon ni ni-user"></em>
-                                        </div>
-                                            <input type="text" name="userId" class="form-control" id="default-05" placeholder="Enter user primary user id" required>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                                <div class="col-sm-6">
-                                    <div class="form-group">
-                                        <label class="form-label" for="default-04">Dealer Reference</label>
-                                        <div class="form-control-wrap">
-                                            <div class="form-icon form-icon-left">
-                                                <em class="icon ni ni-building"></em>
-                                            </div>
-                                            <input type="text" name="dealerReference" class="form-control" id="default-04" placeholder="Enter Dealer Reference">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label" for="default-04">City</label>
-                                        <div class="form-control-wrap">
-                                            <div class="form-icon form-icon-left">
-                                                <em class="icon ni ni-building"></em>
-                                            </div>
-                                            <input type="text" name="city" class="form-control" id="default-04" placeholder="Enter a city">
-                                        </div>
-                                    </div>
-                                </div>
-
-
-                            <div class="col-sm-6">
-                                <div class="form-group">
-                                    <label class="form-label" for="default-03">Address</label>
-                                    <div class="form-control-wrap">
-                                        <div class="form-icon form-icon-left">
-                                            <em class="icon ni ni-user"></em>
-                                        </div>
-                                        <input type="text" name="address" class="form-control" id="default-03" placeholder="Enter dealer address">
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="default-04">Email Address</label>
-                                    <div class="form-control-wrap">
-                                        <div class="form-icon form-icon-left">
-                                            <em class="icon ni ni-mail"></em>
-                                        </div>
-                                            <input type="text" name="email" class="form-control" id="default-04" placeholder="Enter a valid email address" required>
-                                    </div>
-                                </div>
-                            </div>
-                            
-
-                                <div class="col-sm-12">
-                                    <div class="form-control-wrap">
-                                        <div class="form-btn-group">
-                                            <button type="submit" class="btn btn-lg btn-success">Submit</button>
-                                        </div>
-                                    </div>
-                                </div>
                         </div>
-                        </form>
-
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="dealer-ref">Dealer reference</label>
+                                <input type="text" name="dealerReference" id="dealer-ref" class="form-control" required inputmode="numeric" pattern="[0-9]+" value="@suggested" />
+                                <span class="form-note">
+                                    Pre-filled with the next number in sequence. <strong>If this dealer's phones are locked through Kose, enter their Kose device group number instead</strong>
+                                    -- that's how their devices are matched to them. Phones enrolled through this app (Knox / PayTrigger) use whatever is saved here.
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="dealer-email">Dealer email</label>
+                                <input type="email" name="email" id="dealer-email" class="form-control" required value="@Val("email")" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="dealer-phone">Phone</label>
+                                <input type="tel" name="phone" id="dealer-phone" class="form-control" value="@Val("phone")" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="dealer-address">Address</label>
+                                <input type="text" name="address" id="dealer-address" class="form-control" value="@Val("address")" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="dealer-city">City</label>
+                                <input type="text" name="city" id="dealer-city" class="form-control" value="@Val("city")" />
                             </div>
                         </div>
                     </div>
                 </div>
-            </div><!-- .card-preview -->
-</div><!-- .nk-block -->
+            </div>
+        </div>
+
+        <div class="nk-block">
+            <div class="card card-bordered">
+                <div class="card-inner">
+                    <h6 class="overline-title text-soft mb-1">Dealer's login</h6>
+                    <p class="text-soft small mb-3">The account the dealer signs in with. It's created with the Dealer role and linked to this dealer automatically.</p>
+                    <div class="row gy-3">
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="login-name">First name</label>
+                                <input type="text" name="loginName" id="login-name" class="form-control" required value="@Val("loginName")" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="login-lastname">Last name</label>
+                                <input type="text" name="loginLastName" id="login-lastname" class="form-control" value="@Val("loginLastName")" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="login-email">Login email</label>
+                                <input type="email" name="loginEmail" id="login-email" class="form-control" value="@Val("loginEmail")" placeholder="Same as the dealer email if left blank" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6"></div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="login-password">Password</label>
+                                <input type="password" name="loginPassword" id="login-password" class="form-control" required autocomplete="new-password" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="form-label" for="login-password2">Confirm password</label>
+                                <input type="password" name="loginPasswordConfirm" id="login-password2" class="form-control" required autocomplete="new-password" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nk-block">
+            <button type="submit" class="btn btn-lg btn-primary">Create dealer and login</button>
+            <a href="/dealers" class="btn btn-lg btn-outline-light btn-white ms-2">Cancel</a>
+        </div>
+    </form>
+</div>
