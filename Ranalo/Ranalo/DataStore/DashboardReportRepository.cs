@@ -1558,6 +1558,9 @@ namespace Ranalo.DataStore
             public decimal Arrears { get; set; }
             public string? LockDate { get; set; }
             public decimal AgentPaid { get; set; }
+
+            // Of AgentPaid, lines recorded against the bonus (the rest is upfront).
+            public decimal AgentBonusPaid { get; set; }
             public decimal DealerPaid { get; set; }
 
             // Days since Contract_Info.StartDate; drives the 90-day bonus.
@@ -1569,9 +1572,6 @@ namespace Ranalo.DataStore
 
             // A Woo_Orders row exists for this contract; the agent bonus needs one.
             public bool HasWooOrder { get; set; }
-
-            // Daily + weekly/7 + monthly/30: one day's worth of the payment plan.
-            public decimal DailyInstalment { get; set; }
         }
 
         // The raw per-account commission inputs used by every commission
@@ -1610,7 +1610,6 @@ namespace Ranalo.DataStore
                         CAST(d.ImeiNo AS NVARCHAR(50)) AS Imei,
                         CAST(CASE WHEN EXISTS (SELECT 1 FROM Woo_Orders wo WHERE wo.ContractId = ci.ContractID)
                                   THEN 1 ELSE 0 END AS BIT) AS HasWooOrder,
-                        ci.Daily + ci.Weekly / 7.0 + ci.Monthly / 30.0 AS DailyInstalment,
                         -- Commission itself is calculated in C# by
                         -- Services.CommissionCalculator, the one formula for the app.
                         ci.StartDate,
@@ -1642,7 +1641,8 @@ namespace Ranalo.DataStore
                     AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
                 ),
                 AgentPaymentsAgg AS (
-                    SELECT ContractId, SUM(ISNULL(AmountPaid, 0)) AS TotalAgentPaid
+                    SELECT ContractId, SUM(ISNULL(AmountPaid, 0)) AS TotalAgentPaid,
+                        SUM(CASE WHEN CommissionPart = 'Bonus' THEN ISNULL(AmountPaid, 0) ELSE 0 END) AS AgentBonusPaid
                     FROM AgentCommissionPayments
                     GROUP BY ContractId
                 ),
@@ -1673,11 +1673,11 @@ namespace Ranalo.DataStore
                     ac.ProductName,
                     ac.Imei,
                     ac.HasWooOrder,
-                    ac.DailyInstalment,
                     ac.Arrears,
                     ac.LockDate,
                     ac.DaysSinceStart,
                     ISNULL(ap.TotalAgentPaid, 0) AS AgentPaid,
+                    ISNULL(ap.AgentBonusPaid, 0) AS AgentBonusPaid,
                     ISNULL(dp.TotalDealerPaid, 0) AS DealerPaid
                 FROM AccountCommission ac
                 LEFT JOIN AgentPaymentsAgg ap ON ap.ContractId = ac.ContractID
@@ -1774,7 +1774,7 @@ namespace Ranalo.DataStore
                     DaysPastLock = DaysPastLock(r.LockDate, now),
                     ProductName = r.ProductName,
                     Imei = r.Imei,
-                    DailyInstalment = r.DailyInstalment,
+                    AgentBonusPaid = r.AgentBonusPaid,
                     Commission = Breakdown(r, now),
                 }).ToList();
             }

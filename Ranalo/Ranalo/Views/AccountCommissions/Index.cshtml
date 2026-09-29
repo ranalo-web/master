@@ -330,6 +330,10 @@
                                                             </li>
                                                             <li>
                                                                 <div class="wl-line"><span><strong>Less already paid</strong> @(agentView ? "to you" : "to the agent")</span><span>&minus; KES @c.AgentPaid.ToString("N0")</span></div>
+                                                                @if (c.AgentPaid > 0)
+                                                                {
+                                                                    <div class="wl-note">Upfront KES @((c.AgentPaid - r.AgentBonusPaid).ToString("N0")) &middot; Bonus KES @r.AgentBonusPaid.ToString("N0")</div>
+                                                                }
                                                             </li>
                                                         </ol>
                                                         <div class="wl-line wl-total"><span>@(c.AgentNet >= 0 ? "Still to be paid" : "Held back (more than earned)")</span><span class="@(c.AgentNet < 0 ? "text-danger" : "text-success")">KES @c.AgentNet.ToString("N0")</span></div>

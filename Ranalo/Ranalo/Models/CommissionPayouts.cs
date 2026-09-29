@@ -69,6 +69,14 @@ namespace Ranalo.Models
         public decimal Unpaid { get; set; }
         public decimal OwnNet { get; set; }
 
+        // Agents: the 50% upfront and 25% bonus, each with what is paid and still due.
+        public decimal Upfront { get; set; }
+        public decimal UpfrontPaid { get; set; }
+        public decimal UpfrontDue { get; set; }
+        public decimal BonusEarned { get; set; }
+        public decimal BonusPaid { get; set; }
+        public decimal BonusDue { get; set; }
+
         // Expandable detail panel (display only).
         public string? ProductName { get; set; }
         public string? Imei { get; set; }
@@ -97,6 +105,9 @@ namespace Ranalo.Models
         public decimal Amount { get; set; }
         public string? Method { get; set; }
         public string? Reference { get; set; }
+
+        // Upfront | Bonus for agent lines; null for dealer lines and older rows.
+        public string? Part { get; set; }
     }
 
     // A saved payout with its details, for the history list.
@@ -117,6 +128,9 @@ namespace Ranalo.Models
         public DateTime? ReceiptConfirmedAtUtc { get; set; }
         public string? ReceiptConfirmedByName { get; set; }
         public int AccountCount { get; set; }
+
+        // Upfront | Bonus | Auto for agents, Commission for dealers (null before 004).
+        public string? PaymentType { get; set; }
     }
 
     public class CommissionPayoutHistoryViewModel
@@ -136,6 +150,7 @@ namespace Ranalo.Models
         public string? Reference { get; set; }
         public string? Notes { get; set; }
         public int RecordedByUserId { get; set; }
-        public List<(long ContractId, decimal Amount)> Lines { get; set; } = new();
+        public string PaymentType { get; set; } = CommissionPart.Commission;
+        public List<PayoutLine> Lines { get; set; } = new();
     }
 }

@@ -80,6 +80,7 @@
                                         <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid to</th>
                                     }
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Amount</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">For</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Method</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Reference</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
@@ -114,6 +115,7 @@
                                             </td>
                                         }
                                         <td class="fw-medium">KES @p.Amount.ToString("N0")</td>
+                                        <td>@(p.PaymentType ?? "-")</td>
                                         <td>@p.Method</td>
                                         <td>@p.Reference</td>
                                         <td>@p.AccountCount</td>

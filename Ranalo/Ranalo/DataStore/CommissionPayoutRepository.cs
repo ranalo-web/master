@@ -24,13 +24,14 @@ namespace Ranalo.DataStore
 
             const string headerSql = @"
                 INSERT INTO CommissionPayouts
-                    (PayeeType, DealerId, AgentUserId, Amount, PaidDate, Method, Reference, Notes, RecordedByUserId)
+                    (PayeeType, PaymentType, DealerId, AgentUserId, Amount, PaidDate, Method, Reference, Notes, RecordedByUserId)
                 OUTPUT INSERTED.Id
-                VALUES (@PayeeType, @DealerId, @AgentUserId, @Amount, @PaidDate, @Method, @Reference, @Notes, @RecordedByUserId)";
+                VALUES (@PayeeType, @PaymentType, @DealerId, @AgentUserId, @Amount, @PaidDate, @Method, @Reference, @Notes, @RecordedByUserId)";
 
             var payoutId = await _db.QuerySingleAsync<int>(headerSql, new
             {
                 payout.PayeeType,
+                payout.PaymentType,
                 payout.DealerId,
                 payout.AgentUserId,
                 payout.Amount,
@@ -54,21 +55,22 @@ namespace Ranalo.DataStore
             // CommissionAmount/PaidDate are the tables' original columns.
             var lineSql = isAgent
                 ? @"INSERT INTO AgentCommissionPayments
-                        (Id, ContractId, AgentId, CommissionAmount, PaidDate, AmountPaid, PaymentDate, PayoutId)
-                    VALUES (@Id, @ContractId, @PayeeId, @Amount, @PaidDate, @Amount, @PaidDate, @PayoutId)"
+                        (Id, ContractId, AgentId, CommissionAmount, PaidDate, AmountPaid, PaymentDate, PayoutId, CommissionPart)
+                    VALUES (@Id, @ContractId, @PayeeId, @Amount, @PaidDate, @Amount, @PaidDate, @PayoutId, @Part)"
                 : @"INSERT INTO DealerCommissionPayments
                         (Id, ContractId, DealerId, CommissionAmount, PaidDate, PaymentReference, Notes, AmountPaid, PayoutId)
                     VALUES (@Id, @ContractId, @PayeeId, @Amount, @PaidDate, @Reference, @Notes, @Amount, @PayoutId)";
 
             var payeeId = isAgent ? payout.AgentUserId : payout.DealerId;
-            foreach (var (contractId, amount) in payout.Lines)
+            foreach (var line in payout.Lines)
             {
                 await _db.ExecuteAsync(lineSql, new
                 {
                     Id = ++nextId,
-                    ContractId = contractId,
+                    line.ContractId,
                     PayeeId = payeeId,
-                    Amount = amount,
+                    line.Amount,
+                    line.Part,
                     PaidDate = payout.PaidDate.Date,
                     payout.Reference,
                     payout.Notes,
@@ -84,13 +86,13 @@ namespace Ranalo.DataStore
         {
             const string sql = @"
                 SELECT TOP (@Top)
-                    p.Id, p.PayeeType, p.DealerId, p.AgentUserId, p.Amount, p.PaidDate, p.Method, p.Reference, p.Notes,
+                    p.Id, p.PayeeType, p.PaymentType, p.DealerId, p.AgentUserId, p.Amount, p.PaidDate, p.Method, p.Reference, p.Notes,
                     p.RecordedAtUtc, p.ReceiptConfirmedAtUtc,
                     CASE WHEN p.PayeeType = 'Dealer' THEN dl.CompanyName ELSE au.[Name] + ' ' + au.[LastName] END AS PayeeName,
                     rb.[Name] + ' ' + rb.[LastName] AS RecordedByName,
                     cb.[Name] + ' ' + cb.[LastName] AS ReceiptConfirmedByName,
-                    (SELECT COUNT(*) FROM AgentCommissionPayments a WHERE a.PayoutId = p.Id)
-                        + (SELECT COUNT(*) FROM DealerCommissionPayments d WHERE d.PayoutId = p.Id) AS AccountCount
+                    (SELECT COUNT(DISTINCT a.ContractId) FROM AgentCommissionPayments a WHERE a.PayoutId = p.Id)
+                        + (SELECT COUNT(DISTINCT d.ContractId) FROM DealerCommissionPayments d WHERE d.PayoutId = p.Id) AS AccountCount
                 FROM CommissionPayouts p
                 LEFT JOIN Dealers dl ON dl.DealerId = p.DealerId
                 LEFT JOIN Users au ON au.UserId = p.AgentUserId
@@ -115,12 +117,12 @@ namespace Ranalo.DataStore
         {
             var sql = payeeType == CommissionPayeeType.Agent
                 ? @"SELECT a.ContractId, COALESCE(p.PaidDate, a.PaymentDate, a.PaidDate) AS PaidDate,
-                           ISNULL(a.AmountPaid, 0) AS Amount, p.Method, p.Reference
+                           ISNULL(a.AmountPaid, 0) AS Amount, p.Method, p.Reference, a.CommissionPart AS Part
                     FROM AgentCommissionPayments a
                     LEFT JOIN CommissionPayouts p ON p.Id = a.PayoutId
                     WHERE a.ContractId IN @Ids"
                 : @"SELECT d.ContractId, COALESCE(p.PaidDate, d.PaidDate, d.Created) AS PaidDate,
-                           ISNULL(d.AmountPaid, 0) AS Amount, p.Method, COALESCE(p.Reference, d.PaymentReference) AS Reference
+                           ISNULL(d.AmountPaid, 0) AS Amount, p.Method, COALESCE(p.Reference, d.PaymentReference) AS Reference, NULL AS Part
                     FROM DealerCommissionPayments d
                     LEFT JOIN CommissionPayouts p ON p.Id = d.PayoutId
                     WHERE d.ContractId IN @Ids";

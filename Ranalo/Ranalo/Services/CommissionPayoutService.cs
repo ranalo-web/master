@@ -8,7 +8,7 @@ namespace Ranalo.Services
         Task<CommissionPayeesViewModel> GetPayeesAsync(string? payeeTypeFilter, string? search = null);
         Task<CommissionPayViewModel?> GetPayAsync(string payeeType, int payeeId);
         Task<(bool Ok, string Message)> RecordPayoutAsync(
-            string payeeType, int payeeId, IReadOnlyCollection<long> contractIds, decimal amount, bool recordPastPayment,
+            string payeeType, int payeeId, IReadOnlyCollection<long> contractIds, string paymentType, decimal amount, bool recordPastPayment,
             DateTime paidDate, string method, string? reference, string? notes, int recordedByUserId);
         Task<List<CommissionPayoutRecord>> GetPayoutsAsync(string? payeeType = null, int? dealerId = null, int? agentUserId = null, int? top = null);
         Task<bool> ConfirmReceiptAsync(int payoutId, string payeeType, int payeeId, int confirmedByUserId);
@@ -119,6 +119,12 @@ namespace Ranalo.Services
                         Deducted = p.Deducted,
                         Paid = p.Paid,
                         Unpaid = CommissionPayoutRules.Unpaid(p),
+                        Upfront = isAgent ? Math.Min(p.Upfront, p.Earned) : 0,
+                        UpfrontPaid = isAgent ? p.UpfrontPaid : 0,
+                        UpfrontDue = isAgent ? CommissionPayoutRules.UnpaidUpfront(p) : 0,
+                        BonusEarned = isAgent ? Math.Max(0, p.Earned - p.Upfront) : 0,
+                        BonusPaid = isAgent ? p.BonusPaid : 0,
+                        BonusDue = isAgent ? CommissionPayoutRules.UnpaidBonus(p) : 0,
                         OwnNet = CommissionPayoutRules.OwnNet(p),
                         ProductName = a.ProductName,
                         Imei = a.Imei,
@@ -160,7 +166,7 @@ namespace Ranalo.Services
         }
 
         public async Task<(bool Ok, string Message)> RecordPayoutAsync(
-            string payeeType, int payeeId, IReadOnlyCollection<long> contractIds, decimal amount, bool recordPastPayment,
+            string payeeType, int payeeId, IReadOnlyCollection<long> contractIds, string paymentType, decimal amount, bool recordPastPayment,
             DateTime paidDate, string method, string? reference, string? notes, int recordedByUserId)
         {
             if (contractIds.Count == 0)
@@ -180,6 +186,16 @@ namespace Ranalo.Services
                 return (false, "The payment date can't be in the future.");
             }
 
+            // Agents choose Upfront / Bonus / Auto; dealer commission has no parts.
+            if (payeeType == CommissionPayeeType.Dealer)
+            {
+                paymentType = CommissionPart.Commission;
+            }
+            else if (!CommissionPart.AgentTypes.Contains(paymentType))
+            {
+                return (false, "Choose what this payment is for: Upfront, Bonus or Auto.");
+            }
+
             var accounts = await GetPayeeAccountsAsync(payeeType, payeeId);
             var all = accounts.Select(a => ToPayoutAccount(payeeType, a)).Where(p => p.ContractId > 0).ToList();
             var selected = all.Where(p => contractIds.Contains(p.ContractId)).ToList();
@@ -189,15 +205,29 @@ namespace Ranalo.Services
             }
 
             var summary = Summarize(payeeType, payeeId, accounts);
-            var payable = CommissionPayoutRules.Payable(all, contractIds, summary.IsSuspended);
+            var payable = CommissionPayoutRules.Payable(all, contractIds, summary.IsSuspended, paymentType);
             amount = Math.Round(amount, 2);
 
-            // Rounding slack: the page shows whole shillings.
-            if (amount > payable + 1 && !recordPastPayment)
+            if (amount > payable && !recordPastPayment)
             {
-                return (false, summary.IsSuspended
-                    ? $"Commissions are suspended: the default rate is {summary.DefaultRatePct:0.#}% (above {CommissionPayoutRules.SuspensionThresholdPct:0}%). Nothing is payable. To record a payment that was already made, tick \"Record a payment already made\"."
-                    : $"KES {amount:N0} is more than the KES {payable:N0} payable on the ticked accounts after arrears. To record a payment that was already made, tick \"Record a payment already made\".");
+                // Up to KES 1 over is whole-shilling rounding on the page: pay
+                // exactly what's payable rather than leave a stray remainder.
+                if (amount <= payable + 1 && payable > 0)
+                {
+                    amount = payable;
+                }
+                else
+                {
+                    var what = paymentType switch
+                    {
+                        CommissionPart.Upfront => "upfront commission still due",
+                        CommissionPart.Bonus => "bonus earned and still due",
+                        _ => "commission payable",
+                    };
+                    return (false, summary.IsSuspended
+                        ? $"Commissions are suspended: the default rate is {summary.DefaultRatePct:0.#}% (above {CommissionPayoutRules.SuspensionThresholdPct:0}%). Nothing is payable. To record a payment that was already made, tick \"Record a payment already made\"."
+                        : $"KES {amount:N0} is more than the KES {payable:N0} {what} on the ticked accounts after arrears. To record a payment that was already made, tick \"Record a payment already made\".");
+                }
             }
 
             var payout = new NewCommissionPayout
@@ -211,20 +241,23 @@ namespace Ranalo.Services
                 Reference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(),
                 Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
                 RecordedByUserId = recordedByUserId,
-                Lines = CommissionPayoutRules.Allocate(selected, amount),
+                PaymentType = paymentType,
+                Lines = CommissionPayoutRules.Allocate(selected, amount, paymentType),
             };
 
+            var accountCount = payout.Lines.Select(l => l.ContractId).Distinct().Count();
             try
             {
                 var id = await _payoutRepository.RecordAsync(payout);
-                _logger.LogInformation("Commission payout {PayoutId}: KES {Amount} to {PayeeType} {PayeeId} over {Lines} account(s) by user {UserId}",
-                    id, amount, payeeType, payeeId, payout.Lines.Count, recordedByUserId);
-                return (true, $"Recorded KES {amount:N0} paid to {summary.Name} across {payout.Lines.Count} account(s).");
+                _logger.LogInformation("Commission payout {PayoutId}: KES {Amount} ({PaymentType}) to {PayeeType} {PayeeId} over {Accounts} account(s) by user {UserId}",
+                    id, amount, paymentType, payeeType, payeeId, accountCount, recordedByUserId);
+                var typeLabel = payeeType == CommissionPayeeType.Agent ? $" {paymentType.ToLowerInvariant()} commission" : "";
+                return (true, $"Recorded KES {amount:N0}{typeLabel} paid to {summary.Name} across {accountCount} account(s).");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Recording commission payout failed for {PayeeType} {PayeeId}", payeeType, payeeId);
-                return (false, "The payment could not be saved. Has Database/Commissions/002_create_commission_payouts.sql been run? Nothing was recorded.");
+                return (false, "The payment could not be saved. Have Database/Commissions/002 and 004 been run? Nothing was recorded.");
             }
         }
 
@@ -252,8 +285,7 @@ namespace Ranalo.Services
         private static bool Contains(string? value, string term) =>
             value != null && value.Contains(term, StringComparison.OrdinalIgnoreCase);
 
-        private static bool InArrears(CommissionAccount a) =>
-            CommissionPayoutRules.IsInDefault(a.Commission.TrueArrears, a.DailyInstalment);
+        private static bool InArrears(CommissionAccount a) => CommissionPayoutRules.IsInDefault(a.DaysPastLock);
 
         private static PayoutAccount ToPayoutAccount(string payeeType, CommissionAccount a)
         {
@@ -267,6 +299,7 @@ namespace Ranalo.Services
                 Upfront = isAgent ? c.AgentUpfront : c.DealerCommission ?? 0,
                 Deducted = isAgent ? c.AgentArrearsDeducted : c.DealerArrearsDeducted,
                 Paid = isAgent ? c.AgentPaid : c.DealerPaid,
+                BonusPaid = isAgent ? a.AgentBonusPaid : 0,
             };
         }
 

@@ -24,8 +24,8 @@ namespace Ranalo.Models
         public string? ProductName { get; set; }
         public string? Imei { get; set; }
 
-        // One day's worth of the payment plan (daily + weekly/7 + monthly/30).
-        public decimal DailyInstalment { get; set; }
+        // Of Commission.AgentPaid, what was paid against the bonus; the rest was upfront.
+        public decimal AgentBonusPaid { get; set; }
         public Ranalo.Services.CommissionBreakdown Commission { get; set; } = new();
     }
 
@@ -50,6 +50,7 @@ namespace Ranalo.Models
         public DateTime StartDate { get; set; }
         public decimal? ContractValue { get; set; }
         public int DaysPastLock { get; set; }
+        public decimal AgentBonusPaid { get; set; }
     }
 
     public class AccountCommissionsViewModel

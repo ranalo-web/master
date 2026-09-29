@@ -794,6 +794,7 @@ namespace Ranalo.Services
                     StartDate = a.StartDate,
                     ContractValue = a.TotalCost,
                     DaysPastLock = (int)Math.Max(0, Math.Floor(a.DaysPastLock)),
+                    AgentBonusPaid = a.AgentBonusPaid,
                 })
                 .OrderBy(r => r.AgentName == null)
                 .ThenBy(r => r.AgentName)

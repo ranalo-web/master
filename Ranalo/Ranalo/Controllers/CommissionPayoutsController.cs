@@ -58,7 +58,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("commission-payouts/pay")]
-        public async Task<IActionResult> Pay(string type, int id, List<long> contractIds, decimal amount, bool recordPastPayment,
+        public async Task<IActionResult> Pay(string type, int id, List<long> contractIds, string? paymentType, decimal amount, bool recordPastPayment,
             DateTime paidDate, string method, string? reference, string? notes)
         {
             if (!TryGetAdmin(out var settings, out var redirect))
@@ -73,7 +73,7 @@ namespace Ranalo.Controllers
             }
 
             var (ok, message) = await _payoutService.RecordPayoutAsync(
-                payeeType, id, contractIds ?? new List<long>(), amount, recordPastPayment, paidDate, method, reference, notes, settings!.UserId);
+                payeeType, id, contractIds ?? new List<long>(), paymentType ?? CommissionPart.Upfront, amount, recordPastPayment, paidDate, method, reference, notes, settings!.UserId);
 
             TempData[ok ? "PayoutSuccess" : "PayoutError"] = message;
             return RedirectToAction("Pay", new { type = payeeType, id });
