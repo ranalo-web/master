@@ -34,6 +34,16 @@ namespace Ranalo.Models
         // What can be paid today: the pooled Owed, or 0 while suspended.
         public decimal Payable { get; set; }
 
+        // Agents: the 50% upfront and 25% bonus still due (before arrears),
+        // and how many bonuses are held (past lock date / no WooCommerce order).
+        public decimal UpfrontDue { get; set; }
+        public decimal BonusDue { get; set; }
+        public int BonusHeldCount { get; set; }
+        public int BonusHeldNoWooOrderCount { get; set; }
+
+        // Dealers: accounts with no buying price, so no dealer commission yet.
+        public int MissingBuyingPriceCount { get; set; }
+
         // Accounts that matched the search box, if any.
         public List<CommissionMatchedAccount> MatchedAccounts { get; set; } = new();
     }

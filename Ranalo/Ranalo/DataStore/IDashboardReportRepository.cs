@@ -205,10 +205,10 @@ namespace Ranalo.DataStore
         Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int? dealerId, int? agentUserId = null);
 
         // Agent Commissions card: live sum of AgentCommissionPayments.AmountPaid
-        // for this dealer within an arbitrary period window, backing the same
+        // for one dealer (or every dealer when null) within a period, backing the same
         // top-of-page filter as the Revenue/New Accounts cards. periodEndExclusive
         // is an exclusive upper bound, same convention as GetDealerRevenueForPeriodAsync.
-        Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null);
+        Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int? dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null);
 
         // Single live per-account source for Non-Payers/Slow-Payers/Good-Payers,
         // Agent Performance, My Contracts, and Contracts Ending Soon -- every

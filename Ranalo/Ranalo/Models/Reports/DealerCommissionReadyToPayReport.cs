@@ -13,5 +13,9 @@ namespace Ranalo.Models.Reports
         public decimal TotalDealerPaid { get; set; }
         public decimal AmountReadyToPay { get; set; }
         public string Status { get; set; } = "";
+
+        // The dealer is suspended (over 30% of accounts 7+ days past lock
+        // date): the amount is held, not payable yet.
+        public bool DealerSuspended { get; set; }
     }
 }

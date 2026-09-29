@@ -42,21 +42,17 @@ namespace Ranalo.Services
 
         public async Task<AdminDashboardViewModel> GetAdminDashboardAsync()
         {
-            var model = AdminDashboardSampleData.Build();
+            // Empty defaults, not AdminDashboardSampleData.Build(): anything
+            // without a real source shows 0 or is hidden, never a made-up
+            // sample figure. The "vs last month" figures that have no history
+            // yet stay null and the view leaves them out.
+            var model = new AdminDashboardViewModel();
             var scope = DashboardScope.Admin;
 
             var snapshot = await _repository.GetSnapshotAsync(scope);
             if (snapshot != null)
             {
                 ApplyAdminSnapshot(model, snapshot);
-            }
-
-            var trend = await _repository.GetMonthlyTrendAsync(scope);
-            if (trend.Count > 0)
-            {
-                model.GrowthMonths = trend.Select(t => MonthLabel(t.YearMonth)).ToList();
-                model.RevenueByMonth = trend.Select(t => t.Revenue).ToList();
-                model.AccountsByMonth = trend.Select(t => t.AccountsCount).ToList();
             }
 
             // Live, system-wide (all dealers) recompute -- same source and
@@ -117,7 +113,14 @@ namespace Ranalo.Services
                 var monthRevenueRow = await _repository.GetDealerRevenueForPeriodAsync(
                     null, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive, monthWindow.PriorPeriodStart, monthWindow.PriorPeriodEndExclusive);
                 model.RevenueTargetThisMonth = monthRevenueRow.TargetRevenue;
-                model.RevenueGrowthPct = ScheduledDashboardRollup.CalculateGrowthPct(monthRevenueRow.RevenueThisPeriod, monthRevenueRow.RevenueLastPeriod) ?? model.RevenueGrowthPct;
+
+                // Revenue: live, with the Financials definition (every device
+                // payment) -- the nightly snapshot lagged a day and left out
+                // devices with no dealer mapping. Same figures as the period
+                // filter's "Month".
+                model.RevenueThisMonth = await _repository.GetRevenueForPeriodAsync(monthWindow.PeriodStart, monthWindow.PeriodEndExclusive);
+                var revenueLastMonth = await _repository.GetRevenueForPeriodAsync(monthWindow.PriorPeriodStart, monthWindow.PriorPeriodEndExclusive);
+                model.RevenueGrowthPct = ScheduledDashboardRollup.CalculateGrowthPct(model.RevenueThisMonth, revenueLastMonth) ?? 0;
 
                 // Total Accounts card: headline and "new this month" delta
                 // were both still on the stale rollup snapshot (never
@@ -158,11 +161,27 @@ namespace Ranalo.Services
             var commissionByDealer = (await _repository.GetDealerCommissionPaidThisMonthByDealerAsync())
                 .ToDictionary(r => r.DealerName, r => r.CommissionPaidThisMonth);
 
-            model.DealerPerformance = BuildAdminDealerPerformance(accountDetails, revenueByDealer, commissionByDealer);
+            // Commission figures, live and company-wide, through the same
+            // CommissionPayees summaries as Pay Commissions.
+            var commissionAccounts = await _repository.GetCommissionAccountsAsync(null);
+            var dealerCommission = CommissionPayees.Dealers(commissionAccounts);
+            var commissionDueByDealer = dealerCommission
+                .GroupBy(d => d.Name)
+                .ToDictionary(g => g.Key, g => g.Sum(d => d.Payable));
+            model.DealersSuspended = dealerCommission.Count(d => d.IsSuspended);
+            model.DealerCommissionPayable = dealerCommission.Sum(d => d.Payable);
+            model.DealerCommissionHeld = dealerCommission.Where(d => d.IsSuspended).Sum(d => d.Pool.Owed);
+
+            model.DealerPerformance = BuildAdminDealerPerformance(accountDetails, revenueByDealer, commissionByDealer, commissionDueByDealer);
             model.AgentPerformance = BuildAdminAgentPerformance(accountDetails);
             model.Collections = BuildCollections(accountDetails);
-            (model.CommissionSummary, model.CommissionAccounts) = BuildCommissions(
-                await _repository.GetAccountCommissionsAsync(null), accountDetails);
+            (model.CommissionSummary, model.CommissionAccounts) = BuildCommissions(commissionAccounts, accountDetails);
+
+            // Commissions Paid card: agent payouts this month join the
+            // per-dealer dealer payouts summed in the view.
+            var monthStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            model.AgentCommissionPaidThisMonth = await _repository.GetDealerAgentCommissionPaidForPeriodAsync(
+                null, monthStart, monthStart.AddMonths(1));
 
             // Cost of Devices This Month: Contract_Info.BuyingPrice
             // (manually entered per-contract device cost -- see
@@ -177,10 +196,67 @@ namespace Ranalo.Services
                 .Where(r => r.StartDate.Year == thisMonth.Year && r.StartDate.Month == thisMonth.Month)
                 .Sum(r => r.BuyingPrice ?? 0);
 
-            var completedContracts = await _repository.GetCompletedContractsAsync(scope);
+            // Growth chart: the last 8 months, live. Revenue uses the
+            // Financials definition (every device payment); accounts is how
+            // many accounts had started by the end of each month.
+            const int trendMonths = 8;
+            var trendStart = new DateTime(thisMonth.Year, thisMonth.Month, 1).AddMonths(-(trendMonths - 1));
+            var revenueByMonth = (await _repository.GetRevenueByMonthAsync(trendMonths))
+                .ToDictionary(r => (r.Year, r.Month), r => r.Total);
+            model.GrowthMonths = new List<string>();
+            model.RevenueByMonth = new List<decimal>();
+            model.AccountsByMonth = new List<int>();
+            for (var i = 0; i < trendMonths; i++)
+            {
+                var month = trendStart.AddMonths(i);
+                model.GrowthMonths.Add(month.ToString("MMM"));
+                model.RevenueByMonth.Add(revenueByMonth.TryGetValue((month.Year, month.Month), out var rev) ? rev : 0);
+                model.AccountsByMonth.Add(accountDetails.Count(r => r.StartDate < month.AddMonths(1)));
+            }
+
+            // Customer Performance: one customer per account (the app has no
+            // customer identity shared across accounts), so repeat-customer
+            // and churn rates have no source yet and stay null (hidden).
+            model.TotalCustomers = accountDetails.Select(r => r.AccountId).Distinct().Count();
+            model.NewCustomersThisMonth = model.NewThisMonth;
+            model.AvgCustomerLifetimeValue = model.TotalCustomers > 0
+                ? Math.Round(accountDetails.Sum(r => r.TotalPaid) / model.TotalCustomers, 0)
+                : 0;
+
+            // Product Performance: accounts grouped by device model -- units,
+            // average contract value, what customers have paid, and the share
+            // more than 7 days past their lock date.
+            model.ProductPerformance = accountDetails
+                .GroupBy(r => string.IsNullOrWhiteSpace(r.DeviceName) ? "Unknown device" : r.DeviceName.Trim())
+                .Select(g => new AdminProductPerformance
+                {
+                    ProductName = g.Key,
+                    UnitsFinanced = g.Count(),
+                    AvgValue = Math.Round(g.Average(r => r.FullContractValue), 0),
+                    Revenue = g.Sum(r => r.TotalPaid),
+                    DefaultRatePct = Math.Round(100m * g.Count(r => LockDays(r) > CommissionPayoutRules.LockToleranceDays) / g.Count(), 1),
+                })
+                .OrderByDescending(p => p.UnitsFinanced)
+                .ThenByDescending(p => p.Revenue)
+                .Select((p, i) => { p.Rank = i + 1; return p; })
+                .ToList();
+
+            var completedContracts = await _repository.GetCompletedContractsAsync(scope, DealerScopeTakeAll);
+
+            // Completed Contracts card: paid off this month vs last month,
+            // value and average duration. The completion rate has no agreed
+            // definition yet and stays null (hidden).
+            var paidOff = completedContracts.Where(c => c.Status == DashboardCompletedContractStatus.Completed && c.CompletedDate.HasValue).ToList();
+            var paidOffThisMonth = paidOff.Where(c => c.CompletedDate >= monthStart && c.CompletedDate < monthStart.AddMonths(1)).ToList();
+            var paidOffLastMonth = paidOff.Count(c => c.CompletedDate >= monthStart.AddMonths(-1) && c.CompletedDate < monthStart);
+            model.CompletedContractsThisMonth = paidOffThisMonth.Count;
+            model.CompletedContractsChangePct = ScheduledDashboardRollup.CalculateGrowthPct(paidOffThisMonth.Count, paidOffLastMonth);
+            model.TotalValueCompletedThisMonth = paidOffThisMonth.Sum(c => c.TotalPaid);
+            model.AvgTimeToCompletionMonths = paidOff.Count > 0 ? Math.Round((decimal)paidOff.Average(c => c.DurationMonths), 1) : 0;
+
             if (completedContracts.Count > 0)
             {
-                model.CompletedContracts = completedContracts.Select(c => new AdminCompletedContract
+                model.CompletedContracts = completedContracts.Take(20).Select(c => new AdminCompletedContract
                 {
                     CustomerName = c.CustomerName,
                     DealerName = c.DealerName ?? "",
@@ -192,9 +268,6 @@ namespace Ranalo.Services
                     PctComplete = c.PctComplete,
                 }).ToList();
             }
-
-            // Admin's ProductPerformance is a different shape (Rank/Revenue/DefaultRatePct,
-            // no Units/GoodPct/ArrearsPct) with no rollup table yet -- stays on sample data.
 
             return model;
         }
@@ -283,9 +356,13 @@ namespace Ranalo.Services
             // comment on why this app has no Cash/Inventory figures to show).
             model.LoanReceivablesGross = accountDetails.Sum(r => Math.Max(0, r.FullContractValue - r.TotalPaid));
 
-            var (dealerOutstanding, agentOutstanding) = await _repository.GetTotalCommissionsOutstandingAsync();
-            model.CommissionsPayableToDealers = dealerOutstanding;
-            model.CommissionsPayableToAgents = agentOutstanding;
+            // Commissions payable: live from the same figures as Pay
+            // Commissions (the nightly snapshot lags a day). A liability, so
+            // it includes commission held for suspended dealers/agents --
+            // still owed, just not payable yet.
+            var commissionAccounts = await _repository.GetCommissionAccountsAsync(null);
+            model.CommissionsPayableToDealers = CommissionPayees.Dealers(commissionAccounts).Sum(d => d.Pool.Owed);
+            model.CommissionsPayableToAgents = CommissionPayees.Agents(commissionAccounts).Sum(a => a.Pool.Owed);
 
             // Retained Earnings: an approximation, not a precise accounting
             // figure -- there's no real all-time ledger. All-time Revenue/
@@ -336,28 +413,26 @@ namespace Ranalo.Services
                 ApplyDealerSnapshot(model, snapshot);
             }
 
-            // Agent Commissions card -- ApplyDealerSnapshot above set
-            // CommissionOutstanding/CommissionAccountCount/
-            // CommissionWithheldForArrears from the dealer-wide nightly
-            // rollup (every agent's accounts pooled together), since no
-            // per-agent rollup row exists (DashboardScope.ForAgent is
-            // unused/unpopulated). For an Agent viewing their own dashboard,
-            // override with a live recompute scoped to just their accounts --
-            // same formula, see GetAgentCommissionSummaryAsync. Dealer's own
-            // view (agentUserId null) keeps the rollup figures as-is.
+            // Agent and Dealer Commissions cards (and the Performance Bonus
+            // card on the Agent Dashboard) are set live further down by
+            // ApplyLiveCommissionCards, overriding the nightly snapshot copies.
+            // An agent sees only their own accounts.
+            var commissionAccounts = (await _repository.GetCommissionAccountsAsync(dealerId, agentUserId))
+                .Where(a => !agentUserId.HasValue || a.AgentId == agentUserId)
+                .ToList();
+            ApplyLiveCommissionCards(model, commissionAccounts, dealerId, agentUserId);
+
             if (agentUserId.HasValue)
             {
-                var agentCommission = await _repository.GetAgentCommissionSummaryAsync(dealerId, agentUserId.Value);
-                model.CommissionOutstanding = agentCommission.CommissionOutstanding;
-                model.CommissionAccountCount = agentCommission.CommissionAccountCount;
-                model.CommissionWithheldForArrears = agentCommission.CommissionWithheldForArrears;
-
                 // Performance Bonus Tracker card -- Agent Dashboard only.
-                var bonusTracker = await _repository.GetAgentBonusTrackerAsync(dealerId, agentUserId.Value);
-                model.CommissionPaidLifetime = bonusTracker.CommissionPaidLifetime;
-                model.BonusEarnedAccountCount = bonusTracker.BonusEarnedAccountCount;
-                model.BonusAtRiskAccountCount = bonusTracker.BonusAtRiskAccountCount;
-                model.BonusUpcomingAccountCount = bonusTracker.BonusUpcomingAccountCount;
+                // "At risk" = 90+ days old but the bonus is held (past lock
+                // date or no WooCommerce order); "upcoming" = 60-89 days in.
+                var breakdowns = commissionAccounts.Select(a => a.Commission).ToList();
+                model.CommissionPaidLifetime = breakdowns.Sum(b => b.AgentPaid);
+                model.BonusEarnedAccountCount = breakdowns.Count(b => b.BonusEarned);
+                model.BonusAtRiskAccountCount = breakdowns.Count(b => b.BonusAtRisk);
+                model.BonusUpcomingAccountCount = commissionAccounts.Count(a =>
+                    a.DaysSinceStart >= CommissionCalculator.BonusDays - 30 && a.DaysSinceStart < CommissionCalculator.BonusDays);
             }
 
             // Paying vs Non-Paying and My Portfolio cards -- see
@@ -434,10 +509,8 @@ namespace Ranalo.Services
             // of their own book instead, so My Portfolio's Good/Slow/Arrears
             // counts (TotalAccounts * PortfolioXPct) don't show the whole
             // dealer's account count next to a correctly agent-scoped percent.
-            if (agentUserId.HasValue)
-            {
-                model.TotalAccounts = accountDetails.Count;
-            }
+            // Live for the dealer's own view too (the snapshot is a day old).
+            model.TotalAccounts = accountDetails.Count;
 
             // Target isn't part of the nightly rollup (see
             // DashboardRevenuePeriodRow.TargetRevenue) -- computed live here,
@@ -448,6 +521,20 @@ namespace Ranalo.Services
                 var monthRow = await _repository.GetDealerRevenueForPeriodAsync(
                     dealerId, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive, monthWindow.PriorPeriodStart, monthWindow.PriorPeriodEndExclusive, agentUserId);
                 model.RevenueTarget = monthRow.TargetRevenue;
+
+                // Revenue card: live and scoped like everything else on the
+                // page (an agent sees their own accounts' payments, not the
+                // dealer's) -- the nightly snapshot is dealer-wide and a day old.
+                model.RevenueThisMonth = monthRow.RevenueThisPeriod;
+                model.RevenueGrowthPct = ScheduledDashboardRollup.CalculateGrowthPct(monthRow.RevenueThisPeriod, monthRow.RevenueLastPeriod) ?? 0;
+                model.AvgPerAccount = model.TotalAccounts > 0 ? model.RevenueThisMonth / model.TotalAccounts : 0;
+
+                // In default: accounts more than 7 days past their lock date --
+                // the same test as the Arrears tier and commission suspension,
+                // live and agent-scoped (the snapshot's figure was dealer-wide
+                // and used a different, accrual-based definition).
+                model.InDefault = accountDetails.Count(r => LockDays(r) > CommissionPayoutRules.LockToleranceDays);
+                model.DefaultRatePct = accountDetails.Count > 0 ? Math.Round(100m * model.InDefault / accountDetails.Count, 1) : 0;
 
                 // Collection Rate / PAR30 (My Portfolio card): count-based, not
                 // value-based, per the agreed definition -- of the accounts
@@ -489,11 +576,32 @@ namespace Ranalo.Services
             model.Contracts = BuildContracts(accountDetails);
             model.ContractsEndingSoon = BuildContractsEndingSoon(accountDetails);
 
-            (model.CommissionSummary, model.CommissionAccounts) = BuildCommissions(
-                await _repository.GetAccountCommissionsAsync(dealerId, agentUserId), accountDetails);
+            (model.CommissionSummary, model.CommissionAccounts) = BuildCommissions(commissionAccounts, accountDetails);
 
             model.DeviceStock = await BuildDeviceStockAsync(dealerId, scope);
-            model.CompletedContracts = BuildCompletedContracts(await _repository.GetCompletedContractsAsync(scope, DealerScopeTakeAll));
+            // Completed contracts: live, and only the agent's own on the Agent
+            // Dashboard (the rows are per dealer). The completion rate has no
+            // agreed definition yet and the portfolio "vs last month" has no
+            // history, so both stay null (hidden) rather than showing 0.0.
+            var completedRows = await _repository.GetCompletedContractsAsync(scope, DealerScopeTakeAll);
+            if (agentUserId.HasValue)
+            {
+                var agentAccountIds = commissionAccounts.Select(a => a.AccountId).ToHashSet();
+                completedRows = completedRows.Where(c => c.AccountId.HasValue && agentAccountIds.Contains(c.AccountId.Value)).ToList();
+            }
+            model.CompletedContracts = BuildCompletedContracts(completedRows);
+
+            var completedMonthStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            var paidOffRows = completedRows.Where(c => c.Status == DashboardCompletedContractStatus.Completed && c.CompletedDate.HasValue).ToList();
+            var paidOffThisMonth = paidOffRows.Where(c => c.CompletedDate >= completedMonthStart).ToList();
+            var paidOffLastMonth = paidOffRows.Count(c => c.CompletedDate >= completedMonthStart.AddMonths(-1) && c.CompletedDate < completedMonthStart);
+            model.CompletedContractsThisMonth = paidOffThisMonth.Count;
+            model.CompletedContractsChangePct = ScheduledDashboardRollup.CalculateGrowthPct(paidOffThisMonth.Count, paidOffLastMonth);
+            model.TotalValueCompletedThisMonth = paidOffThisMonth.Sum(c => c.TotalPaid);
+            model.AvgTimeToCompletionMonths = paidOffRows.Count > 0 ? Math.Round((decimal)paidOffRows.Average(c => c.DurationMonths), 1) : 0;
+            model.ContractCompletionRatePct = null;
+            model.ContractCompletionRateChangePct = null;
+            model.PortfolioGoodPctChange = null;
 
             return model;
         }
@@ -834,53 +942,107 @@ namespace Ranalo.Services
         };
 
         // Commissions section. The summary pools each agent's accounts the
-        // same way the Agent Commissions card does (deduction capped at what
-        // the agent earned, owed floored at 0 per agent), so it matches the
-        // card. The table shows each account's own figures.
+        // same way the Agent Commissions card and Pay Commissions do
+        // (CommissionPayees): arrears on one account reduce what's owed on
+        // the others, and a suspended agent's owed commission is held, not
+        // payable. The table shows each account's own figures.
         private static (DashboardCommissionSummary Summary, List<DashboardCommissionAccount> Accounts) BuildCommissions(
-            List<DashboardAccountCommissionRow> rows, List<DashboardAccountDetailRow> accountDetails)
+            List<CommissionAccount> commissionAccounts, List<DashboardAccountDetailRow> accountDetails)
         {
             var details = accountDetails
                 .GroupBy(a => a.AccountId)
                 .ToDictionary(g => g.Key, g => g.First());
 
-            var perAgent = rows
-                .GroupBy(r => r.AgentId)
-                .Select(g => CommissionCalculator.Pool(g.Select(r => (r.Earned, r.ArrearsDeducted, r.Paid))))
-                .ToList();
+            var agentAccounts = commissionAccounts.Where(a => a.AgentId.HasValue).ToList();
+            var perAgent = CommissionPayees.Agents(agentAccounts);
 
             var summary = new DashboardCommissionSummary
             {
                 Agents = perAgent.Count,
-                Accounts = rows.Count,
-                Earned = perAgent.Sum(a => a.Earned),
-                Withheld = perAgent.Sum(a => a.Withheld),
-                Paid = perAgent.Sum(a => a.Paid),
-                Owed = perAgent.Sum(a => a.Owed),
+                Accounts = agentAccounts.Count,
+                Earned = perAgent.Sum(a => a.Pool.Earned),
+                Withheld = perAgent.Sum(a => a.Pool.Withheld),
+                Paid = perAgent.Sum(a => a.Pool.Paid),
+                Owed = perAgent.Sum(a => a.Pool.Owed),
+                Payable = perAgent.Sum(a => a.Payable),
+                HeldSuspended = perAgent.Where(a => a.IsSuspended).Sum(a => a.Pool.Owed),
+                SuspendedAgents = perAgent.Count(a => a.IsSuspended),
+                UpfrontDue = perAgent.Sum(a => a.UpfrontDue),
+                BonusDue = perAgent.Sum(a => a.BonusDue),
             };
 
-            var accounts = rows
-                .Select(r =>
+            var accounts = agentAccounts
+                .Select(a =>
                 {
-                    details.TryGetValue(r.AccountId, out var d);
-                    var net = r.Earned - r.ArrearsDeducted - r.Paid;
+                    details.TryGetValue(a.AccountId, out var d);
+                    var c = a.Commission;
+                    var net = c.AgentEarned - c.AgentArrearsDeducted - c.AgentPaid;
                     return new DashboardCommissionAccount
                     {
-                        AccountId = r.AccountId,
-                        CustomerName = d?.CustomerName ?? "",
-                        AgentName = d?.AgentName ?? $"Agent #{r.AgentId}",
-                        DealerName = d?.DealerName,
-                        Earned = r.Earned,
-                        ArrearsDeducted = r.ArrearsDeducted,
-                        Paid = r.Paid,
+                        AccountId = a.AccountId,
+                        CustomerName = d?.CustomerName ?? a.CustomerName,
+                        AgentName = d?.AgentName ?? a.AgentName ?? $"Agent #{a.AgentId}",
+                        DealerName = d?.DealerName ?? a.DealerName,
+                        Earned = c.AgentEarned,
+                        ArrearsDeducted = c.AgentArrearsDeducted,
+                        Paid = c.AgentPaid,
                         Net = net,
-                        Status = r.ArrearsDeducted > 0 ? "Withheld" : net > 0 ? "Owed" : "Paid",
+                        Status = c.AgentArrearsDeducted > 0 ? "Withheld" : net > 0 ? "Owed" : "Paid",
                     };
                 })
                 .OrderByDescending(c => c.Net)
                 .ToList();
 
             return (summary, accounts);
+        }
+
+        // Agent and Dealer Commissions cards, live from the same per-account
+        // figures as the Commissions section and Pay Commissions (the nightly
+        // snapshot's copies are out of date until the next run and know
+        // nothing of suspension). Dealer view: every agent of this dealer,
+        // pooled per agent, plus the dealer's own position. Agent view: this
+        // agent only.
+        private static void ApplyLiveCommissionCards(DealerDashboardViewModel model, List<CommissionAccount> accounts, int dealerId, int? agentUserId)
+        {
+            var agents = CommissionPayees.Agents(accounts);
+            model.CommissionOutstanding = agents.Sum(a => a.Payable);
+            model.CommissionAccountCount = agents.Sum(a => a.Accounts);
+            model.CommissionWithheldForArrears = agents.Sum(a => a.Pool.Withheld);
+            model.CommissionPaidToAgents = agents.Sum(a => a.Pool.Paid);
+            model.AgentsSuspendedCount = agents.Count(a => a.IsSuspended);
+            model.AgentCommissionHeld = agents.Where(a => a.IsSuspended).Sum(a => a.Pool.Owed);
+            model.AgentUpfrontDue = agents.Sum(a => a.UpfrontDue);
+            model.AgentBonusDue = agents.Sum(a => a.BonusDue);
+            model.BonusHeldNoWooOrderCount = agents.Sum(a => a.BonusHeldNoWooOrderCount);
+
+            if (agentUserId.HasValue)
+            {
+                var me = agents.FirstOrDefault(a => a.PayeeId == agentUserId.Value);
+                model.AgentCommissionSuspended = me?.IsSuspended ?? false;
+                model.AgentDefaultRatePct = me?.DefaultRatePct ?? 0;
+                return;
+            }
+
+            if (accounts.Count > 0)
+            {
+                var dealer = CommissionPayees.Summarize(CommissionPayeeType.Dealer, dealerId, accounts);
+                model.CommissionReceived = dealer.Pool.Earned;
+                model.DealerCommissionOutstanding = dealer.Payable;
+                model.DealerCommissionAccountCount = accounts.Count(a => a.BuyingPrice.HasValue);
+                model.DealerCommissionMissingCostCount = dealer.MissingBuyingPriceCount;
+                model.DealerCommissionWithheldForArrears = dealer.Pool.Withheld;
+                model.DealerCommissionSuspended = dealer.IsSuspended;
+                model.DealerDefaultRatePct = dealer.DefaultRatePct;
+                model.DealerCommissionHeld = dealer.IsSuspended ? dealer.Pool.Owed : 0;
+            }
+            else
+            {
+                model.CommissionReceived = 0;
+                model.DealerCommissionOutstanding = 0;
+                model.DealerCommissionAccountCount = 0;
+                model.DealerCommissionMissingCostCount = 0;
+                model.DealerCommissionWithheldForArrears = 0;
+            }
         }
 
         // Needs Collection threshold, shared with FillAgentMetrics so the
@@ -1009,16 +1171,14 @@ namespace Ranalo.Services
         // Admin Dashboard's Dealer Performance: same grouping/formulas as
         // BuildDealerPerformance above, plus commissions -- CommissionPaid
         // is this month's real DealerCommissionPayments total (see
-        // GetDealerCommissionPaidThisMonthByDealerAsync); CommissionDue has
-        // no live system-wide "outstanding" source yet (would need the full
-        // per-account dealer-commission formula -- 30% of lifetime
-        // TotalPaid-BuyingPrice-AgentGrossCommission -- replicated across
-        // every dealer, a separate feature), so it's approximated as fully
-        // settled (== CommissionPaid) rather than show a fabricated balance.
+        // GetDealerCommissionPaidThisMonthByDealerAsync); CommissionDue is
+        // the dealer's commission payable now (CommissionPayees: earned -
+        // arrears - paid, 0 while suspended).
         private static List<AdminDealerPerformance> BuildAdminDealerPerformance(
             List<DashboardAccountDetailRow> rows,
             Dictionary<string, decimal> revenueByDealer,
-            Dictionary<string, decimal> commissionByDealer) => rows
+            Dictionary<string, decimal> commissionByDealer,
+            Dictionary<string, decimal> commissionDueByDealer) => rows
             .Where(r => !string.IsNullOrWhiteSpace(r.DealerName))
             .GroupBy(r => r.DealerName!)
             .Select(g =>
@@ -1035,7 +1195,7 @@ namespace Ranalo.Services
                     ActivePct = activeDenominator > 0 ? Math.Round(100m * good / activeDenominator, 1) : 0,
                     Revenue = revenueByDealer.TryGetValue(g.Key, out var rev) ? rev : 0,
                     CommissionPaid = commissionPaid,
-                    CommissionDue = commissionPaid,
+                    CommissionDue = commissionDueByDealer.TryGetValue(g.Key, out var due) ? due : 0,
                     PctOfTarget = total > 0 ? Math.Round(100m * (total - arrears) / total, 1) : 0,
                 };
             })
@@ -1093,13 +1253,11 @@ namespace Ranalo.Services
             var row = await _repository.GetDealerRevenueForPeriodAsync(
                 dealerId, window.PeriodStart, window.PeriodEndExclusive, window.PriorPeriodStart, window.PriorPeriodEndExclusive, agentUserId);
 
-            // Agent Commissions card is dealer-scoped by nature (an agent
-            // belongs to one dealer) and hidden on both the Approver and
-            // Admin Dashboards, so this stays skipped for a null dealerId --
-            // no widened query would render anywhere.
-            var commissionPaidThisPeriod = dealerId.HasValue
-                ? await _repository.GetDealerAgentCommissionPaidForPeriodAsync(dealerId.Value, window.PeriodStart, window.PeriodEndExclusive, agentUserId)
-                : 0m;
+            // Agent commission paid in the period: one dealer's agents, or
+            // company-wide for a null dealerId (the Admin Dashboard's
+            // Commissions Paid card adds it to the dealer payouts).
+            var commissionPaidThisPeriod = await _repository.GetDealerAgentCommissionPaidForPeriodAsync(
+                dealerId, window.PeriodStart, window.PeriodEndExclusive, agentUserId);
 
             // Dealer Commissions: null dealerId now returns the company-wide
             // total (GetDealerCommissionPaidForPeriodAsync widened to
@@ -1132,11 +1290,22 @@ namespace Ranalo.Services
             var (collectionRatePct, portfolioAtRiskPct) = ComputeCohortRates(
                 accountDetails, window.PeriodStart, window.PeriodEndExclusive);
 
+            // Company-wide revenue uses the Financials definition (every device
+            // payment, including devices with no dealer mapping), so the Admin
+            // Dashboard and Financials agree. Dealer/agent scopes stay as-is.
+            var revenueThis = row.RevenueThisPeriod;
+            var revenueLast = row.RevenueLastPeriod;
+            if (!dealerId.HasValue && !agentUserId.HasValue)
+            {
+                revenueThis = await _repository.GetRevenueForPeriodAsync(window.PeriodStart, window.PeriodEndExclusive);
+                revenueLast = await _repository.GetRevenueForPeriodAsync(window.PriorPeriodStart, window.PriorPeriodEndExclusive);
+            }
+
             return new DealerRevenuePeriodResult
             {
-                Revenue = row.RevenueThisPeriod,
-                GrowthPct = ScheduledDashboardRollup.CalculateGrowthPct(row.RevenueThisPeriod, row.RevenueLastPeriod),
-                AvgPerAccount = row.TotalAccounts > 0 ? row.RevenueThisPeriod / row.TotalAccounts : 0,
+                Revenue = revenueThis,
+                GrowthPct = ScheduledDashboardRollup.CalculateGrowthPct(revenueThis, revenueLast),
+                AvgPerAccount = row.TotalAccounts > 0 ? revenueThis / row.TotalAccounts : 0,
                 TargetRevenue = row.TargetRevenue,
                 Label = window.Label,
                 TotalAccounts = row.TotalAccountsAsOfPeriod,

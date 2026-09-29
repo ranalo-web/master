@@ -15,7 +15,7 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Commissions Overview</h3>
                 <div class="nk-block-des text-soft">
-                    <p>Agent: 50% of the deposit upfront, plus 25% once the contract is 90 days old and the account is not past its lock date. Dealer: 30% of (total paid &minus; buying price &minus; agent commission). Arrears on accounts past their lock date are deducted from both. Same formula as the dashboards.</p>
+                    <p>Agent: 50% of the deposit upfront, plus 25% once the contract is 90 days old, not past its lock date and has a WooCommerce order. Dealer: 30% of (total paid &minus; buying price &minus; agent commission). Whatever a customer is behind by is deducted from both. Same formula as the dashboards.</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -76,7 +76,7 @@
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Buying Price</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)" title="50% of deposit + 25% after 90 days if performing">Agent Comm.</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)" title="30% of (paid - buying price - agent commission)">Dealer Comm.</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Deducted from agent and dealer while past lock date">Arrears Deducted</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="What the customer is behind by; deducted from agent and dealer">Arrears Deducted</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission - arrears - paid to dealer">Dealer Balance</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer balance above 0">Ready To Pay</th>
                                     <th class="wl-th"></th>

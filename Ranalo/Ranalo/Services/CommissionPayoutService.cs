@@ -59,7 +59,7 @@ namespace Ranalo.Services
             var payees = new List<CommissionPayeeSummary>();
             foreach (var (payeeType, id, payeeAccounts) in groups)
             {
-                var summary = Summarize(payeeType, id, payeeAccounts);
+                var summary = CommissionPayees.Summarize(payeeType, id, payeeAccounts);
                 if (!string.IsNullOrEmpty(term))
                 {
                     var nameMatch = Contains(summary.Name, term) || Contains(summary.DealerName, term);
@@ -104,7 +104,7 @@ namespace Ranalo.Services
             var rows = accounts
                 .Select(a =>
                 {
-                    var p = ToPayoutAccount(payeeType, a);
+                    var p = CommissionPayees.ToPayoutAccount(payeeType, a);
                     return new CommissionPayAccountRow
                     {
                         ContractId = p.ContractId,
@@ -113,7 +113,7 @@ namespace Ranalo.Services
                         AgentName = a.AgentName,
                         StartDate = a.StartDate,
                         DaysSinceStart = a.DaysSinceStart,
-                        InArrears = InArrears(a),
+                        InArrears = CommissionPayees.InArrears(a),
                         MissingBuyingPrice = !isAgent && !a.BuyingPrice.HasValue,
                         Earned = p.Earned,
                         Deducted = p.Deducted,
@@ -159,7 +159,7 @@ namespace Ranalo.Services
 
             return new CommissionPayViewModel
             {
-                Payee = Summarize(payeeType, payeeId, accounts),
+                Payee = CommissionPayees.Summarize(payeeType, payeeId, accounts),
                 Accounts = rows,
                 RecentPayouts = recent,
             };
@@ -197,14 +197,14 @@ namespace Ranalo.Services
             }
 
             var accounts = await GetPayeeAccountsAsync(payeeType, payeeId);
-            var all = accounts.Select(a => ToPayoutAccount(payeeType, a)).Where(p => p.ContractId > 0).ToList();
+            var all = accounts.Select(a => CommissionPayees.ToPayoutAccount(payeeType, a)).Where(p => p.ContractId > 0).ToList();
             var selected = all.Where(p => contractIds.Contains(p.ContractId)).ToList();
             if (selected.Count != contractIds.Count)
             {
                 return (false, "Some ticked accounts don't belong to this payee. Reload the page and try again.");
             }
 
-            var summary = Summarize(payeeType, payeeId, accounts);
+            var summary = CommissionPayees.Summarize(payeeType, payeeId, accounts);
             var payable = CommissionPayoutRules.Payable(all, contractIds, summary.IsSuspended, paymentType);
             amount = Math.Round(amount, 2);
 
@@ -284,49 +284,5 @@ namespace Ranalo.Services
 
         private static bool Contains(string? value, string term) =>
             value != null && value.Contains(term, StringComparison.OrdinalIgnoreCase);
-
-        private static bool InArrears(CommissionAccount a) => CommissionPayoutRules.IsInDefault(a.DaysPastLock);
-
-        private static PayoutAccount ToPayoutAccount(string payeeType, CommissionAccount a)
-        {
-            var c = a.Commission;
-            var isAgent = payeeType == CommissionPayeeType.Agent;
-            return new PayoutAccount
-            {
-                ContractId = long.TryParse(a.ContractId, out var id) ? id : 0,
-                StartDate = a.StartDate,
-                Earned = isAgent ? c.AgentEarned : c.DealerCommission ?? 0,
-                Upfront = isAgent ? c.AgentUpfront : c.DealerCommission ?? 0,
-                Deducted = isAgent ? c.AgentArrearsDeducted : c.DealerArrearsDeducted,
-                Paid = isAgent ? c.AgentPaid : c.DealerPaid,
-                BonusPaid = isAgent ? a.AgentBonusPaid : 0,
-            };
-        }
-
-        private static CommissionPayeeSummary Summarize(string payeeType, int payeeId, List<CommissionAccount> accounts)
-        {
-            var isAgent = payeeType == CommissionPayeeType.Agent;
-            var inArrears = accounts.Count(InArrears);
-            var rate = CommissionPayoutRules.DefaultRatePct(accounts.Count, inArrears);
-            var suspended = CommissionPayoutRules.IsSuspended(rate);
-            var pool = isAgent
-                ? CommissionCalculator.PoolAgent(accounts.Select(a => a.Commission))
-                : CommissionCalculator.PoolDealer(accounts.Select(a => a.Commission));
-
-            var dealerNames = accounts.Select(a => a.DealerName).Distinct().ToList();
-            return new CommissionPayeeSummary
-            {
-                PayeeType = payeeType,
-                PayeeId = payeeId,
-                Name = isAgent ? accounts.Select(a => a.AgentName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? $"Agent {payeeId}" : dealerNames.FirstOrDefault() ?? $"Dealer {payeeId}",
-                DealerName = isAgent ? string.Join(", ", dealerNames) : null,
-                Accounts = accounts.Count,
-                AccountsInArrears = inArrears,
-                DefaultRatePct = rate,
-                IsSuspended = suspended,
-                Pool = pool,
-                Payable = suspended ? 0 : pool.Owed,
-            };
-        }
     }
 }

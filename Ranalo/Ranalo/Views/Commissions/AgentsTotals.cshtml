@@ -15,7 +15,7 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Agents Totals</h3>
                 <div class="nk-block-des text-soft">
-                    <p>Commission per assigned agent across every dealer. Earned is 50% of each deposit plus 25% once the contract is 90 days old and not past its lock date. Arrears on accounts past their lock date are withheld. Same formula as the dashboards.</p>
+                    <p>Commission per assigned agent across every dealer. Earned is the 50% upfront on each deposit plus the 25% bonus once the contract is 90 days old, not past its lock date and has a WooCommerce order. Whatever customers are behind by is withheld. An agent with more than 30% of accounts 7+ days past their lock date is suspended: Payable is 0 and the commission is held. Same figures as the dashboards and Pay Commissions.</p>
                 </div>
             </div>
         </div>
@@ -40,9 +40,12 @@
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Contracts</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Deposits</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Earned</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on accounts past their lock date">Withheld</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="What their customers are behind by">Withheld</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Earned - withheld - paid, never below 0">Owed</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="50% upfront / 25% bonus still due, before arrears">Upfront / Bonus due</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Accounts 7+ days past lock date / all accounts; over 30% suspends commission">Default Rate</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Owed, or 0 while suspended">Payable</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -57,7 +60,10 @@
                                         <td>KES @a.TotalAgentCommission.ToString("N0")</td>
                                         <td class="@(a.Withheld > 0 ? "text-warning" : "")">KES @a.Withheld.ToString("N0")</td>
                                         <td>KES @a.Paid.ToString("N0")</td>
-                                        <td class="fw-medium @(a.Owed > 0 ? "text-danger" : "")">KES @a.Owed.ToString("N0")</td>
+                                        <td class="@(a.Owed > 0 ? "text-danger" : "")">KES @a.Owed.ToString("N0")</td>
+                                        <td>KES @a.UpfrontDue.ToString("N0") / @a.BonusDue.ToString("N0")</td>
+                                        <td class="@(a.IsSuspended ? "text-danger fw-bold" : "")">@a.DefaultRatePct.ToString("0.#")%@(a.IsSuspended ? " · suspended" : "")</td>
+                                        <td class="fw-medium">KES @a.Payable.ToString("N0")</td>
                                     </tr>
                                 }
                             </tbody>

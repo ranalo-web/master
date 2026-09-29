@@ -110,6 +110,26 @@
         // shortfall today.
         public decimal DealerCommissionWithheldForArrears { get; set; }
 
+        // Suspension (CommissionPayoutRules): more than 30% of the payee's
+        // accounts 7+ days past their lock date. While suspended nothing is
+        // payable; the commission is held until the rate drops.
+        // Dealer Commissions card: the dealer's own position.
+        public bool DealerCommissionSuspended { get; set; }
+        public decimal DealerDefaultRatePct { get; set; }
+        public decimal DealerCommissionHeld { get; set; }
+
+        // Agent Commissions card, dealer view: agents suspended and what
+        // they're owed but can't be paid yet. Agent view: this agent's own.
+        public int AgentsSuspendedCount { get; set; }
+        public decimal AgentCommissionHeld { get; set; }
+        public bool AgentCommissionSuspended { get; set; }
+        public decimal AgentDefaultRatePct { get; set; }
+
+        // Agent commission still due (before arrears), split by part.
+        public decimal AgentUpfrontDue { get; set; }
+        public decimal AgentBonusDue { get; set; }
+        public int BonusHeldNoWooOrderCount { get; set; }
+
         // Bad Debt card: subset of "true" arrears more than 90 days past
         // NextLockDate. BadDebtChangePct is never populated (no rollup
         // write path ever wrote it) and there's no way to recompute it live
@@ -143,7 +163,7 @@
         public decimal PortfolioSlowPct { get; set; }
         public decimal PortfolioArrearsPct { get; set; }
         public decimal PortfolioNonPayingPct { get; set; }
-        public decimal PortfolioGoodPctChange { get; set; }
+        public decimal? PortfolioGoodPctChange { get; set; }
 
         // Live-computed in DashboardReportService (RevenueThisMonth /
         // RevenueTarget) -- was previously a dead field (no rollup ever wrote
@@ -181,9 +201,9 @@
         public List<DealerCompletedContract> CompletedContracts { get; set; } = new();
 
         public int CompletedContractsThisMonth { get; set; }
-        public decimal CompletedContractsChangePct { get; set; }
-        public decimal ContractCompletionRatePct { get; set; }
-        public decimal ContractCompletionRateChangePct { get; set; }
+        public decimal? CompletedContractsChangePct { get; set; }
+        public decimal? ContractCompletionRatePct { get; set; }
+        public decimal? ContractCompletionRateChangePct { get; set; }
         public decimal AvgTimeToCompletionMonths { get; set; }
         public decimal TotalValueCompletedThisMonth { get; set; }
 
@@ -344,6 +364,13 @@
         public decimal Withheld { get; set; }
         public decimal Paid { get; set; }
         public decimal Owed { get; set; }
+
+        // Owed that can be paid now (suspended agents' share is held).
+        public decimal Payable { get; set; }
+        public decimal HeldSuspended { get; set; }
+        public int SuspendedAgents { get; set; }
+        public decimal UpfrontDue { get; set; }
+        public decimal BonusDue { get; set; }
     }
 
     // One Commissions table row per agent-assigned account. Net = Earned -

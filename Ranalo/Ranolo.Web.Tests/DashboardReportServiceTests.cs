@@ -49,7 +49,7 @@ namespace Ranolo.Web.Tests
         public Task<DashboardArrearsClassificationRow> GetDealerArrearsClassificationAsync(int? dealerId, int? agentUserId = null) =>
             Task.FromResult(ArrearsClassificationToReturn);
 
-        public Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null) =>
+        public Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int? dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null) =>
             Task.FromResult(CommissionPaidForPeriodToReturn);
 
         public Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int? dealerId, int? agentUserId = null) =>
@@ -118,7 +118,11 @@ namespace Ranolo.Web.Tests
         public Task<List<DashboardMonthAmountRow>> GetCommissionsPaidByMonthAsync(int months) => Task.FromResult(CommissionsByMonthToReturn);
         public Task<decimal> GetAllTimeRevenueAsync() => Task.FromResult(AllTimeRevenueToReturn);
         public Task<decimal> GetAllTimeCommissionsPaidAsync() => Task.FromResult(AllTimeCommissionsPaidToReturn);
-        public Task<decimal> GetRevenueForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive) => Task.FromResult(RevenueByDealerToReturn.Sum(r => r.RevenueThisMonth));
+        // Revenue for a date window: RevenueForPeriod when a test sets it,
+        // otherwise the per-dealer revenue rows summed.
+        public Func<DateTime?, DateTime?, decimal>? RevenueForPeriod { get; set; }
+        public Task<decimal> GetRevenueForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive) =>
+            Task.FromResult(RevenueForPeriod?.Invoke(fromDate, toDateExclusive) ?? RevenueByDealerToReturn.Sum(r => r.RevenueThisMonth));
         public Task<decimal> GetCommissionsPaidForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive) => Task.FromResult(CommissionByDealerToReturn.Sum(c => c.CommissionPaidThisMonth));
         public Task<(decimal DealerOutstanding, decimal AgentOutstanding)> GetTotalCommissionsOutstandingAsync() => Task.FromResult(CommissionsOutstandingToReturn);
 
@@ -247,6 +251,7 @@ namespace Ranolo.Web.Tests
         {
             var fakeRepo = new FakeDashboardReportRepository
             {
+                RevenuePeriodToReturn = new DashboardRevenuePeriodRow { RevenueThisPeriod = 640m },
                 SnapshotToReturn = new DashboardSnapshotRow
                 {
                     DealerId = 42,
@@ -270,15 +275,15 @@ namespace Ranolo.Web.Tests
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
-            Assert.That(result.RevenueThisMonth, Is.EqualTo(999_000m));
-            Assert.That(result.TotalAccounts, Is.EqualTo(321));
+            // Revenue and total accounts are live now (period query / account
+            // rows), not the day-old snapshot.
+            Assert.That(result.RevenueThisMonth, Is.EqualTo(640m));
+            Assert.That(result.TotalAccounts, Is.EqualTo(0));
             Assert.That(result.ActivePct, Is.EqualTo(88.5m));
             Assert.That(result.ArrearsTotal, Is.EqualTo(1_200m));
 
-            // AvgPerAccount isn't sourced from snapshot.AvgPerAccount (that
-            // rollup column is never populated) -- it's derived from the
-            // now-updated RevenueThisMonth/TotalAccounts above.
-            Assert.That(result.AvgPerAccount, Is.EqualTo(999_000m / 321));
+            // AvgPerAccount is derived from the live RevenueThisMonth/TotalAccounts (0 accounts here).
+            Assert.That(result.AvgPerAccount, Is.EqualTo(0m));
             // Fields the snapshot row leaves unset (null) fall back to 0, not
             // sample data -- this is what makes partial refresh job coverage
             // safe.
@@ -365,22 +370,23 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
-        public async Task GetAdminDashboardAsync_WithNoRollupRow_FallsBackToSampleData()
+        public async Task GetAdminDashboardAsync_WithNoData_ShowsZeroNotSampleData()
         {
             var fakeRepo = new FakeDashboardReportRepository();
             var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
-            var sample = Ranalo.Controllers.AdminDashboardSampleData.Build();
 
             var result = await service.GetAdminDashboardAsync();
 
-            // RevenueThisMonth still falls back to sample data (no rollup
-            // row). GoodAccounts/DealerPerformance no longer do -- they're
-            // always live-recomputed from GetDealerAccountDetailsAsync/
-            // GetDealerLockClassificationAsync now (see
-            // GetAdminDashboardAsync_WithAccountDetailRows_ClassifiesIntoWatchlistsAndPerformance
-            // below), so with no account-detail rows they're genuinely
-            // empty/zero rather than sample data.
-            Assert.That(result.RevenueThisMonth, Is.EqualTo(sample.RevenueThisMonth));
+            // No made-up sample figures: with no data everything is 0/empty,
+            // and figures with no source yet are null (hidden by the view).
+            Assert.That(result.RevenueThisMonth, Is.EqualTo(0m));
+            Assert.That(result.TotalCustomers, Is.EqualTo(0));
+            Assert.That(result.ProductPerformance, Is.Empty);
+            Assert.That(result.CompletedContractsThisMonth, Is.EqualTo(0));
+            Assert.That(result.RepeatCustomerRatePct, Is.Null);
+            Assert.That(result.ChurnRatePct, Is.Null);
+            Assert.That(result.CommissionsChangePct, Is.Null);
+            Assert.That(result.RevenueByMonth, Is.All.EqualTo(0m));
             Assert.That(result.GoodAccounts, Is.EqualTo(0));
             Assert.That(result.DealerPerformance, Is.Empty);
         }
@@ -401,7 +407,8 @@ namespace Ranolo.Web.Tests
 
             var result = await service.GetAdminDashboardAsync();
 
-            Assert.That(result.RevenueThisMonth, Is.EqualTo(1_000_000m));
+            // Revenue is live (Financials definition), not the snapshot figure.
+            Assert.That(result.RevenueThisMonth, Is.EqualTo(0m));
             Assert.That(result.NonPayingAccountsChange, Is.EqualTo(-25));
         }
 
@@ -451,6 +458,8 @@ namespace Ranolo.Web.Tests
                     RevenueLastPeriod = 100_000m,
                     TargetRevenue = 150_000m,
                 },
+                // Growth uses the Financials revenue for this month vs last.
+                RevenueForPeriod = (from, _) => from.HasValue && from.Value.Month == DateTime.Now.Month ? 110_000m : 100_000m,
             };
             var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
@@ -510,7 +519,8 @@ namespace Ranolo.Web.Tests
             Assert.That(result.DealerPerformance[0].DealerName, Is.EqualTo("Test Dealer"));
             Assert.That(result.DealerPerformance[0].Revenue, Is.EqualTo(50000m));
             Assert.That(result.DealerPerformance[0].CommissionPaid, Is.EqualTo(1000m));
-            Assert.That(result.DealerPerformance[0].CommissionDue, Is.EqualTo(1000m));
+            // Due is the dealer's live payable (CommissionPayees), not a copy of Paid; no commission accounts here.
+            Assert.That(result.DealerPerformance[0].CommissionDue, Is.EqualTo(0m));
 
             Assert.That(result.AgentPerformance, Has.Count.EqualTo(1));
             Assert.That(result.AgentPerformance[0].AgentName, Is.EqualTo("Test Agent"));
@@ -609,27 +619,46 @@ namespace Ranolo.Web.Tests
             Assert.That(result.CompletedContracts[0].CompletedDate, Is.EqualTo("In progress"));
         }
 
-        [Test]
-        public async Task GetDealerDashboardAsync_WithCommissionSnapshotFields_OverlaysThemOnly()
+        private static CommissionAccount AgentAccount(long id, int agentId, decimal earned, decimal deducted, decimal paid, double daysPastLock = 0) => new()
         {
+            AccountId = id,
+            ContractId = id.ToString(),
+            AgentId = agentId,
+            AgentName = $"Agent {agentId}",
+            DealerId = 42,
+            DealerName = "Dealer 42",
+            DaysPastLock = daysPastLock,
+            Commission = new Ranalo.Services.CommissionBreakdown
+            {
+                AgentUpfront = earned,
+                AgentCommission = earned,
+                AgentEarned = earned,
+                AgentArrearsDeducted = deducted,
+                AgentPaid = paid,
+            },
+        };
+
+        [Test]
+        public async Task GetDealerDashboardAsync_CommissionCards_AreLiveNotSnapshot()
+        {
+            // The nightly snapshot lags a day; the cards come from the live
+            // per-account figures instead.
             var fakeRepo = new FakeDashboardReportRepository
             {
                 SnapshotToReturn = new DashboardSnapshotRow
                 {
                     DealerId = 42,
                     CommissionReceived = 55_000m,
-                    CommissionPaidToAgents = 30_000m,
                     CommissionOutstanding = 4_500m,
                 },
+                CommissionAccountsToReturn = new() { AgentAccount(1, 3, 2_000m, 0m, 500m) },
             };
             var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
 
             var result = await service.GetDealerDashboardAsync(dealerId: 42);
 
-            Assert.That(result.CommissionReceived, Is.EqualTo(55_000m));
-            Assert.That(result.CommissionPaidToAgents, Is.EqualTo(30_000m));
-            Assert.That(result.CommissionOutstanding, Is.EqualTo(4_500m));
-            // Not populated by this snapshot row -- falls back to 0, not sample data.
+            Assert.That(result.CommissionOutstanding, Is.EqualTo(1_500m));
+            Assert.That(result.CommissionAccountCount, Is.EqualTo(1));
             Assert.That(result.CommissionsChangePct, Is.EqualTo(0m));
         }
 
@@ -638,12 +667,12 @@ namespace Ranolo.Web.Tests
         {
             var fakeRepo = new FakeDashboardReportRepository
             {
-                AccountCommissionsToReturn = new()
+                CommissionAccountsToReturn = new()
                 {
-                    new() { AccountId = 1, AgentId = 3, Earned = 5000m, ArrearsDeducted = 0m, Paid = 5000m },
-                    new() { AccountId = 2, AgentId = 4, Earned = 3000m, ArrearsDeducted = 0m, Paid = 1000m },
+                    AgentAccount(1, 3, 5000m, 0m, 5000m),
+                    AgentAccount(2, 4, 3000m, 0m, 1000m),
                     // Arrears bigger than this account's own commission: offsets agent 4's other account.
-                    new() { AccountId = 3, AgentId = 4, Earned = 1000m, ArrearsDeducted = 2500m, Paid = 0m },
+                    AgentAccount(3, 4, 1000m, 2500m, 0m),
                 },
             };
             var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
@@ -656,6 +685,7 @@ namespace Ranolo.Web.Tests
             Assert.That(result.CommissionSummary.Paid, Is.EqualTo(6000m));
             // Agent 3 owes 0; agent 4: 4000 earned - 2500 deducted - 1000 paid = 500.
             Assert.That(result.CommissionSummary.Owed, Is.EqualTo(500m));
+            Assert.That(result.CommissionSummary.Payable, Is.EqualTo(500m));
             Assert.That(result.CommissionSummary.Withheld, Is.EqualTo(2500m));
 
             Assert.That(result.CommissionAccounts, Has.Count.EqualTo(3));
@@ -663,6 +693,32 @@ namespace Ranolo.Web.Tests
             Assert.That(result.CommissionAccounts.Single(c => c.AccountId == 2).Status, Is.EqualTo("Owed"));
             Assert.That(result.CommissionAccounts.Single(c => c.AccountId == 3).Status, Is.EqualTo("Withheld"));
             Assert.That(result.CommissionAccounts.Single(c => c.AccountId == 3).Net, Is.EqualTo(-1500m));
+        }
+
+        [Test]
+        public async Task GetDealerDashboardAsync_SuspendedAgent_OwedIsHeldNotPayable()
+        {
+            // Agent 5: both accounts 10 days past lock date -> 100% default rate, suspended.
+            var fakeRepo = new FakeDashboardReportRepository
+            {
+                CommissionAccountsToReturn = new()
+                {
+                    AgentAccount(1, 5, 2000m, 0m, 0m, daysPastLock: 10),
+                    AgentAccount(2, 5, 1000m, 0m, 0m, daysPastLock: 10),
+                    AgentAccount(3, 6, 1500m, 0m, 0m),
+                },
+            };
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
+
+            var result = await service.GetDealerDashboardAsync(dealerId: 42);
+
+            Assert.That(result.CommissionSummary.Owed, Is.EqualTo(4500m));
+            Assert.That(result.CommissionSummary.Payable, Is.EqualTo(1500m));
+            Assert.That(result.CommissionSummary.SuspendedAgents, Is.EqualTo(1));
+            Assert.That(result.CommissionSummary.HeldSuspended, Is.EqualTo(3000m));
+            Assert.That(result.CommissionOutstanding, Is.EqualTo(1500m));
+            Assert.That(result.AgentsSuspendedCount, Is.EqualTo(1));
+            Assert.That(result.AgentCommissionHeld, Is.EqualTo(3000m));
         }
 
         [Test]

@@ -1057,7 +1057,7 @@ namespace Ranalo.DataStore
             }
         }
 
-        public async Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null)
+        public async Task<decimal> GetDealerAgentCommissionPaidForPeriodAsync(int? dealerId, DateTime periodStart, DateTime periodEndExclusive, int? agentUserId = null)
         {
             const string sql = @"
                 SELECT ISNULL(SUM(acp.AmountPaid), 0)
@@ -1065,7 +1065,7 @@ namespace Ranalo.DataStore
                 INNER JOIN Contract_Info ci ON ci.ContractID = acp.ContractId
                 INNER JOIN Devices d ON d.Id = ci.ID
                 INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                WHERE dl.DealerId = @DealerId
+                WHERE (@DealerId IS NULL OR dl.DealerId = @DealerId)
                   AND acp.PaymentDate >= @PeriodStart AND acp.PaymentDate < @PeriodEnd
                   AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
 
