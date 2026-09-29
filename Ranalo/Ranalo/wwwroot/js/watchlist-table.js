@@ -39,8 +39,36 @@ window.Ranalo.showMoreRows = function (link, key, pageSize) {
 // of how many are currently expanded.
 window.Ranalo.showLessRows = function (link, key, pageSize) {
     var rows = [].slice.call(document.querySelectorAll('tr[data-watchlist-row="' + key + '"]'));
-    rows.forEach(function (row, i) { row.classList.toggle('d-none', i >= pageSize); });
+    rows.forEach(function (row, i) {
+        row.classList.toggle('d-none', i >= pageSize);
+        closeDetailIfHidden(row);
+    });
     updateWatchlistControls(key, pageSize, pageSize, rows.length);
+};
+
+// Optional expandable detail rows: a <tr class="wl-detail"> placed directly
+// after its row. It is never counted, paged or sorted on its own -- it moves
+// with its row and is closed when its row is hidden.
+function detailRowOf(row) {
+    var next = row.nextElementSibling;
+    return next && next.classList.contains('wl-detail') ? next : null;
+}
+
+function closeDetailIfHidden(row) {
+    var detail = detailRowOf(row);
+    if (detail && row.classList.contains('d-none')) {
+        detail.classList.add('d-none');
+        row.classList.remove('wl-open');
+    }
+}
+
+window.Ranalo.toggleDetail = function (link) {
+    var row = link.closest('tr');
+    var detail = detailRowOf(row);
+    if (!detail) return;
+    var open = detail.classList.toggle('d-none') === false;
+    row.classList.toggle('wl-open', open);
+    link.setAttribute('aria-expanded', open);
 };
 
 // Click a column header to sort its table by that column; click again to
@@ -53,7 +81,10 @@ window.Ranalo.sortTable = function (th) {
     var headerRow = th.parentElement;
     var colIndex = Array.prototype.indexOf.call(headerRow.children, th);
     var tbody = table.querySelector('tbody');
-    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr')).filter(function (row) {
+        return !row.classList.contains('wl-detail');
+    });
+    var details = rows.map(detailRowOf);
 
     // Sorting must preserve however many rows are currently expanded, not
     // silently collapse or fully expand the table.
@@ -82,6 +113,7 @@ window.Ranalo.sortTable = function (th) {
     }
 
     var allNumeric = rows.every(function (row) { return !isNaN(numericValue(cellText(row))); });
+    var detailFor = new Map(rows.map(function (row, i) { return [row, details[i]]; }));
     rows.sort(function (a, b) {
         var cmp;
         if (allNumeric) {
@@ -95,6 +127,11 @@ window.Ranalo.sortTable = function (th) {
     rows.forEach(function (row, i) {
         row.classList.toggle('d-none', i >= visibleCount);
         tbody.appendChild(row);
+        var detail = detailFor.get(row);
+        if (detail) {
+            tbody.appendChild(detail);
+            closeDetailIfHidden(row);
+        }
     });
 
     updateWatchlistControls(key, pageSize, visibleCount, rows.length);

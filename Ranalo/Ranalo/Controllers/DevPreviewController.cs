@@ -286,5 +286,75 @@ namespace Ranalo.Controllers
 
             return View("~/Views/AdminDashboard/Index.cshtml", model);
         }
+
+        // Account Commissions with sample accounts run through the real
+        // CommissionCalculator. ?agent=1 shows the agent's view; ?expand=1
+        // renders the first rows' detail panels open (for screenshots).
+        [HttpGet]
+        [Route("dev-preview/account-commissions")]
+        public IActionResult AccountCommissions(bool agent = false, bool expand = false)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            ViewBag.BackLink = agent ? "agent" : "admin-dashboard";
+            ViewBag.IsAdmin = !agent;
+            ViewBag.IsApprover = false;
+            ViewBag.IsDealer = false;
+            ViewBag.IsAgent = agent;
+            ViewBag.UserName = agent ? "Preview Agent" : "Preview Admin";
+            ViewBag.PreviewExpandRows = expand ? 3 : 0;
+
+            AccountCommissionRow Row(long id, string customer, string product, string? agentName, int days, decimal deposit,
+                decimal totalPaid, decimal? buyingPrice, bool pastLock, decimal arrears, decimal agentPaid, decimal dealerPaid) => new()
+            {
+                AccountId = id,
+                ContractId = (id % 1000).ToString(),
+                CustomerName = customer,
+                ProductName = product,
+                Imei = "35" + id.ToString().PadLeft(13, '0'),
+                AgentName = agentName,
+                DealerName = "Nairobi Mobile Hub",
+                DaysSinceStart = days,
+                StartDate = DateTime.Now.Date.AddDays(-days),
+                Deposit = deposit,
+                TotalPaid = totalPaid,
+                BuyingPrice = buyingPrice,
+                ContractValue = deposit * 6,
+                DaysPastLock = pastLock ? 12 : 0,
+                Commission = Services.CommissionCalculator.Calculate(new Services.CommissionInputs
+                {
+                    Deposit = deposit, DaysSinceStart = days, IsPastLockDate = pastLock, Arrears = -arrears,
+                    TotalPaid = totalPaid, BuyingPrice = buyingPrice, HasAgent = agentName != null, HasWooOrder = id % 2 == 1,
+                    AgentPaid = agentPaid, DealerPaid = dealerPaid,
+                }),
+            };
+
+            var rows = new List<AccountCommissionRow>
+            {
+                Row(9237895, "Mary Achieng Odhiambo", "Samsung Galaxy A15 128GB", "John Mwangi", 216, 3000, 14500, 9000, false, 0, 2250, 300),
+                Row(9711946, "Kevin Otieno", "Tecno Spark 20 Pro", "John Mwangi", 104, 4000, 9800, 11000, true, 1400, 2000, 0),
+                Row(9800123, "Faith Wambui", "Infinix Hot 40i", "John Mwangi", 45, 2500, 4100, 8500, false, 0, 0, 0),
+                Row(9800456, "Samuel Kiprono", "Redmi 13C", null, 130, 3500, 16000, null, false, 0, 0, 0),
+            };
+            if (agent)
+            {
+                rows = rows.Where(r => r.AgentName != null).ToList();
+            }
+
+            var model = new AccountCommissionsViewModel
+            {
+                IsAgentView = agent,
+                ShowDealer = !agent,
+                Rows = rows,
+                Agent = Services.CommissionCalculator.PoolAgent(rows.Where(r => r.AgentName != null).Select(r => r.Commission)),
+                Dealer = Services.CommissionCalculator.PoolDealer(rows.Select(r => r.Commission)),
+                MissingBuyingPriceCount = rows.Count(r => !r.BuyingPrice.HasValue),
+            };
+
+            return View("~/Views/AccountCommissions/Index.cshtml", model);
+        }
     }
 }

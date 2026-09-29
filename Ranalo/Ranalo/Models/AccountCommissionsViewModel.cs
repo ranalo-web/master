@@ -23,6 +23,9 @@ namespace Ranalo.Models
         public double DaysPastLock { get; set; }
         public string? ProductName { get; set; }
         public string? Imei { get; set; }
+
+        // One day's worth of the payment plan (daily + weekly/7 + monthly/30).
+        public decimal DailyInstalment { get; set; }
         public Ranalo.Services.CommissionBreakdown Commission { get; set; } = new();
     }
 
@@ -39,6 +42,14 @@ namespace Ranalo.Models
         public decimal TotalPaid { get; set; }
         public decimal? BuyingPrice { get; set; }
         public Ranalo.Services.CommissionBreakdown Commission { get; set; } = new();
+
+        // Expandable "how it's worked out" panel.
+        public string? ContractId { get; set; }
+        public string? ProductName { get; set; }
+        public string? Imei { get; set; }
+        public DateTime StartDate { get; set; }
+        public decimal? ContractValue { get; set; }
+        public int DaysPastLock { get; set; }
     }
 
     public class AccountCommissionsViewModel

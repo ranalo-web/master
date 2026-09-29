@@ -4,9 +4,47 @@
     const int pageSize = 20;
     const string key = "account-commissions";
     var agentView = Model.IsAgentView;
+    // Dev preview only: rows whose detail panel starts open.
+    var previewOpen = ViewBag.PreviewExpandRows is int n ? n : 0;
+    // Customer + Dealer? + Agent? + Deposit + 5 agent columns + 7 dealer columns (not for agents).
+    var columnCount = 1 + (Model.ShowDealer ? 1 : 0) + (agentView ? 0 : 1) + 1 + 5 + (agentView ? 0 : 7);
 }
 
 <link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+<style>
+    .wl-toggle .icon { transition: transform .15s; display: inline-block; }
+    tr.wl-open .wl-toggle .icon { transform: rotate(90deg); }
+    tr.wl-open > td { border-bottom-color: transparent; }
+    .wl-detail-cell { white-space: normal; background: rgba(101,118,255,.05); font-size: 13px; padding: 1rem 1.25rem !important; }
+    .wl-line { display: flex; justify-content: space-between; gap: 1rem; padding: 2px 0; }
+    .wl-line > span:first-child { color: var(--bs-secondary-color, #8094ae); }
+    .wl-steps { padding-left: 1.2rem; margin-bottom: .25rem; }
+    .wl-steps li { margin-bottom: .35rem; }
+    .wl-steps .wl-line > span:first-child { color: inherit; }
+    .wl-note { font-size: 11.5px; color: var(--bs-secondary-color, #8094ae); }
+    .wl-subtotal { border-top: 1px dashed rgba(128,148,174,.4); margin: .25rem 0 .5rem; padding-top: 4px; font-weight: 600; }
+    .wl-subtotal > span:first-child, .wl-total > span:first-child { color: inherit; }
+    .wl-total { border-top: 1px solid rgba(128,148,174,.5); margin-top: .35rem; padding-top: 6px; font-weight: 700; font-size: 14px; }
+    .wl-line > span:last-child { text-align: right; white-space: nowrap; }
+    .wl-line > span:first-child { min-width: 0; }
+    .wl-toggle { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; min-height: 28px; margin: -4px 0 -4px -6px; border-radius: 6px; }
+    .wl-toggle:hover, tr.wl-open .wl-toggle { background: rgba(101,118,255,.1); }
+
+    /* Phones: only Customer, Agent and the Net/Balance columns show; every
+       other figure is in the tap-to-expand panel, so the table fits the
+       screen and the panel never needs sideways scrolling. */
+    @@media (max-width: 767.98px) {
+        .wl-md { display: none !important; }
+        .ac-table { white-space: normal !important; }
+        .ac-table td, .ac-table th { padding-left: .6rem; padding-right: .6rem; }
+        .ac-table td:not(:first-child), .ac-table th:not(:first-child) { white-space: nowrap; text-align: right; width: 1%; }
+        .wl-toggle { min-width: 36px; min-height: 36px; }
+        .wl-detail-cell { padding: .85rem .75rem !important; font-size: 13px; }
+        /* Keep the panel on screen even if the table is ever wider than the phone. */
+        .wl-detail-cell > .row { position: sticky; left: .75rem; max-width: calc(100vw - 3rem); }
+        .wl-detail-cell .row > div + div { border-top: 1px solid rgba(128,148,174,.25); padding-top: .75rem; }
+    }
+</style>
 
 <div class="nk-content-body">
     <div class="nk-block-head nk-block-head-sm">
@@ -16,11 +54,11 @@
                 <div class="nk-block-des text-soft">
                     @if (agentView)
                     {
-                        <p>Your commission on each of your accounts. Upfront is 50% of the deposit. The bonus is a further 25% of the deposit once the contract is 90 days old and the account is not past its lock date. Arrears on an account past its lock date are deducted.</p>
+                        <p>Your commission on each of your accounts. Upfront is 50% of the deposit. The bonus is a further 25% of the deposit once the contract is 90 days old, the account is not past its lock date and the contract has a WooCommerce order. Whatever the customer is behind by is deducted. <strong>Tap <em class="icon ni ni-chevron-right"></em> on any account to see exactly how it is worked out.</strong></p>
                     }
                     else
                     {
-                        <p>Agent: 50% of the deposit upfront, plus 25% once the contract is 90 days old and the account is not past its lock date. Dealer: 30% of (total paid &minus; buying price &minus; agent commission), growing with each payment. Arrears on accounts past their lock date are deducted from both. Accounts with no buying price earn no dealer commission until it is entered.</p>
+                        <p>Agent: 50% of the deposit upfront, plus 25% once the contract is 90 days old, not past its lock date and has a WooCommerce order. Dealer: 30% of (total paid &minus; buying price &minus; agent commission), growing with each payment. Whatever a customer is behind by is deducted from both. Accounts with no buying price earn no dealer commission until it is entered. <strong>Tap <em class="icon ni ni-chevron-right"></em> on any account to see exactly how it is worked out.</strong></p>
                     }
                 </div>
             </div>
@@ -40,7 +78,7 @@
                 <div class="card card-bordered h-100"><div class="card-inner">
                     <span class="sub-text">Agent withheld</span>
                     <span class="d-block fs-5 fw-bold text-warning">KES @Model.Agent.Withheld.ToString("N0")</span>
-                    <span class="d-block text-soft small">Arrears on accounts past lock date</span>
+                    <span class="d-block text-soft small">What customers are behind by</span>
                 </div></div>
             </div>
             <div class="col-6 col-lg-3">
@@ -70,7 +108,7 @@
                     <div class="card card-bordered h-100"><div class="card-inner">
                         <span class="sub-text">Dealer withheld</span>
                         <span class="d-block fs-5 fw-bold text-warning">KES @Model.Dealer.Withheld.ToString("N0")</span>
-                        <span class="d-block text-soft small">Arrears on accounts past lock date</span>
+                        <span class="d-block text-soft small">What customers are behind by</span>
                     </div></div>
                 </div>
                 <div class="col-6 col-lg-3">
@@ -109,33 +147,33 @@
                     else
                     {
                     <div class="table-responsive">
-                        <table class="table mb-0" style="white-space:nowrap;" data-key="@key" data-page-size="@pageSize">
+                        <table class="table mb-0 ac-table" style="white-space:nowrap;" data-key="@key" data-page-size="@pageSize">
                             <thead>
                                 <tr>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
                                     @if (Model.ShowDealer)
                                     {
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                        <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)">Dealer</th>
                                     }
                                     @if (!agentView)
                                     {
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                        <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)">Agent</th>
                                     }
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Deposit</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="50% of deposit">Agent Upfront</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="25% of deposit once 90 days old and not past lock date">Agent Bonus</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on this account while it is past its lock date">Agent Arrears</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent Paid</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Upfront + bonus - arrears deducted - paid">Agent Net</th>
+                                    <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)">Deposit</th>
+                                    <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)" title="50% of deposit">Agent Upfront</th>
+                                    <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)" title="25% of deposit once 90 days old, not past lock date and with a WooCommerce order">Agent Bonus</th>
+                                    <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)" title="What the customer is behind by">Agent Arrears</th>
+                                    <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)">Agent Paid</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Upfront + bonus - arrears deducted - paid"><span class="d-md-none">@(agentView ? "Your net" : "Agent")</span><span class="d-none d-md-inline">Agent Net</span></th>
                                     @if (!agentView)
                                     {
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Paid</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Buying Price</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Total paid - buying price - agent commission">Dealer Base</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)" title="30% of dealer base">Dealer Comm.</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on this account while it is past its lock date">Dealer Arrears</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer Paid</th>
-                                        <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission - dealer arrears - dealer paid">Dealer Balance</th>
+                                        <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)">Total Paid</th>
+                                        <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)">Buying Price</th>
+                                        <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)" title="Total paid - buying price - agent commission">Dealer Base</th>
+                                        <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)" title="30% of dealer base">Dealer Comm.</th>
+                                        <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)" title="What the customer is behind by">Dealer Arrears</th>
+                                        <th class="wl-th wl-md" onclick="Ranalo.sortTable(this)">Dealer Paid</th>
+                                        <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission - dealer arrears - dealer paid"><span class="d-md-none">Dealer</span><span class="d-none d-md-inline">Dealer Balance</span></th>
                                     }
                                 </tr>
                             </thead>
@@ -145,71 +183,208 @@
                                     var r = Model.Rows[i];
                                     var c = r.Commission;
                                     var noAgent = r.AgentName == null;
-                                    <tr class="@(i >= pageSize ? "d-none" : "")" data-watchlist-row="@key">
+                                    <tr class="@(i >= pageSize ? "d-none" : "") @(i < previewOpen ? "wl-open" : "")" data-watchlist-row="@key">
                                         <td>
-                                            <a href="/account-details/@r.AccountId" class="fw-medium">@r.CustomerName</a>
-                                            <span class="d-block sub-text">AC: @r.AccountId &middot; @r.DaysSinceStart days</span>
+                                            <div class="d-flex align-items-start" style="gap:.5rem;">
+                                                <a href="#" class="wl-toggle text-primary" title="How is this worked out?" aria-expanded="false" onclick="event.preventDefault(); Ranalo.toggleDetail(this);"><em class="icon ni ni-chevron-right"></em></a>
+                                                <div>
+                                                    <a href="/account-details/@r.AccountId" class="fw-medium">@r.CustomerName</a>
+                                                    <span class="d-block sub-text"><span class="text-body">@(r.ProductName ?? "Unknown device")</span> &middot; AC: @r.AccountId &middot; @r.DaysSinceStart days</span>
+                                                </div>
+                                            </div>
                                         </td>
                                         @if (Model.ShowDealer)
                                         {
-                                            <td>@r.DealerName</td>
+                                            <td class="wl-md">@r.DealerName</td>
                                         }
                                         @if (!agentView)
                                         {
-                                            <td>@(noAgent ? "Direct sale" : r.AgentName)</td>
+                                            <td class="wl-md">@(noAgent ? "Direct sale" : r.AgentName)</td>
                                         }
-                                        <td>KES @r.Deposit.ToString("N0")</td>
+                                        <td class="wl-md">KES @r.Deposit.ToString("N0")</td>
                                         @if (noAgent)
                                         {
-                                            <td class="text-soft">-</td>
-                                            <td class="text-soft">-</td>
-                                            <td class="text-soft">-</td>
-                                            <td class="text-soft">-</td>
+                                            <td class="text-soft wl-md">-</td>
+                                            <td class="text-soft wl-md">-</td>
+                                            <td class="text-soft wl-md">-</td>
+                                            <td class="text-soft wl-md">-</td>
                                             <td class="text-soft">-</td>
                                         }
                                         else
                                         {
-                                            <td>KES @c.AgentUpfront.ToString("N0")</td>
-                                            <td>
+                                            <td class="wl-md">KES @c.AgentUpfront.ToString("N0")</td>
+                                            <td class="wl-md">
                                                 @if (c.BonusEarned)
                                                 {
                                                     <span>KES @c.AgentBonus.ToString("N0")</span>
                                                 }
                                                 else if (c.BonusAtRisk)
                                                 {
-                                                    <span class="text-warning">Held: past lock date</span>
+                                                    <span class="text-warning">@(c.BonusHeldNoWooOrder ? "Held: no WooCommerce order" : "Held: past lock date")</span>
                                                 }
                                                 else
                                                 {
                                                     <span class="text-soft">in @c.DaysToBonus days</span>
                                                 }
                                             </td>
-                                            <td class="@(c.AgentArrearsDeducted > 0 ? "text-danger" : "")">KES @c.AgentArrearsDeducted.ToString("N0")</td>
-                                            <td>KES @c.AgentPaid.ToString("N0")</td>
+                                            <td class="wl-md @(c.AgentArrearsDeducted > 0 ? "text-danger" : "")">KES @c.AgentArrearsDeducted.ToString("N0")</td>
+                                            <td class="wl-md">KES @c.AgentPaid.ToString("N0")</td>
                                             <td class="fw-medium @(c.AgentNet < 0 ? "text-danger" : "")">KES @c.AgentNet.ToString("N0")</td>
                                         }
                                         @if (!agentView)
                                         {
-                                            <td>KES @r.TotalPaid.ToString("N0")</td>
+                                            <td class="wl-md">KES @r.TotalPaid.ToString("N0")</td>
                                             @if (r.BuyingPrice.HasValue)
                                             {
-                                                <td>KES @r.BuyingPrice.Value.ToString("N0")</td>
-                                                <td class="@(c.DealerBase < 0 ? "text-danger" : "")">KES @c.DealerBase!.Value.ToString("N0")</td>
-                                                <td>KES @c.DealerCommission!.Value.ToString("N0")</td>
-                                                <td class="@(c.DealerArrearsDeducted > 0 ? "text-danger" : "")">KES @c.DealerArrearsDeducted.ToString("N0")</td>
-                                                <td>KES @c.DealerPaid.ToString("N0")</td>
+                                                <td class="wl-md">KES @r.BuyingPrice.Value.ToString("N0")</td>
+                                                <td class="wl-md @(c.DealerBase < 0 ? "text-danger" : "")">KES @c.DealerBase!.Value.ToString("N0")</td>
+                                                <td class="wl-md">KES @c.DealerCommission!.Value.ToString("N0")</td>
+                                                <td class="wl-md @(c.DealerArrearsDeducted > 0 ? "text-danger" : "")">KES @c.DealerArrearsDeducted.ToString("N0")</td>
+                                                <td class="wl-md">KES @c.DealerPaid.ToString("N0")</td>
                                                 <td class="fw-medium @(c.DealerBalance < 0 ? "text-danger" : "")">KES @c.DealerBalance!.Value.ToString("N0")</td>
                                             }
                                             else
                                             {
-                                                <td class="text-warning">Not set</td>
-                                                <td class="text-soft">-</td>
-                                                <td class="text-soft">-</td>
-                                                <td class="text-soft">-</td>
-                                                <td>KES @c.DealerPaid.ToString("N0")</td>
+                                                <td class="text-warning wl-md">Not set</td>
+                                                <td class="text-soft wl-md">-</td>
+                                                <td class="text-soft wl-md">-</td>
+                                                <td class="text-soft wl-md">-</td>
+                                                <td class="wl-md">KES @c.DealerPaid.ToString("N0")</td>
                                                 <td class="text-soft">-</td>
                                             }
                                         }
+                                    </tr>
+                                    <tr class="wl-detail @(i < previewOpen ? "" : "d-none")">
+                                        <td colspan="@columnCount" class="wl-detail-cell">
+                                            <div class="row g-3">
+                                                <div class="col-12 col-lg-4">
+                                                    <h6 class="overline-title text-soft mb-2">The account</h6>
+                                                    <div class="fw-bold">@(r.ProductName ?? "Unknown device")</div>
+                                                    <div class="text-soft mb-2">IMEI @(r.Imei ?? "-") &middot; Contract @(r.ContractId ?? "-")</div>
+                                                    @if (Model.ShowDealer)
+                                                    {
+                                                        <div class="wl-line"><span>Dealer</span><span>@r.DealerName</span></div>
+                                                    }
+                                                    @if (!agentView)
+                                                    {
+                                                        <div class="wl-line"><span>Agent</span><span>@(noAgent ? "Direct sale" : r.AgentName)</span></div>
+                                                    }
+                                                    <div class="wl-line"><span>Started</span><span>@r.StartDate.ToString("dd MMM yyyy") (@r.DaysSinceStart days ago)</span></div>
+                                                    <div class="wl-line"><span>Deposit</span><span>KES @r.Deposit.ToString("N0")</span></div>
+                                                    @if (!agentView)
+                                                    {
+                                                        <div class="wl-line"><span>Phone buying price</span><span class="@(r.BuyingPrice.HasValue ? "" : "text-warning")">@(r.BuyingPrice.HasValue ? "KES " + r.BuyingPrice.Value.ToString("N0") : "Not set")</span></div>
+                                                    }
+                                                    <div class="wl-line"><span>Contract value</span><span>@(r.ContractValue.HasValue ? "KES " + r.ContractValue.Value.ToString("N0") : "-")</span></div>
+                                                    <div class="wl-line"><span>Customer has paid</span><span>KES @r.TotalPaid.ToString("N0")</span></div>
+                                                    <div class="wl-line">
+                                                        <span>Payments</span>
+                                                        @if (c.IsBehind)
+                                                        {
+                                                            <span class="text-danger">Behind by KES @c.TrueArrears.ToString("N0")</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-success">Up to date</span>
+                                                        }
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12 col-lg-4">
+                                                    <h6 class="overline-title text-soft mb-2">@(agentView ? "Your commission" : "Agent commission") &mdash; how it's worked out</h6>
+                                                    @if (noAgent)
+                                                    {
+                                                        <p class="text-soft mb-0">Direct sale by the dealer, so no agent commission is paid. The standard agent commission (KES @c.AgentCommission.ToString("N0")) is still taken off the dealer's base.</p>
+                                                    }
+                                                    else
+                                                    {
+                                                        <ol class="wl-steps">
+                                                            <li>
+                                                                <div class="wl-line"><span><strong>Upfront</strong>: 50% of the KES @r.Deposit.ToString("N0") deposit</span><span>KES @c.AgentUpfront.ToString("N0")</span></div>
+                                                            </li>
+                                                            <li>
+                                                                <div class="wl-line"><span><strong>Bonus</strong>: 25% of the deposit</span><span>@(c.BonusEarned ? "KES " + c.AgentBonus.ToString("N0") : "KES 0")</span></div>
+                                                                <div class="wl-note">
+                                                                    @if (c.BonusEarned)
+                                                                    {
+                                                                        <span class="text-success">Earned: the contract is over 90 days old, isn't past its lock date and has a WooCommerce order.</span>
+                                                                    }
+                                                                    else if (c.BonusAtRisk)
+                                                                    {
+                                                                        <span class="text-warning">
+                                                                            Held: the contract is over 90 days old but
+                                                                            @(c.BonusHeldNoWooOrder && c.IsPastLockDate ? "it has no WooCommerce order and is past its lock date"
+                                                                                : c.BonusHeldNoWooOrder ? "it has no WooCommerce order" : "it is past its lock date").
+                                                                            Paid once that's sorted.
+                                                                        </span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span>Not yet: due in @c.DaysToBonus day@(c.DaysToBonus == 1 ? "" : "s"), when the contract reaches 90 days@(c.HasWooOrder ? "" : " -- it will also need a WooCommerce order").</span>
+                                                                    }
+                                                                </div>
+                                                            </li>
+                                                            <li>
+                                                                <div class="wl-line"><span><strong>Less arrears</strong></span><span class="@(c.AgentArrearsDeducted > 0 ? "text-danger" : "")">&minus; KES @c.AgentArrearsDeducted.ToString("N0")</span></div>
+                                                                <div class="wl-note">@(c.IsBehind ? "The customer is behind by this much, so it is held back until they catch up (written-off accounts included)." : "Nothing held back: the customer isn't behind.")</div>
+                                                            </li>
+                                                            <li>
+                                                                <div class="wl-line"><span><strong>Less already paid</strong> @(agentView ? "to you" : "to the agent")</span><span>&minus; KES @c.AgentPaid.ToString("N0")</span></div>
+                                                            </li>
+                                                        </ol>
+                                                        <div class="wl-line wl-total"><span>@(c.AgentNet >= 0 ? "Still to be paid" : "Held back (more than earned)")</span><span class="@(c.AgentNet < 0 ? "text-danger" : "text-success")">KES @c.AgentNet.ToString("N0")</span></div>
+                                                    }
+                                                </div>
+
+                                                @if (!agentView)
+                                                {
+                                                    <div class="col-12 col-lg-4">
+                                                        <h6 class="overline-title text-soft mb-2">Dealer commission &mdash; how it's worked out</h6>
+                                                        @if (!r.BuyingPrice.HasValue)
+                                                        {
+                                                            <p class="text-warning mb-0">The phone's buying price hasn't been entered, so the dealer commission can't be worked out yet. It will appear once the buying price is added.</p>
+                                                        }
+                                                        else
+                                                        {
+                                                            <ol class="wl-steps">
+                                                                <li>
+                                                                    <div class="wl-line"><span><strong>Customer has paid</strong></span><span>KES @r.TotalPaid.ToString("N0")</span></div>
+                                                                </li>
+                                                                <li>
+                                                                    <div class="wl-line"><span><strong>Less</strong> phone buying price</span><span>&minus; KES @r.BuyingPrice.Value.ToString("N0")</span></div>
+                                                                </li>
+                                                                <li>
+                                                                    <div class="wl-line"><span><strong>Less</strong> agent commission</span><span>&minus; KES @c.AgentCommission.ToString("N0")</span></div>
+                                                                    <div class="wl-note">Upfront + bonus. Taken off even on a direct sale.</div>
+                                                                </li>
+                                                            </ol>
+                                                            <div class="wl-line wl-subtotal"><span>Dealer base (profit so far)</span><span class="@(c.DealerBase < 0 ? "text-danger" : "")">KES @c.DealerBase!.Value.ToString("N0")</span></div>
+                                                            <ol class="wl-steps" start="4">
+                                                                <li>
+                                                                    <div class="wl-line"><span><strong>Commission</strong>: 30% of the base</span><span>KES @c.DealerCommission!.Value.ToString("N0")</span></div>
+                                                                    @if (c.DealerBase < 0)
+                                                                    {
+                                                                        <div class="wl-note">The customer hasn't yet paid back the phone and agent costs, so there's nothing to share yet. This grows with every payment.</div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <div class="wl-note">Grows with every payment the customer makes.</div>
+                                                                    }
+                                                                </li>
+                                                                <li>
+                                                                    <div class="wl-line"><span><strong>Less arrears</strong></span><span class="@(c.DealerArrearsDeducted > 0 ? "text-danger" : "")">&minus; KES @c.DealerArrearsDeducted.ToString("N0")</span></div>
+                                                                    <div class="wl-note">@(c.IsBehind ? "The customer is behind by this much, so it is held back until they catch up (written-off accounts included)." : "Nothing held back: the customer isn't behind.")</div>
+                                                                </li>
+                                                                <li>
+                                                                    <div class="wl-line"><span><strong>Less already paid</strong> to the dealer</span><span>&minus; KES @c.DealerPaid.ToString("N0")</span></div>
+                                                                </li>
+                                                            </ol>
+                                                            <div class="wl-line wl-total"><span>@(c.DealerBalance >= 0 ? "Still to be paid" : "Held back (more than earned)")</span><span class="@(c.DealerBalance < 0 ? "text-danger" : "text-success")">KES @c.DealerBalance!.Value.ToString("N0")</span></div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        </td>
                                     </tr>
                                 }
                             </tbody>
@@ -230,5 +405,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/watchlist-table.js"></script>
+    <script src="~/js/watchlist-table.js?v=2"></script>
 }

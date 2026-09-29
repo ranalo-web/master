@@ -25,6 +25,17 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
+        public void InDefault_WhenBehindByMoreThanSevenDaysOfInstalments()
+        {
+            // 120/day plan: 840 is exactly 7 days' worth.
+            Assert.That(CommissionPayoutRules.IsInDefault(840m, 120m), Is.False);
+            Assert.That(CommissionPayoutRules.IsInDefault(841m, 120m), Is.True);
+            Assert.That(CommissionPayoutRules.IsInDefault(0m, 120m), Is.False);
+            // No instalment recorded: any shortfall counts.
+            Assert.That(CommissionPayoutRules.IsInDefault(1m, 0m), Is.True);
+        }
+
+        [Test]
         public void Suspended_OnlyAboveThirtyPercent()
         {
             Assert.That(CommissionPayoutRules.IsSuspended(30m), Is.False);

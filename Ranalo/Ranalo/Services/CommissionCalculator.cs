@@ -8,10 +8,14 @@ namespace Ranalo.Services
     // Agent commission
     //   Upfront = 50% of the deposit, from the contract start.
     //   Bonus   = 25% of the deposit, only once the contract is 90+ days old
-    //             AND the account is performing (not past its lock date).
-    //             A restructured account whose lock date has been pushed out
-    //             counts as performing.
-    //   Arrears deducted = the account's shortfall while it is past its lock date.
+    //             AND the account is performing (not past its lock date)
+    //             AND the contract has a WooCommerce order (Woo_Orders.ContractId).
+    //             Otherwise it is held, and paid once the account qualifies.
+    //   Arrears deducted = the account's whole shortfall (amount due to date
+    //             minus total paid -- the Balance on Account Details) whenever
+    //             it is behind, whatever its lock date, written off or not.
+    //             Lock dates are not a reliable sign of being behind: badly
+    //             behind accounts can still show a lock date in the future.
     //   Net     = upfront + bonus - arrears deducted - paid to the agent.
     //
     // Dealer commission
@@ -19,7 +23,7 @@ namespace Ranalo.Services
     //             The agent commission is subtracted even on direct sales with no
     //             agent, so unassigning an agent can never inflate the dealer's share.
     //   Commission = 30% of the base, never below 0. It grows with every payment.
-    //   Arrears deducted = the same shortfall as above, while past the lock date.
+    //   Arrears deducted = the same shortfall as above.
     //   Net     = commission - arrears deducted; Balance = net - paid to the dealer.
     //   No buying price recorded: no dealer commission at all until it is entered.
     public static class CommissionCalculator
@@ -31,8 +35,9 @@ namespace Ranalo.Services
 
         public static CommissionBreakdown Calculate(CommissionInputs i)
         {
-            var trueArrears = i.IsPastLockDate && i.Arrears < 0 ? -i.Arrears : 0;
-            var bonusEarned = i.DaysSinceStart >= BonusDays && !i.IsPastLockDate;
+            var trueArrears = i.Arrears < 0 ? -i.Arrears : 0;
+            var bonusDue = i.DaysSinceStart >= BonusDays;
+            var bonusEarned = bonusDue && !i.IsPastLockDate && i.HasWooOrder;
             var upfront = i.Deposit * AgentUpfrontRate;
             var bonus = bonusEarned ? i.Deposit * AgentBonusRate : 0;
             var agentCommission = upfront + bonus;
@@ -54,11 +59,13 @@ namespace Ranalo.Services
             return new CommissionBreakdown
             {
                 IsPastLockDate = i.IsPastLockDate,
+                HasWooOrder = i.HasWooOrder,
                 TrueArrears = trueArrears,
                 AgentUpfront = upfront,
                 AgentBonus = bonus,
                 BonusEarned = bonusEarned,
-                BonusAtRisk = i.DaysSinceStart >= BonusDays && i.IsPastLockDate,
+                BonusAtRisk = bonusDue && !bonusEarned,
+                BonusHeldNoWooOrder = bonusDue && !i.HasWooOrder,
                 DaysToBonus = Math.Max(0, BonusDays - i.DaysSinceStart),
                 AgentCommission = agentCommission,
                 AgentEarned = agentEarned,
@@ -117,17 +124,27 @@ namespace Ranalo.Services
         public bool HasAgent { get; set; }
         public decimal AgentPaid { get; set; }
         public decimal DealerPaid { get; set; }
+
+        // The contract has a WooCommerce order. Without one the bonus is held.
+        public bool HasWooOrder { get; set; }
     }
 
     public class CommissionBreakdown
     {
         public bool IsPastLockDate { get; set; }
+        public bool HasWooOrder { get; set; }
+
+        // The customer's shortfall; all of it is deducted.
         public decimal TrueArrears { get; set; }
+        public bool IsBehind => TrueArrears > 0;
 
         public decimal AgentUpfront { get; set; }
         public decimal AgentBonus { get; set; }
         public bool BonusEarned { get; set; }
+        // 90+ days old but the bonus is held: past the lock date and/or no
+        // WooCommerce order (BonusHeldNoWooOrder says which).
         public bool BonusAtRisk { get; set; }
+        public bool BonusHeldNoWooOrder { get; set; }
         public int DaysToBonus { get; set; }
 
         // Upfront + bonus at the standard rate, whether or not an agent is

@@ -41,7 +41,7 @@
     {
         <div class="alert alert-warning alert-icon">
             <em class="icon ni ni-alert-circle"></em>
-            <strong>Commissions suspended.</strong> @p.AccountsInArrears of @p.Accounts accounts (@p.DefaultRatePct.ToString("0.#")%) are more than 7 days past their lock date, above the @threshold% limit.
+            <strong>Commissions suspended.</strong> @p.AccountsInArrears of @p.Accounts accounts (@p.DefaultRatePct.ToString("0.#")%) are behind by more than 7 days of payments, above the @threshold% limit.
             KES @p.Pool.Owed.ToString("N0") is held and becomes payable once the rate is back at @threshold% or below.
         </div>
     }
@@ -114,7 +114,7 @@
                                             <th>Agent</th>
                                         }
                                         <th class="text-end">Earned</th>
-                                        <th class="text-end" title="Arrears on this account while past its lock date">Arrears</th>
+                                        <th class="text-end" title="What the customer is behind by">Arrears</th>
                                         <th class="text-end">Paid</th>
                                         <th class="text-end" title="Earned - paid, before arrears">Unpaid</th>
                                     </tr>
@@ -140,7 +140,7 @@
                                                     <span class="text-body">@(a.ProductName ?? "Unknown device")</span> · AC: @a.AccountId · @a.DaysSinceStart days
                                                     @if (a.InArrears)
                                                     {
-                                                        <span class="text-danger"> · in arrears</span>
+                                                        <span class="text-danger"> · behind by KES @a.Breakdown.TrueArrears.ToString("N0")</span>
                                                     }
                                                     @if (a.MissingBuyingPrice)
                                                     {
@@ -171,7 +171,7 @@
                                                         <div class="d-flex justify-content-between"><span class="text-soft">Buying price</span><span class="@(a.BuyingPrice.HasValue ? "" : "text-warning")">@(a.BuyingPrice.HasValue ? "KES " + a.BuyingPrice.Value.ToString("N0") : "Not set")</span></div>
                                                         <div class="d-flex justify-content-between"><span class="text-soft">Contract value</span><span>@(a.ContractValue.HasValue ? "KES " + a.ContractValue.Value.ToString("N0") : "-")</span></div>
                                                         <div class="d-flex justify-content-between"><span class="text-soft">Customer has paid</span><span>KES @a.TotalPaid.ToString("N0")</span></div>
-                                                        <div class="d-flex justify-content-between"><span class="text-soft">Lock date</span><span class="@(a.InArrears ? "text-danger" : "")">@(a.DaysPastLock > 0 ? a.DaysPastLock + " days past" : "Not yet due")</span></div>
+                                                        <div class="d-flex justify-content-between"><span class="text-soft">Payments</span><span class="@(a.Breakdown.IsBehind ? "text-danger" : "text-success")">@(a.Breakdown.IsBehind ? "Behind by KES " + a.Breakdown.TrueArrears.ToString("N0") : "Up to date")</span></div>
                                                     </div>
                                                     <div class="col-12 col-md-4">
                                                         <h6 class="overline-title text-soft mb-1">How the commission is worked out</h6>
@@ -186,7 +186,7 @@
                                                                 }
                                                                 else if (b.BonusAtRisk)
                                                                 {
-                                                                    <span class="text-warning">Held: past lock date</span>
+                                                                    <span class="text-warning">@(b.BonusHeldNoWooOrder ? "Held: no WooCommerce order" : "Held: past lock date")</span>
                                                                 }
                                                                 else
                                                                 {
@@ -194,7 +194,7 @@
                                                                 }
                                                             </div>
                                                             <div class="d-flex justify-content-between fw-medium border-top mt-1 pt-1"><span>Earned</span><span>KES @b.AgentEarned.ToString("N0")</span></div>
-                                                            <div class="d-flex justify-content-between"><span class="text-soft">Less arrears (past lock date)</span><span class="text-danger">(@b.AgentArrearsDeducted.ToString("N0"))</span></div>
+                                                            <div class="d-flex justify-content-between"><span class="text-soft">Less arrears (customer is behind by)</span><span class="text-danger">(@b.AgentArrearsDeducted.ToString("N0"))</span></div>
                                                             <div class="d-flex justify-content-between"><span class="text-soft">Less already paid</span><span>(@b.AgentPaid.ToString("N0"))</span></div>
                                                             <div class="d-flex justify-content-between fw-bold border-top mt-1 pt-1"><span>Net on this account</span><span class="@(b.AgentNet < 0 ? "text-danger" : "")">KES @b.AgentNet.ToString("N0")</span></div>
                                                         }
@@ -205,7 +205,7 @@
                                                             <div class="d-flex justify-content-between"><span class="text-soft">Less agent commission</span><span>(@b.AgentCommission.ToString("N0"))</span></div>
                                                             <div class="d-flex justify-content-between border-top mt-1 pt-1"><span class="text-soft">Dealer base</span><span class="@(b.DealerBase < 0 ? "text-danger" : "")">KES @b.DealerBase!.Value.ToString("N0")</span></div>
                                                             <div class="d-flex justify-content-between fw-medium"><span>30% of base = earned</span><span>KES @b.DealerCommission.Value.ToString("N0")</span></div>
-                                                            <div class="d-flex justify-content-between"><span class="text-soft">Less arrears (past lock date)</span><span class="text-danger">(@b.DealerArrearsDeducted.ToString("N0"))</span></div>
+                                                            <div class="d-flex justify-content-between"><span class="text-soft">Less arrears (customer is behind by)</span><span class="text-danger">(@b.DealerArrearsDeducted.ToString("N0"))</span></div>
                                                             <div class="d-flex justify-content-between"><span class="text-soft">Less already paid</span><span>(@b.DealerPaid.ToString("N0"))</span></div>
                                                             <div class="d-flex justify-content-between fw-bold border-top mt-1 pt-1"><span>Balance on this account</span><span class="@(b.DealerBalance < 0 ? "text-danger" : "")">KES @b.DealerBalance!.Value.ToString("N0")</span></div>
                                                         }

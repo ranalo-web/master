@@ -27,7 +27,7 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Pay Commissions</h3>
                 <div class="nk-block-des text-soft">
-                    <p>What each dealer and agent can be paid today: commission earned, less arrears on their accounts past lock date, less what's already been paid. Anyone with more than @CommissionPayoutRules.SuspensionThresholdPct.ToString("0")% of their accounts over 7 days past lock date is suspended -- their commission is held until the rate comes back down.</p>
+                    <p>What each dealer and agent can be paid today: commission earned, less whatever their customers are behind by, less what's already been paid. Anyone with more than @CommissionPayoutRules.SuspensionThresholdPct.ToString("0")% of their accounts behind by more than 7 days of payments is suspended -- their commission is held until the rate comes back down.</p>
                 </div>
             </div>
             <div class="nk-block-head-content">
@@ -113,9 +113,9 @@
                                 <tr>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Payee</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Accounts more than 7 days past lock date / all accounts">Default Rate</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Accounts behind by more than 7 days of payments / all accounts">Default Rate</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Earned</th>
-                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Arrears on accounts past lock date">Withheld</th>
+                                    <th class="wl-th" onclick="Ranalo.sortTable(this)" title="What their customers are behind by">Withheld</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
                                     <th class="wl-th" onclick="Ranalo.sortTable(this)">Payable</th>
                                     <th></th>

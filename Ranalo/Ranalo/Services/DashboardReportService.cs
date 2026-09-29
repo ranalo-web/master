@@ -788,6 +788,12 @@ namespace Ranalo.Services
                     TotalPaid = a.TotalPaid,
                     BuyingPrice = a.BuyingPrice,
                     Commission = a.Commission,
+                    ContractId = a.ContractId,
+                    ProductName = a.ProductName,
+                    Imei = a.Imei,
+                    StartDate = a.StartDate,
+                    ContractValue = a.TotalCost,
+                    DaysPastLock = (int)Math.Max(0, Math.Floor(a.DaysPastLock)),
                 })
                 .OrderBy(r => r.AgentName == null)
                 .ThenBy(r => r.AgentName)

@@ -252,8 +252,8 @@ namespace Ranalo.Services
         private static bool Contains(string? value, string term) =>
             value != null && value.Contains(term, StringComparison.OrdinalIgnoreCase);
 
-        // The dashboards' Arrears tier: more than 7 days past the lock date.
-        private static bool InArrears(CommissionAccount a) => a.DaysPastLock > 7;
+        private static bool InArrears(CommissionAccount a) =>
+            CommissionPayoutRules.IsInDefault(a.Commission.TrueArrears, a.DailyInstalment);
 
         private static PayoutAccount ToPayoutAccount(string payeeType, CommissionAccount a)
         {

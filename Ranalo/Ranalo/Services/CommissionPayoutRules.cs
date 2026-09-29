@@ -4,8 +4,10 @@ namespace Ranalo.Services
     // per-account figures. Kept free of I/O so they can be unit tested.
     //
     // Suspension
-    //   Default rate = accounts more than 7 days past their lock date
-    //   (the dashboards' Arrears tier) / all of the payee's accounts.
+    //   Default rate = accounts behind by more than 7 days' worth of
+    //   instalments / all of the payee's accounts. Measured on the payment
+    //   shortfall, not lock dates, which can sit in the future even for
+    //   accounts that are far behind.
     //   Above 30% nothing is payable. Commission keeps accruing and becomes
     //   payable again once the rate is back at 30% or below. A dealer and each
     //   agent are judged on their own accounts only.
@@ -27,6 +29,13 @@ namespace Ranalo.Services
     public static class CommissionPayoutRules
     {
         public const decimal SuspensionThresholdPct = 30m;
+
+        public const int BehindToleranceDays = 7;
+
+        // Counts toward the default rate: behind by more than 7 days' worth
+        // of instalments (any shortfall at all when there's no instalment).
+        public static bool IsInDefault(decimal shortfall, decimal dailyInstalment) =>
+            shortfall > Math.Max(0, dailyInstalment) * BehindToleranceDays;
 
         public static decimal DefaultRatePct(int accounts, int accountsInArrears) =>
             accounts > 0 ? Math.Round(accountsInArrears * 100m / accounts, 1) : 0m;

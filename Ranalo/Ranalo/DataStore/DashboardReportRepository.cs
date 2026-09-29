@@ -1566,6 +1566,12 @@ namespace Ranalo.DataStore
             // Devices.Make + Model and ImeiNo, for display only.
             public string? ProductName { get; set; }
             public string? Imei { get; set; }
+
+            // A Woo_Orders row exists for this contract; the agent bonus needs one.
+            public bool HasWooOrder { get; set; }
+
+            // Daily + weekly/7 + monthly/30: one day's worth of the payment plan.
+            public decimal DailyInstalment { get; set; }
         }
 
         // The raw per-account commission inputs used by every commission
@@ -1602,6 +1608,9 @@ namespace Ranalo.DataStore
                         ci.BuyingPrice AS BuyingPrice,
                         NULLIF(LTRIM(RTRIM(ISNULL(d.Make, '') + ' ' + ISNULL(d.Model, ''))), '') AS ProductName,
                         CAST(d.ImeiNo AS NVARCHAR(50)) AS Imei,
+                        CAST(CASE WHEN EXISTS (SELECT 1 FROM Woo_Orders wo WHERE wo.ContractId = ci.ContractID)
+                                  THEN 1 ELSE 0 END AS BIT) AS HasWooOrder,
+                        ci.Daily + ci.Weekly / 7.0 + ci.Monthly / 30.0 AS DailyInstalment,
                         -- Commission itself is calculated in C# by
                         -- Services.CommissionCalculator, the one formula for the app.
                         ci.StartDate,
@@ -1663,6 +1672,8 @@ namespace Ranalo.DataStore
                     ac.BuyingPrice,
                     ac.ProductName,
                     ac.Imei,
+                    ac.HasWooOrder,
+                    ac.DailyInstalment,
                     ac.Arrears,
                     ac.LockDate,
                     ac.DaysSinceStart,
@@ -1670,9 +1681,14 @@ namespace Ranalo.DataStore
                     ISNULL(dp.TotalDealerPaid, 0) AS DealerPaid
                 FROM AccountCommission ac
                 LEFT JOIN AgentPaymentsAgg ap ON ap.ContractId = ac.ContractID
-                LEFT JOIN DealerPaymentsAgg dp ON dp.ContractId = ac.ContractID";
+                LEFT JOIN DealerPaymentsAgg dp ON dp.ContractId = ac.ContractID
+                OPTION (RECOMPILE)";
 
-            var rows = await _db.QueryAsync<AgentCommissionAccountRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId });
+            // RECOMPILE: the same query serves one agent, one dealer and the
+            // whole company ("@X IS NULL OR ..."), so a cached plan built for
+            // one of those can time out on another (seen on the company-wide
+            // call). Takes ~4s company-wide; a compile is negligible next to that.
+            var rows = await _db.QueryAsync<AgentCommissionAccountRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId }, commandTimeout: 90);
             return rows.ToList();
         }
 
@@ -1689,6 +1705,7 @@ namespace Ranalo.DataStore
                 HasAgent = r.AssignedAgentId.HasValue,
                 AgentPaid = r.AgentPaid,
                 DealerPaid = r.DealerPaid,
+                HasWooOrder = r.HasWooOrder,
             });
 
         // A single agent's own Commission card (Agent Dashboard), live.
@@ -1757,6 +1774,7 @@ namespace Ranalo.DataStore
                     DaysPastLock = DaysPastLock(r.LockDate, now),
                     ProductName = r.ProductName,
                     Imei = r.Imei,
+                    DailyInstalment = r.DailyInstalment,
                     Commission = Breakdown(r, now),
                 }).ToList();
             }
