@@ -17,20 +17,27 @@ namespace Ranalo.Controllers
         private readonly IUserService _userService;
         private readonly IContractService _contractorService;
         private readonly IDeviceProcessor _deviceProcessor;
+        private readonly ICollectionsService _collections;
+        private readonly ICommissionPayoutService _payouts;
         private readonly ILogger<CollectionsController> _logger;
 
         public CollectionsController(IApplicationReportService applicationReportService,
             IUserService userService,
             IContractService contractorService,
-            IDeviceProcessor deviceProcessor, ILogger<CollectionsController> logger)
+            IDeviceProcessor deviceProcessor, ICollectionsService collections, ICommissionPayoutService payouts,
+            ILogger<CollectionsController> logger)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
             _contractorService = contractorService;
             _deviceProcessor = deviceProcessor;
+            _collections = collections;
+            _payouts = payouts;
             _logger = logger;
         }
 
+        // Collector dashboard: the accounts they hold, what they've recovered
+        // and earned. Also reachable by dealers/agents who are collectors too.
         [Route("collections-home/{page:int?}")]
         public async Task<IActionResult> Index()
         {
@@ -39,10 +46,37 @@ namespace Ranalo.Controllers
             {
                 return RedirectToAction("Index", "Login");
             }
+            if (settings.RoleId == UserRole.Admin)
+            {
+                return RedirectToAction("Index", "CollectionsAdmin");
+            }
+            if (!CollectionsService.IsCollector(settings))
+            {
+                return RedirectToAction("Index", "Login");
+            }
 
             await SetViewBags(settings, "collector");
+            ViewBag.CollectorOnly = settings.RoleId == UserRole.Collector;
 
-            return View();
+            var model = await _collections.GetCollectorDashboardAsync(settings.UserId);
+            model.Payouts = await _payouts.GetPayoutsAsync(CommissionPayeeType.Collector, collectorUserId: settings.UserId, top: 10);
+            return View(model);
+        }
+
+        // "Can't reach this customer" -- a note for the admin team.
+        [HttpPost]
+        [Route("collections/flag")]
+        public async Task<IActionResult> FlagCase(int caseId, string? note)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var (ok, message) = await _collections.AddFlagAsync(caseId, settings.UserId, note);
+            TempData[ok ? "CollectionsSuccess" : "CollectionsError"] = message;
+            return RedirectToAction("Index");
         }
 
         [HttpGet]
@@ -272,18 +306,25 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            // Agents and Approvers have view-only access to the Collections
-            // tab -- no power to assign collectors or lock devices from here.
-            if (settings.RoleId == UserRole.Agent || settings.RoleId == UserRole.Approver)
+            // Only admin hands accounts to collectors, and always through the
+            // collections rules (frozen arrears, eligibility, no own accounts).
+            if (settings.RoleId != UserRole.Admin)
             {
                 return RedirectToAction("Collections", "Reports");
             }
 
-            await SetViewBags(settings, "collector");
+            try
+            {
+                var (ok, message) = await _collections.AssignAsync(new[] { displayDeviceId }, debtCollectorUserId, settings.UserId);
+                TempData[ok ? "CollectionsSuccess" : "CollectionsError"] = message;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Assigning collector to {AccountNo} failed", displayDeviceId);
+                TempData["CollectionsError"] = "Nothing was changed: it could not be saved. Has Database/Collections/001_create_collections_tables.sql been run?";
+            }
 
-            await _contractorService.AssignContractToCollector((int)displayDeviceId, debtCollectorUserId);
-
-            return RedirectToAction("Collections", "Reports");
+            return RedirectToAction("Index", "CollectionsAdmin", new { tab = "pool" });
         }
 
         [HttpPost]

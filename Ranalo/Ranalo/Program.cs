@@ -107,6 +107,8 @@ builder.Services.AddScoped<ICommissionPayoutService, CommissionPayoutService>();
 builder.Services.AddScoped<ICommissionPayoutRepository, CommissionPayoutRepository>();
 builder.Services.AddScoped<IDealerAllocationRepository, DealerAllocationRepository>();
 builder.Services.AddScoped<IAccountAssignmentRepository, AccountAssignmentRepository>();
+builder.Services.AddScoped<ICollectionsRepository, CollectionsRepository>();
+builder.Services.AddScoped<ICollectionsService, CollectionsService>();
 builder.Services.AddScoped<IContractCalculatorService, ContractCalculatorService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IDevicesRepository, DevicesRepository>();

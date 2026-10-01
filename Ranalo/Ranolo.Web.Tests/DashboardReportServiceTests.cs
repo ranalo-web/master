@@ -201,6 +201,9 @@ namespace Ranolo.Web.Tests
 
         public Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null) =>
             Task.FromResult(CommissionAccountsToReturn);
+
+        public Task<Dictionary<long, Ranalo.Services.CollectionTerms>> GetCollectionTermsAsync() =>
+            Task.FromResult(new Dictionary<long, Ranalo.Services.CollectionTerms>());
     }
 
     // Fake standing in for the DB-backed OperatingExpenseRepository, same

@@ -10,41 +10,54 @@ namespace Ranalo.Services
         Task<(bool Ok, string Message)> RecordPayoutAsync(
             string payeeType, int payeeId, IReadOnlyCollection<long> contractIds, string paymentType, decimal amount, bool recordPastPayment,
             DateTime paidDate, string method, string? reference, string? notes, int recordedByUserId);
-        Task<List<CommissionPayoutRecord>> GetPayoutsAsync(string? payeeType = null, int? dealerId = null, int? agentUserId = null, int? top = null);
+        Task<List<CommissionPayoutRecord>> GetPayoutsAsync(string? payeeType = null, int? dealerId = null, int? agentUserId = null, int? top = null,
+            int? collectorUserId = null);
         Task<bool> ConfirmReceiptAsync(int payoutId, string payeeType, int payeeId, int confirmedByUserId);
+
+        // Collectors: 20% of what they recovered, per collections case.
+        Task<CollectorPayViewModel?> GetCollectorPayAsync(int collectorUserId);
+        Task<(bool Ok, string Message)> RecordCollectorPayoutAsync(
+            int collectorUserId, IReadOnlyCollection<int> caseIds, decimal amount, bool recordPastPayment,
+            DateTime paidDate, string method, string? reference, string? notes, int recordedByUserId);
     }
 
     // Pay Commissions: works out each dealer's and agent's position from the
     // same per-account figures as every other commission page
     // (CommissionCalculator), applies CommissionPayoutRules (suspension,
-    // payable, allocation) and records payouts.
+    // payable, allocation) and records payouts. Collectors are paid what
+    // they earned on their collections cases (CollectionsRules), never suspended.
     public class CommissionPayoutService : ICommissionPayoutService
     {
         private readonly IDashboardReportRepository _reportRepository;
         private readonly ICommissionPayoutRepository _payoutRepository;
+        private readonly ICollectionsService _collections;
         private readonly ILogger<CommissionPayoutService> _logger;
 
-        public CommissionPayoutService(IDashboardReportRepository reportRepository, ICommissionPayoutRepository payoutRepository, ILogger<CommissionPayoutService> logger)
+        public CommissionPayoutService(IDashboardReportRepository reportRepository, ICommissionPayoutRepository payoutRepository,
+            ICollectionsService collections, ILogger<CommissionPayoutService> logger)
         {
             _reportRepository = reportRepository;
             _payoutRepository = payoutRepository;
+            _collections = collections;
             _logger = logger;
         }
 
         public async Task<CommissionPayeesViewModel> GetPayeesAsync(string? payeeTypeFilter, string? search = null)
         {
             var type = CommissionPayeeType.Normalize(payeeTypeFilter);
-            var accounts = await _reportRepository.GetCommissionAccountsAsync(null);
+            var accounts = type == CommissionPayeeType.Collector
+                ? new List<CommissionAccount>()
+                : await _reportRepository.GetCommissionAccountsAsync(null);
 
             var groups = new List<(string Type, int Id, List<CommissionAccount> Accounts)>();
-            if (type != CommissionPayeeType.Dealer)
+            if (type is null or CommissionPayeeType.Agent)
             {
                 groups.AddRange(accounts
                     .Where(a => a.AgentId.HasValue)
                     .GroupBy(a => a.AgentId!.Value)
                     .Select(g => (CommissionPayeeType.Agent, g.Key, g.ToList())));
             }
-            if (type != CommissionPayeeType.Agent)
+            if (type is null or CommissionPayeeType.Dealer)
             {
                 groups.AddRange(accounts
                     .GroupBy(a => a.DealerId)
@@ -78,6 +91,11 @@ namespace Ranalo.Services
                     }
                 }
                 payees.Add(summary);
+            }
+
+            if (type is null or CommissionPayeeType.Collector)
+            {
+                payees.AddRange(await CollectorPayeesAsync(term));
             }
 
             return new CommissionPayeesViewModel
@@ -261,11 +279,167 @@ namespace Ranalo.Services
             }
         }
 
-        public async Task<List<CommissionPayoutRecord>> GetPayoutsAsync(string? payeeType = null, int? dealerId = null, int? agentUserId = null, int? top = null)
+        public async Task<CollectorPayViewModel?> GetCollectorPayAsync(int collectorUserId)
+        {
+            var cases = await _collections.GetEarningsAsync(collectorUserId);
+            var payee = (await CollectorPayeesAsync(null)).FirstOrDefault(p => p.PayeeId == collectorUserId);
+            if (payee == null)
+            {
+                return null;
+            }
+
+            return new CollectorPayViewModel
+            {
+                Payee = payee,
+                Cases = cases.OrderByDescending(c => c.Due > 0).ThenBy(c => c.FirstHeld).ToList(),
+                RecentPayouts = await GetPayoutsAsync(CommissionPayeeType.Collector, collectorUserId: collectorUserId, top: 10),
+            };
+        }
+
+        public async Task<(bool Ok, string Message)> RecordCollectorPayoutAsync(
+            int collectorUserId, IReadOnlyCollection<int> caseIds, decimal amount, bool recordPastPayment,
+            DateTime paidDate, string method, string? reference, string? notes, int recordedByUserId)
+        {
+            if (caseIds.Count == 0)
+            {
+                return (false, "Tick at least one account to pay.");
+            }
+            if (amount <= 0)
+            {
+                return (false, "Enter an amount greater than 0.");
+            }
+            if (!CommissionPayoutMethod.All.Contains(method))
+            {
+                return (false, "Choose a payment method.");
+            }
+            if (paidDate.Date > DateTime.Now.Date)
+            {
+                return (false, "The payment date can't be in the future.");
+            }
+
+            var earnings = await _collections.GetEarningsAsync(collectorUserId);
+            var selected = earnings.Where(e => caseIds.Contains(e.CaseId)).OrderBy(e => e.FirstHeld).ThenBy(e => e.CaseId).ToList();
+            if (selected.Count != caseIds.Distinct().Count())
+            {
+                return (false, "Some ticked accounts aren't this collector's. Reload the page and try again.");
+            }
+
+            amount = Math.Round(amount, 2);
+            var payable = selected.Sum(e => e.Due);
+            if (amount > payable && !recordPastPayment)
+            {
+                if (amount <= payable + 1 && payable > 0)
+                {
+                    amount = payable;
+                }
+                else
+                {
+                    return (false, $"KES {amount:N0} is more than the KES {payable:N0} due on the ticked accounts. To record a payment that was already made, tick \"Record a payment already made\".");
+                }
+            }
+
+            // Oldest account first, each up to what is due on it; anything
+            // over (a recorded past payment) lands on the newest ticked one.
+            var lines = new List<CollectorPayoutLine>();
+            var remaining = amount;
+            foreach (var e in selected)
+            {
+                var take = Math.Min(Math.Round(e.Due, 2), remaining);
+                if (take > 0)
+                {
+                    lines.Add(new CollectorPayoutLine(e.CaseId, take));
+                    remaining -= take;
+                }
+            }
+            if (remaining > 0)
+            {
+                lines.Add(new CollectorPayoutLine(selected[^1].CaseId, remaining));
+            }
+
+            var name = (await _collections.GetCollectorsAsync()).FirstOrDefault(c => c.UserId == collectorUserId)?.Name ?? $"collector {collectorUserId}";
+            try
+            {
+                var id = await _payoutRepository.RecordAsync(new NewCommissionPayout
+                {
+                    PayeeType = CommissionPayeeType.Collector,
+                    CollectorUserId = collectorUserId,
+                    Amount = amount,
+                    PaidDate = paidDate,
+                    Method = method,
+                    Reference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(),
+                    Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
+                    RecordedByUserId = recordedByUserId,
+                    PaymentType = CommissionPart.Commission,
+                    CollectorLines = lines
+                        .GroupBy(l => l.CaseId)
+                        .Select(g => new CollectorPayoutLine(g.Key, g.Sum(l => l.Amount)))
+                        .ToList(),
+                });
+                _logger.LogInformation("Collector payout {PayoutId}: KES {Amount} to collector {CollectorUserId} by user {UserId}",
+                    id, amount, collectorUserId, recordedByUserId);
+                return (true, $"Recorded KES {amount:N0} paid to {name} across {lines.Select(l => l.CaseId).Distinct().Count()} account(s).");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Recording collector payout failed for {CollectorUserId}", collectorUserId);
+                return (false, "The payment could not be saved. Has Database/Collections/001 been run? Nothing was recorded.");
+            }
+        }
+
+        // One Pay Commissions row per collector who has earned anything.
+        private async Task<List<CommissionPayeeSummary>> CollectorPayeesAsync(string? term)
+        {
+            List<CollectorCaseEarning> earnings;
+            List<CollectorOption> collectors;
+            try
+            {
+                earnings = await _collections.GetEarningsAsync();
+                collectors = await _collections.GetCollectorsAsync();
+            }
+            catch (System.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208)
+            {
+                return new List<CommissionPayeeSummary>();
+            }
+
+            var result = new List<CommissionPayeeSummary>();
+            foreach (var g in earnings.GroupBy(e => e.CollectorUserId))
+            {
+                var name = collectors.FirstOrDefault(c => c.UserId == g.Key)?.Name ?? $"Collector {g.Key}";
+                var earned = g.Sum(e => e.Earned);
+                var paid = g.Sum(e => e.Paid);
+                var summary = new CommissionPayeeSummary
+                {
+                    PayeeType = CommissionPayeeType.Collector,
+                    PayeeId = g.Key,
+                    Name = name,
+                    Accounts = g.Count(),
+                    Pool = new CommissionPool { Earned = earned, Paid = paid, Owed = Math.Max(0, earned - paid) },
+                    Payable = g.Sum(e => e.Due),
+                };
+
+                if (!string.IsNullOrEmpty(term))
+                {
+                    // For collectors the matched "contract" is the collections case.
+                    summary.MatchedAccounts = g
+                        .Where(e => e.AccountNo.ToString() == term || e.ContractId.ToString() == term || Contains(e.CustomerName, term))
+                        .Select(e => new CommissionMatchedAccount { AccountId = e.AccountNo, ContractId = e.CaseId, CustomerName = e.CustomerName })
+                        .ToList();
+                    if (!Contains(name, term) && summary.MatchedAccounts.Count == 0)
+                    {
+                        continue;
+                    }
+                }
+                result.Add(summary);
+            }
+            return result;
+        }
+
+        public async Task<List<CommissionPayoutRecord>> GetPayoutsAsync(string? payeeType = null, int? dealerId = null, int? agentUserId = null, int? top = null,
+            int? collectorUserId = null)
         {
             try
             {
-                return await _payoutRepository.GetPayoutsAsync(payeeType, dealerId, agentUserId, top);
+                return await _payoutRepository.GetPayoutsAsync(payeeType, dealerId, agentUserId, top, collectorUserId);
             }
             catch (Exception ex)
             {

@@ -11,7 +11,9 @@ namespace Ranalo.Services
     public static class CommissionPayees
     {
         // The dashboards' Arrears tier: more than 7 days past the lock date.
-        public static bool InArrears(CommissionAccount a) => CommissionPayoutRules.IsInDefault(a.DaysPastLock);
+        // An account that has been in collections counts for good.
+        public static bool InArrears(CommissionAccount a) =>
+            a.Commission.InCollections || CommissionPayoutRules.IsInDefault(a.DaysPastLock);
 
         public static PayoutAccount ToPayoutAccount(string payeeType, CommissionAccount a)
         {

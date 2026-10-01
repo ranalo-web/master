@@ -44,6 +44,21 @@ namespace Ranalo.Controllers
             }
 
             var payeeType = CommissionPayeeType.Normalize(type);
+            if (payeeType == CommissionPayeeType.Collector)
+            {
+                var collector = await _payoutService.GetCollectorPayAsync(id);
+                if (collector == null)
+                {
+                    TempData["PayoutError"] = "That collector hasn't earned anything yet.";
+                    return RedirectToAction("Index", new { type = CommissionPayeeType.Collector });
+                }
+
+                // For collectors, select= carries collections case ids.
+                collector.PreselectedCaseIds = (select ?? new List<long>()).Select(x => (int)x).ToList();
+                SetViewBags(settings!);
+                return View("PayCollector", collector);
+            }
+
             var model = payeeType == null ? null : await _payoutService.GetPayAsync(payeeType, id);
             if (model == null)
             {
@@ -58,7 +73,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("commission-payouts/pay")]
-        public async Task<IActionResult> Pay(string type, int id, List<long> contractIds, string? paymentType, decimal amount, bool recordPastPayment,
+        public async Task<IActionResult> Pay(string type, int id, List<long> contractIds, List<int> caseIds, string? paymentType, decimal amount, bool recordPastPayment,
             DateTime paidDate, string method, string? reference, string? notes)
         {
             if (!TryGetAdmin(out var settings, out var redirect))
@@ -72,8 +87,11 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index");
             }
 
-            var (ok, message) = await _payoutService.RecordPayoutAsync(
-                payeeType, id, contractIds ?? new List<long>(), paymentType ?? CommissionPart.Upfront, amount, recordPastPayment, paidDate, method, reference, notes, settings!.UserId);
+            var (ok, message) = payeeType == CommissionPayeeType.Collector
+                ? await _payoutService.RecordCollectorPayoutAsync(
+                    id, caseIds ?? new List<int>(), amount, recordPastPayment, paidDate, method, reference, notes, settings!.UserId)
+                : await _payoutService.RecordPayoutAsync(
+                    payeeType, id, contractIds ?? new List<long>(), paymentType ?? CommissionPart.Upfront, amount, recordPastPayment, paidDate, method, reference, notes, settings!.UserId);
 
             TempData[ok ? "PayoutSuccess" : "PayoutError"] = message;
             return RedirectToAction("Pay", new { type = payeeType, id });
@@ -101,8 +119,21 @@ namespace Ranalo.Controllers
                 case UserRole.Agent:
                     payouts = await _payoutService.GetPayoutsAsync(CommissionPayeeType.Agent, agentUserId: settings.UserId);
                     break;
+                case UserRole.Collector:
+                    payouts = new List<CommissionPayoutRecord>();
+                    break;
                 default:
                     return RedirectToAction("Index", "Home");
+            }
+
+            // Collectors, and dealers/agents who also collect, see their
+            // collector payouts too.
+            if (settings.RoleId != UserRole.Admin && CollectionsService.IsCollector(settings))
+            {
+                payouts = payouts
+                    .Concat(await _payoutService.GetPayoutsAsync(CommissionPayeeType.Collector, collectorUserId: settings.UserId))
+                    .OrderByDescending(p => p.PaidDate).ThenByDescending(p => p.Id)
+                    .ToList();
             }
 
             SetViewBags(settings);
@@ -131,6 +162,10 @@ namespace Ranalo.Controllers
                 UserRole.Agent => await _payoutService.ConfirmReceiptAsync(id, CommissionPayeeType.Agent, settings.UserId, settings.UserId),
                 _ => false,
             };
+            if (!confirmed && CollectionsService.IsCollector(settings))
+            {
+                confirmed = await _payoutService.ConfirmReceiptAsync(id, CommissionPayeeType.Collector, settings.UserId, settings.UserId);
+            }
 
             TempData[confirmed ? "PayoutSuccess" : "PayoutError"] = confirmed
                 ? "Thanks -- receipt confirmed."
@@ -154,6 +189,7 @@ namespace Ranalo.Controllers
             ViewBag.IsApprover = false;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
             ViewBag.IsAgent = settings.RoleId == UserRole.Agent;
+            ViewBag.CollectorOnly = settings.RoleId == UserRole.Collector;
             ViewBag.UserName = settings.KnownAs;
         }
     }

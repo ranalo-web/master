@@ -13,12 +13,15 @@ namespace Ranalo.Controllers
         private readonly IContractService _contractService;
         private readonly IUserService _userService;
         private readonly IDashboardReportService _dashboardReportService;
-        public AgentsController(IApplicationReportService applicationReportService, IUserService userService, IContractService contractService, IDashboardReportService dashboardReportService)
+        private readonly ICollectionsService _collections;
+        public AgentsController(IApplicationReportService applicationReportService, IUserService userService, IContractService contractService, IDashboardReportService dashboardReportService,
+            ICollectionsService collections)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
             _contractService = contractService;
             _dashboardReportService = dashboardReportService;
+            _collections = collections;
         }
 
         [HttpGet]
@@ -52,6 +55,7 @@ namespace Ranalo.Controllers
             ViewBag.BackLink = "agent";
             ViewBag.IsAgent = true;
             var model = await _dashboardReportService.GetDealerDashboardAsync(settings.DealerId, settings.UserId);
+            model.InCollections = await _collections.GetInCollectionsAsync(settings.DealerId, settings.UserId);
             return View("~/Views/DealerDashboard/Index.cshtml", model);
         }
 

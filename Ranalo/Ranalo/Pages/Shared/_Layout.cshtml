@@ -101,6 +101,16 @@
                                         </a>
                                     </li>
                                 }
+                                @if (!(ViewBag.IsAdmin is true) && Ranalo.Services.CollectionsService.IsCollector(Context.Items["UserSettings"] as Ranalo.DataStore.DataModels.User))
+                                {
+                                    @* A dealer or agent who is also a collector: their collector dashboard. *@
+                                    <li class="nk-menu-item">
+                                        <a href="/collections-home" class="nk-menu-link">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-wallet-saving"></em></span>
+                                            <span class="nk-menu-text">My Collections</span>
+                                        </a>
+                                    </li>
+                                }
                                 @if (ViewBag.IsApprover is true)
                                 {
                                     <li class="nk-menu-item">
@@ -173,6 +183,14 @@
                                             <span class="nk-menu-text">Collections</span>
                                         </a>
                                         <ul class="nk-menu-sub">
+                                            @if (ViewBag.IsAdmin is true)
+                                            {
+                                                <li class="nk-menu-item ">
+                                                    <a class="nk-menu-link " href="/collections-admin">
+                                                        <span class="nk-menu-text">Collections Dashboard</span>
+                                                    </a>
+                                                </li>
+                                            }
                                             <li class="nk-menu-item ">
                                                 <a class="nk-menu-link " href="/assigned-collections">
                                                     <span class="nk-menu-text">Assigned Collections</span>

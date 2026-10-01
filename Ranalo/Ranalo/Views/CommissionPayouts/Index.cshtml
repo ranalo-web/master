@@ -92,6 +92,7 @@
                         <a href="@FilterLink(null)" class="btn btn-sm @(filter == null ? "btn-primary" : "btn-outline-light btn-white")">All</a>
                         <a href="@FilterLink(CommissionPayeeType.Dealer)" class="btn btn-sm @(filter == CommissionPayeeType.Dealer ? "btn-primary" : "btn-outline-light btn-white")">Dealers</a>
                         <a href="@FilterLink(CommissionPayeeType.Agent)" class="btn btn-sm @(filter == CommissionPayeeType.Agent ? "btn-primary" : "btn-outline-light btn-white")">Agents</a>
+                        <a href="@FilterLink(CommissionPayeeType.Collector)" class="btn btn-sm @(filter == CommissionPayeeType.Collector ? "btn-primary" : "btn-outline-light btn-white")">Collectors</a>
                     </div>
                 </div></div>
             </div>
@@ -141,10 +142,17 @@
                                             }
                                         </td>
                                         <td>@p.Accounts.ToString("N0")</td>
-                                        <td>
-                                            <span class="@(p.IsSuspended ? "text-danger fw-bold" : "")">@p.DefaultRatePct.ToString("0.#")%</span>
-                                            <span class="d-block sub-text">@p.AccountsInArrears in arrears</span>
-                                        </td>
+                                        @if (p.PayeeType == CommissionPayeeType.Collector)
+                                        {
+                                            <td><span class="text-soft">n/a</span><span class="d-block sub-text">@((CollectionsRules.CollectorShareRate * 100).ToString("0"))% of recoveries</span></td>
+                                        }
+                                        else
+                                        {
+                                            <td>
+                                                <span class="@(p.IsSuspended ? "text-danger fw-bold" : "")">@p.DefaultRatePct.ToString("0.#")%</span>
+                                                <span class="d-block sub-text">@p.AccountsInArrears in arrears</span>
+                                            </td>
+                                        }
                                         <td>KES @p.Pool.Earned.ToString("N0")</td>
                                         <td class="@(p.Pool.Withheld > 0 ? "text-warning" : "")">KES @p.Pool.Withheld.ToString("N0")</td>
                                         <td>KES @p.Pool.Paid.ToString("N0")</td>

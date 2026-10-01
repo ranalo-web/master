@@ -10,10 +10,12 @@ namespace Ranalo.Controllers
     public class DealerDashboardController : Controller
     {
         private readonly IDashboardReportService _dashboardReportService;
+        private readonly ICollectionsService _collections;
 
-        public DealerDashboardController(IDashboardReportService dashboardReportService)
+        public DealerDashboardController(IDashboardReportService dashboardReportService, ICollectionsService collections)
         {
             _dashboardReportService = dashboardReportService;
+            _collections = collections;
         }
 
         [HttpGet]
@@ -38,6 +40,7 @@ namespace Ranalo.Controllers
             ViewBag.UserName = settings.KnownAs;
 
             var model = await _dashboardReportService.GetDealerDashboardAsync(settings.DealerId);
+            model.InCollections = await _collections.GetInCollectionsAsync(settings.DealerId, null);
 
             return View(model);
         }

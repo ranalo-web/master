@@ -1134,6 +1134,11 @@
     </div><!-- .nk-block -->
     }
 
+    @if (Model.InCollections.Rows.Count > 0)
+    {
+        @await Html.PartialAsync("~/Views/Shared/_InCollections.cshtml", Model.InCollections)
+    }
+
     @if (!(ViewBag.IsApprover is true))
     {
         var commissionMoreCount = Math.Max(0, Model.CommissionAccounts.Count - tablePageSize);

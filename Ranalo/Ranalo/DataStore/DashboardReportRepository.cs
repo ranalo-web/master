@@ -1576,6 +1576,9 @@ namespace Ranalo.DataStore
 
             // A Woo_Orders row exists for this contract; the agent bonus needs one.
             public bool HasWooOrder { get; set; }
+
+            // The contract's latest collections case, if it has ever had one.
+            public CollectionTerms? Collections { get; set; }
         }
 
         // The raw per-account commission inputs used by every commission
@@ -1692,14 +1695,92 @@ namespace Ranalo.DataStore
             // whole company ("@X IS NULL OR ..."), so a cached plan built for
             // one of those can time out on another (seen on the company-wide
             // call). Takes ~4s company-wide; a compile is negligible next to that.
-            var rows = await _db.QueryAsync<AgentCommissionAccountRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId }, commandTimeout: 90);
-            return rows.ToList();
+            var rows = (await _db.QueryAsync<AgentCommissionAccountRow>(sql, new { DealerId = dealerId, AgentUserId = agentUserId }, commandTimeout: 90)).ToList();
+
+            var terms = await GetCollectionTermsAsync();
+            if (terms.Count > 0)
+            {
+                foreach (var r in rows)
+                {
+                    if (long.TryParse(r.ContractId, out var cid) && terms.TryGetValue(cid, out var t))
+                    {
+                        r.Collections = t;
+                    }
+                }
+            }
+            return rows;
+        }
+
+        private class CollectionTermsRow : CollectionTerms
+        {
+            public long ContractId { get; set; }
+        }
+
+        // Each contract's latest collections case (Database/Collections/001),
+        // keyed by ContractID. Empty until that script has been run.
+        public async Task<Dictionary<long, CollectionTerms>> GetCollectionTermsAsync()
+        {
+            const string casesSql = @"
+                SELECT c.Id AS CaseId, c.ContractId,
+                       CAST(CASE WHEN c.Status = 'Returned' THEN 1 ELSE 0 END AS BIT) AS IsReturned,
+                       c.FrozenDeduction, c.CommissionPaidBasis,
+                       ISNULL(c.ShortfallAtReturn, 0) AS ShortfallAtReturn,
+                       ISNULL(c.TotalPaidAtReturn, 0) AS TotalPaidAtReturn,
+                       ISNULL(c.CollectorEarnedOnCase, 0) AS CollectorEarned
+                FROM CollectionCases c
+                WHERE c.Id = (SELECT MAX(x.Id) FROM CollectionCases x WHERE x.ContractId = c.ContractId)";
+
+            const string repoCostSql = @"
+                SELECT CAST(OldContractId AS BIGINT) AS ContractId, SUM(ISNULL(RepossessionCost, 0)) AS Cost
+                FROM DeviceRecoveries
+                WHERE OldContractId IN @Ids
+                GROUP BY OldContractId";
+
+            List<CollectionTermsRow> cases;
+            try
+            {
+                cases = (await _db.QueryAsync<CollectionTermsRow>(casesSql)).ToList();
+            }
+            catch (SqlException ex) when (IsMissingTable(ex))
+            {
+                return new Dictionary<long, CollectionTerms>();
+            }
+
+            // Repossession cost is a collection cost charged back once the
+            // contract is returned to its agent and dealer.
+            var returned = cases.Where(c => c.IsReturned).Select(c => c.ContractId).ToList();
+            if (returned.Count > 0)
+            {
+                try
+                {
+                    var costs = new Dictionary<long, decimal>();
+                    foreach (var chunk in returned.Chunk(1000))
+                    {
+                        foreach (var row in await _db.QueryAsync<(long ContractId, decimal Cost)>(repoCostSql, new { Ids = chunk }))
+                        {
+                            costs[row.ContractId] = row.Cost;
+                        }
+                    }
+                    foreach (var c in cases)
+                    {
+                        c.RepossessionCost = costs.GetValueOrDefault(c.ContractId);
+                    }
+                }
+                catch (SqlException ex) when (IsMissingTable(ex))
+                {
+                    // DeviceRecoveries not created yet: no repossession costs.
+                }
+            }
+
+            return cases.ToDictionary(c => c.ContractId, c => (CollectionTerms)c);
         }
 
         // Runs one account row through the app-wide commission formula.
         private static CommissionBreakdown Breakdown(AgentCommissionAccountRow r, DateTime now) =>
             CommissionCalculator.Calculate(new CommissionInputs
             {
+                AgentBonusPaid = r.AgentBonusPaid,
+                Collections = r.Collections,
                 Deposit = r.Deposit,
                 DaysSinceStart = r.DaysSinceStart,
                 IsPastLockDate = IsPastLockDate(r.LockDate, now),

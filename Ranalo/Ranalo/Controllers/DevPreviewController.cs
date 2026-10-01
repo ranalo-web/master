@@ -429,5 +429,87 @@ namespace Ranalo.Controllers
 
             return View("~/Views/AccountCommissions/Index.cshtml", model);
         }
+
+        // Collections SQL checked against the live data BEFORE
+        // Database/Collections/001 is run: the new tables are stood in for by
+        // session #temp tables (gone when the connection closes), so nothing
+        // in the real schema or data changes. Development only.
+        [HttpGet]
+        [Route("dev-preview/collections-check")]
+        public async Task<IActionResult> CollectionsCheck([FromServices] System.Data.IDbConnection db, [FromServices] DataStore.ICollectionsRepository repository)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            static string Temp(string sql) => sql.Replace("CollectionCases", "#CollectionCases").Replace("CollectionAssignments", "#CollectionAssignments");
+
+            db.Open();
+            await Dapper.SqlMapper.ExecuteAsync(db, @"
+                CREATE TABLE #CollectionCases (Id INT, AccountNo BIGINT, Status VARCHAR(12));
+                CREATE TABLE #CollectionAssignments (Id INT, CaseId INT, CollectorUserId INT, StartAt DATETIME2, EndAt DATETIME2 NULL);");
+
+            var standings = (await Dapper.SqlMapper.QueryAsync<CollectionContractStanding>(db, Temp(DataStore.CollectionsRepository.StandingsSql),
+                new { All = 1, Ids = new long[] { 0 } }, commandTimeout: 120)).ToList();
+            var eligible = standings.Where(s => Services.CollectionsRules.IsEligible(s.Shortfall, s.DaysSinceLastPayment)).ToList();
+            var legacy = standings.Where(s => s.LegacyCollectorUserId.HasValue).ToList();
+
+            // Payment lookup: hold 8 recently-paying devices "since 2000" and
+            // compare what the stint query finds with the standings total.
+            var sample = standings.Where(s => s.DaysSinceLastPayment < 30 && s.TotalPaid > 0).OrderByDescending(s => s.TotalPaid).Take(8).ToList();
+            var id = 0;
+            foreach (var s in sample)
+            {
+                id++;
+                await Dapper.SqlMapper.ExecuteAsync(db,
+                    "INSERT INTO #CollectionCases VALUES (@Id, @AccountNo, 'Open'); INSERT INTO #CollectionAssignments VALUES (@Id, @Id, 0, '2000-01-01', NULL);",
+                    new { Id = id, s.AccountNo });
+            }
+            var now = DateTime.Now;
+            var periods = (await Dapper.SqlMapper.QueryAsync<CollectionPeriodRow>(db, Temp(DataStore.CollectionsRepository.PeriodsSql),
+                new { CollectorUserId = (int?)null, CaseId = (int?)null, MonthStart = new DateTime(now.Year, now.Month, 1) }, commandTimeout: 120)).ToList();
+
+            var schema = await Dapper.SqlMapper.QueryAsync<(string Table, string Column, string Type)>(db, @"
+                SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE (TABLE_NAME = 'Contract_Info' AND COLUMN_NAME IN ('ID', 'ContractID', 'DebtCollectorUserId', 'EndDate'))
+                   OR (TABLE_NAME = 'KosePayments' AND COLUMN_NAME IN ('AccountNo', 'AccountNoBigint', 'PaymentDateValue'))
+                   OR (TABLE_NAME = 'OrphanedPayments' AND COLUMN_NAME IN ('AccountNo', 'AccountNoBigint', 'MpesaCode'))
+                   OR (TABLE_NAME = 'DeviceRecoveries' AND COLUMN_NAME IN ('OldContractId', 'RepossessionCost'))
+                   OR (TABLE_NAME = 'Users' AND COLUMN_NAME IN ('OtherSelectedRoles'))
+                   OR (TABLE_NAME = 'CommissionPayouts' AND COLUMN_NAME IN ('PayeeType', 'PaymentType', 'CollectorUserId'))
+                ORDER BY TABLE_NAME, COLUMN_NAME");
+
+            return Json(new
+            {
+                openContracts = standings.Count,
+                pool = new
+                {
+                    count = eligible.Count,
+                    totalShortfall = eligible.Sum(s => s.Shortfall),
+                    neverPaid = eligible.Count(s => s.LastPaymentDate == null),
+                    top = eligible.OrderByDescending(s => s.Shortfall).Take(10)
+                        .Select(s => new { s.AccountNo, s.ContractId, s.CustomerName, s.DealerName, s.AgentName, s.Shortfall, s.TotalPaid, s.LastPaymentDate, s.DaysSinceLastPayment }),
+                },
+                goLiveBackfill = new
+                {
+                    accountsWithCollectorToday = legacy.Count,
+                    frozenTotal = legacy.Sum(s => s.Shortfall),
+                    notEligibleToday = legacy.Count(s => !Services.CollectionsRules.IsEligible(s.Shortfall, s.DaysSinceLastPayment)),
+                    byCollector = legacy.GroupBy(s => s.LegacyCollectorUserId).Select(g => new { collectorUserId = g.Key, accounts = g.Count(), frozen = g.Sum(s => s.Shortfall) }),
+                    byDealer = legacy.GroupBy(s => new { s.DealerId, s.DealerName }).Select(g => new { g.Key.DealerId, g.Key.DealerName, accounts = g.Count(), frozen = g.Sum(s => s.Shortfall), withAgent = g.Count(s => s.AgentUserId.HasValue) }),
+                },
+                collectors = await repository.GetCollectorsAsync(),
+                paymentLookup = sample.Select((s, i) => new
+                {
+                    s.AccountNo,
+                    standingsTotalPaid = s.TotalPaid,
+                    stintRecovered = periods.FirstOrDefault(p => p.CaseId == i + 1)?.Recovered,
+                    stintThisMonth = periods.FirstOrDefault(p => p.CaseId == i + 1)?.RecoveredThisMonth,
+                    lastPayment = periods.FirstOrDefault(p => p.CaseId == i + 1)?.LastPaymentAt,
+                }),
+                schema = schema.Select(c => $"{c.Table}.{c.Column} {c.Type}"),
+            });
+        }
     }
 }

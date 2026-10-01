@@ -1,0 +1,54 @@
+@using Ranalo.Models
+@model InCollectionsSection
+@{
+    var total = Model.Rows.Sum(r => r.CurrentDeduction);
+}
+@* Dealer / Agent dashboard: accounts handed to collections. The frozen
+   arrears (plus collection costs once returned) are deducted from their
+   commission -- see Services.CollectionsRules. *@
+<div class="nk-block">
+    <div class="card card-bordered">
+        <div class="card-inner border-bottom py-2">
+            <div class="d-flex flex-wrap justify-content-between" style="gap:.5rem;">
+                <div>
+                    <h6 class="title mb-0">In collections</h6>
+                    <span class="sub-text">@(Model.IsAgentView ? "Your" : "Your dealership's") accounts handed to a collector. What the customer owed on the day stays deducted from your commission, even as the collector recovers it. Returned accounts also carry the collection costs.</span>
+                </div>
+                <div class="text-end">
+                    <span class="sub-text">Deducted now</span>
+                    <span class="d-block fs-5 fw-bold text-danger">KES @total.ToString("N0")</span>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0" style="font-size:13px; white-space:nowrap;">
+                <thead>
+                    <tr>
+                        <th>Account</th>
+                        @if (!Model.IsAgentView) { <th>Agent</th> }
+                        <th>Status</th>
+                        <th class="text-end" title="What the customer owed when it went to collections">Frozen arrears</th>
+                        <th class="text-end" title="Collector's share and repossession cost, charged once the account comes back to you">Collection costs</th>
+                        <th class="text-end">Deducted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Rows)
+                    {
+                        <tr>
+                            <td>
+                                <a href="/account-details/@r.AccountNo" class="fw-medium">@(string.IsNullOrWhiteSpace(r.CustomerName) ? "(no name)" : r.CustomerName)</a>
+                                <span class="d-block sub-text">AC @r.AccountNo · since @(r.HandoverAt == DateTime.MinValue ? "-" : r.HandoverAt.ToString("dd MMM yyyy"))</span>
+                            </td>
+                            @if (!Model.IsAgentView) { <td>@(r.AgentName ?? "Direct sale")</td> }
+                            <td>@r.Status</td>
+                            <td class="text-end">KES @r.FrozenDeduction.ToString("N0")</td>
+                            <td class="text-end">@(r.CollectionCosts > 0 ? "KES " + r.CollectionCosts.ToString("N0") : "-")</td>
+                            <td class="text-end fw-medium">KES @r.CurrentDeduction.ToString("N0")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

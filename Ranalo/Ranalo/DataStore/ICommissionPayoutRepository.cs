@@ -11,7 +11,8 @@ namespace Ranalo.DataStore
         Task<int> RecordAsync(NewCommissionPayout payout);
 
         // Newest first. Filters are optional; payeeType narrows to Agent or Dealer payouts.
-        Task<List<CommissionPayoutRecord>> GetPayoutsAsync(string? payeeType = null, int? dealerId = null, int? agentUserId = null, int? top = null);
+        Task<List<CommissionPayoutRecord>> GetPayoutsAsync(string? payeeType = null, int? dealerId = null, int? agentUserId = null, int? top = null,
+            int? collectorUserId = null);
 
         // Every payment line on these contracts from the payee's table, including
         // rows recorded before payouts existed (no method, maybe no reference).
