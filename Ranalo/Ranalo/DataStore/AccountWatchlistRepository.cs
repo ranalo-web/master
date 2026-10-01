@@ -32,8 +32,11 @@ namespace Ranalo.DataStore
                     aw.AddedAtUtc
                 FROM AccountWatchlist aw
                 INNER JOIN Contract_Info ci ON ci.ID = aw.AccountId
-                INNER JOIN Devices d ON d.Id = ci.ID
-                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                -- LEFT: the Add search (GetAllAccountsByUserAsync) finds
+                -- accounts with no dealer group yet, so an INNER join here
+                -- would hide them -- added, but never listed.
+                LEFT JOIN Devices d ON d.Id = ci.ID
+                LEFT JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
                 LEFT JOIN Users agentUser ON agentUser.UserId = ci.AssignedAgentId
                 INNER JOIN Users addedByUser ON addedByUser.UserId = aw.AddedByUserId
                 WHERE aw.RemovedAtUtc IS NULL

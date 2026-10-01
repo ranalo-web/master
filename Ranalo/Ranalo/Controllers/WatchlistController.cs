@@ -89,7 +89,10 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", new { searchTerm });
             }
 
-            await _watchlistService.AddToWatchlistAsync(accountId, settings);
+            var added = await _watchlistService.AddToWatchlistAsync(accountId, settings);
+            TempData["WatchlistMessage"] = added
+                ? $"Account {accountId} added to the watchlist."
+                : $"Account {accountId} is already on the watchlist.";
 
             return RedirectToAction("Index", new { searchTerm });
         }
