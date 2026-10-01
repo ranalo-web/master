@@ -169,6 +169,10 @@ namespace Ranalo.DataStore
         // Every account with its full commission breakdown (CommissionCalculator).
         Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null);
 
+        // Each contract's latest collections case, keyed by ContractID
+        // (empty until Database/Collections/001 has been run).
+        Task<Dictionary<long, Ranalo.Services.CollectionTerms>> GetCollectionTermsAsync();
+
         // Live (not rollup-backed) revenue query for the Dealer Dashboard's
         // date-range filter -- the nightly rollup only knows "this month" /
         // "last month", so an arbitrary period window has to hit

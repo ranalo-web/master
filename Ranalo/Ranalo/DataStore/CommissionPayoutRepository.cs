@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.SqlClient;
 using Dapper;
 using Ranalo.Models;
 
@@ -21,6 +22,13 @@ namespace Ranalo.DataStore
             }
 
             using var transaction = _db.BeginTransaction(IsolationLevel.Serializable);
+
+            if (payout.PayeeType == CommissionPayeeType.Collector)
+            {
+                var collectorPayoutId = await RecordCollectorAsync(payout, transaction);
+                transaction.Commit();
+                return collectorPayoutId;
+            }
 
             const string headerSql = @"
                 INSERT INTO CommissionPayouts
@@ -82,9 +90,70 @@ namespace Ranalo.DataStore
             return payoutId;
         }
 
-        public async Task<List<CommissionPayoutRecord>> GetPayoutsAsync(string? payeeType = null, int? dealerId = null, int? agentUserId = null, int? top = null)
+        // Collector payouts (Database/Collections/001): header with
+        // CollectorUserId, one CollectorCommissionPayments line per case.
+        private async Task<int> RecordCollectorAsync(NewCommissionPayout payout, IDbTransaction transaction)
         {
+            const string headerSql = @"
+                INSERT INTO CommissionPayouts
+                    (PayeeType, PaymentType, CollectorUserId, Amount, PaidDate, Method, Reference, Notes, RecordedByUserId)
+                OUTPUT INSERTED.Id
+                VALUES (@PayeeType, @PaymentType, @CollectorUserId, @Amount, @PaidDate, @Method, @Reference, @Notes, @RecordedByUserId)";
+
+            var payoutId = await _db.QuerySingleAsync<int>(headerSql, new
+            {
+                payout.PayeeType,
+                payout.PaymentType,
+                payout.CollectorUserId,
+                payout.Amount,
+                PaidDate = payout.PaidDate.Date,
+                payout.Method,
+                payout.Reference,
+                payout.Notes,
+                payout.RecordedByUserId,
+            }, transaction);
+
+            foreach (var line in payout.CollectorLines)
+            {
+                await _db.ExecuteAsync(@"
+                    INSERT INTO CollectorCommissionPayments (PayoutId, CaseId, CollectorUserId, Amount, PaidDate)
+                    VALUES (@PayoutId, @CaseId, @CollectorUserId, @Amount, @PaidDate)",
+                    new { PayoutId = payoutId, line.CaseId, payout.CollectorUserId, line.Amount, PaidDate = payout.PaidDate.Date }, transaction);
+            }
+
+            return payoutId;
+        }
+
+        public async Task<List<CommissionPayoutRecord>> GetPayoutsAsync(string? payeeType = null, int? dealerId = null, int? agentUserId = null, int? top = null,
+            int? collectorUserId = null)
+        {
+            // With collector payouts (Database/Collections/001).
             const string sql = @"
+                SELECT TOP (@Top)
+                    p.Id, p.PayeeType, p.PaymentType, p.DealerId, p.AgentUserId, p.CollectorUserId, p.Amount, p.PaidDate, p.Method, p.Reference, p.Notes,
+                    p.RecordedAtUtc, p.ReceiptConfirmedAtUtc,
+                    CASE WHEN p.PayeeType = 'Dealer' THEN dl.CompanyName
+                         WHEN p.PayeeType = 'Collector' THEN cu.[Name] + ' ' + ISNULL(cu.[LastName], '')
+                         ELSE au.[Name] + ' ' + au.[LastName] END AS PayeeName,
+                    rb.[Name] + ' ' + rb.[LastName] AS RecordedByName,
+                    cb.[Name] + ' ' + cb.[LastName] AS ReceiptConfirmedByName,
+                    (SELECT COUNT(DISTINCT a.ContractId) FROM AgentCommissionPayments a WHERE a.PayoutId = p.Id)
+                        + (SELECT COUNT(DISTINCT d.ContractId) FROM DealerCommissionPayments d WHERE d.PayoutId = p.Id)
+                        + (SELECT COUNT(DISTINCT x.CaseId) FROM CollectorCommissionPayments x WHERE x.PayoutId = p.Id) AS AccountCount
+                FROM CommissionPayouts p
+                LEFT JOIN Dealers dl ON dl.DealerId = p.DealerId
+                LEFT JOIN Users au ON au.UserId = p.AgentUserId
+                LEFT JOIN Users cu ON cu.UserId = p.CollectorUserId
+                LEFT JOIN Users rb ON rb.UserId = p.RecordedByUserId
+                LEFT JOIN Users cb ON cb.UserId = p.ReceiptConfirmedByUserId
+                WHERE (@PayeeType IS NULL OR p.PayeeType = @PayeeType)
+                  AND (@DealerId IS NULL OR p.DealerId = @DealerId)
+                  AND (@AgentUserId IS NULL OR p.AgentUserId = @AgentUserId)
+                  AND (@CollectorUserId IS NULL OR p.CollectorUserId = @CollectorUserId)
+                ORDER BY p.PaidDate DESC, p.Id DESC";
+
+            // Before Database/Collections/001 has been run.
+            const string legacySql = @"
                 SELECT TOP (@Top)
                     p.Id, p.PayeeType, p.PaymentType, p.DealerId, p.AgentUserId, p.Amount, p.PaidDate, p.Method, p.Reference, p.Notes,
                     p.RecordedAtUtc, p.ReceiptConfirmedAtUtc,
@@ -103,14 +172,26 @@ namespace Ranalo.DataStore
                   AND (@AgentUserId IS NULL OR p.AgentUserId = @AgentUserId)
                 ORDER BY p.PaidDate DESC, p.Id DESC";
 
-            var rows = await _db.QueryAsync<CommissionPayoutRecord>(sql, new
+            var args = new
             {
                 Top = top ?? int.MaxValue,
                 PayeeType = payeeType,
                 DealerId = dealerId,
                 AgentUserId = agentUserId,
-            });
-            return rows.ToList();
+                CollectorUserId = collectorUserId,
+            };
+            try
+            {
+                return (await _db.QueryAsync<CommissionPayoutRecord>(sql, args)).ToList();
+            }
+            catch (SqlException ex) when (ex.Number is 207 or 208)
+            {
+                if (collectorUserId.HasValue || payeeType == CommissionPayeeType.Collector)
+                {
+                    return new List<CommissionPayoutRecord>();
+                }
+                return (await _db.QueryAsync<CommissionPayoutRecord>(legacySql, args)).ToList();
+            }
         }
 
         public async Task<List<CommissionAccountPayment>> GetAccountPaymentsAsync(string payeeType, IReadOnlyCollection<long> contractIds)
@@ -146,7 +227,16 @@ namespace Ranalo.DataStore
                   AND PayeeType = @PayeeType
                   AND ((@PayeeType = 'Dealer' AND DealerId = @PayeeId) OR (@PayeeType = 'Agent' AND AgentUserId = @PayeeId))";
 
-            var updated = await _db.ExecuteAsync(sql, new { Id = payoutId, PayeeType = payeeType, PayeeId = payeeId, UserId = confirmedByUserId });
+            const string collectorSql = @"
+                UPDATE CommissionPayouts
+                SET ReceiptConfirmedAtUtc = SYSUTCDATETIME(), ReceiptConfirmedByUserId = @UserId
+                WHERE Id = @Id
+                  AND ReceiptConfirmedAtUtc IS NULL
+                  AND PayeeType = 'Collector'
+                  AND CollectorUserId = @PayeeId";
+
+            var updated = await _db.ExecuteAsync(payeeType == CommissionPayeeType.Collector ? collectorSql : sql,
+                new { Id = payoutId, PayeeType = payeeType, PayeeId = payeeId, UserId = confirmedByUserId });
             return updated == 1;
         }
     }

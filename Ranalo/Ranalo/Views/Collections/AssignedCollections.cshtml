@@ -5,6 +5,11 @@
 @model StatusReportViewModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
+
+    // Agent view: their accounts handed to a collector, with the frozen
+    // arrears deducted from their commission (CollectionsRules).
+    var inCollections = ViewBag.InCollections as InCollectionsSection;
+    var withCollector = inCollections?.Rows.ToDictionary(r => r.AccountNo) ?? new Dictionary<long, InCollectionsAccountRow>();
 }
 @functions
 {
@@ -107,6 +112,10 @@
             </div><!-- .nk-block-head-content -->
         </div><!-- .nk-block-between -->
     </div><!-- .nk-block-head -->
+    @if (inCollections != null && inCollections.Rows.Count > 0)
+    {
+        @await Html.PartialAsync("~/Views/Shared/_InCollections.cshtml", inCollections)
+    }
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -205,11 +214,21 @@
                                 <td>
                                     <a href="/account-details/@report.AccountNo" class="fw-medium">@report.FirstName</a>
                                     <span class="d-block sub-text">AC: @report.AccountNo</span>
+                                    @if (withCollector.TryGetValue(report.AccountNo, out var held))
+                                    {
+                                        <span class="badge badge-dim bg-warning">@(held.Status == "Returned to you" ? "Back from collector" : "With collector")</span>
+                                    }
                                 </td>
                                 <td>@report.Daily</td>
                                 <td>@report.Deposit</td>
                                 <td>@report.TotalPaid</td>
-                                <td><span class="@SetArrearsStatusBadge(report.Arrears)">@report.Arrears</span></td>
+                                <td>
+                                    <span class="@SetArrearsStatusBadge(report.Arrears)">@report.Arrears</span>
+                                    @if (withCollector.TryGetValue(report.AccountNo, out var frozen))
+                                    {
+                                        <span class="d-block sub-text text-danger" title="What stays deducted from your commission">Frozen: KES @frozen.CurrentDeduction.ToString("N0")</span>
+                                    }
+                                </td>
                                 <td>@report.TotalDue</td>
                                 <td>@report.LoanBalance</td>
                                 <td><span class="@SetStatusBadge(report.NotPaying7D)">@SetStatusText(report.NotPaying7D)</span></td>

@@ -1,509 +1,284 @@
-﻿@using Ranalo.Models
-@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@model CustomerDetails
+@using Ranalo.Models
+@using Ranalo.Services
+@model CollectorCustomerViewModel
 @{
-    Layout = "~/Pages/Shared/_LayoutCollections.cshtml";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var c = Model.Customer;
+    var s = Model.Standing;
+    var k = Model.Case;
+    var name = $"{c.FirstName} {c.LastName}".Trim();
+    if (string.IsNullOrWhiteSpace(name)) { name = s?.CustomerName ?? $"Account {Model.AccountNo}"; }
+    var photo = c.IdentityImages.FirstOrDefault(x => x.Key == "photo_of_applicant")?.Url;
+    var share = (CollectionsRules.CollectorShareRate * 100).ToString("0");
+    var back = ViewBag.IsAdmin is true ? "/collections-admin" : "/collections-home";
 }
 
 @functions {
-    private string SetStatusBadge(string status)
+    // Device dates come in a few text formats; show them readably or as-is.
+    private static string When(string? raw)
     {
-        var statusClass = "";
-        switch (status)
-        {
-            case "approval-waiting":
-                statusClass = "lead-text text-warning";
-                break;
-            case "cancelled":
-                statusClass = "lead-text text-danger";
-                break;
-            case "rejected":
-                statusClass = "lead-text text-danger";
-                break;
-            case "approved":
-                statusClass = "lead-text text-success";
-                break;
-            default:
-                statusClass = "";
-                break;
-        }
-
-        return statusClass;
+        if (string.IsNullOrWhiteSpace(raw)) return "-";
+        // "2026-05-28T01:00:00" style: swap the date/time "T" for a space
+        // (but leave a trailing " UTC" alone -- ParseCustomDate strips it).
+        var text = System.Text.RegularExpressions.Regex.Replace(raw, @"(\d)T(\d)", "$1 $2");
+        var parsed = DateHelper.ParseCustomDate(text);
+        return parsed?.ToString("dd MMM yyyy HH:mm") ?? raw;
     }
 
-    private string SetLockStatusBadge(string status)
-    {
-        var statusClass = "";
-        switch (status)
-        {
-            case "unlocked":
-                statusClass = "tb-status text-success";
-                break;
-            case "un_registered":
-                statusClass = "tb-status text-info";
-                break;
-            case "rejected":
-                statusClass = "tb-status text-danger";
-                break;
-            case "complete":
-                statusClass = "tb-status text-danger";
-                break;
-            default:
-                statusClass = "";
-                break;
-        }
-
-        return statusClass;
-    }
-
-    private string FormartUtcDate(string date)
-    {
-        // Parse using exact format and culture
-        DateTime parsedDate = DateTime.ParseExact(
-            date.Replace(" UTC", ""),   // remove UTC label before parsing
-        "dd-MM-yy HH:mm:ss",
-        System.Globalization.CultureInfo.InvariantCulture,
-        System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal
-    );
-
-        // Format to desired output
-        return parsedDate.ToString("dd MMM yyyy HH:mm");
-    }
-
-    public string FormartDateWithT(string input)
-    {
-        if (input == null)
-        {
-            return DateTime.MinValue.ToString("dd MMM yyyy HH:mm");
-        }
-
-        input = input.Replace("T", " ");
-
-        // Parse it
-        DateTime parsedDate = DateTime.ParseExact(
-            input,
-            "dd/MM/yyyy HH:mm:ss",
-            System.Globalization.CultureInfo.InvariantCulture
-        );
-
-        // Format to desired string
-        return parsedDate.ToString("dd MMM yyyy HH:mm");
-    }
-
+    private static string Tel(string? phone) => new string((phone ?? "").Where(ch => char.IsDigit(ch) || ch == '+').ToArray());
 }
 
-@if (Model == null)
-{
-    <div class="alert alert-pro alert-warning">
-        <div class="alert-text">
-            <h6>Customer Details</h6>
-            <p>Sorry! the customer details cannot be found. This may be because the link to order details does not exist.</p>
-        </div>
-    </div>
-}
-else
-{
-    <div class="nk-content-body">
-        <div class="nk-block-head nk-block-head-sm">
-            <div class="nk-block-between g-3">
-                <div class="nk-block-head-content">
-                    <h3 class="nk-block-title page-title">Customer Details</h3>
-                    <div class="nk-block-des text-soft">
-                        <p>Details of the account for customer</p>
-                    </div>
-                </div>
-                <div class="nk-block-head-content">
-                    <a href="html/customer-list.html" class="btn btn-outline-light bg-white d-none d-sm-inline-flex"><em class="icon ni ni-arrow-left"></em><span>Back</span></a>
-                    <a href="html/customer-list.html" class="btn btn-icon btn-outline-light bg-white d-inline-flex d-sm-none"><em class="icon ni ni-arrow-left"></em></a>
+<style>
+    .cu-dl { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0; }
+    .cu-dl dt { font-weight: 400; color: #8094ae; }
+    .cu-dl dd { margin: 0; word-break: break-word; }
+    .cu-kin + .cu-kin { border-top: 1px solid #e5e9f2; margin-top: .75rem; padding-top: .75rem; }
+    .cu-photos img { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e9f2; }
+</style>
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between g-3">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">@name</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Account @Model.AccountNo@(s?.ProductName != null ? " · " + s.ProductName : "")@(s?.DealerName != null ? " · " + s.DealerName : "")</p>
                 </div>
             </div>
-        </div><!-- .nk-block-head -->
-        <div class="nk-block">
-            <div class="row g-gs">
-                <div class="col-xl-4">
-                    <div class="card">
-                        <div class="card-inner-group">
-                            <div class="card-inner">
-                                <div class="user-card user-card-s2">
-                                    <div class="user-avatar lg bg-primary">
-                                        @if (Model.IdentityImages.Any())
-                                        {
-                                            <img src="@Model.IdentityImages.FirstOrDefault(x=>x.Key == "photo_of_applicant").Url" alt="">
-                                        }
-                                    </div>
-                                    <div class="user-info">
-                                            <div class="badge bg-light rounded-pill ucap">@Model?.AccountId</div>
-                                        <h5>@Model?.FirstName @Model?.LastName</h5>
-                                        <span class="sub-text">@Model?.Email</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-inner card-inner-sm">
-                                <ul class="btn-toolbar justify-center gx-1">
-                                    <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-shield-off"></em></a></li>
-                                    <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-mail"></em></a></li>
-                                    <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-bookmark"></em></a></li>
-                                    <li><a href="#" class="btn btn-trigger btn-icon text-danger"><em class="icon ni ni-na"></em></a></li>
-                                </ul>
-                            </div>
-                            <div class="card-inner">
-                                <div class="row gy-3 justify-content-center text-center">
-                                    <div class="col">
-                                        <div class="profile-stats">
-                                            <span class="amount">23</span>
-                                            <span class="sub-text">Orders</span>
-                                        </div>
-                                    </div>
-                                    <div class="col">
-                                        <div class="profile-stats">
-                                            <span class="amount">20</span>
-                                            <span class="sub-text">Completed</span>
-                                        </div>
-                                    </div>
-                                    <div class="col">
-                                        <div class="profile-stats">
-                                            <span class="amount">3</span>
-                                            <span class="sub-text">Progress</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div><!-- .card-inner -->
-                            <div class="card-inner">
-                                <h6 class="overline-title mb-2">Short Details</h6>
-                                <div class="row g-3">
-                                    <div class="col-sm-6 col-md-4 col-xl-12">
-                                        <span class="sub-text">User ID:</span>
-                                        <span>@Model.CustomerId</span>
-                                    </div>
+            <div class="nk-block-head-content">
+                <a href="@back" class="btn btn-outline-light bg-white"><em class="icon ni ni-arrow-left"></em><span class="d-none d-sm-inline">Back</span></a>
+            </div>
+        </div>
+    </div>
 
-                                    <div class="col-sm-6 col-md-4 col-xl-12">
-                                        <span class="sub-text">Phone:</span>
-                                        <span>@Model.Phone</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-xl-12">
-                                        <span class="sub-text">Billing Email:</span>
-                                        <span>@Model.Email</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-xl-12">
-                                        <span class="sub-text">Billing Address:</span>
-                                        <span>@Model.Address1</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-xl-12">
-                                        <span class="sub-text">Order Modified:</span>
-                                        <span>@Model.DateModified</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-lg-12">
-                                        <span class="sub-text">Status:</span>
-                                        <span class="@SetStatusBadge(Model.Status)">@Model.Status</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-lg-12">
-                                        <span class="sub-text">Ordered At:</span>
-                                        <span>@Model.DateCreated</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-lg-12">
-                                        <span class="sub-text">Dealer Ref:</span>
-                                        <span>@Model.DealerRef</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-lg-12">
-                                        <span class="sub-text">IMEI:</span>
-                                        <span>@Model.IMEI</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-lg-12">
-                                        <span class="sub-text">Mpesa Code:</span>
-                                        <span>@Model.MpesaDepositRef</span>
-                                    </div>
-                                </div>
-                            </div><!-- .card-inner -->
-                            <div class="card-inner">
-                                <h6 class="overline-title mb-2">Next of Kin</h6>
-                                @if (Model.NextOfKin != null)
-                                {
-                                    <div class="row g-3">
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Name:</span>
-                                            <span>@Model.NextOfKin?.Name</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Email:</span>
-                                            <span>@Model.NextOfKin?.Email</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Phone:</span>
-                                            <span>@Model.NextOfKin?.Phone</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Address:</span>
-                                            <span>@Model.NextOfKin?.Address</span>
-                                        </div>
-                                    </div>
-                                }
+    @if (TempData["CollectionsSuccess"] is string success)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible"><em class="icon ni ni-check-circle"></em> @success<button class="close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (TempData["CollectionsError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible"><em class="icon ni ni-cross-circle"></em> @error<button class="close" data-bs-dismiss="alert"></button></div>
+    }
 
-                                @if (Model.NextOfKin2 != null)
+    <div class="nk-block">
+        <div class="row g-gs">
+            @* 1. Customer & contact *@
+            <div class="col-12 col-lg-6">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="overline-title mb-3">Customer &amp; contact</h6>
+                        @if (!Model.HasOrder)
+                        {
+                            <p class="text-soft small">No online order found for this account, so contact details aren't on file. They can be added on WooCommerce.</p>
+                        }
+                        <dl class="cu-dl">
+                            <dt>Phone</dt>
+                            <dd>@if (!string.IsNullOrWhiteSpace(c.Phone)) { <a href="tel:@Tel(c.Phone)" class="fw-medium"><em class="icon ni ni-call"></em> @c.Phone</a> } else { <span class="text-soft">-</span> }</dd>
+                            <dt>Email</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(c.Email) ? "-" : c.Email)</dd>
+                            <dt>Address</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(c.Address1) ? "-" : c.Address1)</dd>
+                            <dt>National ID</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(c.NationalId) ? "-" : c.NationalId)</dd>
+                        </dl>
+                        @if (c.IdentityImages.Any())
+                        {
+                            <div class="cu-photos d-flex flex-wrap mt-3" style="gap:.5rem;">
+                                @foreach (var img in c.IdentityImages.Where(i => !string.IsNullOrWhiteSpace(i.Url)))
                                 {
-                                    <div class="row g-3">
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Name:</span>
-                                            <span>@Model.NextOfKin2?.Name</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Email:</span>
-                                            <span>@Model.NextOfKin2?.Email</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Phone:</span>
-                                            <span>@Model.NextOfKin2?.Phone</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Address:</span>
-                                            <span>@Model.NextOfKin2?.Address</span>
-                                        </div>
-                                    </div>
+                                    <a href="@img.Url" target="_blank" title="@img.Key"><img src="@img.Url" alt="@img.Key" loading="lazy" /></a>
                                 }
-                            </div><!-- .card-inner -->
-                        </div>
+                            </div>
+                        }
                     </div>
-                </div><!-- .col -->
-                <div class="col-xl-8">
-                    <div class="card">
+                </div>
+            </div>
+
+            @* 2. Next of kin *@
+            <div class="col-12 col-lg-6">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="overline-title mb-3">Next of kin</h6>
+                        @if (c.NextOfKin == null && c.NextOfKin2 == null)
+                        {
+                            <p class="text-soft mb-0">No next of kin on file.</p>
+                        }
+                        @foreach (var (label, kin) in new[] { ("First", c.NextOfKin), ("Second", c.NextOfKin2) })
+                        {
+                            if (kin == null) { continue; }
+                            <div class="cu-kin">
+                                <span class="badge badge-dim bg-light mb-1">@label</span>
+                                <dl class="cu-dl">
+                                    <dt>Name</dt>
+                                    <dd class="fw-medium">@kin.Name</dd>
+                                    <dt>Phone</dt>
+                                    <dd>@if (!string.IsNullOrWhiteSpace(kin.Phone)) { <a href="tel:@Tel(kin.Phone)"><em class="icon ni ni-call"></em> @kin.Phone</a> } else { <span>-</span> }</dd>
+                                    @if (!string.IsNullOrWhiteSpace(kin.Email)) { <dt>Email</dt><dd>@kin.Email</dd> }
+                                    @if (!string.IsNullOrWhiteSpace(kin.Address)) { <dt>Address</dt><dd>@kin.Address</dd> }
+                                </dl>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* 5. This collection *@
+            @if (k != null)
+            {
+                <div class="col-12">
+                    <div class="card card-bordered @(k.DueForReassignment ? "border-danger" : "")">
                         <div class="card-inner">
-                            <div class="nk-block">
-                                <div class="overline-title-alt mb-2 mt-2">In Account</div>
-                                <div class="profile-balance">
-                                    <div class="profile-balance-group gx-4">
-                                        <div class="profile-balance-sub">
-                                            <div class="profile-balance-amount">
-                                                <div class="number">@Model?.Arrears <small class="currency currency-usd">KES</small></div>
-                                            </div>
-                                            <div class="profile-balance-subtitle">Balance</div>
-                                        </div>
-                                        @*  <div class="profile-balance-sub">
-                                            <span class="profile-balance-plus text-soft"><em class="icon ni ni-plus"></em></span>
-                                            <div class="profile-balance-amount">
-                                                <div class="number">1,643</div>
-                                            </div>
-                                            <div class="profile-balance-subtitle">Credit Points</div>
-                                        </div> *@
-                                    </div>
-                                </div>
+                            <h6 class="overline-title mb-3">This collection</h6>
+                            <div class="row g-3">
+                                <div class="col-6 col-md-3"><span class="sub-text">Collector</span><span class="d-block fw-medium">@(k.CollectorName ?? "-")</span><span class="d-block small text-soft">since @k.HeldSince?.ToString("dd MMM yyyy")</span></div>
+                                <div class="col-6 col-md-3"><span class="sub-text">Owed at handover</span><span class="d-block fw-medium">KES @k.ShortfallAtHandover.ToString("N0")</span><span class="d-block small text-soft">@k.HandoverAt.ToString("dd MMM yyyy")</span></div>
+                                <div class="col-6 col-md-3"><span class="sub-text">Recovered by @(Model.ViewerHoldsCase ? "you" : "current collector")</span><span class="d-block fw-medium">KES @k.RecoveredByHolder.ToString("N0")</span><span class="d-block small text-soft">@share% = KES @CollectionsRules.CollectorShare(k.RecoveredByHolder).ToString("N0")</span></div>
+                                <div class="col-6 col-md-3"><span class="sub-text">Days without payment</span><span class="d-block fw-medium @(k.DueForReassignment ? "text-danger" : "")">@k.DaysWithoutPaymentWhileHeld</span><span class="d-block small text-soft">@(k.DueForReassignment ? "May be reassigned" : $"Reassignment at {CollectionsRules.ReassignAfterDaysWithoutPayment}")</span></div>
                             </div>
-
-                            @if (Model?.Product != null)
+                            @if (k.ContractEnded)
                             {
-                                <div class="nk-block">
-                                    <div class="nk-block-head">
-                                        <h5 class="title">Device Information</h5>
-                                        <p>Phone Info Card</p>
-                                    </div><!-- .nk-block-head -->
-                                    <div class="profile-ud-list">
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Name</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductName</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Storage</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductStorage</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">SKU</span>
-                                                <span class="profile-ud-value">@Model.Product.Sku</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">RAM</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductRam</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Product No</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductId</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Color</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductColor</span>
-                                            </div>
-                                        </div>
-                                    </div><!-- .profile-ud-list -->
-                                </div>
-
-                                <!-- .nk-block -->
+                                <p class="small text-info mt-2 mb-0">The device was repossessed and resold: payments from the new customer count toward this collection.</p>
                             }
-
-
-
-
-                            <div class="nk-divider divider md"></div>
-                            <div class="nk-block">
-                                <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                    <h5 class="title">Device Details</h5>
-                                </div><!-- .nk-block-head -->
-                                @if (Model.DeviceDetails != null)
-                                {
-                                    <div class="row gy-5">
-                                        <div class="col-md-3 col-lg-2 col-6">
-                                            <div class="profile-stats">
-                                                <span class="profile-ud-label">Make</span>
-                                                <span>@Model.DeviceDetails.Make </span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 col-lg-2 col-6">
-                                            <div class="profile-stats">
-                                                <span class="profile-ud-label">Model</span>
-                                                <span>@Model.DeviceDetails.Model </span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 col-lg-2  col-6">
-                                            <div class="profile-stats">
-                                                <span class="profile-ud-label">Lock Status</span>
-                                                <span class="@SetLockStatusBadge(Model.DeviceDetails.LockType)">@Model.DeviceDetails.LockType</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 col-lg-2  col-6">
-                                            <div class="profile-stats">
-                                                <span class="profile-ud-label">Enrolled</span>
-                                                <span>@FormartUtcDate(Model.DeviceDetails.EnrolledOn)</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 col-lg-2  col-6">
-                                            <div class="profile-stats">
-                                                <span class="profile-ud-label">Connected</span>
-                                                <span>@FormartUtcDate(Model.DeviceDetails.LastConnectedAt)</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 col-lg-2  col-6">
-                                            <div class="profile-stats">
-                                                <span class="profile-ud-label">Next Lock</span>
-                                                <span>@(FormartDateWithT(Model.DeviceDetails.NextLockDateIsoFormat)) </span>
-                                            </div>
-                                        </div>
+                            @if (k.OpenFlagCount > 0)
+                            {
+                                <p class="small text-warning mt-2 mb-0"><em class="icon ni ni-flag"></em> Flagged: @k.LatestFlagNote</p>
+                            }
+                            @if (Model.ViewerHoldsCase)
+                            {
+                                <form method="post" action="/collections/flag" class="mt-3">
+                                    <input type="hidden" name="caseId" value="@k.CaseId" />
+                                    <input type="hidden" name="accountNo" value="@Model.AccountNo" />
+                                    <label class="form-label" for="flag-note">Can't reach this customer?</label>
+                                    <div class="d-flex flex-wrap" style="gap:.5rem;">
+                                        <input type="text" name="note" id="flag-note" maxlength="500" required class="form-control flex-grow-1" style="min-width:200px;"
+                                               placeholder="What have you tried? e.g. phone off for 2 weeks" />
+                                        <button type="submit" class="btn btn-outline-warning">Flag for admin</button>
                                     </div>
-                                }
-
-                            </div><!-- .nk-block -->
-                            <div class="nk-divider divider md"></div>
-                            <div class="nk-block">
-                                <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                    <h5 class="title">Customer Note</h5>
-                                    <button type="button" data-bs-toggle="modal" data-bs-target="#modalCustomerNotes" class="link link-primary ms-auto">+ Add Note</button>
-                                </div><!-- .nk-block-head -->
-                                @if (Model.Notes.Any())
-                                {
-                                    <div class="bq-note">
-                                        @foreach (var note in Model.Notes)
-                                        {
-                                            <div class="bq-note-item">
-                                                <div class="bq-note-text">
-                                                    <p>@note.Note </p>
-                                                </div>
-                                                <div class="bq-note-meta">
-                                                    <span class="bq-note-added">Added on <span class="date">@note.Created.ToString("dd MMM yyyy")</span> at <span class="time">@note.Created.ToString("HH:mm:ss")</span></span>
-                                                    <span class="bq-note-sep sep">|</span>
-                                                    <span class="bq-note-by">By <span>@note.UserName</span></span>
-                                                    @* <a href="#" class="link link-sm link-danger">Delete Note</a> *@
-                                                </div>
-                                            </div>
-
-                                            <!-- .bq-note-item -->
-                                        }
-                                    </div>
-                                    <!-- .bq-note -->
-                                }
-
-                            </div><!-- .nk-block -->
-
-                        </div><!-- .card-inner -->
-                    </div><!-- .card -->
-                </div><!-- .col -->
-            </div><!-- .row -->
-        </div><!-- .nk-block -->
-    </div>
-
-    <div class="modal fade" tabindex="-1" id="modalRestructure">
-        <div class="modal-dialog modal-md" role="document">
-            <div class="modal-content">
-                <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close">
-                    <em class="icon ni ni-cross-sm"></em>
-                </a>
-                <div class="modal-body modal-body-md">
-                    <h5 class="modal-title">Restructure Payments</h5>
-                    <form action="/restructure-payment" method="post" class="mt-2">
-                        <input type="hidden" name="accountNo" value="@Model?.Payments?.FirstOrDefault()?.AccountNo" />
-                        <div class="row g-gs">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="form-label" for="edit-income">New Rate</label>
-                                    <div class="form-control-wrap">
-                                        <input type="number" name="newRate" class="form-control" id="edit-income" required />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="form-label" for="edit-date">Date From</label>
-                                    <div class="form-control-wrap">
-                                        <div class="form-icon form-icon-left">
-                                            <em class="icon ni ni-calendar"></em>
-                                        </div>
-                                        <input type="text" name="dateFrom" id="edit-date" class="form-control date-picker" data-date-format="yyyy-mm-dd" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
-                                    <li>
-                                        <button type="submit" class="btn btn-lg btn-primary">Submit</button>
-                                    </li>
-                                    <li>
-                                        <a href="#" data-bs-dismiss="modal" class="link link-gray">Cancel</a>
-                                    </li>
-                                </ul>
-                            </div>
+                                </form>
+                            }
                         </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            }
 
-    <!-- .Edit Modal-Content -->
-
-    <div class="modal fade" tabindex="-1" id="modalCustomerNotes">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <button class="close" data-dismiss="modal" aria-label="Close">
-                    <em class="icon ni ni-cross"></em>
-                </button>
-                <div class="modal-header">
-                    <h5 class="modal-title">Customer Note</h5>
-                </div>
-                <form action="/addcollectornote" method="post">
-                    <input name="orderId" type="hidden" value="@(Model.OrderID == 0 ? Model?.AccountId : Model.OrderID)">
-                    <div class="modal-body">
-                        <div class="nk-block nk-block-lg">
-                            <div class="card">
-                                <div class="card-inner">
-                                    <textarea name="customerNote" class="tinymce-toolbar form-control">Add note!</textarea>
-                                </div>
+            @* 4. Loan & payments *@
+            <div class="col-12 col-lg-6">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="overline-title mb-3">Loan &amp; payments</h6>
+                        @if (s == null)
+                        {
+                            <p class="text-soft">No open contract on this account.</p>
+                        }
+                        else
+                        {
+                            <div class="row g-3 mb-3">
+                                <div class="col-6"><span class="sub-text">Contract total</span><span class="d-block fw-medium">KES @s.ContractValue.ToString("N0")</span></div>
+                                <div class="col-6"><span class="sub-text">Paid so far</span><span class="d-block fw-medium">KES @s.TotalPaid.ToString("N0")</span></div>
+                                <div class="col-6"><span class="sub-text">Balance</span><span class="d-block fw-medium">KES @Math.Max(0, s.ContractValue - s.TotalPaid).ToString("N0")</span></div>
+                                <div class="col-6"><span class="sub-text">Behind by</span><span class="d-block fw-medium @(s.Shortfall > 0 ? "text-danger" : "text-success")">KES @s.Shortfall.ToString("N0")</span></div>
+                                <div class="col-6"><span class="sub-text">Last payment</span><span class="d-block fw-medium">@(s.LastPaymentDate?.ToString("dd MMM yyyy") ?? "Never")</span></div>
+                                <div class="col-6"><span class="sub-text">Started</span><span class="d-block fw-medium">@(s.StartDate?.ToString("dd MMM yyyy") ?? "-")</span></div>
                             </div>
-                        </div><!-- .nk-block -->
+                        }
+                        <span class="sub-text">Latest payments</span>
+                        @if (Model.RecentPayments.Count == 0)
+                        {
+                            <p class="text-soft mb-0">No payments yet.</p>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0" style="font-size:13px;">
+                                    <tbody>
+                                        @foreach (var p in Model.RecentPayments)
+                                        {
+                                            <tr><td>@p.PaymentDateValue.ToString("dd MMM yyyy")</td><td class="text-soft">@p.MpesaCode</td><td class="text-end fw-medium">KES @p.AmountValue.ToString("N0")</td></tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
                     </div>
-                    <div class="modal-footer bg-light">
-                        <button data-bs-dismiss="modal" class="btn btn-lg btn-danger">Cancel</button>
-                        <button type="submit" class="btn btn-lg btn-primary">Save</button>
-                    </div>
-                </form>
+                </div>
+            </div>
 
+            @* 3. Linked order and the phone *@
+            <div class="col-12 col-lg-6">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="overline-title mb-3">Linked order &amp; phone</h6>
+                        @if (Model.HasOrder)
+                        {
+                            <dl class="cu-dl">
+                                <dt>Order</dt><dd class="fw-medium">#@c.OrderID</dd>
+                                <dt>Ordered</dt><dd>@c.DateCreated.ToString("dd MMM yyyy")</dd>
+                                <dt>Status</dt><dd>@c.Status</dd>
+                                <dt>Order total</dt><dd>KES @c.TotalAmount.ToString("N0")</dd>
+                                <dt>Deposit M-Pesa</dt><dd>@(string.IsNullOrWhiteSpace(c.MpesaDepositRef) ? "-" : c.MpesaDepositRef)</dd>
+                                <dt>Dealer</dt><dd>@(s?.DealerName ?? c.DealerRef ?? "-")</dd>
+                                @if (c.Product != null)
+                                {
+                                    <dt>Phone ordered</dt><dd>@c.Product.ProductName</dd>
+                                    <dt>Storage / RAM</dt><dd>@c.Product.ProductStorage / @c.Product.ProductRam</dd>
+                                    <dt>Colour</dt><dd>@c.Product.ProductColor</dd>
+                                }
+                                <dt>IMEI</dt><dd>@(string.IsNullOrWhiteSpace(c.IMEI) ? c.DeviceDetails?.ImeiNo ?? "-" : c.IMEI)</dd>
+                            </dl>
+                        }
+                        else
+                        {
+                            <p class="text-soft">No online order found for this account.</p>
+                        }
+                        @if (c.DeviceDetails != null)
+                        {
+                            <dl class="cu-dl mt-3">
+                                <dt>Device</dt><dd>@c.DeviceDetails.Make @c.DeviceDetails.Model</dd>
+                                <dt>Lock status</dt><dd>@(c.DeviceDetails.LockType ?? "-")</dd>
+                                <dt>Next lock</dt><dd>@When(c.DeviceDetails.NextLockDateIsoFormat)</dd>
+                                <dt>Last online</dt><dd>@When(c.DeviceDetails.LastConnectedAt)</dd>
+                            </dl>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* 6. Notes *@
+            <div class="col-12">
+                <div class="card card-bordered">
+                    <div class="card-inner">
+                        <h6 class="overline-title mb-3">Notes</h6>
+                        <form method="post" action="/addcollectornote" class="mb-3">
+                            <input type="hidden" name="orderId" value="@Model.AccountNo" />
+                            <div class="d-flex flex-wrap" style="gap:.5rem;">
+                                <input type="text" name="customerNote" maxlength="1000" required class="form-control flex-grow-1" style="min-width:200px;"
+                                       placeholder="Add a note, e.g. promised to pay Friday" />
+                                <button type="submit" class="btn btn-primary">Add note</button>
+                            </div>
+                        </form>
+                        @if (Model.Notes.Count == 0)
+                        {
+                            <p class="text-soft mb-0">No notes yet.</p>
+                        }
+                        else
+                        {
+                            <div class="bq-note">
+                                @foreach (var note in Model.Notes)
+                                {
+                                    <div class="bq-note-item">
+                                        <div class="bq-note-text"><p>@note.Note</p></div>
+                                        <div class="bq-note-meta">
+                                            <span class="bq-note-added">@note.Created.AddHours(3).ToString("dd MMM yyyy HH:mm")</span>
+                                            <span class="bq-note-sep sep">|</span>
+                                            <span class="bq-note-by">By <span>@(note.UserName ?? "-")</span></span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-}
+</div>

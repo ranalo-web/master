@@ -65,7 +65,14 @@ namespace Ranalo.Controllers
             }
 
             var back = RedirectToAction("Index", new { dealerId, show, q });
-            role = role == AssignmentRole.Collector ? AssignmentRole.Collector : AssignmentRole.Agent;
+            if (role == AssignmentRole.Collector)
+            {
+                // Collectors are handed accounts on the Collections page, so the
+                // collections rules (eligibility, frozen arrears) always apply.
+                TempData["AssignmentError"] = "Collectors are now assigned on Collections > Collections Dashboard.";
+                return back;
+            }
+            role = AssignmentRole.Agent;
             var remove = mode == "remove";
             if (accountNos == null || accountNos.Count == 0)
             {

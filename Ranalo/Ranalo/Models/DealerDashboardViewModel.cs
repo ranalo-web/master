@@ -4,6 +4,9 @@
     {
         public string DealerName { get; set; } = "";
 
+        // Accounts of this dealer (or agent) that went to collections.
+        public InCollectionsSection InCollections { get; set; } = new();
+
         public decimal RevenueThisMonth { get; set; }
         public decimal RevenueGrowthPct { get; set; }
         public decimal AvgPerAccount { get; set; }

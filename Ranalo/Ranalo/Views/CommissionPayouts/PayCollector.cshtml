@@ -1,0 +1,228 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model CollectorPayViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var p = Model.Payee;
+    var share = (CollectionsRules.CollectorShareRate * 100).ToString("0");
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Pay @p.Name</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Collector · @share% of every payment recovered while they held the account · @p.Accounts account(s). Collectors are never suspended.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/commission-payouts?type=Collector" class="btn btn-outline-light btn-white"><em class="icon ni ni-arrow-left"></em><span>All collectors</span></a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["PayoutSuccess"] is string success)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em> @success
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["PayoutError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Recovered</span>
+                    <span class="d-block fs-5 fw-bold">KES @Model.Cases.Sum(c => c.Recovered).ToString("N0")</span>
+                    <span class="d-block text-soft small">While they held the accounts</span>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Earned (@share%)</span>
+                    <span class="d-block fs-5 fw-bold">KES @p.Pool.Earned.ToString("N0")</span>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Already paid</span>
+                    <span class="d-block fs-5 fw-bold">KES @p.Pool.Paid.ToString("N0")</span>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100"><div class="card-inner">
+                    <span class="sub-text">Payable now</span>
+                    <span class="d-block fs-5 fw-bold text-success">KES @p.Payable.ToString("N0")</span>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="/commission-payouts/pay" id="pay-form">
+        <input type="hidden" name="type" value="@CommissionPayeeType.Collector" />
+        <input type="hidden" name="id" value="@p.PayeeId" />
+
+        <div class="nk-block">
+            <div class="row g-gs">
+                <div class="col-12 col-xl-8">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <div class="card-title-group">
+                                <div class="card-title"><h6 class="title">Accounts</h6><p class="text-soft">Tick the accounts this payment covers.</p></div>
+                                <div class="card-tools">
+                                    <a href="#" class="link link-primary small" id="select-unpaid">Tick all unpaid</a> ·
+                                    <a href="#" class="link link-primary small" id="select-none">Clear</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="max-height:480px; overflow-y:auto;">
+                            <table class="table table-sm mb-0" style="white-space:nowrap; font-size:13px;">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Account</th>
+                                        <th class="text-end">Recovered</th>
+                                        <th class="text-end">Earned</th>
+                                        <th class="text-end">Paid</th>
+                                        <th class="text-end">Due</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in Model.Cases)
+                                    {
+                                        var pre = Model.PreselectedCaseIds.Contains(c.CaseId);
+                                        <tr>
+                                            <td><input type="checkbox" class="form-check-input pay-case" name="caseIds" value="@c.CaseId" data-due="@c.Due.ToString(System.Globalization.CultureInfo.InvariantCulture)" checked="@pre" /></td>
+                                            <td>
+                                                <a href="/account-details/@c.AccountNo" target="_blank" class="fw-medium">@(string.IsNullOrWhiteSpace(c.CustomerName) ? "(no name)" : c.CustomerName)</a>
+                                                <span class="d-block sub-text">AC @c.AccountNo · from @c.FirstHeld.ToString("dd MMM yyyy")@(c.HeldNow ? "" : " · no longer theirs")</span>
+                                            </td>
+                                            <td class="text-end">KES @c.Recovered.ToString("N0")</td>
+                                            <td class="text-end">KES @c.Earned.ToString("N0")</td>
+                                            <td class="text-end">KES @c.Paid.ToString("N0")</td>
+                                            <td class="text-end fw-medium @(c.Due > 0 ? "text-success" : "text-soft")">KES @c.Due.ToString("N0")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-4">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <h6 class="title mb-3">Payment</h6>
+                            <div class="p-3 mb-3" style="background:rgba(101,118,255,.08); border-radius:6px;">
+                                <div class="d-flex justify-content-between"><span class="text-soft">Accounts ticked</span><span id="sel-count">0</span></div>
+                                <div class="d-flex justify-content-between fw-bold mt-1 pt-1 border-top"><span>Total payable</span><span class="text-success">KES <span id="sel-payable">0</span></span></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="pay-amount">Amount paid (KES)</label>
+                                <input type="number" step="0.01" min="0.01" name="amount" id="pay-amount" class="form-control" required />
+                                <span class="form-note">Defaults to the total payable. Changing it pays part of it.</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="pay-date">Date paid</label>
+                                <input type="date" name="paidDate" id="pay-date" class="form-control" required value="@DateTime.Now.ToString("yyyy-MM-dd")" max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="pay-method">Method</label>
+                                <select name="method" id="pay-method" class="form-select" required>
+                                    @foreach (var m in CommissionPayoutMethod.All)
+                                    {
+                                        <option value="@m">@m</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="pay-reference">Reference</label>
+                                <input type="text" name="reference" id="pay-reference" class="form-control" maxlength="100" placeholder="M-Pesa code, bank reference…" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="pay-notes">Notes</label>
+                                <textarea name="notes" id="pay-notes" class="form-control" rows="2" maxlength="500"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" name="recordPastPayment" value="true" id="pay-past" />
+                                    <label class="custom-control-label" for="pay-past">Record a payment already made</label>
+                                </div>
+                                <span class="form-note d-block">For a payment made earlier, which may be more than is due today.</span>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 justify-content-center" id="pay-submit" disabled>Record payment</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner border-bottom py-2 d-flex justify-content-between">
+                <h6 class="title mb-0">Recent payments to @p.Name</h6>
+                <a href="/commission-payouts/history" class="link link-primary small">All payment history</a>
+            </div>
+            @if (Model.RecentPayouts.Count == 0)
+            {
+                <div class="card-inner text-soft">No payments recorded yet.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0" style="font-size:13px;">
+                        <tbody>
+                            @foreach (var r in Model.RecentPayouts)
+                            {
+                                <tr><td>@r.PaidDate.ToString("dd MMM yyyy")</td><td>@r.Method @r.Reference</td><td>@r.AccountCount account(s)</td><td class="text-end fw-medium">KES @r.Amount.ToString("N0")</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var boxes = Array.prototype.slice.call(document.querySelectorAll('.pay-case'));
+            var amount = document.getElementById('pay-amount');
+            var submit = document.getElementById('pay-submit');
+            var touched = false;
+            function fmt(n) { return Math.round(n).toLocaleString('en-KE'); }
+            function update() {
+                var ticked = boxes.filter(function (b) { return b.checked; });
+                var due = ticked.reduce(function (s, b) { return s + parseFloat(b.dataset.due || '0'); }, 0);
+                document.getElementById('sel-count').textContent = ticked.length;
+                document.getElementById('sel-payable').textContent = fmt(due);
+                if (!touched) amount.value = due > 0 ? due.toFixed(2) : '';
+                submit.disabled = ticked.length === 0 || !(parseFloat(amount.value) > 0);
+            }
+            boxes.forEach(function (b) { b.addEventListener('change', update); });
+            amount.addEventListener('input', function () { touched = true; update(); });
+            document.getElementById('select-unpaid').addEventListener('click', function (e) {
+                e.preventDefault();
+                boxes.forEach(function (b) { b.checked = parseFloat(b.dataset.due) > 0; });
+                touched = false; update();
+            });
+            document.getElementById('select-none').addEventListener('click', function (e) {
+                e.preventDefault();
+                boxes.forEach(function (b) { b.checked = false; });
+                touched = false; update();
+            });
+            update();
+        })();
+    </script>
+}

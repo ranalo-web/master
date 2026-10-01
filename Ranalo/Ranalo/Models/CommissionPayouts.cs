@@ -7,9 +7,13 @@ namespace Ranalo.Models
         public const string Agent = "Agent";
         public const string Dealer = "Dealer";
 
+        // Paid 20% of what they recover (Services.CollectionsRules).
+        public const string Collector = "Collector";
+
         public static string? Normalize(string? value) =>
             string.Equals(value, Agent, StringComparison.OrdinalIgnoreCase) ? Agent
             : string.Equals(value, Dealer, StringComparison.OrdinalIgnoreCase) ? Dealer
+            : string.Equals(value, Collector, StringComparison.OrdinalIgnoreCase) ? Collector
             : null;
     }
 
@@ -127,6 +131,7 @@ namespace Ranalo.Models
         public string PayeeType { get; set; } = "";
         public int? DealerId { get; set; }
         public int? AgentUserId { get; set; }
+        public int? CollectorUserId { get; set; }
         public string PayeeName { get; set; } = "";
         public decimal Amount { get; set; }
         public DateTime PaidDate { get; set; }
@@ -162,5 +167,20 @@ namespace Ranalo.Models
         public int RecordedByUserId { get; set; }
         public string PaymentType { get; set; } = CommissionPart.Commission;
         public List<PayoutLine> Lines { get; set; } = new();
+
+        // Collector payouts: paid per collections case, not per contract.
+        public int? CollectorUserId { get; set; }
+        public List<CollectorPayoutLine> CollectorLines { get; set; } = new();
+    }
+
+    public record CollectorPayoutLine(int CaseId, decimal Amount);
+
+    // Pay screen for one collector: what they earned on each case.
+    public class CollectorPayViewModel
+    {
+        public CommissionPayeeSummary Payee { get; set; } = new();
+        public List<CollectorCaseEarning> Cases { get; set; } = new();
+        public List<CommissionPayoutRecord> RecentPayouts { get; set; } = new();
+        public List<int> PreselectedCaseIds { get; set; } = new();
     }
 }

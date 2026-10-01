@@ -1,0 +1,433 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model CollectionsAdminViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    string Link(string tab, int? collector = null) => "/collections-admin" + Microsoft.AspNetCore.Http.QueryString.Create(new Dictionary<string, string?>
+    {
+        ["tab"] = tab,
+        ["q"] = Model.Search,
+        ["dealerId"] = Model.DealerId?.ToString(),
+        ["collectorId"] = (collector ?? Model.CollectorUserId)?.ToString(),
+    }.Where(kv => kv.Value != null));
+    var share = (CollectionsRules.CollectorShareRate * 100).ToString("0");
+}
+
+<style>
+    .ca-bar { position: sticky; top: 64px; z-index: 5; }
+    .ca-table td, .ca-table th { vertical-align: middle; }
+    @@media (max-width: 767.98px) {
+        .ca-md { display: none !important; }
+        .ca-table td, .ca-table th { padding-left: .5rem; padding-right: .5rem; }
+    }
+</style>
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Collections</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Hand accounts that are behind with nothing paid for @CollectionsRules.EligibleDaysWithoutPayment days to a collector. The agent's and dealer's arrears freeze at handover and stay theirs; the collector holding an account earns @share% of every payment on it. Reassign accounts that go @CollectionsRules.ReassignAfterDaysWithoutPayment days without a payment.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/commission-payouts?type=Collector" class="btn btn-outline-primary"><em class="icon ni ni-coins"></em><span>Pay collectors</span></a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["CollectionsSuccess"] is string success)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em> @success
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["CollectionsError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (Model.SetupMissing)
+    {
+        <div class="alert alert-warning alert-icon">
+            <em class="icon ni ni-alert-circle"></em> Collections isn't set up yet: run <code>Database/Collections/001_create_collections_tables.sql</code> on the database (on the day this goes live -- accounts already with a collector are handed over that day).
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-6 col-lg-3">
+                <a href="@Link("cases")" class="card card-bordered h-100 text-reset"><div class="card-inner">
+                    <span class="sub-text">In collections</span>
+                    <span class="d-block fs-5 fw-bold">@Model.OpenCaseCount.ToString("N0")</span>
+                    <span class="d-block text-soft small">accounts with a collector</span>
+                </div></a>
+            </div>
+            <div class="col-6 col-lg-3">
+                <a href="@Link("pool")" class="card card-bordered h-100 text-reset"><div class="card-inner">
+                    <span class="sub-text">Waiting for a collector</span>
+                    <span class="d-block fs-5 fw-bold @(Model.PoolCount > 0 ? "text-warning" : "")">@Model.PoolCount.ToString("N0")</span>
+                    <span class="d-block text-soft small">eligible, not yet handed over</span>
+                </div></a>
+            </div>
+            <div class="col-6 col-lg-3">
+                <a href="@Link("cases")" class="card card-bordered h-100 text-reset"><div class="card-inner">
+                    <span class="sub-text">Due for reassignment</span>
+                    <span class="d-block fs-5 fw-bold @(Model.DueForReassignmentCount > 0 ? "text-danger" : "")">@Model.DueForReassignmentCount.ToString("N0")</span>
+                    <span class="d-block text-soft small">@CollectionsRules.ReassignAfterDaysWithoutPayment+ days with no payment</span>
+                </div></a>
+            </div>
+            <div class="col-6 col-lg-3">
+                <a href="@Link("flags")" class="card card-bordered h-100 text-reset"><div class="card-inner">
+                    <span class="sub-text">Can't reach customer</span>
+                    <span class="d-block fs-5 fw-bold @(Model.OpenFlagCount > 0 ? "text-warning" : "")">@Model.OpenFlagCount.ToString("N0")</span>
+                    <span class="d-block text-soft small">flags from collectors</span>
+                </div></a>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Collectors.Count > 0)
+    {
+        <div class="nk-block">
+            <div class="card card-bordered">
+                <div class="card-inner border-bottom py-2"><h6 class="title mb-0">Collectors</h6></div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0 ca-table" style="font-size:13px; white-space:nowrap;">
+                        <thead>
+                            <tr>
+                                <th>Collector</th>
+                                <th>Accounts</th>
+                                <th class="ca-md" title="Shortfall at handover on the accounts they hold">Owed at handover</th>
+                                <th title="Everything they have recovered">Recovered</th>
+                                <th class="ca-md">This month</th>
+                                <th class="ca-md" title="Recovered by them on the accounts they hold / owed at handover">Recovery rate</th>
+                                <th>Earned (@share%)</th>
+                                <th class="ca-md">Paid</th>
+                                <th>Due</th>
+                                <th class="ca-md">Alerts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model.Collectors)
+                            {
+                                <tr class="@(Model.CollectorUserId == c.CollectorUserId ? "table-active" : "")">
+                                    <td><a href="@Link("cases", c.CollectorUserId)" class="fw-medium">@c.Name</a></td>
+                                    <td>@c.CasesHeld</td>
+                                    <td class="ca-md">KES @c.ShortfallAtHandover.ToString("N0")</td>
+                                    <td>KES @c.Recovered.ToString("N0")</td>
+                                    <td class="ca-md">KES @c.RecoveredThisMonth.ToString("N0")</td>
+                                    <td class="ca-md">@c.RecoveryRatePct.ToString("0.#")%</td>
+                                    <td>KES @c.Earned.ToString("N0")</td>
+                                    <td class="ca-md">KES @c.Paid.ToString("N0")</td>
+                                    <td class="fw-bold @(c.Due > 0 ? "text-success" : "text-soft")">KES @c.Due.ToString("N0")</td>
+                                    <td class="ca-md">
+                                        @if (c.DueForReassignment > 0) { <span class="badge badge-dim bg-danger">@c.DueForReassignment due</span> }
+                                        @if (c.OpenFlags > 0) { <span class="badge badge-dim bg-warning">@c.OpenFlags flagged</span> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner py-2">
+                <form method="get" action="/collections-admin" class="d-flex flex-wrap align-items-center" style="gap:.5rem;">
+                    <input type="hidden" name="tab" value="@Model.Tab" />
+                    <div class="btn-group">
+                        <a href="@Link("cases")" class="btn btn-sm @(Model.Tab == "cases" ? "btn-primary" : "btn-outline-light btn-white")">In collections</a>
+                        <a href="@Link("pool")" class="btn btn-sm @(Model.Tab == "pool" ? "btn-primary" : "btn-outline-light btn-white")">Pool (@Model.PoolCount)</a>
+                        <a href="@Link("flags")" class="btn btn-sm @(Model.Tab == "flags" ? "btn-primary" : "btn-outline-light btn-white")">Flags (@Model.OpenFlagCount)</a>
+                        <a href="@Link("closed")" class="btn btn-sm @(Model.Tab == "closed" ? "btn-primary" : "btn-outline-light btn-white")">Returned</a>
+                    </div>
+                    <select name="dealerId" class="form-select form-select-sm" style="max-width:220px;" onchange="this.form.submit()">
+                        <option value="">All dealers</option>
+                        @foreach (var d in Model.Dealers)
+                        {
+                            <option value="@d.DealerId" selected="@(Model.DealerId == d.DealerId)">@d.CompanyName</option>
+                        }
+                    </select>
+                    @if (Model.Tab != "pool")
+                    {
+                        <select name="collectorId" class="form-select form-select-sm" style="max-width:200px;" onchange="this.form.submit()">
+                            <option value="">All collectors</option>
+                            @foreach (var c in Model.CollectorOptions)
+                            {
+                                <option value="@c.UserId" selected="@(Model.CollectorUserId == c.UserId)">@c.Name</option>
+                            }
+                        </select>
+                    }
+                    <div class="form-control-wrap flex-grow-1" style="min-width:180px;">
+                        <div class="form-icon form-icon-left"><em class="icon ni ni-search"></em></div>
+                        <input type="search" name="q" value="@Model.Search" class="form-control form-control-sm" placeholder="Account, contract, customer, agent, dealer or collector" />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">Search</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Tab == "pool")
+    {
+        <form method="post" action="/collections-admin/assign" class="ca-form">
+            <input type="hidden" name="q" value="@Model.Search" />
+            <input type="hidden" name="dealerId" value="@Model.DealerId" />
+            <div class="nk-block">
+                <div class="card card-bordered ca-bar">
+                    <div class="card-inner py-2 d-flex flex-wrap align-items-center" style="gap:.5rem;">
+                        <span class="fw-medium"><span class="ca-count">0</span> ticked</span>
+                        <select name="collectorUserId" class="form-select form-select-sm ca-person" style="max-width:260px;">
+                            <option value="">Hand to collector…</option>
+                            @foreach (var c in Model.CollectorOptions)
+                            {
+                                <option value="@c.UserId">@c.Name@(c.IsDealerUser ? " (dealer)" : "")</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary ca-go" data-confirm="Hand {n} account(s) to {who}? The agent's and dealer's arrears freeze at today's shortfall." disabled>Hand over</button>
+                        <a href="#" class="link link-primary small ms-auto ca-all">Tick all shown</a>
+                        <a href="#" class="link link-primary small ca-none">Clear</a>
+                    </div>
+                </div>
+            </div>
+            <div class="nk-block">
+                <div class="card card-bordered">
+                    @if (Model.Pool.Count == 0)
+                    {
+                        <div class="card-inner text-soft">No accounts are waiting for a collector.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0 ca-table" style="font-size:13px;">
+                                <thead>
+                                    <tr>
+                                        <th style="width:1%;"></th>
+                                        <th>Account</th>
+                                        <th class="ca-md">Dealer / agent</th>
+                                        <th>Behind by</th>
+                                        <th>Last paid</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var s in Model.Pool)
+                                    {
+                                        <tr>
+                                            <td><input type="checkbox" class="form-check-input ca-tick" name="accountNos" value="@s.AccountNo" /></td>
+                                            <td>
+                                                <a href="/account-details/@s.AccountNo" target="_blank" class="fw-medium">@(string.IsNullOrWhiteSpace(s.CustomerName) ? "(no name)" : s.CustomerName)</a>
+                                                <span class="d-block sub-text">AC @s.AccountNo · @(s.ProductName ?? "Unknown device")@(s.OpenCaseId.HasValue ? " · resold device (replaces its current collector)" : "")</span>
+                                            </td>
+                                            <td class="ca-md">@(s.DealerName ?? "No dealer")<span class="d-block sub-text">@(s.AgentName ?? "Direct sale")</span></td>
+                                            <td class="fw-medium text-danger">KES @s.Shortfall.ToString("N0")</td>
+                                            <td>@(s.LastPaymentDate?.ToString("dd MMM yyyy") ?? "Never")<span class="d-block sub-text">@s.DaysSinceLastPayment days ago</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </form>
+    }
+    else if (Model.Tab == "flags")
+    {
+        <div class="nk-block">
+            <div class="card card-bordered">
+                @if (Model.Flags.Count == 0)
+                {
+                    <div class="card-inner text-soft">No open flags.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0 ca-table" style="font-size:13px;">
+                            <thead><tr><th>Account</th><th>Collector</th><th>Note</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var f in Model.Flags)
+                                {
+                                    <tr>
+                                        <td><a href="/account-details/@f.AccountNo" target="_blank" class="fw-medium">@f.CustomerName</a><span class="d-block sub-text">AC @f.AccountNo · @f.CreatedAt.ToString("dd MMM yyyy")</span></td>
+                                        <td>@f.CollectorName</td>
+                                        <td style="white-space:normal; min-width:200px;">@f.Note</td>
+                                        <td class="text-end">
+                                            <a href="@Link("cases", f.CollectorUserId)" class="btn btn-sm btn-outline-light btn-white">Reassign…</a>
+                                            <form method="post" action="/collections-admin/flags/@f.Id/resolve" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-outline-success">Clear</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        var open = Model.Tab == "cases";
+        <form method="post" action="/collections-admin/reassign" class="ca-form" id="ca-cases-form">
+            <input type="hidden" name="q" value="@Model.Search" />
+            <input type="hidden" name="dealerId" value="@Model.DealerId" />
+            <input type="hidden" name="collectorId" value="@Model.CollectorUserId" />
+            @if (open)
+            {
+                <div class="nk-block">
+                    <div class="card card-bordered ca-bar">
+                        <div class="card-inner py-2 d-flex flex-wrap align-items-center" style="gap:.5rem;">
+                            <span class="fw-medium"><span class="ca-count">0</span> ticked</span>
+                            <select name="collectorUserId" class="form-select form-select-sm ca-person" style="max-width:260px;">
+                                <option value="">Reassign to…</option>
+                                @foreach (var c in Model.CollectorOptions)
+                                {
+                                    <option value="@c.UserId">@c.Name@(c.IsDealerUser ? " (dealer)" : "")</option>
+                                }
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary ca-go" data-confirm="Reassign {n} account(s) to {who}? They earn on payments from now on." disabled>Reassign</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger ca-return" formaction="/collections-admin/return" disabled>Return to agent/dealer</button>
+                            <a href="#" class="link link-primary small ms-auto ca-all">Tick all shown</a>
+                            <a href="#" class="link link-primary small ca-none">Clear</a>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="nk-block">
+                <div class="card card-bordered">
+                    @if (Model.Cases.Count == 0)
+                    {
+                        <div class="card-inner text-soft">@(open ? "No accounts in collections match." : "No accounts have been returned yet.")</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0 ca-table" style="font-size:13px;">
+                                <thead>
+                                    <tr>
+                                        @if (open) { <th style="width:1%;"></th> }
+                                        <th>Account</th>
+                                        <th>Collector</th>
+                                        <th class="ca-md">Dealer / agent</th>
+                                        <th title="Shortfall when handed over">Owed at handover</th>
+                                        <th>Recovered</th>
+                                        <th class="ca-md" title="What the agent and the dealer each carry for it now">Agent/dealer deduction</th>
+                                        <th>@(open ? "Last payment" : "Returned")</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in Model.Cases)
+                                    {
+                                        <tr class="@(c.DueForReassignment ? "table-danger" : "")">
+                                            @if (open) { <td><input type="checkbox" class="form-check-input ca-tick" name="caseIds" value="@c.CaseId" /></td> }
+                                            <td>
+                                                <a href="/account-details/@c.AccountNo" target="_blank" class="fw-medium">@(string.IsNullOrWhiteSpace(c.CustomerName) ? "(no name)" : c.CustomerName)</a>
+                                                <span class="d-block sub-text">AC @c.AccountNo · since @c.HandoverAt.ToString("dd MMM yyyy")@(c.IsGoLiveBackfill ? " (go-live)" : "")</span>
+                                                @if (c.ContractEnded) { <span class="badge badge-dim bg-info">Repossessed &amp; resold</span> }
+                                                @if (c.OpenFlagCount > 0) { <span class="d-block small text-warning" title="@c.LatestFlagNote"><em class="icon ni ni-flag"></em> Can't reach: @c.LatestFlagNote</span> }
+                                            </td>
+                                            <td>
+                                                @(c.CollectorName ?? "-")
+                                                @if (open && c.HeldSince.HasValue) { <span class="d-block sub-text">since @c.HeldSince.Value.ToString("dd MMM yyyy")</span> }
+                                            </td>
+                                            <td class="ca-md">@(c.DealerName ?? "No dealer")<span class="d-block sub-text">@(c.AgentName ?? "Direct sale")</span></td>
+                                            <td>KES @c.ShortfallAtHandover.ToString("N0")</td>
+                                            <td>
+                                                KES @c.Recovered.ToString("N0")
+                                                @if (open && c.RecoveredByHolder != c.Recovered) { <span class="d-block sub-text">KES @c.RecoveredByHolder.ToString("N0") by current collector</span> }
+                                            </td>
+                                            <td class="ca-md">
+                                                KES @c.CurrentDeduction.ToString("N0")
+                                                @if (c.CollectionCosts > 0) { <span class="d-block sub-text">incl. KES @c.CollectionCosts.ToString("N0") costs</span> }
+                                            </td>
+                                            <td>
+                                                @if (open)
+                                                {
+                                                    @(c.LastPaymentAt?.ToString("dd MMM yyyy") ?? "None yet")
+                                                    <span class="d-block sub-text @(c.DueForReassignment ? "text-danger fw-bold" : "")">@c.DaysWithoutPaymentWhileHeld days without@(c.DueForReassignment ? " -- reassign" : "")</span>
+                                                }
+                                                else
+                                                {
+                                                    @(c.ClosedAt?.ToString("dd MMM yyyy") ?? "-")
+                                                    <span class="d-block sub-text">@(c.Status == CollectionCaseStatus.Superseded ? "Device's new contract went to collections" : "Back with agent/dealer")</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </form>
+
+        @if (open && (Model.DealerExposure.Count > 0 || Model.AgentExposure.Count > 0))
+        {
+            <div class="nk-block">
+                <div class="row g-gs">
+                    @foreach (var (title, rows) in new[] { ("Collections arrears by dealer", Model.DealerExposure), ("Collections arrears by agent", Model.AgentExposure) })
+                    {
+                        <div class="col-lg-6">
+                            <div class="card card-bordered h-100">
+                                <div class="card-inner border-bottom py-2"><h6 class="title mb-0">@title</h6><span class="sub-text">Frozen arrears (plus costs once returned) deducted from their commission</span></div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0" style="font-size:13px;">
+                                        <tbody>
+                                            @foreach (var r in rows)
+                                            {
+                                                <tr><td>@r.Name</td><td>@r.Accounts account(s)</td><td class="text-end fw-medium">KES @r.Deduction.ToString("N0")</td></tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            document.querySelectorAll('.ca-form').forEach(function (form) {
+                var boxes = Array.prototype.slice.call(form.querySelectorAll('.ca-tick'));
+                var person = form.querySelector('.ca-person');
+                var go = form.querySelector('.ca-go');
+                var ret = form.querySelector('.ca-return');
+                if (!go) return;
+                function ticked() { return boxes.filter(function (b) { return b.checked; }).length; }
+                function update() {
+                    var n = ticked();
+                    form.querySelector('.ca-count').textContent = n;
+                    go.disabled = n === 0 || !person.value;
+                    if (ret) ret.disabled = n === 0;
+                }
+                boxes.forEach(function (b) { b.addEventListener('change', update); });
+                person.addEventListener('change', update);
+                form.querySelector('.ca-all').addEventListener('click', function (e) { e.preventDefault(); boxes.forEach(function (b) { b.checked = true; }); update(); });
+                form.querySelector('.ca-none').addEventListener('click', function (e) { e.preventDefault(); boxes.forEach(function (b) { b.checked = false; }); update(); });
+                go.addEventListener('click', function (e) {
+                    var msg = go.dataset.confirm.replace('{n}', ticked()).replace('{who}', person.options[person.selectedIndex].text);
+                    if (!confirm(msg)) e.preventDefault();
+                });
+                if (ret) ret.addEventListener('click', function (e) {
+                    if (!confirm('Return ' + ticked() + ' account(s) to their agent and dealer?\n\nThey keep the frozen arrears, plus what the collectors earned and any repossession cost.')) e.preventDefault();
+                });
+                update();
+            });
+        })();
+    </script>
+}

@@ -30,6 +30,7 @@
                                 : ViewBag.IsAdmin is true ? "/admin-dashboard"
                                 : ViewBag.IsAgent is true ? "/agent"
                                 : ViewBag.IsApprover is true ? "/approver"
+                                : (Context.Items["UserSettings"] as Ranalo.DataStore.DataModels.User)?.RoleId == Ranalo.DataStore.DataModels.UserRole.Collector ? "/collections-home"
                                 : "/orders";
                         }
                         <a href="@homeHref" class="logo-link nk-sidebar-logo">
@@ -42,21 +43,13 @@
                     <div class="nk-sidebar-content">
                         <div class="nk-sidebar-menu" data-simplebar>
                             <ul class="nk-menu">
-                                <li class="nk-menu-heading">
-                                    <h6 class="overline-title text-primary-alt">Dashboard &amp; Panels</h6>
-                                </li>
-
-                                @if (ViewBag.IsDealer is true)
-                                {
-                                    <li class="nk-menu-item">
-                                        <a href="/dealer-dashboard" class="nk-menu-link">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-dashboard"></em></span>
-                                            <span class="nk-menu-text">Dealer Dashboard</span>
-                                        </a>
-                                    </li>
-                                }
                                 @if (ViewBag.IsAdmin is true)
                                 {
+                                    @* Admin menu, grouped by job. Pages replaced by newer ones
+                                       (Dealer Outstanding, Dealer Ready To Pay, Agents Totals ->
+                                       Pay Commissions; Agents Assigned/Unassigned -> Account
+                                       Assignment) are left out of the menu but still work by URL. *@
+                                    <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Overview</h6></li>
                                     <li class="nk-menu-item">
                                         <a href="/admin-dashboard" class="nk-menu-link">
                                             <span class="nk-menu-icon"><em class="icon ni ni-dashboard"></em></span>
@@ -64,467 +57,384 @@
                                         </a>
                                     </li>
                                     <li class="nk-menu-item has-sub">
-                                        <a class="nk-menu-link nk-menu-toggle" href="financials">
+                                        <a class="nk-menu-link nk-menu-toggle" href="#">
                                             <span class="nk-menu-icon"><em class="icon ni ni-report-profit"></em></span>
                                             <span class="nk-menu-text">Financials</span>
                                         </a>
                                         <ul class="nk-menu-sub">
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/financials">
-                                                    <span class="nk-menu-text">Financials Overview</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/operating-expenses">
-                                                    <span class="nk-menu-text">Operating Expenses</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/cost-backfill">
-                                                    <span class="nk-menu-text">Device Cost Backfill</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/write-offs">
-                                                    <span class="nk-menu-text">Write-offs</span>
-                                                </a>
-                                            </li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/financials"><span class="nk-menu-text">Financials Overview</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/operating-expenses"><span class="nk-menu-text">Operating Expenses</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/write-offs"><span class="nk-menu-text">Write-offs</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/cost-backfill"><span class="nk-menu-text">Device Cost Backfill</span></a></li>
                                         </ul>
                                     </li>
-                                }
-                                @if (ViewBag.IsAgent is true)
-                                {
-                                    <li class="nk-menu-item">
-                                        <a href="/agent" class="nk-menu-link">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-dashboard"></em></span>
-                                            <span class="nk-menu-text">Agent Dashboard</span>
-                                        </a>
-                                    </li>
-                                }
-                                @if (ViewBag.IsApprover is true)
-                                {
-                                    <li class="nk-menu-item">
-                                        <a href="/approver" class="nk-menu-link">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-dashboard"></em></span>
-                                            <span class="nk-menu-text">Approver Dashboard</span>
-                                        </a>
-                                    </li>
-                                    <li class="nk-menu-item">
-                                        <a href="/approver-orders" class="nk-menu-link">
+
+                                    <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Sales</h6></li>
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="#">
                                             <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
                                             <span class="nk-menu-text">Approvals</span>
                                         </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/approver"><span class="nk-menu-text">Approver Dashboard</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/approver-orders"><span class="nk-menu-text">Orders to Approve</span></a></li>
+                                        </ul>
                                     </li>
-                                }
-                                @if (ViewBag.IsAdmin || ViewBag.IsApprover)
-                                {
                                     <li class="nk-menu-item has-sub">
-                                        <a class="nk-menu-link nk-menu-toggle" href="orders">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
+                                        <a class="nk-menu-link nk-menu-toggle" href="#">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-cart"></em></span>
                                             <span class="nk-menu-text">Orders</span>
                                         </a>
                                         <ul class="nk-menu-sub">
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/orders">
-                                                    <span class="nk-menu-text">All Orders</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/missingmpesacode">
-                                                    <span class="nk-menu-text">Missing Mpesa</span>
-                                                </a>
-                                            </li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/orders"><span class="nk-menu-text">All Orders</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/missingmpesacode"><span class="nk-menu-text">Missing Mpesa</span></a></li>
                                         </ul>
                                     </li>
-                                }
-                                else
-                                {
                                     <li class="nk-menu-item">
-                                        <a href="/orders" class="nk-menu-link">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
-                                            <span class="nk-menu-text">Orders</span>
-                                        </a>
-                                    </li>
-                                }
-                                <li class="nk-menu-item">
-                                    <a href="/watchlist" class="nk-menu-link">
-                                        <span class="nk-menu-icon"><em class="icon ni ni-eye"></em></span>
-                                        <span class="nk-menu-text">Watchlist</span>
-                                    </a>
-                                </li>
-                                @if (ViewBag.IsAgent is true)
-                                {
-                                    <li class="nk-menu-item">
-                                        <a class="nk-menu-link" href="/assigned-collections">
-                                            <span class="nk-menu-icon">
-                                                <em class="icon ni ni-briefcase-fill"></em>
-                                            </span>
-                                            <span class="nk-menu-text">Collections</span>
-                                        </a>
-                                    </li>
-                                }
-                                else
-                                {
-                                    <li class="nk-menu-item has-sub">
-                                        <a class="nk-menu-link nk-menu-toggle" href="collections">
-                                            <span class="nk-menu-icon">
-                                                <em class="icon ni ni-briefcase-fill"></em>
-                                            </span>
-                                            <span class="nk-menu-text">Collections</span>
-                                        </a>
-                                        <ul class="nk-menu-sub">
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/assigned-collections">
-                                                    <span class="nk-menu-text">Assigned Collections</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/unassigned-collections">
-                                                    <span class="nk-menu-text">Unassigned Collections</span>
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </li>
-
-                                    <li class="nk-menu-item has-sub">
-                                        <a class="nk-menu-link nk-menu-toggle" href="agents">
-                                            <span class="nk-menu-icon">
-                                                <em class="icon ni ni-user-list-fill"></em>
-                                            </span>
-                                            <span class="nk-menu-text">Agents</span>
-                                        </a>
-                                        <ul class="nk-menu-sub">
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/assigned-accounts">
-                                                    <span class="nk-menu-text">Assigned Accounts</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/unassigned-accounts">
-                                                    <span class="nk-menu-text">Unassigned Accounts</span>
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                }
-
-
-
-                                @if (ViewBag.IsAdmin)
-                                {
-                                    <li class="nk-menu-item has-sub">
-                                        <a class="nk-menu-link nk-menu-toggle" href="commissions">
-                                            <span class="nk-menu-icon">
-                                                    <em class="icon ni ni-coins"></em>
-                                            </span>
-                                            <span class="nk-menu-text">Commissions</span>
-                                        </a>
-                                        <ul class="nk-menu-sub">
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/commission-payouts">
-                                                    <span class="nk-menu-text">Pay Commissions</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/commission-payouts/history">
-                                                    <span class="nk-menu-text">Payment History</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/commissions">
-                                                    <span class="nk-menu-text">Commissions Summary</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/account-commissions">
-                                                    <span class="nk-menu-text">Account Commissions</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/commissions-dealer-outstanding">
-                                                    <span class="nk-menu-text">Dealer Outstanding</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/commissions-dealer-ready">
-                                                    <span class="nk-menu-text">Dealer Ready To Pay</span>
-                                                </a>
-                                            </li>
-
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/agents-totals">
-                                                    <span class="nk-menu-text">Agents Totals</span>
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </li>
-
-                                }
-                               
-                                @if (ViewBag.IsAdmin && !(ViewBag.IsApprover is true))
-                                {
-                                    <li class="nk-menu-item ">
-                                        <a class="nk-menu-link " href="/approver">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
-                                            <span class="nk-menu-text">Approver Dashboard</span>
-                                        </a>
-                                    </li>
-                                    <li class="nk-menu-item ">
-                                        <a class="nk-menu-link " href="/approver-orders">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-list-check"></em></span>
-                                            <span class="nk-menu-text">Approvals</span>
-                                        </a>
-                                    </li>
-                                }
-                                @if (ViewBag.IsAdmin || ViewBag.IsDealer || ViewBag.IsApprover)
-                                {
-                                    <li class="nk-menu-item ">
-                                        <a class="nk-menu-link " href="/enrolments">
+                                        <a class="nk-menu-link" href="/enrolments">
                                             <span class="nk-menu-icon"><em class="icon ni ni-cpu"></em></span>
                                             <span class="nk-menu-text">Enrolments</span>
                                         </a>
                                     </li>
-                                }
-
-                                    @if (ViewBag.IsAdmin)
-                                {
-                                    <li class="nk-menu-item ">
-                                        <a class="nk-menu-link " href="/statements">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
-                                            <span class="nk-menu-text">Statements</span>
+                                    <li class="nk-menu-item">
+                                        <a class="nk-menu-link" href="/contracts">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-file-text-fill"></em></span>
+                                            <span class="nk-menu-text">Contracts</span>
                                         </a>
                                     </li>
-                                        <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/contracts">
-                                                    <span class="nk-menu-icon"><em class="icon ni ni-file-text-fill"></em></span>
-                                                <span class="nk-menu-text">Contracts</span>
-                                            </a>
-                                        </li>
 
-                                        <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/dealers">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-users"></em></span>
-                                                <span class="nk-menu-text">Dealers</span>
-                                            </a>
-                                        </li>
-
-                                        <li class="nk-menu-item">
-                                            <a class="nk-menu-link" href="/dealer-allocation">
-                                                <span class="nk-menu-icon"><em class="icon ni ni-swap"></em></span>
-                                                <span class="nk-menu-text">Dealer Allocation</span>
-                                            </a>
-                                        </li>
-
-                                        <li class="nk-menu-item">
-                                            <a class="nk-menu-link" href="/account-assignment">
-                                                <span class="nk-menu-icon"><em class="icon ni ni-user-list"></em></span>
-                                                <span class="nk-menu-text">Account Assignment</span>
-                                            </a>
-                                        </li>
-
-                                        <li class="nk-menu-item">
-                                        <a class="nk-menu-link" href="/users">
-                                            <span class="nk-menu-icon">
-                                                <em class="icon ni ni-user-list"></em>
-                                            </span>
-                                            <span class="nk-menu-text">Users</span>
+                                    <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Payments &amp; Customers</h6></li>
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="#">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-tranx"></em></span>
+                                            <span class="nk-menu-text">Payments</span>
                                         </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/allpayments"><span class="nk-menu-text">All Payments</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/orphanedpayments"><span class="nk-menu-text">Orphaned Payments</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/assignedpayments"><span class="nk-menu-text">Assigned Payments</span></a></li>
+                                        </ul>
                                     </li>
-                                }
-
-                                 @if (ViewBag.IsDealer)
-                                {
-                                    <li class="nk-menu-item ">
-                                        <a class="nk-menu-link " href="/statements">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-cc-alt2"></em></span>
+                                    <li class="nk-menu-item">
+                                        <a class="nk-menu-link" href="/statements">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-file-docs"></em></span>
                                             <span class="nk-menu-text">Statements</span>
                                         </a>
                                     </li>
                                     <li class="nk-menu-item">
-                                        <a class="nk-menu-link" href="/users">
-                                            <span class="nk-menu-icon">
-                                                <em class="icon ni ni-user-list"></em>
-                                            </span>
-                                            <span class="nk-menu-text">Users</span>
+                                        <a href="/watchlist" class="nk-menu-link">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-eye"></em></span>
+                                            <span class="nk-menu-text">Watchlist</span>
                                         </a>
                                     </li>
-                                }
-                                
 
-                                <li class="nk-menu-item has-sub">
-                                    <a class="nk-menu-link nk-menu-toggle" href="payments">
-                                        <span class="nk-menu-icon">
-                                            <em class="icon ni ni-tranx"></em>
-                                        </span>
-                                        <span class="nk-menu-text">Payments</span>
-                                    </a>
-                                    <ul class="nk-menu-sub">
-
-                                        @if ((bool)(ViewData["IsAdmin"] ?? false))
-                                        {
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/orphanedpayments">
-                                                    <span class="nk-menu-text">Orphaned Payments</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/assignedpayments">
-                                                    <span class="nk-menu-text">Assigned Payments</span>
-                                                </a>
-                                            </li>
-                                        }
-
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/allpayments">
-                                                <span class="nk-menu-text">All Payments</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-
-                                <li class="nk-menu-item has-sub">
-                                    <a class="nk-menu-link nk-menu-toggle" href="devices">
-                                        <span class="nk-menu-icon">
-                                            <em class="icon ni ni-mobile"></em>
-                                        </span>
-                                        <span class="nk-menu-text">Devices</span>
-                                    </a>
-                                    <ul class="nk-menu-sub">
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/alldevices">
-                                                <span class="nk-menu-text">All Devices</span>
-                                            </a>
-                                        </li>
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/devices-with-no-orders">
-                                                <span class="nk-menu-text">No Orders</span>
-                                            </a>
-                                        </li>
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/devices-with-no-contracts">
-                                                <span class="nk-menu-text">No Contracts</span>
-                                            </a>
-                                        </li>
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/devices-nopayments">
-                                                <span class="nk-menu-text">No Payments</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-
-                                @if (ViewBag.IsDealer is true || ViewBag.IsAgent is true)
-                                {
+                                    <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Collections</h6></li>
                                     <li class="nk-menu-item has-sub">
                                         <a class="nk-menu-link nk-menu-toggle" href="#">
-                                            <span class="nk-menu-icon">
-                                                <em class="icon ni ni-coins"></em>
-                                            </span>
+                                            <span class="nk-menu-icon"><em class="icon ni ni-briefcase-fill"></em></span>
+                                            <span class="nk-menu-text">Collections</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/collections-admin"><span class="nk-menu-text">Collections Dashboard</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/assigned-collections"><span class="nk-menu-text">Assigned Collections</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/unassigned-collections"><span class="nk-menu-text">Unassigned Collections</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/collections"><span class="nk-menu-text">Collections 90</span></a></li>
+                                        </ul>
+                                    </li>
+
+                                    <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Commissions</h6></li>
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="#">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-coins"></em></span>
                                             <span class="nk-menu-text">Commissions</span>
                                         </a>
                                         <ul class="nk-menu-sub">
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/account-commissions">
-                                                    <span class="nk-menu-text">Account Commissions</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/commission-payouts/history">
-                                                    <span class="nk-menu-text">My Commission Payments</span>
-                                                </a>
-                                            </li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/commission-payouts"><span class="nk-menu-text">Pay Commissions</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/commission-payouts/history"><span class="nk-menu-text">Payment History</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/commissions"><span class="nk-menu-text">Commissions Summary</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/account-commissions"><span class="nk-menu-text">Account Commissions</span></a></li>
+                                        </ul>
+                                    </li>
+
+                                    <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Setup</h6></li>
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="#">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-building"></em></span>
+                                            <span class="nk-menu-text">Dealers</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/dealers"><span class="nk-menu-text">Dealers</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/dealer-allocation"><span class="nk-menu-text">Dealer Allocation</span></a></li>
+                                        </ul>
+                                    </li>
+                                    <li class="nk-menu-item">
+                                        <a class="nk-menu-link" href="/account-assignment">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-swap"></em></span>
+                                            <span class="nk-menu-text">Account Assignment</span>
+                                        </a>
+                                    </li>
+                                    <li class="nk-menu-item">
+                                        <a class="nk-menu-link" href="/users">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-users"></em></span>
+                                            <span class="nk-menu-text">Users</span>
+                                        </a>
+                                    </li>
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="#">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-mobile"></em></span>
+                                            <span class="nk-menu-text">Devices</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/alldevices"><span class="nk-menu-text">All Devices</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/devices-with-no-orders"><span class="nk-menu-text">No Orders</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/devices-with-no-contracts"><span class="nk-menu-text">No Contracts</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/devices-nopayments"><span class="nk-menu-text">No Payments</span></a></li>
+                                        </ul>
+                                    </li>
+
+                                    <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Reports</h6></li>
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="#">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-reports"></em></span>
+                                            <span class="nk-menu-text">Reports</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/statusreport"><span class="nk-menu-text">Status Report</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/arrearsreport"><span class="nk-menu-text">Arrears Report</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/never-paid"><span class="nk-menu-text">Never Paid</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/restructured"><span class="nk-menu-text">Auto Restructured</span></a></li>
+                                            <li class="nk-menu-item"><a class="nk-menu-link" href="/manual-restructured"><span class="nk-menu-text">Manual Restructured</span></a></li>
                                         </ul>
                                     </li>
                                 }
+                                else
+                                {
+                                    @* Dealer, agent, approver and collector menus: the same headings, order
+                                       and page names as the admin menu, showing only what the role can
+                                       use -- so admin can point anyone to the same place. *@
+                                    var me = Context.Items["UserSettings"] as Ranalo.DataStore.DataModels.User;
+                                    var isDealer = ViewBag.IsDealer is true;
+                                    var isAgent = ViewBag.IsAgent is true;
+                                    var isApprover = ViewBag.IsApprover is true;
+                                    var isCollectorOnly = me?.RoleId == Ranalo.DataStore.DataModels.UserRole.Collector;
+                                    // A dealer or agent who also collects gets "My Collections" in Collections.
+                                    var alsoCollector = !isCollectorOnly && Ranalo.Services.CollectionsService.IsCollector(me);
+                                    var dashboard = isDealer ? ("/dealer-dashboard", "Dealer Dashboard")
+                                        : isAgent ? ("/agent", "Agent Dashboard")
+                                        : isApprover ? ("/approver", "Approver Dashboard")
+                                        : isCollectorOnly ? ("/collections-home", "Collector Dashboard")
+                                        : ("/orders", "Home");
 
-                                <li class="nk-menu-item has-sub">
-                                    <a class="nk-menu-link nk-menu-toggle" href="reports">
-                                        <span class="nk-menu-icon">
-                                            <em class="icon ni ni-reports"></em>
-                                        </span>
-                                        <span class="nk-menu-text">Reports</span>
-                                    </a>
-                                    <ul class="nk-menu-sub">
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/statusreport">
-                                                <span class="nk-menu-text">Status Report</span>
-                                            </a>
-                                        </li>
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/restructured">
-                                                <span class="nk-menu-text">Auto Restructured</span>
-                                            </a>
-                                        </li>
-                                        <li class="nk-menu-item ">
-                                            <a class="nk-menu-link " href="/manual-restructured">
-                                                <span class="nk-menu-text">Manual Restructured</span>
-                                            </a>
-                                        </li>
-                                        @if (ViewBag.IsDealer is true || ViewBag.IsAgent is true)
+                                    <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Overview</h6></li>
+                                    <li class="nk-menu-item">
+                                        <a href="@dashboard.Item1" class="nk-menu-link">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-dashboard"></em></span>
+                                            <span class="nk-menu-text">@dashboard.Item2</span>
+                                        </a>
+                                    </li>
+
+                                    @if (!isCollectorOnly)
+                                    {
+                                        <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Sales</h6></li>
+                                        @if (isApprover)
                                         {
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/non-payers">
-                                                    <span class="nk-menu-text">Non-Payers</span>
+                                            <li class="nk-menu-item has-sub">
+                                                <a class="nk-menu-link nk-menu-toggle" href="#">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
+                                                    <span class="nk-menu-text">Approvals</span>
                                                 </a>
+                                                <ul class="nk-menu-sub">
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/approver-orders"><span class="nk-menu-text">Orders to Approve</span></a></li>
+                                                </ul>
                                             </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/slow-payers">
-                                                    <span class="nk-menu-text">Slow Payers</span>
+                                            <li class="nk-menu-item has-sub">
+                                                <a class="nk-menu-link nk-menu-toggle" href="#">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-cart"></em></span>
+                                                    <span class="nk-menu-text">Orders</span>
                                                 </a>
+                                                <ul class="nk-menu-sub">
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/orders"><span class="nk-menu-text">All Orders</span></a></li>
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/missingmpesacode"><span class="nk-menu-text">Missing Mpesa</span></a></li>
+                                                </ul>
                                             </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/good-payers">
-                                                    <span class="nk-menu-text">Good Payers</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/agent-performance">
-                                                    <span class="nk-menu-text">Agent Performance</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/contracts">
-                                                    <span class="nk-menu-text">My Contracts</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/contracts-ending-soon">
-                                                    <span class="nk-menu-text">Contracts Ending Soon</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/device-performance">
-                                                    <span class="nk-menu-text">Device Performance</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/dealer-dashboard/reports/completed-contracts">
-                                                    <span class="nk-menu-text">Completed Contracts</span>
+                                        }
+                                        else
+                                        {
+                                            <li class="nk-menu-item">
+                                                <a href="/orders" class="nk-menu-link">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-cart"></em></span>
+                                                    <span class="nk-menu-text">Orders</span>
                                                 </a>
                                             </li>
                                         }
-                                        @if (ViewBag.IsAdmin || ViewBag.IsApprover)
+                                        @if (isDealer || isApprover)
                                         {
-                                                <li class="nk-menu-item ">
-                                                        <a class="nk-menu-link " href="/never-paid">
-                                                        <span class="nk-menu-text">Never Paid</span>
-                                                    </a>
-                                                </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/arrearsreport">
-                                                    <span class="nk-menu-text">Arrears Report</span>
-                                                </a>
-                                            </li>
-                                            <li class="nk-menu-item ">
-                                                <a class="nk-menu-link " href="/collections">
-                                                    <span class="nk-menu-text">Collections 90</span>
+                                            <li class="nk-menu-item">
+                                                <a class="nk-menu-link" href="/enrolments">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-cpu"></em></span>
+                                                    <span class="nk-menu-text">Enrolments</span>
                                                 </a>
                                             </li>
                                         }
-                                    </ul>
+                                        @if (isDealer || isAgent)
+                                        {
+                                            <li class="nk-menu-item has-sub">
+                                                <a class="nk-menu-link nk-menu-toggle" href="#">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-file-text-fill"></em></span>
+                                                    <span class="nk-menu-text">Contracts</span>
+                                                </a>
+                                                <ul class="nk-menu-sub">
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/dealer-dashboard/reports/contracts"><span class="nk-menu-text">My Contracts</span></a></li>
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/dealer-dashboard/reports/contracts-ending-soon"><span class="nk-menu-text">Contracts Ending Soon</span></a></li>
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/dealer-dashboard/reports/completed-contracts"><span class="nk-menu-text">Completed Contracts</span></a></li>
+                                                </ul>
+                                            </li>
+                                        }
 
+                                        <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Payments &amp; Customers</h6></li>
+                                        <li class="nk-menu-item has-sub">
+                                            <a class="nk-menu-link nk-menu-toggle" href="#">
+                                                <span class="nk-menu-icon"><em class="icon ni ni-tranx"></em></span>
+                                                <span class="nk-menu-text">Payments</span>
+                                            </a>
+                                            <ul class="nk-menu-sub">
+                                                <li class="nk-menu-item"><a class="nk-menu-link" href="/allpayments"><span class="nk-menu-text">All Payments</span></a></li>
+                                            </ul>
+                                        </li>
+                                        @if (isDealer)
+                                        {
+                                            <li class="nk-menu-item">
+                                                <a class="nk-menu-link" href="/statements">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-file-docs"></em></span>
+                                                    <span class="nk-menu-text">Statements</span>
+                                                </a>
+                                            </li>
+                                        }
+                                        <li class="nk-menu-item">
+                                            <a href="/watchlist" class="nk-menu-link">
+                                                <span class="nk-menu-icon"><em class="icon ni ni-eye"></em></span>
+                                                <span class="nk-menu-text">Watchlist</span>
+                                            </a>
+                                        </li>
+                                    }
 
-                                </li>
+                                    <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Collections</h6></li>
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="#">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-briefcase-fill"></em></span>
+                                            <span class="nk-menu-text">Collections</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+                                            @if (isCollectorOnly)
+                                            {
+                                                <li class="nk-menu-item"><a class="nk-menu-link" href="/new-collections"><span class="nk-menu-text">New Collections</span></a></li>
+                                            }
+                                            else
+                                            {
+                                                @if (alsoCollector)
+                                                {
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/collections-home"><span class="nk-menu-text">My Collections</span></a></li>
+                                                }
+                                                @if (isAgent)
+                                                {
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/assigned-collections"><span class="nk-menu-text">My Accounts</span></a></li>
+                                                }
+                                                else
+                                                {
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/assigned-collections"><span class="nk-menu-text">Assigned Collections</span></a></li>
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/unassigned-collections"><span class="nk-menu-text">Unassigned Collections</span></a></li>
+                                                }
+                                                @if (isApprover)
+                                                {
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/collections"><span class="nk-menu-text">Collections 90</span></a></li>
+                                                }
+                                            }
+                                        </ul>
+                                    </li>
+
+                                    @if (isDealer || isAgent || isCollectorOnly)
+                                    {
+                                        <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Commissions</h6></li>
+                                        <li class="nk-menu-item has-sub">
+                                            <a class="nk-menu-link nk-menu-toggle" href="#">
+                                                <span class="nk-menu-icon"><em class="icon ni ni-coins"></em></span>
+                                                <span class="nk-menu-text">Commissions</span>
+                                            </a>
+                                            <ul class="nk-menu-sub">
+                                                @if (!isCollectorOnly)
+                                                {
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/account-commissions"><span class="nk-menu-text">Account Commissions</span></a></li>
+                                                }
+                                                <li class="nk-menu-item"><a class="nk-menu-link" href="/commission-payouts/history"><span class="nk-menu-text">Payment History</span></a></li>
+                                            </ul>
+                                        </li>
+                                    }
+
+                                    @if (!isCollectorOnly)
+                                    {
+                                        <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Setup</h6></li>
+                                        @if (isDealer || isApprover)
+                                        {
+                                            <li class="nk-menu-item has-sub">
+                                                <a class="nk-menu-link nk-menu-toggle" href="#">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-user-list-fill"></em></span>
+                                                    <span class="nk-menu-text">Agents</span>
+                                                </a>
+                                                <ul class="nk-menu-sub">
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/assigned-accounts"><span class="nk-menu-text">Assigned Accounts</span></a></li>
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/unassigned-accounts"><span class="nk-menu-text">Unassigned Accounts</span></a></li>
+                                                </ul>
+                                            </li>
+                                        }
+                                        @if (isDealer)
+                                        {
+                                            <li class="nk-menu-item">
+                                                <a class="nk-menu-link" href="/users">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-users"></em></span>
+                                                    <span class="nk-menu-text">Users</span>
+                                                </a>
+                                            </li>
+                                        }
+                                        <li class="nk-menu-item has-sub">
+                                            <a class="nk-menu-link nk-menu-toggle" href="#">
+                                                <span class="nk-menu-icon"><em class="icon ni ni-mobile"></em></span>
+                                                <span class="nk-menu-text">Devices</span>
+                                            </a>
+                                            <ul class="nk-menu-sub">
+                                                <li class="nk-menu-item"><a class="nk-menu-link" href="/alldevices"><span class="nk-menu-text">All Devices</span></a></li>
+                                                <li class="nk-menu-item"><a class="nk-menu-link" href="/devices-with-no-orders"><span class="nk-menu-text">No Orders</span></a></li>
+                                                <li class="nk-menu-item"><a class="nk-menu-link" href="/devices-with-no-contracts"><span class="nk-menu-text">No Contracts</span></a></li>
+                                                <li class="nk-menu-item"><a class="nk-menu-link" href="/devices-nopayments"><span class="nk-menu-text">No Payments</span></a></li>
+                                            </ul>
+                                        </li>
+
+                                        <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Reports</h6></li>
+                                        <li class="nk-menu-item has-sub">
+                                            <a class="nk-menu-link nk-menu-toggle" href="#">
+                                                <span class="nk-menu-icon"><em class="icon ni ni-reports"></em></span>
+                                                <span class="nk-menu-text">Reports</span>
+                                            </a>
+                                            <ul class="nk-menu-sub">
+                                                <li class="nk-menu-item"><a class="nk-menu-link" href="/statusreport"><span class="nk-menu-text">Status Report</span></a></li>
+                                                @if (isApprover)
+                                                {
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/arrearsreport"><span class="nk-menu-text">Arrears Report</span></a></li>
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/never-paid"><span class="nk-menu-text">Never Paid</span></a></li>
+                                                }
+                                                <li class="nk-menu-item"><a class="nk-menu-link" href="/restructured"><span class="nk-menu-text">Auto Restructured</span></a></li>
+                                                <li class="nk-menu-item"><a class="nk-menu-link" href="/manual-restructured"><span class="nk-menu-text">Manual Restructured</span></a></li>
+                                                @if (isDealer || isAgent)
+                                                {
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/dealer-dashboard/reports/non-payers"><span class="nk-menu-text">Non-Payers</span></a></li>
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/dealer-dashboard/reports/slow-payers"><span class="nk-menu-text">Slow Payers</span></a></li>
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/dealer-dashboard/reports/good-payers"><span class="nk-menu-text">Good Payers</span></a></li>
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/dealer-dashboard/reports/agent-performance"><span class="nk-menu-text">Agent Performance</span></a></li>
+                                                    <li class="nk-menu-item"><a class="nk-menu-link" href="/dealer-dashboard/reports/device-performance"><span class="nk-menu-text">Device Performance</span></a></li>
+                                                }
+                                            </ul>
+                                        </li>
+                                    }
+                                }
 
                             </ul>
                         </div><!-- .nk-sidebar-menu -->
@@ -541,7 +451,7 @@
                                 <a href="#" class="nk-nav-toggle nk-quick-nav-icon" data-target="sidebarMenu"><em class="icon ni ni-menu"></em></a>
                             </div>
                             <div class="nk-header-brand d-xl-none">
-                                <a href="/dashboard" class="logo-link">
+                                <a href="@homeHref" class="logo-link">
                                     <img class="logo-light logo-img" src="./images/Ranalo_Credit_Logo.png" srcset="./images/Ranalo_Credit_Logo.png" alt="logo">
                                     <img class="logo-dark logo-img" src="./images/Ranalo_Credit_Logo.png" srcset="./images/Ranalo_Credit_Logo.png" alt="logo-dark">
                                 </a>

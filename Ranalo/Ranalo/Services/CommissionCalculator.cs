@@ -26,6 +26,12 @@ namespace Ranalo.Services
     //   Arrears deducted = the same shortfall as above.
     //   Net     = commission - arrears deducted; Balance = net - paid to the dealer.
     //   No buying price recorded: no dealer commission at all until it is entered.
+    //
+    // In collections (CommissionInputs.Collections set; see CollectionsRules)
+    //   Arrears deducted = the frozen handover amount (plus collection costs
+    //             and any new shortfall once returned), for agent and dealer.
+    //   Agent bonus     = only what was already paid; the rest is cancelled.
+    //   Dealer base     = counts only payments made outside collections.
     public static class CommissionCalculator
     {
         public const decimal AgentUpfrontRate = 0.50m;
@@ -36,22 +42,28 @@ namespace Ranalo.Services
         public static CommissionBreakdown Calculate(CommissionInputs i)
         {
             var trueArrears = i.Arrears < 0 ? -i.Arrears : 0;
+            var terms = i.Collections;
+            var inCollections = terms != null;
             var bonusDue = i.DaysSinceStart >= BonusDays;
-            var bonusEarned = bonusDue && !i.IsPastLockDate && i.HasWooOrder;
+            var bonusEarned = !inCollections && bonusDue && !i.IsPastLockDate && i.HasWooOrder;
             var upfront = i.Deposit * AgentUpfrontRate;
-            var bonus = bonusEarned ? i.Deposit * AgentBonusRate : 0;
+            var bonus = inCollections
+                ? CollectionsRules.AgentBonusKept(i.Deposit * AgentBonusRate, i.AgentBonusPaid)
+                : bonusEarned ? i.Deposit * AgentBonusRate : 0;
             var agentCommission = upfront + bonus;
 
-            var agentDeducted = i.HasAgent ? trueArrears : 0;
+            var deduction = inCollections ? CollectionsRules.Deduction(terms!, trueArrears) : trueArrears;
+            var countedPaid = inCollections ? CollectionsRules.DealerCountedPaid(terms!, i.TotalPaid) : i.TotalPaid;
+            var agentDeducted = i.HasAgent ? deduction : 0;
             var agentEarned = i.HasAgent ? agentCommission : 0;
 
             decimal? dealerBase = null, dealerCommission = null, dealerNet = null, dealerBalance = null;
             decimal dealerDeducted = 0;
             if (i.BuyingPrice.HasValue)
             {
-                dealerBase = i.TotalPaid - i.BuyingPrice.Value - agentCommission;
+                dealerBase = countedPaid - i.BuyingPrice.Value - agentCommission;
                 dealerCommission = Math.Max(0, dealerBase.Value) * DealerRate;
-                dealerDeducted = trueArrears;
+                dealerDeducted = deduction;
                 dealerNet = dealerCommission.Value - dealerDeducted;
                 dealerBalance = dealerNet.Value - i.DealerPaid;
             }
@@ -64,9 +76,11 @@ namespace Ranalo.Services
                 AgentUpfront = upfront,
                 AgentBonus = bonus,
                 BonusEarned = bonusEarned,
-                BonusAtRisk = bonusDue && !bonusEarned,
-                BonusHeldNoWooOrder = bonusDue && !i.HasWooOrder,
-                DaysToBonus = Math.Max(0, BonusDays - i.DaysSinceStart),
+                BonusAtRisk = !inCollections && bonusDue && !bonusEarned,
+                BonusHeldNoWooOrder = !inCollections && bonusDue && !i.HasWooOrder,
+                DaysToBonus = inCollections ? 0 : Math.Max(0, BonusDays - i.DaysSinceStart),
+                InCollections = inCollections,
+                CollectionsReturned = terms?.IsReturned ?? false,
                 AgentCommission = agentCommission,
                 AgentEarned = agentEarned,
                 AgentArrearsDeducted = agentDeducted,
@@ -127,6 +141,13 @@ namespace Ranalo.Services
 
         // The contract has a WooCommerce order. Without one the bonus is held.
         public bool HasWooOrder { get; set; }
+
+        // Of AgentPaid, what was paid against the bonus -- kept if the
+        // account goes to collections.
+        public decimal AgentBonusPaid { get; set; }
+
+        // Set when the contract has been in collections: its latest case.
+        public CollectionTerms? Collections { get; set; }
     }
 
     public class CommissionBreakdown
@@ -146,6 +167,11 @@ namespace Ranalo.Services
         public bool BonusAtRisk { get; set; }
         public bool BonusHeldNoWooOrder { get; set; }
         public int DaysToBonus { get; set; }
+
+        // Handed to collections (and maybe returned since): the deductions
+        // are the collections figures, not TrueArrears.
+        public bool InCollections { get; set; }
+        public bool CollectionsReturned { get; set; }
 
         // Upfront + bonus at the standard rate, whether or not an agent is
         // assigned. Used as a cost in the dealer base.

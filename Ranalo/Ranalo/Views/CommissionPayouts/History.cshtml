@@ -107,6 +107,10 @@
                                                 {
                                                     <a href="/commission-payouts/pay?type=Dealer&id=@p.DealerId" class="fw-medium">@p.PayeeName</a>
                                                 }
+                                                else if (p.PayeeType == CommissionPayeeType.Collector && p.CollectorUserId.HasValue)
+                                                {
+                                                    <a href="/commission-payouts/pay?type=Collector&id=@p.CollectorUserId" class="fw-medium">@p.PayeeName</a>
+                                                }
                                                 else if (p.AgentUserId.HasValue)
                                                 {
                                                     <a href="/commission-payouts/pay?type=Agent&id=@p.AgentUserId" class="fw-medium">@p.PayeeName</a>
@@ -115,7 +119,7 @@
                                             </td>
                                         }
                                         <td class="fw-medium">KES @p.Amount.ToString("N0")</td>
-                                        <td>@(p.PaymentType ?? "-")</td>
+                                        <td>@(p.PayeeType == CommissionPayeeType.Collector ? "Collections" : p.PaymentType ?? "-")</td>
                                         <td>@p.Method</td>
                                         <td>@p.Reference</td>
                                         <td>@p.AccountCount</td>

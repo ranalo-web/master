@@ -24,7 +24,7 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Account Assignment</h3>
                 <div class="nk-block-des text-soft">
-                    <p>Assign agents and collectors to accounts in bulk, across every dealer. An agent can only take their own dealer's accounts (their commission depends on it); collectors work across all dealers. Only open contracts change. Every change is logged.</p>
+                    <p>Assign agents to accounts in bulk, across every dealer. An agent can only take their own dealer's accounts (their commission depends on it). Only open contracts change. Every change is logged. Collectors are handed accounts on the <a href="/collections-admin?tab=pool">Collections Dashboard</a>, where the collections rules apply.</p>
                 </div>
             </div>
             <div class="nk-block-head-content">
@@ -88,7 +88,6 @@
                     <span class="fw-medium"><span id="aa-count">0</span> ticked</span>
                     <select name="role" id="aa-role" class="form-select form-select-sm" style="max-width:140px;">
                         <option value="@AssignmentRole.Agent">Agent</option>
-                        <option value="@AssignmentRole.Collector">Collector</option>
                     </select>
                     <select name="userId" id="aa-person" class="form-select form-select-sm" style="max-width:280px;">
                         <option value="">Choose…</option>
@@ -101,12 +100,6 @@
                                 }
                             </optgroup>
                         }
-                        <optgroup label="Collectors (all dealers)" data-role="@AssignmentRole.Collector">
-                            @foreach (var c in Model.Collectors)
-                            {
-                                <option value="@c.UserId" data-role="@AssignmentRole.Collector">@c.Name</option>
-                            }
-                        </optgroup>
                     </select>
                     <button type="submit" class="btn btn-sm btn-primary" id="aa-assign" disabled>Assign</button>
                     <button type="submit" class="btn btn-sm btn-outline-danger" id="aa-remove" disabled>Remove</button>
