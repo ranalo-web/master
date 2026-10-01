@@ -229,6 +229,9 @@ namespace Ranalo.Controllers
             if (settings.RoleId == UserRole.Agent)
             {
                 var agentCollections = await _applicationReportService.CallQualifyingFunc(false, false, false, null, dealerId, page, pageSize, searchTerm.Trim(), agentUserId: settings.UserId);
+
+                // Their accounts now with a collector, and the frozen arrears.
+                ViewBag.InCollections = await _collections.GetInCollectionsAsync(settings.DealerId, settings.UserId);
                 return View(agentCollections);
             }
 

@@ -101,15 +101,11 @@
                                         </a>
                                     </li>
                                 }
-                                @if (!(ViewBag.IsAdmin is true) && Ranalo.Services.CollectionsService.IsCollector(Context.Items["UserSettings"] as Ranalo.DataStore.DataModels.User))
-                                {
-                                    @* A dealer or agent who is also a collector: their collector dashboard. *@
-                                    <li class="nk-menu-item">
-                                        <a href="/collections-home" class="nk-menu-link">
-                                            <span class="nk-menu-icon"><em class="icon ni ni-wallet-saving"></em></span>
-                                            <span class="nk-menu-text">My Collections</span>
-                                        </a>
-                                    </li>
+                                @{
+                                    // A dealer or agent who is also a collector gets "My Collections"
+                                    // (their collector dashboard) inside the Collections menu.
+                                    var alsoCollector = !(ViewBag.IsAdmin is true)
+                                        && Ranalo.Services.CollectionsService.IsCollector(Context.Items["UserSettings"] as Ranalo.DataStore.DataModels.User);
                                 }
                                 @if (ViewBag.IsApprover is true)
                                 {
@@ -162,7 +158,30 @@
                                         <span class="nk-menu-text">Watchlist</span>
                                     </a>
                                 </li>
-                                @if (ViewBag.IsAgent is true)
+                                @if (ViewBag.IsAgent is true && alsoCollector)
+                                {
+                                    <li class="nk-menu-item has-sub">
+                                        <a class="nk-menu-link nk-menu-toggle" href="collections">
+                                            <span class="nk-menu-icon">
+                                                <em class="icon ni ni-briefcase-fill"></em>
+                                            </span>
+                                            <span class="nk-menu-text">Collections</span>
+                                        </a>
+                                        <ul class="nk-menu-sub">
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/collections-home">
+                                                    <span class="nk-menu-text">My Collections</span>
+                                                </a>
+                                            </li>
+                                            <li class="nk-menu-item ">
+                                                <a class="nk-menu-link " href="/assigned-collections">
+                                                    <span class="nk-menu-text">My Accounts' Collections</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                }
+                                else if (ViewBag.IsAgent is true)
                                 {
                                     <li class="nk-menu-item">
                                         <a class="nk-menu-link" href="/assigned-collections">
@@ -188,6 +207,14 @@
                                                 <li class="nk-menu-item ">
                                                     <a class="nk-menu-link " href="/collections-admin">
                                                         <span class="nk-menu-text">Collections Dashboard</span>
+                                                    </a>
+                                                </li>
+                                            }
+                                            @if (alsoCollector)
+                                            {
+                                                <li class="nk-menu-item ">
+                                                    <a class="nk-menu-link " href="/collections-home">
+                                                        <span class="nk-menu-text">My Collections</span>
                                                     </a>
                                                 </li>
                                             }
