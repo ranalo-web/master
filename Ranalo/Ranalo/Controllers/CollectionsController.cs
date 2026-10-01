@@ -56,7 +56,6 @@ namespace Ranalo.Controllers
             }
 
             await SetViewBags(settings, "collector");
-            ViewBag.CollectorOnly = settings.RoleId == UserRole.Collector;
 
             var model = await _collections.GetCollectorDashboardAsync(settings.UserId);
             model.Payouts = await _payouts.GetPayoutsAsync(CommissionPayeeType.Collector, collectorUserId: settings.UserId, top: 10);
@@ -66,7 +65,8 @@ namespace Ranalo.Controllers
         // "Can't reach this customer" -- a note for the admin team.
         [HttpPost]
         [Route("collections/flag")]
-        public async Task<IActionResult> FlagCase(int caseId, string? note)
+        // accountNo: set when flagged from Customer Details, to go back there.
+        public async Task<IActionResult> FlagCase(int caseId, string? note, long? accountNo = null)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -76,7 +76,7 @@ namespace Ranalo.Controllers
 
             var (ok, message) = await _collections.AddFlagAsync(caseId, settings.UserId, note);
             TempData[ok ? "CollectionsSuccess" : "CollectionsError"] = message;
-            return RedirectToAction("Index");
+            return accountNo.HasValue ? Redirect($"/customer-details/{accountNo}") : RedirectToAction("Index");
         }
 
         [HttpGet]
@@ -129,40 +129,49 @@ namespace Ranalo.Controllers
 
             await SetViewBags(settings, "customer");
 
-            var customerDetails = await _applicationReportService.GetCustomerDetailsByAccountIdAsync(accountId);
+            // Everything a collector needs on one page: contact and next of
+            // kin, the linked online order, loan and payments, the collection.
+            var customer = await _applicationReportService.GetCustomerDetailsByAccountIdAsync(accountId) ?? new CustomerDetails();
+            var model = new CollectorCustomerViewModel
+            {
+                AccountNo = accountId,
+                Customer = customer,
+                HasOrder = customer.OrderID > 0,
+                Standing = await _collections.GetStandingAsync(accountId),
+                RecentPayments = await _collections.GetRecentPaymentsAsync(accountId),
+                Case = await _collections.GetOpenCaseAsync(accountId),
+            };
+            model.ViewerHoldsCase = model.Case?.CollectorUserId == settings.UserId;
 
-            if (customerDetails == null)
+            // Notes are kept against the account number (and, on older
+            // pages, the order number) -- show both.
+            var notes = (await _applicationReportService.GetNotesByOrderIdAsync(accountId)) ?? new List<CustomerNote>();
+            if (model.HasOrder && customer.OrderID != accountId)
             {
-                return View(customerDetails);
+                notes.AddRange((await _applicationReportService.GetNotesByOrderIdAsync(customer.OrderID)) ?? new List<CustomerNote>());
             }
-            //Get customer Notes
-            var notes = await _applicationReportService.GetNotesByOrderIdAsync(accountId);
-            customerDetails.AccountId = (int)accountId;
-            customerDetails.CustomerId = accountId.ToString();
-            if (notes != null)
+            foreach (var note in notes)
             {
-                foreach (var note in notes)
+                var author = await _userService.GetUserByCustomerIdAsync(note.UserId);
+                if (author?.RoleId == UserRole.Dealer)
                 {
-                    var userDetails = await _userService.GetUserByCustomerIdAsync(note.UserId);
-                    if (userDetails.RoleId == UserRole.Dealer)
-                    {
-                        var dealer = await _userService.GetDealerByUserId(note.UserId);
-                        note.UserName = dealer.CompanyName;
-                    }
-                    else
-                    {
-                        note.UserName = userDetails.Name;
-                    }
-
+                    var dealer = await _userService.GetDealerByUserId(note.UserId);
+                    note.UserName = dealer?.CompanyName ?? author.Name;
                 }
-                customerDetails.Notes = notes;
+                else
+                {
+                    note.UserName = author?.Name;
+                }
             }
+            model.Notes = notes.GroupBy(n => n.Id).Select(g => g.First()).OrderByDescending(n => n.Created).ToList();
 
-            return View(customerDetails);
+            return View(model);
         }
 
         [HttpPost]
         [Route("addcollectornote")]
+        // Saved against the account number, which is what Customer Details
+        // reads back (orderId is the account number despite its name).
         public async Task<IActionResult> AddCollectorNote(string orderId, string customerNote)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
@@ -171,11 +180,16 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            await SetViewBags(settings, "collector"); await SetViewBags(settings, "approver");
+            if (!long.TryParse(orderId, out var accountNo))
+            {
+                return RedirectToAction("Index");
+            }
+            if (!string.IsNullOrWhiteSpace(customerNote))
+            {
+                await _applicationReportService.AddCustomerNoteAsync(settings.UserId, accountNo, customerNote.Trim());
+            }
 
-            await _applicationReportService.AddCustomerNoteAsync(settings.UserId, long.Parse(orderId), customerNote);
-
-            return Redirect($"/customer-details/{orderId}");
+            return Redirect($"/customer-details/{accountNo}");
         }
 
         [HttpGet]

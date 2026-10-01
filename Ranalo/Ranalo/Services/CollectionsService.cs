@@ -24,6 +24,13 @@ namespace Ranalo.Services
         // Pay Commissions: what each collector has earned, been paid and is due.
         Task<List<CollectorCaseEarning>> GetEarningsAsync(int? collectorUserId = null);
         Task<List<CollectorOption>> GetCollectorsAsync();
+
+        // Customer Details: the account's standing, contacts, latest payments
+        // and its open collections case (null when not in collections).
+        Task<CollectionContractStanding?> GetStandingAsync(long accountNo);
+        Task<AccountContact?> GetContactAsync(long accountNo);
+        Task<List<KosePayments>> GetRecentPaymentsAsync(long accountNo, int take = 10);
+        Task<CollectionCaseRow?> GetOpenCaseAsync(long accountNo);
     }
 
     // Applies CollectionsRules to the collections tables. See CollectionsRules
@@ -146,16 +153,25 @@ namespace Ranalo.Services
                     .ToDictionary(s => s.AccountNo, s => s);
 
                 var cases = await EnrichAsync(held, periods, standings);
+                var contacts = await _repository.GetContactsAsync(held.Select(c => c.AccountNo).ToList());
+                foreach (var c in cases)
+                {
+                    c.Contact = contacts.GetValueOrDefault(c.AccountNo);
+                }
                 var flags = (await _repository.GetFlagsAsync(openOnly: true)).Where(f => f.CollectorUserId == collectorUserId).ToList();
                 var earnings = await GetEarningsAsync(collectorUserId);
 
+                // Held now = their stint on it is still open. (Only their own
+                // stints are loaded, so a case reassigned away still shows
+                // them as its last collector.)
+                var heldNow = periods.Where(p => p.EndAt == null).Select(p => p.CaseId).ToHashSet();
                 model.Cases = cases
-                    .Where(c => c.Status == CollectionCaseStatus.Open && c.CollectorUserId == collectorUserId)
+                    .Where(c => c.Status == CollectionCaseStatus.Open && heldNow.Contains(c.CaseId))
                     .OrderByDescending(c => c.DueForReassignment)
                     .ThenByDescending(c => c.DaysWithoutPaymentWhileHeld)
                     .ToList();
                 model.Earnings = earnings.OrderByDescending(e => e.HeldNow).ThenByDescending(e => e.FirstHeld).ToList();
-                model.Summary = Summaries(cases, earnings, flags, new List<CollectorOption>())
+                model.Summary = Summaries(model.Cases, earnings, flags, new List<CollectorOption>())
                     .FirstOrDefault(s => s.CollectorUserId == collectorUserId) ?? new CollectorSummary { CollectorUserId = collectorUserId };
             }
             catch (SqlException ex) when (ex.Number is 208 or 207)
@@ -446,6 +462,36 @@ namespace Ranalo.Services
         }
 
         public Task<List<CollectorOption>> GetCollectorsAsync() => _repository.GetCollectorsAsync();
+
+        public async Task<CollectionContractStanding?> GetStandingAsync(long accountNo) =>
+            (await _repository.GetStandingsAsync(new[] { accountNo })).FirstOrDefault();
+
+        public async Task<AccountContact?> GetContactAsync(long accountNo) =>
+            (await _repository.GetContactsAsync(new[] { accountNo })).GetValueOrDefault(accountNo);
+
+        public Task<List<KosePayments>> GetRecentPaymentsAsync(long accountNo, int take = 10) =>
+            _repository.GetRecentPaymentsAsync(accountNo, take);
+
+        public async Task<CollectionCaseRow?> GetOpenCaseAsync(long accountNo)
+        {
+            try
+            {
+                var open = (await _repository.GetCasesAsync())
+                    .FirstOrDefault(c => c.AccountNo == accountNo && c.Status == CollectionCaseStatus.Open);
+                if (open == null)
+                {
+                    return null;
+                }
+
+                var periods = await _repository.GetPeriodsAsync(caseId: open.CaseId);
+                var standings = (await _repository.GetStandingsAsync(new[] { accountNo })).ToDictionary(s => s.AccountNo, s => s);
+                return (await EnrichAsync(new List<CollectionCaseRow> { open }, periods, standings)).First();
+            }
+            catch (SqlException ex) when (ex.Number is 208 or 207)
+            {
+                return null;
+            }
+        }
 
         // Every case with its stints, recoveries, flags and current deduction.
         private async Task<List<CollectionCaseRow>> BuildCasesAsync(Dictionary<long, CollectionContractStanding> standings)

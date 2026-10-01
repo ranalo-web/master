@@ -22,6 +22,8 @@ namespace Ranalo.Models
         public decimal Shortfall { get; set; }
         public DateTime? LastPaymentDate { get; set; }
         public int DaysSinceLastPayment { get; set; }
+        public DateTime? StartDate { get; set; }
+        public decimal ContractValue { get; set; }
 
         // Contract_Info.DebtCollectorUserId (legacy screens read it).
         public int? LegacyCollectorUserId { get; set; }
@@ -73,6 +75,9 @@ namespace Ranalo.Models
 
         public int OpenFlagCount { get; set; }
         public string? LatestFlagNote { get; set; }
+
+        // From the online order, for the collector's list (null = no order).
+        public AccountContact? Contact { get; set; }
 
         // The agent/dealer deduction on the contract now (CollectionsRules).
         public decimal CurrentDeduction { get; set; }
@@ -204,6 +209,38 @@ namespace Ranalo.Models
         public decimal FrozenDeduction { get; set; }
         public decimal CollectionCosts { get; set; }
         public decimal CurrentDeduction { get; set; }
+    }
+
+    // Customer phone and next of kin from the account's online order.
+    public class AccountContact
+    {
+        public long AccountNo { get; set; }
+        public long OrderID { get; set; }
+        public string? CustomerPhone { get; set; }
+        public string? NextOfKinName { get; set; }
+        public string? NextOfKinPhone { get; set; }
+        public string? NextOfKin2Name { get; set; }
+        public string? NextOfKin2Phone { get; set; }
+    }
+
+    // Customer Details (collectors): contact, next of kin, linked order,
+    // loan and payments, and the collection itself on one page.
+    public class CollectorCustomerViewModel
+    {
+        public long AccountNo { get; set; }
+
+        // From the online order; null fields when the account has no order.
+        public CustomerDetails Customer { get; set; } = new();
+        public bool HasOrder { get; set; }
+        public CollectionContractStanding? Standing { get; set; }
+        public List<KosePayments> RecentPayments { get; set; } = new();
+
+        // The account's open collections case, if any.
+        public CollectionCaseRow? Case { get; set; }
+
+        // The viewer holds the case, so can flag "can't reach".
+        public bool ViewerHoldsCase { get; set; }
+        public List<CustomerNote> Notes { get; set; } = new();
     }
 
     public class InCollectionsSection

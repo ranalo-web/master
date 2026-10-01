@@ -189,7 +189,6 @@ namespace Ranalo.Controllers
             ViewBag.IsApprover = false;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
             ViewBag.IsAgent = settings.RoleId == UserRole.Agent;
-            ViewBag.CollectorOnly = settings.RoleId == UserRole.Collector;
             ViewBag.UserName = settings.KnownAs;
         }
     }

@@ -35,6 +35,14 @@ namespace Ranalo.DataStore
 
         Task AddFlagAsync(int caseId, int collectorUserId, string note);
 
+        // Customer phone and next of kin from each account's online order
+        // (Woo_Orders, found by the deposit M-Pesa code). Accounts with no
+        // order are missing from the result.
+        Task<Dictionary<long, AccountContact>> GetContactsAsync(IReadOnlyCollection<long> accountNos);
+
+        // The account's latest payments, newest first.
+        Task<List<KosePayments>> GetRecentPaymentsAsync(long accountNo, int take);
+
         Task<bool> ResolveFlagAsync(int flagId, int resolvedByUserId);
     }
 
@@ -100,6 +108,10 @@ namespace Ranalo.DataStore
                     CAST(CASE WHEN x.Arrears < 0 THEN -x.Arrears ELSE 0 END AS DECIMAL(18,2)) AS Shortfall,
                     pt.LastPaymentDate,
                     DATEDIFF(DAY, COALESCE(pt.LastPaymentDate, ci.StartDate), GETDATE()) AS DaysSinceLastPayment,
+                    ci.StartDate,
+                    CAST(ci.Deposit + ci.Daily * 30 * ci.Term_in_Months
+                         + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months
+                         + ci.Monthly * ci.Term_in_Months AS DECIMAL(18,2)) AS ContractValue,
                     ci.DebtCollectorUserId AS LegacyCollectorUserId,
                     oc.Id AS OpenCaseId
                 FROM Contract_Info ci
@@ -327,6 +339,47 @@ namespace Ranalo.DataStore
             await CloseAsync(closure, "Returned", tx);
             await SetLegacyCollectorAsync(closure.AccountNo, closure.ContractId, null, closure.ClosedByUserId, tx);
             tx.Commit();
+        }
+
+        public async Task<Dictionary<long, AccountContact>> GetContactsAsync(IReadOnlyCollection<long> accountNos)
+        {
+            // Same order lookup as Customer Details and the dashboard reports.
+            const string sql = @"
+                SELECT a.AccountNo, o.OrderID, o.Phone AS CustomerPhone,
+                       nk1.[Name] AS NextOfKinName, nk1.Phone AS NextOfKinPhone,
+                       nk2.[Name] AS NextOfKin2Name, nk2.Phone AS NextOfKin2Phone
+                FROM (SELECT CAST(value AS BIGINT) AS AccountNo FROM STRING_SPLIT(@Ids, ',')) a
+                CROSS APPLY (
+                    SELECT TOP 1 wo.OrderID, wo.Phone
+                    FROM KosePayments kp
+                    INNER JOIN Woo_Orders wo ON wo.MpesaDepositRef = kp.MpesaCode
+                    WHERE kp.AccountNoBigint = a.AccountNo
+                    ORDER BY wo.DateCreated DESC
+                ) o
+                OUTER APPLY (SELECT TOP 1 k.[Name], k.Phone FROM Woo_Orders_NextOfKin k WHERE k.OrderId = o.OrderID AND k.IsPrimary = 1) nk1
+                OUTER APPLY (SELECT TOP 1 k.[Name], k.Phone FROM Woo_Orders_NextOfKin k WHERE k.OrderId = o.OrderID AND k.IsPrimary = 0) nk2";
+
+            var result = new Dictionary<long, AccountContact>();
+            foreach (var chunk in accountNos.Distinct().Chunk(500))
+            {
+                foreach (var c in await _db.QueryAsync<AccountContact>(sql, new { Ids = string.Join(",", chunk) }, commandTimeout: 60))
+                {
+                    result[c.AccountNo] = c;
+                }
+            }
+            return result;
+        }
+
+        public async Task<List<KosePayments>> GetRecentPaymentsAsync(long accountNo, int take)
+        {
+            const string sql = @"
+                SELECT TOP (@Take) kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+                FROM KosePayments kp
+                LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
+                WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = @AccountNo
+                ORDER BY kp.PaymentDateValue DESC";
+
+            return (await _db.QueryAsync<KosePayments>(sql, new { AccountNo = accountNo, Take = take })).ToList();
         }
 
         public async Task AddFlagAsync(int caseId, int collectorUserId, string note)

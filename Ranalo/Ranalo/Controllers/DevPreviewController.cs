@@ -430,6 +430,134 @@ namespace Ranalo.Controllers
             return View("~/Views/AccountCommissions/Index.cshtml", model);
         }
 
+        // Live collections state, read only: cases, collectors, and what each
+        // affected agent / dealer sees in their "In collections" box.
+        [HttpGet]
+        [Route("dev-preview/collections-live")]
+        public async Task<IActionResult> CollectionsLive([FromServices] Services.ICollectionsService collections)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var admin = await collections.GetAdminAsync("cases", null, null, null);
+            var closed = await collections.GetAdminAsync("closed", null, null, null);
+            var agents = new List<object>();
+            foreach (var g in admin.Cases.Concat(closed.Cases).Where(c => c.AgentUserId.HasValue && c.DealerId.HasValue)
+                         .GroupBy(c => (c.AgentUserId!.Value, c.DealerId!.Value)))
+            {
+                var section = await collections.GetInCollectionsAsync(g.Key.Item2, g.Key.Item1);
+                agents.Add(new { agentUserId = g.Key.Item1, dealerId = g.Key.Item2, rows = section.Rows });
+            }
+            var dealers = new List<object>();
+            foreach (var d in admin.Cases.Concat(closed.Cases).Where(c => c.DealerId.HasValue).Select(c => c.DealerId!.Value).Distinct())
+            {
+                var section = await collections.GetInCollectionsAsync(d, null);
+                dealers.Add(new { dealerId = d, accounts = section.Rows.Count, deducted = section.Rows.Sum(r => r.CurrentDeduction) });
+            }
+
+            return Json(new
+            {
+                admin.SetupMissing,
+                admin.OpenCaseCount,
+                admin.PoolCount,
+                admin.DueForReassignmentCount,
+                admin.OpenFlagCount,
+                collectors = admin.Collectors,
+                openCases = admin.Cases,
+                closedCases = closed.Cases,
+                flags = admin.Flags,
+                agents,
+                dealers,
+            });
+        }
+
+        // The collector Customer Details page with real data, read only (notes
+        // left out). asCollector = the user id to view it as.
+        [HttpGet]
+        [Route("dev-preview/customer-details/{accountNo:long}")]
+        public async Task<IActionResult> CustomerDetailsPreview(long accountNo, int asCollector,
+            [FromServices] Services.IApplicationReportService reports, [FromServices] Services.ICollectionsService collections)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var customer = await reports.GetCustomerDetailsByAccountIdAsync(accountNo) ?? new CustomerDetails();
+            var model = new CollectorCustomerViewModel
+            {
+                AccountNo = accountNo,
+                Customer = customer,
+                HasOrder = customer.OrderID > 0,
+                Standing = await collections.GetStandingAsync(accountNo),
+                RecentPayments = await collections.GetRecentPaymentsAsync(accountNo),
+                Case = await collections.GetOpenCaseAsync(accountNo),
+            };
+            model.ViewerHoldsCase = model.Case?.CollectorUserId == asCollector;
+
+            ViewBag.IsAdmin = false;
+            ViewBag.IsApprover = false;
+            ViewBag.IsDealer = false;
+            ViewBag.IsAgent = false;
+            ViewBag.UserName = "Preview";
+            return View("~/Views/Collections/CustomerDetails.cshtml", model);
+        }
+
+        // Next of kin coverage for accounts in collections, read only: is the
+        // order found by deposit M-Pesa code (what Customer Details uses) or
+        // only by Woo_Orders.ContractId, and does it have kin rows.
+        [HttpGet]
+        [Route("dev-preview/collections-kin")]
+        public async Task<IActionResult> CollectionsKin([FromServices] System.Data.IDbConnection db, [FromServices] Services.ICollectionsService collections,
+            bool showList = false)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            // ?showList=true: what Wilfred's collector list shows under each customer.
+            if (showList)
+            {
+                var dash = await collections.GetCollectorDashboardAsync(20);
+                return Json(new
+                {
+                    accounts = dash.Cases.Count,
+                    withPhone = dash.Cases.Count(c => !string.IsNullOrEmpty(c.Contact?.CustomerPhone)),
+                    withKin = dash.Cases.Count(c => !string.IsNullOrEmpty(c.Contact?.NextOfKinName)),
+                    sample = dash.Cases.Where(c => c.Contact != null).Take(3).Select(c => new { c.AccountNo, c.CustomerName, c.Contact }),
+                });
+            }
+
+            var rows = await Dapper.SqlMapper.QueryAsync(db, @"
+                SELECT c.AccountNo, c.ContractId, ci.First_Name AS Customer,
+                       byMpesa.OrderID AS OrderByMpesa,
+                       byContract.OrderID AS OrderByContract,
+                       (SELECT COUNT(*) FROM Woo_Orders_NextOfKin k WHERE k.OrderId = COALESCE(byMpesa.OrderID, byContract.OrderID) AND k.IsPrimary = 1) AS PrimaryKin,
+                       (SELECT COUNT(*) FROM Woo_Orders_NextOfKin k WHERE k.OrderId = COALESCE(byMpesa.OrderID, byContract.OrderID) AND k.IsPrimary = 0) AS SecondKin
+                FROM CollectionCases c
+                LEFT JOIN Contract_Info ci ON ci.ContractID = c.ContractId AND ci.ID = c.AccountNo
+                OUTER APPLY (SELECT TOP 1 wo.OrderID FROM Woo_Orders wo
+                             INNER JOIN KosePayments kp ON kp.MpesaCode = wo.MpesaDepositRef
+                             WHERE kp.AccountNoBigint = c.AccountNo) byMpesa
+                OUTER APPLY (SELECT TOP 1 wo.OrderID FROM Woo_Orders wo WHERE wo.ContractId = c.ContractId) byContract
+                WHERE c.Status = 'Open'", commandTimeout: 120);
+            var list = rows.Select(r => (IDictionary<string, object>)r).ToList();
+            int Count(Func<IDictionary<string, object>, bool> f) => list.Count(f);
+            return Json(new
+            {
+                accounts = list.Count,
+                orderFoundByMpesa = Count(r => r["OrderByMpesa"] != null),
+                orderFoundOnlyByContract = Count(r => r["OrderByMpesa"] == null && r["OrderByContract"] != null),
+                noOrderAtAll = Count(r => r["OrderByMpesa"] == null && r["OrderByContract"] == null),
+                withPrimaryKin = Count(r => Convert.ToInt32(r["PrimaryKin"]) > 0),
+                withSecondKin = Count(r => Convert.ToInt32(r["SecondKin"]) > 0),
+                rows = list,
+            });
+        }
+
         // Collections SQL checked against the live data BEFORE
         // Database/Collections/001 is run: the new tables are stood in for by
         // session #temp tables (gone when the connection closes), so nothing

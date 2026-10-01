@@ -1,7 +1,7 @@
 @using Ranalo.Models
 @model CommissionPayoutHistoryViewModel
 @{
-    Layout = ViewBag.CollectorOnly is true ? "~/Pages/Shared/_LayoutCollections.cshtml" : "~/Pages/Shared/_Layout.cshtml";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
     const int pageSize = 25;
     const string key = "commission-payout-history";
     var admin = Model.IsAdminView;

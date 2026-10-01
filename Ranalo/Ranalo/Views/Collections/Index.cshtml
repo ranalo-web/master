@@ -2,9 +2,8 @@
 @using Ranalo.Services
 @model CollectorDashboardViewModel
 @{
-    // Collector logins get the collections layout; a dealer or agent who
-    // also collects keeps their own menus.
-    Layout = ViewBag.CollectorOnly is true ? "~/Pages/Shared/_LayoutCollections.cshtml" : "~/Pages/Shared/_Layout.cshtml";
+    // Same layout and menu for every role (collectors included).
+    Layout = "~/Pages/Shared/_Layout.cshtml";
     var s = Model.Summary;
     var share = (CollectionsRules.CollectorShareRate * 100).ToString("0");
 }
@@ -106,6 +105,18 @@
                                         <a href="/customer-details/@c.AccountNo" class="fw-medium">@(string.IsNullOrWhiteSpace(c.CustomerName) ? "(no name)" : c.CustomerName)</a>
                                         <span class="d-block sub-text">AC @c.AccountNo · @(c.ProductName ?? "Unknown device") · yours since @c.HeldSince?.ToString("dd MMM yyyy")</span>
                                         @if (c.ContractEnded) { <span class="badge badge-dim bg-info">Resold -- you earn on the new customer's payments</span> }
+                                        @if (c.Contact?.CustomerPhone is { Length: > 0 } phone)
+                                        {
+                                            <a href="tel:@phone" class="d-block small"><em class="icon ni ni-call"></em> @phone</a>
+                                        }
+                                        @if (c.Contact?.NextOfKinName is { Length: > 0 } kin)
+                                        {
+                                            <span class="d-block small">Next of kin: @kin@if (c.Contact.NextOfKinPhone is { Length: > 0 } kinPhone) { <text> · </text><a href="tel:@kinPhone">@kinPhone</a> }</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="d-block small text-soft">No next of kin on file</span>
+                                        }
                                         @if (c.OpenFlagCount > 0) { <span class="d-block small text-warning"><em class="icon ni ni-flag"></em> Flagged: @c.LatestFlagNote</span> }
                                     </td>
                                     <td class="cd-md">KES @c.ShortfallAtHandover.ToString("N0")</td>
