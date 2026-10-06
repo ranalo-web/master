@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Ranalo.PayTrigger;
 using Ranalo.PayTrigger.Models;
+using Ranalo.Services.DeviceLock;
 using Ranalo.Services.Helpers;
 using Ranalo.Woocommece.Api.DataStore;
 using System.Text.Json;
@@ -26,15 +27,18 @@ namespace Ranalo.Controllers
     public class PayTriggerWebhookController : Controller
     {
         private readonly IKosePaymentsRepository _kosePaymentsRepository;
+        private readonly ITranssionEnrolmentWorkflow _workflow;
         private readonly PayTriggerSettings _settings;
         private readonly ILogger<PayTriggerWebhookController> _logger;
 
         public PayTriggerWebhookController(
             IKosePaymentsRepository kosePaymentsRepository,
+            ITranssionEnrolmentWorkflow workflow,
             IOptions<PayTriggerSettings> options,
             ILogger<PayTriggerWebhookController> logger)
         {
             _kosePaymentsRepository = kosePaymentsRepository;
+            _workflow = workflow;
             _settings = options.Value;
             _logger = logger;
         }
@@ -123,10 +127,23 @@ namespace Ranalo.Controllers
 
                 if (callback.NotifyType == 2000)
                 {
-                    device.Status = "removed";
+                    // Status stays as it is (normally 'enrolled') so a fully
+                    // paid account keeps showing in reports -- the same as
+                    // an admin-approved removal (DeviceRemovalService).
+                    device.EnrollmentStatus = "Removed";
+                    device.Locked = false;
+                    device.LockType = "unlocked";
                 }
 
                 await _kosePaymentsRepository.UpdateDeviceToDatabaseAsync(device);
+
+                // Customer has switched the phone on and connected: completes
+                // the enrolment, and unlocks it if the approval call is done.
+                // Safe to repeat if PayTrigger resends the notification.
+                if (callback.NotifyType != 2000 && callback.State == 3000)
+                {
+                    await _workflow.OnActivatedAsync(callback.Imei);
+                }
 
                 return Ok(new { code = 200, message = "Success" });
             }

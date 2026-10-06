@@ -1,5 +1,6 @@
 ﻿@using Ranalo.DataStore.DataModels
 @using Ranalo.Models
+@using Ranalo.Services.DeviceLock
 @using System.Text.Json
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -19,7 +20,11 @@
                 statusClass = "tb-status text-success";
                 break;
             case EnrolmentStatus.Pending:
+            case EnrolmentStatus.PendingActivation:
                 statusClass = "tb-status text-warning";
+                break;
+            case EnrolmentStatus.Enrolled:
+                statusClass = "tb-status text-primary";
                 break;
             case EnrolmentStatus.New:
                 statusClass = "tb-status text-info";
@@ -103,6 +108,14 @@
             </div><!-- .nk-block-head-content -->
         </div><!-- .nk-block-between -->
     </div><!-- .nk-block-head -->
+    @foreach (var message in Model.Messages)
+    {
+        <div class="alert alert-success alert-icon"><em class="icon ni ni-check-circle"></em>@message</div>
+    }
+    @foreach (var error in Model.Errors)
+    {
+        <div class="alert alert-danger alert-icon"><em class="icon ni ni-cross-circle"></em>@error</div>
+    }
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -166,6 +179,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Name</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Surname</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">IMEI</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Brand</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Date Created</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Date Updated</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
@@ -181,16 +195,64 @@
                                 <td>@enrolment.FirstName</td>
                                 <td>@enrolment.LastName</td>
                                 <td>@enrolment.IMEI</td>
+                                <td>
+                                    @enrolment.DeviceBrand
+                                    @if (enrolment.BrandOverriddenByUserId.HasValue)
+                                    {
+                                        <span class="badge badge-dim bg-info" title="Brand confirmed by an admin">admin</span>
+                                    }
+                                </td>
                                 <td>@enrolment.Created.ToString("dd MMM yyyy")</td>
                                 <td>@enrolment.Updated.ToString("dd MMM yyyy")</td>
-                                <td><span class="@SetStatusBadge(enrolment.Status)">@SetStatusText(enrolment.Status)</span></td>
+                                <td>
+                                    <span class="@SetStatusBadge(enrolment.Status)" title="@enrolment.PayTriggerResponse">@DeviceLockRules.StatusText(enrolment)</span>
+                                    @if (enrolment.DepositShort)
+                                    {
+                                        <span class="badge badge-dim bg-danger" title="Paid @enrolment.DepositPaid?.ToString("N2") of @enrolment.RequiredDeposit?.ToString("N2")">Deposit short – admin only</span>
+                                    }
+                                    @if (enrolment.Status == EnrolmentStatus.Error && !string.IsNullOrEmpty(enrolment.PayTriggerResponse))
+                                    {
+                                        <div class="small text-soft" style="white-space:normal;max-width:320px">@enrolment.PayTriggerResponse</div>
+                                    }
+                                </td>
                                 <td class="text-end">
+                                    @{
+                                        var isTranssion = DeviceLockRules.IsTranssion(enrolment.DeviceBrand);
+                                        var decision = Model.CanApprove?.Invoke(enrolment);
+                                    }
+                                    @if (isTranssion && Model.CanApprove != null)
+                                    {
+                                        @if (decision?.Allowed == true)
+                                        {
+                                            <form method="post" action="/enrolments/approve-call/@enrolment.Id" class="d-inline"
+                                                  onsubmit="return confirm('Have you called @enrolment.FirstName @enrolment.LastName and confirmed this sale? The phone unlocks once it is switched on.');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-primary">Approve call</button>
+                                            </form>
+                                        }
+                                        else if (DeviceLockRules.ReadyToUnlock(enrolment))
+                                        {
+                                            <form method="post" action="/enrolments/retry-unlock/@enrolment.Id" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-warning" title="@enrolment.PayTriggerResponse">Retry unlock</button>
+                                            </form>
+                                        }
+                                        else if (decision != null && !enrolment.CallApprovedAt.HasValue && enrolment.Status != EnrolmentStatus.Error)
+                                        {
+                                            <span class="small text-soft" style="white-space:normal">@decision.Reason</span>
+                                        }
+                                    }
+                                    else if (Model.CanApprove != null)
+                                    {
                                     <ul class="nk-tb-actions gx-2 justify-content-end">
+                                        @if (decision?.Allowed == true && enrolment.Status == EnrolmentStatus.Pending)
+                                        {
                                         <li class="nk-tb-action-hidden">
                                             <a href="/approve-enrolment/@enrolment.IMEI" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Approve">
                                                 <em class="icon ni ni-file-check-fill"></em>
                                             </a>
                                         </li>
+                                        }
                                         <li class="nk-tb-action-hidden">
                                             <a href="/create-device/@enrolment.IMEI" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="+ Device">
                                                 <em class="icon ni ni-mobile"></em>
@@ -202,6 +264,7 @@
                                             </a>
                                         </li>
                                     </ul>
+                                    }
                                 </td>
                             </tr>
                         }
