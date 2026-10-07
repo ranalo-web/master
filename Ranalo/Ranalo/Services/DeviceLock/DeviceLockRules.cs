@@ -15,8 +15,10 @@ namespace Ranalo.Services.DeviceLock
     //   digits) is checked against TACs we've already confirmed for a brand;
     //   a known TAC that disagrees with the order blocks the upload. An
     //   unrecognised product brand blocks too. Only an admin can override.
-    //   The order's M-Pesa deposit ref must be in our payments, on this
-    //   customer's account. Less than the required deposit doesn't block, but
+    //   The order's M-Pesa deposit ref must be in our payments -- for Knox
+    //   and Transsion on the national ID, which is their account (Nuovo
+    //   phones pay to Nuovo's device number). Less than the required
+    //   deposit (pricing is set in WooCommerce) doesn't block, but
     //   flags the enrolment so only an admin can approve it (they then
     //   restructure the contract from day 1).
     //   An approver's enrolment is registered to the dealer on the order.
@@ -141,15 +143,19 @@ namespace Ranalo.Services.DeviceLock
 
         // ---- Deposit -------------------------------------------------------
 
-        // Same formula the contract is created with (SyncService.CreateContractSingle).
+        // Same as the contract (SyncService.CreateContractSingle): pricing is
+        // set in WooCommerce -- deposit = total - WooCommerce daily price x
+        // 365. Old orders without a daily price used the 23.5% formula.
         public static decimal RequiredDeposit(decimal totalAmount, decimal? dailySalePrice) =>
             dailySalePrice.HasValue
                 ? totalAmount - (dailySalePrice.Value * 365)
                 : Math.Round((Math.Round(totalAmount, 2) + 5000m) * 0.235m, 2);
 
+        // accountNo null: the deposit may be on any account (Nuovo phones pay
+        // to Nuovo's device number, not the national ID).
         public static DepositCheckResult CheckDeposit(
             string? mpesaDepositRef,
-            string accountNo,
+            string? accountNo,
             decimal requiredDeposit,
             IEnumerable<DepositPayment> paymentsWithRef)
         {
@@ -169,7 +175,9 @@ namespace Ranalo.Services.DeviceLock
                     $"The deposit M-Pesa code {mpesaDepositRef} hasn't been received yet. Try again once the payment has come in.");
             }
 
-            var onAccount = payments.Where(p => p.AccountNo?.Trim() == accountNo).ToList();
+            var onAccount = accountNo == null
+                ? payments
+                : payments.Where(p => p.AccountNo?.Trim() == accountNo).ToList();
             if (onAccount.Count == 0)
             {
                 return new DepositCheckResult(DepositCheck.WrongAccount, 0, requiredDeposit,

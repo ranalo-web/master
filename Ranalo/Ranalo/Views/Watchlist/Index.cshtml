@@ -108,7 +108,7 @@
                             <tr>
                                 <td><span class="fw-medium">@entry.AccountId</span></td>
                                 <td>@entry.CustomerName</td>
-                                <td>@entry.DealerName</td>
+                                <td>@(entry.DealerName ?? "No dealer")</td>
                                 <td>@(entry.AgentName ?? "-")</td>
                                 <td>@entry.AddedByName <span class="text-soft">(@entry.AddedByRole)</span></td>
                                 <td>@entry.AddedAtUtc.ToString("dd MMM yyyy")</td>

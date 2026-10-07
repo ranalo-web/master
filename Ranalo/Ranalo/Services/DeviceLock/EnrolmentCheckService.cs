@@ -9,7 +9,10 @@ namespace Ranalo.Services.DeviceLock
     // order/ID/IMEI checks stay in EnrolmentsController.
     public interface IEnrolmentCheckService
     {
-        Task<EnrolmentCheckOutcome> EvaluateAsync(Enrolment enrolment, CustomerDetails order, UserRole actorRole, string? overrideBrand);
+        // onNuovo: the phone is already on Nuovo, which takes any brand and
+        // whose accounts are Nuovo's device numbers -- so the brand and
+        // account checks don't apply, only the deposit itself.
+        Task<EnrolmentCheckOutcome> EvaluateAsync(Enrolment enrolment, CustomerDetails order, UserRole actorRole, string? overrideBrand, bool onNuovo = false);
     }
 
     public class EnrolmentCheckOutcome
@@ -43,9 +46,19 @@ namespace Ranalo.Services.DeviceLock
             _repository = repository;
         }
 
-        public async Task<EnrolmentCheckOutcome> EvaluateAsync(Enrolment enrolment, CustomerDetails order, UserRole actorRole, string? overrideBrand)
+        public async Task<EnrolmentCheckOutcome> EvaluateAsync(Enrolment enrolment, CustomerDetails order, UserRole actorRole, string? overrideBrand, bool onNuovo = false)
         {
             var outcome = new EnrolmentCheckOutcome();
+
+            if (onNuovo)
+            {
+                await CheckDepositAsync(outcome, enrolment, order, accountNo: null);
+                if (!string.IsNullOrWhiteSpace(order.DealerRef))
+                {
+                    outcome.OrderDealerId = await _repository.GetDealerIdByReferenceAsync(order.DealerRef);
+                }
+                return outcome;
+            }
 
             var accountError = DeviceLockRules.CheckAccountFree(
                 enrolment.AccountId, enrolment.IMEI, await _repository.GetLiveDeviceImeiAsync(enrolment.AccountId));
@@ -55,7 +68,7 @@ namespace Ranalo.Services.DeviceLock
             }
 
             await CheckBrandAsync(outcome, enrolment, order, actorRole, overrideBrand);
-            await CheckDepositAsync(outcome, enrolment, order);
+            await CheckDepositAsync(outcome, enrolment, order, enrolment.AccountId.ToString());
 
             if (!string.IsNullOrWhiteSpace(order.DealerRef))
             {
@@ -119,7 +132,7 @@ namespace Ranalo.Services.DeviceLock
             outcome.BrandError = check.Error;
         }
 
-        private async Task CheckDepositAsync(EnrolmentCheckOutcome outcome, Enrolment enrolment, CustomerDetails order)
+        private async Task CheckDepositAsync(EnrolmentCheckOutcome outcome, Enrolment enrolment, CustomerDetails order, string? accountNo)
         {
             var dailySalePrice = await _repository.GetOrderDailySalePriceAsync(order.OrderID);
             var required = DeviceLockRules.RequiredDeposit(order.TotalAmount, dailySalePrice);
@@ -128,7 +141,7 @@ namespace Ranalo.Services.DeviceLock
                 ? new List<DepositPayment>()
                 : await _repository.GetPaymentsByMpesaCodeAsync(order.MpesaDepositRef);
 
-            outcome.Deposit = DeviceLockRules.CheckDeposit(order.MpesaDepositRef, enrolment.AccountId.ToString(), required, payments);
+            outcome.Deposit = DeviceLockRules.CheckDeposit(order.MpesaDepositRef, accountNo, required, payments);
 
             if (outcome.Deposit.Blocks)
             {

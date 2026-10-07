@@ -602,6 +602,55 @@ namespace Ranolo.Web.Tests
             Assert.That(r.Errors, Has.Some.Contains("different account"));
         }
 
+        // Nuovo phones pay to Nuovo's device number, not the national ID.
+        [Test]
+        public async Task OnNuovo_DepositOnNuovoAccount_Passes()
+        {
+            _repo.Payments.Clear();
+            _repo.Payments.Add(new DepositPayment("QWE123", "7123456", 5000m));
+
+            var r = await _service.EvaluateAsync(Enrolment(), Order(), UserRole.Dealer, null, onNuovo: true);
+
+            Assert.That(r.Errors, Is.Empty);
+            Assert.That(r.Deposit.Result, Is.EqualTo(DepositCheck.Ok));
+            Assert.That(r.OrderDealerId, Is.EqualTo(42));
+        }
+
+        [Test]
+        public async Task OnNuovo_AnyBrand_NotBlocked()
+        {
+            _repo.Products[5001] = new List<string> { "Redmi A5" };
+            var r = await _service.EvaluateAsync(Enrolment(), Order(), UserRole.Dealer, null, onNuovo: true);
+            Assert.That(r.BrandBlocked, Is.False);
+            Assert.That(r.Errors, Is.Empty);
+        }
+
+        [Test]
+        public async Task OnNuovo_DepositShort_StillFlagged()
+        {
+            _repo.Payments.Clear();
+            _repo.Payments.Add(new DepositPayment("QWE123", "7123456", 100m));
+            var r = await _service.EvaluateAsync(Enrolment(), Order(), UserRole.Dealer, null, onNuovo: true);
+            Assert.That(r.Deposit.IsShort, Is.True);
+        }
+
+        [Test]
+        public async Task OnNuovo_DepositNotReceived_Blocks()
+        {
+            _repo.Payments.Clear();
+            var r = await _service.EvaluateAsync(Enrolment(), Order(), UserRole.Dealer, null, onNuovo: true);
+            Assert.That(r.Errors, Has.Some.Contains("hasn't been received"));
+        }
+
+        [Test]
+        public async Task KnoxOrTranssion_DepositOnNuovoStyleAccount_Blocks()
+        {
+            _repo.Payments.Clear();
+            _repo.Payments.Add(new DepositPayment("QWE123", "7123456", 5000m));
+            var r = await _service.EvaluateAsync(Enrolment(), Order(), UserRole.Dealer, null);
+            Assert.That(r.Errors, Has.Some.Contains("different account"));
+        }
+
         [Test]
         public async Task DealerRefNotFound_NoDealer()
         {

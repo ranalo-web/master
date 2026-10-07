@@ -31,9 +31,13 @@ namespace Ranalo.DataStore
                     aw.AddedByRole,
                     aw.AddedAtUtc
                 FROM AccountWatchlist aw
-                INNER JOIN Contract_Info ci ON ci.ID = aw.AccountId
-                INNER JOIN Devices d ON d.Id = ci.ID
-                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                -- LEFT joins so an entry never disappears from the list: the
+                -- account search offers accounts with no dealer (no or an
+                -- unknown DeviceGroupId), and only the open contract counts
+                -- (a restructured account also has closed ones).
+                LEFT JOIN Contract_Info ci ON ci.ID = aw.AccountId AND ci.EndDate IS NULL
+                LEFT JOIN Devices d ON d.Id = aw.AccountId
+                LEFT JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
                 LEFT JOIN Users agentUser ON agentUser.UserId = ci.AssignedAgentId
                 INNER JOIN Users addedByUser ON addedByUser.UserId = aw.AddedByUserId
                 WHERE aw.RemovedAtUtc IS NULL

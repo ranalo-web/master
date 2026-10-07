@@ -307,22 +307,27 @@ namespace Ranalo.Controllers
                 return await EnrolmentFormAsync(response, enrolment);
             }
 
-            // Brand (from the order + TAC), M-Pesa deposit, order's dealer.
-            var checks = await _checks.EvaluateAsync(enrolment, order!, settings.RoleId, overrideBrand);
-            response.Errors.AddRange(checks.Errors);
-
-            // A brand we can't confirm is fine only if the phone is already
-            // on Nuovo (every brand other than Samsung/Transsion goes there).
-            object? nuovoDevice = null;
-            if (checks.BrandBlocked && !response.Errors.Any())
+            // Phones already on Nuovo are approved as Nuovo (any brand).
+            object? nuovoDevice;
+            try
             {
                 nuovoDevice = await _syncService.DevicePullSearch(enrolment.IMEI);
-                if (nuovoDevice == null)
-                {
-                    response.Errors.Add(checks.BrandError + (checks.Brand == null
-                        ? " If it's another brand, enrol it on Nuovo first."
-                        : ""));
-                }
+            }
+            catch (Exception)
+            {
+                response.Errors.Add("Couldn't check Nuovo for this IMEI. Please try again or contact the system administrator.");
+                return await EnrolmentFormAsync(response, enrolment);
+            }
+
+            // Brand (from the order + TAC), M-Pesa deposit, order's dealer.
+            var checks = await _checks.EvaluateAsync(enrolment, order!, settings.RoleId, overrideBrand, onNuovo: nuovoDevice != null);
+            response.Errors.AddRange(checks.Errors);
+
+            if (checks.BrandBlocked && !response.Errors.Any())
+            {
+                response.Errors.Add(checks.BrandError + (checks.Brand == null
+                    ? " If it's another brand, enrol it on Nuovo first."
+                    : ""));
             }
 
             // Dealers enrol for themselves; approvers/admins for the dealer
@@ -380,7 +385,6 @@ namespace Ranalo.Controllers
 
             try
             {
-                nuovoDevice ??= await _syncService.DevicePullSearch(enrolment.IMEI);
                 if (nuovoDevice == null)
                 {
                     enrolment = await _enrolmentService.StartEnrolmentasync(enrolment, order);

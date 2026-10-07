@@ -25,6 +25,9 @@ namespace Ranalo.Controllers
         [Route("watchlist")]
         public async Task<IActionResult> Index(string searchTerm = "", int page = 1, int pageSize = 10)
         {
+            // A pasted account number often brings spaces with it.
+            searchTerm = searchTerm?.Trim() ?? "";
+
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
             {

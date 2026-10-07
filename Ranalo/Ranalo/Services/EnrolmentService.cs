@@ -59,10 +59,8 @@ namespace Ranalo.Services
         {
             if (DeviceLockRules.IsTranssion(newEnrolment.DeviceBrand))
             {
-                newEnrolment = await _transsionWorkflow.PreEnrolAsync(
+                return await _transsionWorkflow.PreEnrolAsync(
                     newEnrolment, await DeviceGroupForDealerAsync(newEnrolment.DealerId));
-                await CreateContractAsync(order);
-                return newEnrolment;
             }
 
             //Create Enrolment
@@ -120,25 +118,12 @@ namespace Ranalo.Services
             }
             );
 
-            await CreateContractAsync(order);
-
+            // The contract is created by ScheduledTaskCreateContractOrders,
+            // from the WooCommerce order (its pricing) and the account the
+            // deposit was paid to. Creating it here used order.AccountId,
+            // which the order lookup never fills, so it made contracts on
+            // account 0 with the old deposit formula.
             return newEnrolment;
-        }
-
-        private async Task CreateContractAsync(CustomerDetails? order)
-        {
-            if (order != null)
-            {
-                var newContract = new ContractCreateDto()
-                {
-                    AccountNo = order.AccountId.ToString(),
-                    FirstName = order.FirstName,
-                    MpesaDepositRef = order.MpesaDepositRef,
-                    TotalAmount = order.TotalAmount
-                };
-
-                await _syncService.CreateContractSingle(newContract);
-            }
         }
 
         // A device's group must be its dealer's DealerReference: every page

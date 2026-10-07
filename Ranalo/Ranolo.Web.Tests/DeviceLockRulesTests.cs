@@ -218,6 +218,14 @@ namespace Ranolo.Web.Tests
             Assert.That(r.Blocks, Is.True);
         }
 
+        [Test]
+        public void CheckDeposit_AnyAccount_WhenAccountNotRequired()
+        {
+            var r = DeviceLockRules.CheckDeposit("QWE123", null, 3000m,
+                new[] { new DepositPayment("QWE123", "7123456", 3000m) });
+            Assert.That(r.Result, Is.EqualTo(DepositCheck.Ok));
+        }
+
         // ---- Permissions ----
 
         [Test]
