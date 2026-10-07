@@ -4,6 +4,7 @@ using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.Services;
+using Ranalo.Services.DeviceLock;
 using Ranalo.Woocommece.Api.Services;
 
 namespace Ranalo.Controllers
@@ -15,15 +16,21 @@ namespace Ranalo.Controllers
         private readonly IEnrolmentService _enrolmentService;
         private readonly IApplicationReportService _applicationReportService;
         private readonly ISyncService _syncService;
+        private readonly IEnrolmentCheckService _checks;
+        private readonly ITranssionEnrolmentWorkflow _transsion;
         public EnrolmentsController(IUserService userService, 
             IEnrolmentService enrolmentService, 
             IApplicationReportService applicationReportService,
-            ISyncService syncService)
+            ISyncService syncService,
+            IEnrolmentCheckService checks,
+            ITranssionEnrolmentWorkflow transsion)
         {
             _userService = userService;
             _enrolmentService = enrolmentService;
             _applicationReportService = applicationReportService;
             _syncService = syncService;
+            _checks = checks;
+            _transsion = transsion;
         }
 
         [Route("enrolments")]
@@ -49,7 +56,10 @@ namespace Ranalo.Controllers
                     PageSize = pageSize,
                     TotalCount = enrolments.TotalCount,
                     SearchTerm = searchTerm.Trim(),
+                    IsAdmin = settings.RoleId == UserRole.Admin,
+                    CanApprove = e => DeviceLockRules.CanApproveEnrolment(settings.RoleId, settings.UserId, e),
                 };
+                AddFlash(response);
 
                 return View(response);
             }
@@ -70,6 +80,7 @@ namespace Ranalo.Controllers
                 TotalCount = dealerEnrolments.TotalCount,
                 SearchTerm = searchTerm.Trim(),
             };
+            AddFlash(dealerResponse);
 
             return View(dealerResponse);
         }
@@ -83,6 +94,11 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
+            if (!DeviceLockRules.CanEnrol(settings.RoleId))
+            {
+                return RedirectToAction("Index");
+            }
+
             //await _enrolmentService.SendReminderMessage("359063757998542");
 
             //var iemi = "350154840923628";
@@ -91,7 +107,11 @@ namespace Ranalo.Controllers
 
             await SetViewBags(settings, "index");
 
-            return View(new EnrolmentViewModel() { Enrolments = new List<Enrolment>() });
+            return View(new EnrolmentViewModel()
+            {
+                Enrolments = new List<Enrolment>(),
+                IsAdmin = settings.RoleId == UserRole.Admin
+            });
         }
 
         [Route("approve-enrolment/{imei}")]
@@ -103,15 +123,31 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            // Call the approval for IMEI
             var existingEnrolment = await _enrolmentService.GetByImeiNumberAsync(imei);
-
-            //Test
-            //await _enrolmentService.CreateDeviceFromKnox(existingEnrolment);
-
-
-            if (existingEnrolment != null && existingEnrolment.Status == EnrolmentStatus.Pending)
+            if (existingEnrolment == null)
             {
+                return RedirectToAction("Index", "Enrolments");
+            }
+
+            // Transsion phones are approved after the customer call, by POST
+            // (approve-call) -- never through this Knox link.
+            if (DeviceLockRules.IsTranssion(existingEnrolment.DeviceBrand))
+            {
+                TempData["EnrolmentError"] = "Transsion phones are approved with the Approve call button.";
+                return RedirectToAction("Index", "Enrolments");
+            }
+
+            var decision = DeviceLockRules.CanApproveEnrolment(settings.RoleId, settings.UserId, existingEnrolment);
+            if (!decision.Allowed)
+            {
+                TempData["EnrolmentError"] = decision.Reason;
+                return RedirectToAction("Index", "Enrolments");
+            }
+
+            if (existingEnrolment.Status == EnrolmentStatus.Pending)
+            {
+                existingEnrolment.CallApprovedByUserId = settings.UserId;
+                existingEnrolment.CallApprovedAt = DateTime.UtcNow;
                 await _enrolmentService.ApproveEnrolment(existingEnrolment);
             }
 
@@ -123,6 +159,40 @@ namespace Ranalo.Controllers
             }
 
 
+            return RedirectToAction("Index", "Enrolments");
+        }
+
+        // Transsion: the approver/admin has called the customer. Unlocks the
+        // phone now if it's already switched on, otherwise as soon as it is.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("enrolments/approve-call/{enrolmentId:guid}")]
+        public async Task<IActionResult> ApproveCall(Guid enrolmentId)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var result = await _transsion.ApproveCallAsync(enrolmentId, settings);
+            TempData[result.Success ? "EnrolmentMessage" : "EnrolmentError"] = result.Message;
+            return RedirectToAction("Index", "Enrolments");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("enrolments/retry-unlock/{enrolmentId:guid}")]
+        public async Task<IActionResult> RetryUnlock(Guid enrolmentId)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var result = await _transsion.RetryUnlockAsync(enrolmentId, settings);
+            TempData[result.Success ? "EnrolmentMessage" : "EnrolmentError"] = result.Message;
             return RedirectToAction("Index", "Enrolments");
         }
 
@@ -142,7 +212,10 @@ namespace Ranalo.Controllers
             //await _enrolmentService.CreateDeviceFromKnox(existingEnrolment);
 
 
-            if (existingEnrolment != null && existingEnrolment.Status == EnrolmentStatus.Approved)
+            if (existingEnrolment != null &&
+                existingEnrolment.Status == EnrolmentStatus.Approved &&
+                !DeviceLockRules.IsTranssion(existingEnrolment.DeviceBrand) &&
+                settings.RoleId is UserRole.Admin or UserRole.Approver)
             {
                 await _enrolmentService.CreateDeviceFromKnox(existingEnrolment);
             }
@@ -173,7 +246,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("addenrolment")]
-        public async Task<IActionResult> AddEnrolment(Enrolment enrolment)
+        public async Task<IActionResult> AddEnrolment(Enrolment enrolment, string? overrideBrand, int? selectedDealerId)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -181,7 +254,13 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            var response = new EnrolmentViewModel();
+            if (!DeviceLockRules.CanEnrol(settings.RoleId))
+            {
+                return RedirectToAction("Index");
+            }
+
+            var isAdmin = settings.RoleId == UserRole.Admin;
+            var response = new EnrolmentViewModel { IsAdmin = isAdmin };
             if (string.IsNullOrEmpty(enrolment.IMEI))
             {
                 response.Errors.Add("The IMEI number is missing!");
@@ -225,32 +304,88 @@ namespace Ranalo.Controllers
 
             if (response.Errors.Any())
             {
-                response.Enrolments.Add(enrolment);
+                return await EnrolmentFormAsync(response, enrolment);
+            }
 
-                return View(response);
+            // Phones already on Nuovo are approved as Nuovo (any brand).
+            object? nuovoDevice;
+            try
+            {
+                nuovoDevice = await _syncService.DevicePullSearch(enrolment.IMEI);
+            }
+            catch (Exception)
+            {
+                response.Errors.Add("Couldn't check Nuovo for this IMEI. Please try again or contact the system administrator.");
+                return await EnrolmentFormAsync(response, enrolment);
+            }
+
+            // Brand (from the order + TAC), M-Pesa deposit, order's dealer.
+            var checks = await _checks.EvaluateAsync(enrolment, order!, settings.RoleId, overrideBrand, onNuovo: nuovoDevice != null);
+            response.Errors.AddRange(checks.Errors);
+
+            if (checks.BrandBlocked && !response.Errors.Any())
+            {
+                response.Errors.Add(checks.BrandError + (checks.Brand == null
+                    ? " If it's another brand, enrol it on Nuovo first."
+                    : ""));
+            }
+
+            // Dealers enrol for themselves; approvers/admins for the dealer
+            // on the order, or one they pick when the order has none.
+            int dealerId;
+            if (settings.RoleId == UserRole.Dealer)
+            {
+                dealerId = settings.DealerId;
+            }
+            else if (checks.OrderDealerId.HasValue)
+            {
+                dealerId = checks.OrderDealerId.Value;
+            }
+            else if (selectedDealerId.HasValue)
+            {
+                dealerId = selectedDealerId.Value;
+            }
+            else
+            {
+                response.Errors.Add($"The order's dealer referral code ('{order!.DealerRef}') doesn't match a dealer. Choose the dealer below.");
+                ViewBag.AskDealer = true;
+                dealerId = 0;
+            }
+
+            if (response.Errors.Any())
+            {
+                return await EnrolmentFormAsync(response, enrolment);
             }
 
             try
             {
                 enrolment.Status = EnrolmentStatus.New;
-                enrolment.DealerId = settings.DealerId;
                 enrolment.Updated = DateTime.Now;
                 enrolment.Created = DateTime.Now;
                 enrolment.UpdatedBy = settings.Name;
-                enrolment.DealerId = settings.DealerId;
+                enrolment.DealerId = dealerId;
                 enrolment.Id = Guid.NewGuid();
+                enrolment.EnrolledByUserId = settings.UserId;
+                enrolment.EnrolledByRole = (int)settings.RoleId;
+                enrolment.DeviceBrand = checks.Brand;
+                enrolment.ProductName = checks.ProductName;
+                enrolment.DealerRef = order!.DealerRef;
+                enrolment.TacBrand = checks.TacBrand;
+                enrolment.BrandOverriddenByUserId = checks.BrandOverridden ? settings.UserId : null;
+                enrolment.RequiredDeposit = checks.Deposit.Required;
+                enrolment.DepositPaid = checks.Deposit.Paid;
+                enrolment.DepositShort = checks.Deposit.IsShort;
                 enrolment = await _enrolmentService.CreateEnrolmentasync(enrolment, order);
             }
             catch (Exception)
             {
                 response.Errors.Add("There was an Error processing your request. Please contact the system administrator.");
-                return View(response);
+                return await EnrolmentFormAsync(response, enrolment);
             }
 
             try
             {
-                var nouvaDevice = await _syncService.DevicePullSearch(enrolment.IMEI);
-                if (nouvaDevice == null)
+                if (nuovoDevice == null)
                 {
                     enrolment = await _enrolmentService.StartEnrolmentasync(enrolment, order);
                 }
@@ -266,10 +401,43 @@ namespace Ranalo.Controllers
             {
 
                 response.Errors.Add("There was an sending device to Nouvapay or Knox. Please contact the system administrator.");
-                return View(response);
+                return await EnrolmentFormAsync(response, enrolment);
+            }
+
+            if (enrolment.Status == EnrolmentStatus.Error)
+            {
+                TempData["EnrolmentError"] = $"Enrolment for IMEI {enrolment.IMEI} failed: {enrolment.PayTriggerResponse ?? enrolment.KnoxResponse}";
+            }
+            else if (DeviceLockRules.IsTranssion(enrolment.DeviceBrand))
+            {
+                TempData["EnrolmentMessage"] =
+                    $"{enrolment.DeviceBrand} phone {enrolment.IMEI} pre-enrolled. Ask the customer to switch it on and connect to the internet. " +
+                    "It stays locked until an approver has called the customer and approved it." +
+                    (enrolment.DepositShort ? " The deposit is short, so only an admin can approve it." : "");
+            }
+            else if (enrolment.DepositShort)
+            {
+                TempData["EnrolmentMessage"] = "Enrolled. The deposit is short, so only an admin can approve it.";
             }
 
             return RedirectToAction("Index");
+        }
+
+        private async Task<IActionResult> EnrolmentFormAsync(EnrolmentViewModel response, Enrolment enrolment)
+        {
+            response.Enrolments ??= new List<Enrolment>();
+            response.Enrolments.Add(enrolment);
+            if (ViewBag.AskDealer is true)
+            {
+                response.Dealers = await _userService.GetAllDealers();
+            }
+            return View("AddEnrolment", response);
+        }
+
+        private void AddFlash(EnrolmentViewModel model)
+        {
+            if (TempData["EnrolmentMessage"] is string message) model.Messages.Add(message);
+            if (TempData["EnrolmentError"] is string error) model.Errors.Add(error);
         }
 
         private async Task SetViewBags(User settings, string backLink, string searchTerm = "")

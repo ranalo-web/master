@@ -12,18 +12,28 @@ namespace Ranolo.Web.Tests
         public void Setup()
         {
         }
+        // Pricing policy: WooCommerce sets the daily price; the deposit is
+        // what's left of the device amount after a year of daily payments.
         [Test]
-        public void Calculator_TotalAmount_Test()
+        public void Calculator_WooCommercePricing_DepositIsTotalMinusYearOfDaily()
+        {
+            var calculator = new ContractCalculatorService();
+
+            Assert.That(calculator.CalculateSalesDeposit(25000m, 50m), Is.EqualTo(6750m)); // 25000 - 50*365
+        }
+
+        // Older orders with no WooCommerce daily price: 23.5% formula.
+        [Test]
+        public void Calculator_LegacyPricing_DepositAndDailyRate()
         {
             decimal totalAmount = 37516.48m;
-            var caluculatorService = new ContractCalculatorService();
+            var calculator = new ContractCalculatorService();
 
-            var deposit = caluculatorService.CalculateDeposit(totalAmount);
+            var deposit = calculator.CalculateDeposit(totalAmount);
+            var dailyRate = calculator.CalculateDailyRate365(totalAmount, deposit);
 
-            var dailyRate = caluculatorService.CalculateDailyRate365(totalAmount, deposit);
-
-            Assert.That(totalAmount, Is.EqualTo(0));
-
+            Assert.That(deposit, Is.EqualTo(9991.37m));   // (37516.48 + 5000) * 0.235
+            Assert.That(dailyRate, Is.EqualTo(75.41m));   // (37516.48 - 9991.37) / 365
         }
 
          [Test]

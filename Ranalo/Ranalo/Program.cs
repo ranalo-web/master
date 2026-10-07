@@ -19,6 +19,7 @@ using Microsoft.Extensions.Options;
 using Ranalo.SumsungKnox.Models;
 using Ranalo.PayTrigger;
 using Ranalo.PayTrigger.Models;
+using Ranalo.Services.DeviceLock;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -123,6 +124,15 @@ builder.Services.AddScoped<IWooCommerceService, WooCommerceService>();
 builder.Services.AddScoped<IPaymentsService, PaymentsService>();
 builder.Services.AddScoped<IEnrolmentService, EnrolmentService>();
 builder.Services.AddScoped<IEnrolmentRepository, EnrolmentRepository>();
+
+//Device enrolment checks/approval and the fully-paid removal queue -- see
+//Services/DeviceLock/DeviceLockRules.cs and Database/DeviceLock/001.
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IDeviceLockRepository, DeviceLockRepository>();
+builder.Services.AddScoped<IDeviceRemovalTaskRepository, DeviceRemovalTaskRepository>();
+builder.Services.AddScoped<IEnrolmentCheckService, EnrolmentCheckService>();
+builder.Services.AddScoped<ITranssionEnrolmentWorkflow, TranssionEnrolmentWorkflow>();
+builder.Services.AddScoped<IDeviceRemovalService, DeviceRemovalService>();
 builder.Services.AddScoped<ICommissionsReportsService, CommissionsReportsService>();
 
 //IPaymentsService

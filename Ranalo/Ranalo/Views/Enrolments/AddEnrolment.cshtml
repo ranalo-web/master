@@ -104,21 +104,27 @@
                                 </div>
                                 <div class="col-sm-6">
                                     <div class="form-group">
-                                        <label class="form-label" for="deviceBrand">Device Brand</label>
-                                        <div class="form-control-wrap">
-                                            <div class="form-icon form-icon-left">
-                                                <em class="icon ni ni-mobile"></em>
+                                        <label class="form-label" for="overrideBrand">Device Brand</label>
+                                        @if (Model.IsAdmin)
+                                        {
+                                            <div class="form-control-wrap">
+                                                <div class="form-icon form-icon-left">
+                                                    <em class="icon ni ni-mobile"></em>
+                                                </div>
+                                                <select name="overrideBrand" class="form-select" id="overrideBrand">
+                                                    <option value="" selected>From the order (recommended)</option>
+                                                    @foreach (var brand in Ranalo.Services.DeviceLock.DeviceLockRules.KnownBrands)
+                                                    {
+                                                        <option value="@brand">Override: @brand</option>
+                                                    }
+                                                </select>
                                             </div>
-                                            <select name="deviceBrand"
-                                                    class="form-select"
-                                                    id="deviceBrand" required>
-                                                <option value="" disabled selected="@(string.IsNullOrEmpty(enrolment?.DeviceBrand))">Select a brand&hellip;</option>
-                                                <option value="Samsung" selected="@(enrolment?.DeviceBrand == "Samsung")">Samsung</option>
-                                                <option value="itel" selected="@(enrolment?.DeviceBrand == "itel")">itel</option>
-                                                <option value="TECNO" selected="@(enrolment?.DeviceBrand == "TECNO")">TECNO</option>
-                                                <option value="Infinix" selected="@(enrolment?.DeviceBrand == "Infinix")">Infinix</option>
-                                            </select>
-                                        </div>
+                                            <div class="form-note">Only override when the order's product doesn't name the brand or the IMEI check disagrees and you've confirmed the phone.</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="form-note mt-1">Taken from the product on the order. Samsung goes to Knox; itel, TECNO and Infinix go to Transsion.</div>
+                                        }
                                     </div>
                                 </div>
                                 <div class="col-sm-6">
@@ -137,6 +143,24 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                @if (Model.Dealers != null)
+                                {
+                                    <div class="col-sm-6">
+                                        <div class="form-group">
+                                            <label class="form-label" for="selectedDealerId">Dealer</label>
+                                            <div class="form-control-wrap">
+                                                <select name="selectedDealerId" class="form-select" id="selectedDealerId" required>
+                                                    <option value="" disabled selected>Select the dealer who made this sale&hellip;</option>
+                                                    @foreach (var dealer in Model.Dealers.OrderBy(d => d.CompanyName))
+                                                    {
+                                                        <option value="@dealer.DealerId">@dealer.CompanyName (@dealer.DealerReference)</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
 
                                 <div class="col-sm-12">
                                     <div class="form-control-wrap">

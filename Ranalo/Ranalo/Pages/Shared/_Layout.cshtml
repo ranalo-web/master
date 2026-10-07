@@ -97,6 +97,13 @@
                                         </a>
                                     </li>
                                     <li class="nk-menu-item">
+                                        <a class="nk-menu-link" href="/pending-tasks">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-check-round-cut"></em></span>
+                                            <span class="nk-menu-text">Pending Tasks</span>
+                                            @await Component.InvokeAsync("PendingTasksBadge")
+                                        </a>
+                                    </li>
+                                    <li class="nk-menu-item">
                                         <a class="nk-menu-link" href="/contracts">
                                             <span class="nk-menu-icon"><em class="icon ni ni-file-text-fill"></em></span>
                                             <span class="nk-menu-text">Contracts</span>

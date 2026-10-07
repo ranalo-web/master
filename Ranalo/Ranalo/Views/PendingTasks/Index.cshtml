@@ -1,0 +1,193 @@
+@using Ranalo.Models
+@using Ranalo.Controllers
+@model PendingTasksViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var filters = new[]
+    {
+        (DeviceRemovalStatus.Awaiting, "Waiting for you"),
+        (DeviceRemovalStatus.Failed, "Failed"),
+        (DeviceRemovalStatus.Completed, "Removed"),
+        (DeviceRemovalStatus.Rejected, "Rejected"),
+        (DeviceRemovalStatus.All, "All")
+    };
+    var canAct = Model.Status is DeviceRemovalStatus.Awaiting or DeviceRemovalStatus.Pending or DeviceRemovalStatus.Failed;
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Pending Tasks</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Fully-paid devices waiting for you to approve removing them from Nuovo, Knox or Transsion. They're already unlocked until 31/12/9999 (31/12/2099 on Transsion if it won't take 9999), so the customer isn't held up while they wait here.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <form method="post" action="/pending-tasks/scan" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-white btn-outline-light" title="Queue devices that were fully paid before this queue existed">
+                        <em class="icon ni ni-reload"></em><span>Find other fully-paid devices</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @foreach (var message in Model.Messages)
+    {
+        <div class="alert alert-success alert-icon"><em class="icon ni ni-check-circle"></em>@message</div>
+    }
+    @foreach (var error in Model.Errors)
+    {
+        <div class="alert alert-danger alert-icon"><em class="icon ni ni-cross-circle"></em>@error</div>
+    }
+
+    <ul class="nav nav-tabs mb-3">
+        @foreach (var (value, label) in filters)
+        {
+            <li class="nav-item">
+                <a class="nav-link @(Model.Status == value ? "active" : "")" href="/pending-tasks?status=@value">@label</a>
+            </li>
+        }
+    </ul>
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <form id="approveForm" method="post" action="/pending-tasks/approve"
+                  onsubmit="return confirmApprove();">
+                @Html.AntiForgeryToken()
+                @if (canAct && Model.Tasks.Any())
+                {
+                    <div class="card-inner d-flex justify-content-between align-items-center">
+                        <span class="text-soft">@Model.TotalCount device(s). Approve up to @PendingTasksController.MaxApprovalsPerBatch at a time.</span>
+                        <button type="submit" class="btn btn-primary">Approve removal of ticked devices</button>
+                    </div>
+                }
+                <div class="card-inner p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;">
+                            <thead>
+                                <tr>
+                                    @if (canAct)
+                                    {
+                                        <th><input type="checkbox" id="selectAll" title="Tick the first @PendingTasksController.MaxApprovalsPerBatch" onclick="toggleAll(this)"></th>
+                                    }
+                                    <th class="wl-th">Account</th>
+                                    <th class="wl-th">Customer</th>
+                                    <th class="wl-th">IMEI</th>
+                                    <th class="wl-th">Provider</th>
+                                    <th class="wl-th">Reason</th>
+                                    <th class="wl-th">Queued</th>
+                                    <th class="wl-th">Status</th>
+                                    <th class="wl-th">Last response</th>
+                                    @if (canAct)
+                                    {
+                                        <th class="wl-th"></th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var task in Model.Tasks)
+                                {
+                                    var actionable = task.Status is DeviceRemovalStatus.Pending or DeviceRemovalStatus.Failed;
+                                    <tr>
+                                        @if (canAct)
+                                        {
+                                            <td>
+                                                @if (actionable)
+                                                {
+                                                    <input type="checkbox" name="taskIds" value="@task.Id" class="task-check">
+                                                }
+                                            </td>
+                                        }
+                                        <td><a href="/account-details/@task.AccountId">@task.AccountId</a></td>
+                                        <td>@task.CustomerName</td>
+                                        <td>@task.Imei</td>
+                                        <td>@task.Provider</td>
+                                        <td>@task.Reason</td>
+                                        <td>@task.CreatedAtUtc.ToString("dd MMM yyyy")</td>
+                                        <td>
+                                            @task.Status
+                                            @if (task.AttemptCount > 1)
+                                            {
+                                                <span class="text-soft small">(@task.AttemptCount attempts)</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(task.DecisionNote))
+                                            {
+                                                <div class="small text-soft">@task.DecisionNote</div>
+                                            }
+                                        </td>
+                                        <td style="white-space:normal;max-width:320px" class="small">@task.LastResponse</td>
+                                        @if (canAct)
+                                        {
+                                            <td>
+                                                @if (actionable)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                                            onclick="rejectTask(@task.Id, '@task.AccountId')">Reject</button>
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (!Model.Tasks.Any())
+                    {
+                        <div class="card-inner text-soft">Nothing here.</div>
+                    }
+                </div>
+            </form>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="card-inner">
+                    <ul class="pagination">
+                        @for (var i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="/pending-tasks?status=@Model.Status&page=@i&pageSize=@Model.PageSize">@i</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+
+    <form id="rejectForm" method="post" action="/pending-tasks/reject" style="display:none">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="taskId" id="rejectTaskId">
+        <input type="hidden" name="note" id="rejectNote">
+    </form>
+</div>
+
+@section Scripts
+{
+    <script>
+        const maxBatch = @PendingTasksController.MaxApprovalsPerBatch;
+
+        function toggleAll(box) {
+            document.querySelectorAll('.task-check').forEach((c, i) => c.checked = box.checked && i < maxBatch);
+        }
+
+        function confirmApprove() {
+            const n = document.querySelectorAll('.task-check:checked').length;
+            if (n === 0) { alert('Tick at least one device.'); return false; }
+            if (n > maxBatch) { alert('Tick at most ' + maxBatch + ' devices at a time.'); return false; }
+            return confirm('Remove ' + n + ' device(s) from their lock provider? This cannot be undone.');
+        }
+
+        function rejectTask(id, account) {
+            const note = prompt('Reject removal for account ' + account + '? Add a reason (optional):');
+            if (note === null) return;
+            document.getElementById('rejectTaskId').value = id;
+            document.getElementById('rejectNote').value = note;
+            document.getElementById('rejectForm').submit();
+        }
+    </script>
+}

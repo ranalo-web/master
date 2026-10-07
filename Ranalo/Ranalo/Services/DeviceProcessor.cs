@@ -294,6 +294,61 @@ namespace Ranalo.Services
             return devices;
         }
 
+        // Same call as the fully-paid R script:
+        // POST v2/devices/unregister.json {"device_ids":[id],"delete_device":"false"}
+        public async Task<(bool Success, string Response)> UnregisterAsync(long deviceId)
+        {
+            const string endpoint = "https://app.nuovopay.com/dm/api/v2/devices/unregister.json";
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Authorization", consumerKey);
+
+            var body = JsonSerializer.Serialize(new { device_ids = new[] { deviceId }, delete_device = "false" });
+            using var response = await client.PostAsync(endpoint, new StringContent(body, Encoding.UTF8, "application/json"));
+            var responseText = await response.Content.ReadAsStringAsync();
+
+            return ReadUnregisterResult((int)response.StatusCode, responseText);
+        }
+
+        // A 2xx is success unless Nuovo's body says "success": false or lists errors.
+        public static (bool Success, string Response) ReadUnregisterResult(int statusCode, string body)
+        {
+            var summary = $"{statusCode} {(body.Length > 1000 ? body[..1000] : body)}";
+            if (statusCode < 200 || statusCode > 299)
+            {
+                return (false, summary);
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(body);
+                var root = doc.RootElement;
+                if (root.ValueKind == JsonValueKind.Object)
+                {
+                    if (root.TryGetProperty("success", out var success) && success.ValueKind == JsonValueKind.False)
+                    {
+                        return (false, summary);
+                    }
+
+                    if (root.TryGetProperty("errors", out var errors) &&
+                        !(errors.ValueKind is JsonValueKind.Null or JsonValueKind.False) &&
+                        !(errors.ValueKind == JsonValueKind.Array && errors.GetArrayLength() == 0) &&
+                        !(errors.ValueKind == JsonValueKind.Object && !errors.EnumerateObject().Any()) &&
+                        !(errors.ValueKind == JsonValueKind.String && string.IsNullOrEmpty(errors.GetString())))
+                    {
+                        return (false, summary);
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // Not JSON: go by the status code.
+            }
+
+            return (true, summary);
+        }
+
         public async Task<LockTransaction> ProcessSingleAsync(
     LockTransaction device,
     ILogger logger)
