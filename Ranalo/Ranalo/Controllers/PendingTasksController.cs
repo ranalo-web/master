@@ -16,6 +16,9 @@ namespace Ranalo.Controllers
         // batch is capped to stay well inside the 230s Azure request timeout.
         public const int MaxApprovalsPerBatch = 25;
 
+        // Rejected devices shown under the queue; the Rejected tab has the rest.
+        public const int RejectedListSize = 100;
+
         private readonly IDeviceRemovalTaskRepository _tasks;
         private readonly IDeviceRemovalService _removals;
 
@@ -64,6 +67,12 @@ namespace Ranalo.Controllers
                 PageSize = pageSize,
                 TotalCount = total
             };
+
+            if (status == DeviceRemovalStatus.Awaiting)
+            {
+                (model.Rejected, model.RejectedCount) =
+                    await _tasks.ListAsync(DeviceRemovalStatus.Rejected, 1, RejectedListSize);
+            }
 
             if (TempData["PendingTasksMessages"] is string messages)
             {
@@ -137,6 +146,48 @@ namespace Ranalo.Controllers
 
             var result = await _removals.RejectAsync(taskId, settings, note);
             TempData[result.Success ? "PendingTasksMessages" : "PendingTasksErrors"] = result.Message;
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("pending-tasks/release")]
+        public async Task<IActionResult> Release(List<int> taskIds)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (!DeviceLockRules.CanDecideRemovals(settings.RoleId))
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            if (taskIds == null || taskIds.Count == 0)
+            {
+                TempData["PendingTasksErrors"] = "Tick at least one rejected device.";
+                return RedirectToAction("Index");
+            }
+
+            var messages = new List<string>();
+            var errors = new List<string>();
+            var ids = taskIds.Distinct().ToList();
+            if (ids.Count > MaxApprovalsPerBatch)
+            {
+                errors.Add($"Only the first {MaxApprovalsPerBatch} ticked devices were released. Release the rest in another batch.");
+                ids = ids.Take(MaxApprovalsPerBatch).ToList();
+            }
+
+            foreach (var id in ids)
+            {
+                var result = await _removals.ReleaseRejectedAsync(id, settings);
+                (result.Success ? messages : errors).Add(result.Message);
+            }
+
+            TempData["PendingTasksMessages"] = string.Join('\n', messages);
+            TempData["PendingTasksErrors"] = string.Join('\n', errors);
             return RedirectToAction("Index");
         }
 

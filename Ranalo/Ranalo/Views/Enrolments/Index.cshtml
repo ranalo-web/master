@@ -180,6 +180,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Surname</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">IMEI</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Brand</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Devices.LockGroup: 1 Nuovo, 2 Knox, 3 PayTrigger">Lock Group</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Date Created</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Date Updated</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
@@ -191,7 +192,7 @@
                         {
                             <tr>
                                 <td><span class="fw-medium">@enrolment.FirstName @enrolment.LastName</span></td>
-                                <td>@enrolment.AccountId</td>
+                                <td><a href="/account-details/@enrolment.AccountId" class="link link-primary">@enrolment.AccountId</a></td>
                                 <td>@enrolment.FirstName</td>
                                 <td>@enrolment.LastName</td>
                                 <td>@enrolment.IMEI</td>
@@ -202,6 +203,16 @@
                                         <span class="badge badge-dim bg-info" title="Brand confirmed by an admin">admin</span>
                                     }
                                 </td>
+                                @if (Model.LockGroups.TryGetValue(enrolment.AccountId, out var lockGroup) && lockGroup.HasValue)
+                                {
+                                    <td>
+                                        @(lockGroup switch { 1 => "Nuovo", 2 => "Knox", 3 => "PayTrigger", _ => "Unknown" }) (@lockGroup)
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td class="text-soft" title="@(Model.LockGroups.ContainsKey(enrolment.AccountId) ? "Device has no lock group set" : "No device record for this account yet")">Not set</td>
+                                }
                                 <td>@enrolment.Created.ToString("dd MMM yyyy")</td>
                                 <td>@enrolment.Updated.ToString("dd MMM yyyy")</td>
                                 <td>

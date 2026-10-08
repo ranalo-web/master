@@ -2365,23 +2365,25 @@ FROM
                                 ON d.Id = op.AccountNoBigint
                                   WHERE (
                                 @SearchTerm IS NULL
-                                OR MpesaCode LIKE '%' + @SearchTerm + '%'
-                                OR AccountNo LIKE '%' + @SearchTerm + '%'
-                                OR OrphanedAccountNo LIKE '%' + @SearchTerm + '%')";
+                                OR op.MpesaCode LIKE '%' + @SearchTerm + '%'
+                                OR op.AccountNo LIKE '%' + @SearchTerm + '%'
+                                OR op.OrphanedAccountNo LIKE '%' + @SearchTerm + '%')";
 
-            var sql = @" SELECT [OrphanedAccountNo] AS OrphanedAccountNo
-                            ,[MpesaCode] AS MpesaCode
-                            ,[AccountNo] AS AccountNo
-                            ,[DateCreated] AS PaymentDateValue
+            var sql = @" SELECT op.[OrphanedAccountNo] AS OrphanedAccountNo
+                            ,op.[MpesaCode] AS MpesaCode
+                            ,op.[AccountNo] AS AccountNo
+                            ,op.[DateCreated] AS PaymentDateValue
+                            ,u.[Name] + ' ' + ISNULL(u.[LastName], '') AS AssignedBy
                         FROM [dbo].[OrphanedPayments] op
                         INNER JOIN Devices d 
                         ON d.Id = op.AccountNoBigint
+                        LEFT JOIN Users u ON u.UserId = op.AssignedByUserId
                           WHERE (
                         @SearchTerm IS NULL
-                        OR MpesaCode LIKE '%' + @SearchTerm + '%'
-                        OR AccountNo LIKE '%' + @SearchTerm + '%'
-                        OR OrphanedAccountNo LIKE '%' + @SearchTerm + '%')
-                        ORDER BY [DateCreated] DESC
+                        OR op.MpesaCode LIKE '%' + @SearchTerm + '%'
+                        OR op.AccountNo LIKE '%' + @SearchTerm + '%'
+                        OR op.OrphanedAccountNo LIKE '%' + @SearchTerm + '%')
+                        ORDER BY op.[DateCreated] DESC
                         OFFSET @Offset ROWS 
                         FETCH NEXT @pageSize ROWS ONLY";
 
@@ -2398,7 +2400,7 @@ FROM
         }
 
         // Returns null on success, otherwise a message to show the user.
-        public async Task<string?> CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo)
+        public async Task<string?> CreateAssignedPaymentsAsync(string orphanedNo, string mpesaCode, string accountNo, int assignedByUserId)
         {
             accountNo = accountNo?.Trim() ?? "";
             mpesaCode = mpesaCode?.Trim() ?? "";
@@ -2439,9 +2441,10 @@ FROM
                 // A previous assignment pointed at an account with no device,
                 // so the payment is still orphaned -- correct it in place.
                 await _db.ExecuteAsync(@"UPDATE OrphanedPayments
-                                         SET AccountNo = @AccountNo, DateCreated = GETDATE()
+                                         SET AccountNo = @AccountNo, DateCreated = GETDATE(),
+                                             AssignedByUserId = @AssignedByUserId
                                          WHERE MpesaCode = @MpesaCode",
-                    new { MpesaCode = mpesaCode, AccountNo = accountNo });
+                    new { MpesaCode = mpesaCode, AccountNo = accountNo, AssignedByUserId = assignedByUserId });
                 return null;
             }
 
@@ -2450,16 +2453,18 @@ FROM
                                            ,[OrphanedAccountNo]
                                            ,[MpesaCode]
                                            ,[AccountNo]
-                                           ,[DateCreated])
+                                           ,[DateCreated]
+                                           ,[AssignedByUserId])
                                      VALUES
                                            (@Id
                                            ,@OrphanedAccountNo
                                            ,@MpesaCode
                                            ,@AccountNo
-                                           ,GETDATE())";
+                                           ,GETDATE()
+                                           ,@AssignedByUserId)";
 
 
-            await _db.ExecuteScalarAsync<int>(insertSql, new { Id = Guid.NewGuid(), OrphanedAccountNo = orphanedNo, MpesaCode = mpesaCode, AccountNo = accountNo });
+            await _db.ExecuteScalarAsync<int>(insertSql, new { Id = Guid.NewGuid(), OrphanedAccountNo = orphanedNo, MpesaCode = mpesaCode, AccountNo = accountNo, AssignedByUserId = assignedByUserId });
             return null;
         }
 

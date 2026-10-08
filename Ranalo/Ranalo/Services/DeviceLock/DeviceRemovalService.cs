@@ -24,6 +24,9 @@ namespace Ranalo.Services.DeviceLock
 
         Task<WorkflowResult> ApproveAsync(int taskId, User actor);
         Task<WorkflowResult> RejectAsync(int taskId, User actor, string? note);
+
+        // Removes a previously rejected device, exactly as an approval would.
+        Task<WorkflowResult> ReleaseRejectedAsync(int taskId, User actor);
     }
 
     public class DeviceRemovalService : IDeviceRemovalService
@@ -158,6 +161,28 @@ namespace Ranalo.Services.DeviceLock
             return await _tasks.RejectAsync(taskId, actor.UserId, string.IsNullOrWhiteSpace(note) ? null : note.Trim(), UtcNow)
                 ? new WorkflowResult(true, "Removal rejected. The device stays with its lock provider, unlocked with its fully-paid lock date.")
                 : new WorkflowResult(false, "This task can no longer be rejected.");
+        }
+
+        public async Task<WorkflowResult> ReleaseRejectedAsync(int taskId, User actor)
+        {
+            if (!DeviceLockRules.CanDecideRemovals(actor.RoleId))
+            {
+                return new WorkflowResult(false, "Only an admin can release a device.");
+            }
+
+            if (!await _tasks.ReopenRejectedAsync(taskId))
+            {
+                var current = await _tasks.GetAsync(taskId);
+                return new WorkflowResult(false, current == null
+                    ? "Task not found."
+                    : current.Status == DeviceRemovalStatus.Rejected
+                        ? $"Account {current.AccountId} is already queued again; approve it from the list above."
+                        : $"Task for account {current.AccountId} is already {current.Status.ToLowerInvariant()}.");
+            }
+
+            // Now Pending: approve as normal. A provider failure leaves it
+            // Failed in the main queue to retry, like any other approval.
+            return await ApproveAsync(taskId, actor);
         }
 
         private async Task<ProviderResult> RemoveFromProviderAsync(DeviceRemovalTask task)

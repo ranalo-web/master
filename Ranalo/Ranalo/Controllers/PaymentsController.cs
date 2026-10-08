@@ -249,7 +249,7 @@ namespace Ranalo.Controllers
             }
             await SetViewBags(settings, "index");
 
-            var error = await _applicationReportService.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo);
+            var error = await _applicationReportService.CreateAssignedPaymentsAsync(orphanedNo, mpesaCode, accountNo, settings.UserId);
 
             if (error != null)
             {

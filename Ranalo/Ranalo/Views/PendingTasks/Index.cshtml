@@ -73,7 +73,7 @@
                                 <tr>
                                     @if (canAct)
                                     {
-                                        <th><input type="checkbox" id="selectAll" title="Tick the first @PendingTasksController.MaxApprovalsPerBatch" onclick="toggleAll(this)"></th>
+                                        <th><input type="checkbox" id="selectAll" title="Tick the first @PendingTasksController.MaxApprovalsPerBatch" onclick="toggleAll(this, '.task-check')"></th>
                                     }
                                     <th class="wl-th">Account</th>
                                     <th class="wl-th">Customer</th>
@@ -159,6 +159,67 @@
         </div>
     </div>
 
+    @if (Model.Status == DeviceRemovalStatus.Awaiting && Model.Rejected.Any())
+    {
+        <div class="nk-block">
+            <div class="nk-block-head nk-block-head-sm">
+                <h5 class="nk-block-title">Rejected</h5>
+                <div class="nk-block-des text-soft">
+                    <p>Devices you held back. They stay with their lock provider, unlocked, until you release them. Releasing removes them from the provider, the same as approving.</p>
+                </div>
+            </div>
+            <div class="card card-bordered card-stretch">
+                <form id="releaseForm" method="post" action="/pending-tasks/release"
+                      onsubmit="return confirmRelease();">
+                    @Html.AntiForgeryToken()
+                    <div class="card-inner d-flex justify-content-between align-items-center">
+                        <span class="text-soft">
+                            @Model.RejectedCount rejected device(s).
+                            @if (Model.RejectedCount > Model.Rejected.Count)
+                            {
+                                <text>Showing the oldest @Model.Rejected.Count; see the <a href="/pending-tasks?status=@DeviceRemovalStatus.Rejected">Rejected</a> tab for all.</text>
+                            }
+                        </span>
+                        <button type="submit" class="btn btn-primary">Release ticked devices</button>
+                    </div>
+                    <div class="card-inner p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0" style="white-space:nowrap;">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" title="Tick the first @PendingTasksController.MaxApprovalsPerBatch" onclick="toggleAll(this, '.rejected-check')"></th>
+                                        <th class="wl-th">Account</th>
+                                        <th class="wl-th">Customer</th>
+                                        <th class="wl-th">IMEI</th>
+                                        <th class="wl-th">Provider</th>
+                                        <th class="wl-th">Queued</th>
+                                        <th class="wl-th">Rejected</th>
+                                        <th class="wl-th">Reason for rejecting</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var task in Model.Rejected)
+                                    {
+                                        <tr>
+                                            <td><input type="checkbox" name="taskIds" value="@task.Id" class="rejected-check"></td>
+                                            <td><a href="/account-details/@task.AccountId">@task.AccountId</a></td>
+                                            <td>@task.CustomerName</td>
+                                            <td>@task.Imei</td>
+                                            <td>@task.Provider</td>
+                                            <td>@task.CreatedAtUtc.ToString("dd MMM yyyy")</td>
+                                            <td>@(task.DecidedAtUtc?.ToString("dd MMM yyyy") ?? "")</td>
+                                            <td style="white-space:normal;max-width:320px" class="small">@task.DecisionNote</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
     <form id="rejectForm" method="post" action="/pending-tasks/reject" style="display:none">
         @Html.AntiForgeryToken()
         <input type="hidden" name="taskId" id="rejectTaskId">
@@ -171,8 +232,8 @@
     <script>
         const maxBatch = @PendingTasksController.MaxApprovalsPerBatch;
 
-        function toggleAll(box) {
-            document.querySelectorAll('.task-check').forEach((c, i) => c.checked = box.checked && i < maxBatch);
+        function toggleAll(box, selector) {
+            document.querySelectorAll(selector).forEach((c, i) => c.checked = box.checked && i < maxBatch);
         }
 
         function confirmApprove() {
@@ -180,6 +241,13 @@
             if (n === 0) { alert('Tick at least one device.'); return false; }
             if (n > maxBatch) { alert('Tick at most ' + maxBatch + ' devices at a time.'); return false; }
             return confirm('Remove ' + n + ' device(s) from their lock provider? This cannot be undone.');
+        }
+
+        function confirmRelease() {
+            const n = document.querySelectorAll('.rejected-check:checked').length;
+            if (n === 0) { alert('Tick at least one rejected device.'); return false; }
+            if (n > maxBatch) { alert('Tick at most ' + maxBatch + ' devices at a time.'); return false; }
+            return confirm('Release ' + n + ' device(s)? They will be removed from their lock provider. This cannot be undone.');
         }
 
         function rejectTask(id, account) {
