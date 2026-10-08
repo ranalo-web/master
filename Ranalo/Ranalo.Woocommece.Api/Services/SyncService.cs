@@ -79,6 +79,8 @@ namespace Ranalo.Woocommece.Api.Services
                         var account = await _wooOrderRepository.GetAccountDetailsByMpesa(order.MpesaDepositRef);
                         if(account != null)
                         {
+                            // Honour Assign Payments over the typed account.
+                            account.AccountNo = await _wooOrderRepository.GetPaymentAccountNoAsync(order.MpesaDepositRef) ?? account.AccountNo;
                             await DoCreateContractInfo(order, account, 12);
                         }
                     }
@@ -123,6 +125,11 @@ namespace Ranalo.Woocommece.Api.Services
 
         private async Task DoCreateContractInfo(WooOrder order, MpesaRecord account, decimal termsInMonths)
         {
+            if (!int.TryParse(account.AccountNo, out var accountId))
+            {
+                return;
+            }
+
             decimal dailyRate = 0;
             decimal deposit = 0;
             if (order.DailySalePrice != null)
@@ -139,7 +146,7 @@ namespace Ranalo.Woocommece.Api.Services
             
             var contract = new ContractInfo()
             {
-                ID = int.Parse(account.AccountNo),
+                ID = accountId,
                 Deposit = deposit,
                 Daily = dailyRate,
                 Weekly = 0,//_calculatorService.CalculateWeekleyRate(dailyRate),
@@ -165,16 +172,23 @@ namespace Ranalo.Woocommece.Api.Services
                 {
                     continue;
                 }
-                await CreateContractSingle(order);
-
-                accountsNos.Add(order.AccountNo);
+                if (await CreateContractSingle(order))
+                {
+                    accountsNos.Add(order.AccountNo);
+                }
             }
 
             return accountsNos;
         }
 
-        public async Task CreateContractSingle(ContractCreateDto order)
+        // false = not created: the account isn't a number or has no device.
+        public async Task<bool> CreateContractSingle(ContractCreateDto order)
         {
+            if (!int.TryParse(order.AccountNo, out var accountId))
+            {
+                return false;
+            }
+
             decimal dailyRate = 0;
             decimal deposit = 0;
             if (order.DailySalePrice != null)
@@ -191,7 +205,7 @@ namespace Ranalo.Woocommece.Api.Services
             
             var contract = new ContractInfo()
             {
-                ID = int.Parse(order.AccountNo),
+                ID = accountId,
                 Deposit = deposit,
                 Daily = dailyRate,
                 Weekly = 0,
@@ -206,9 +220,14 @@ namespace Ranalo.Woocommece.Api.Services
             };
 
             var contractId = await _kosePaymentsRepository.AddContractAsync(contract);
+            if (contractId == 0)
+            {
+                return false;
+            }
 
             //Update the Orders with Contract Id 
             await _kosePaymentsRepository.UpdateOrderContract(order.OrderId, contractId);
+            return true;
         }
 
         public async Task<List<int>> UpdateImagesAsync(long orderId, List<ImagesMetadata> imagesForUpdate)

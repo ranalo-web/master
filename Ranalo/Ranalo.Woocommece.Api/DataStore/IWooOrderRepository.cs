@@ -12,5 +12,10 @@ namespace Ranalo.Woocommece.Api.DataStore
         Task UpdateAsync(WooOrder order);
 
         Task<MpesaRecord?> GetAccountDetailsByMpesa(string mpesaCode);
+
+        // The account a payment belongs to: where it was assigned (Assign
+        // Payments / OrphanedPayments) if it was, else the account the
+        // customer typed on M-Pesa. Null if there's no such payment.
+        Task<string?> GetPaymentAccountNoAsync(string mpesaCode);
     }
 }

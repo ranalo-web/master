@@ -274,9 +274,16 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         public async Task<List<ContractCreateDto>> GetContractEligibleOrders()
         {
+            // The contract goes on the account the deposit belongs to: where
+            // it was assigned (Assign Payments) if it was, else the account
+            // the customer typed on M-Pesa. Knox/PayTrigger accounts are the
+            // national ID, Nuovo accounts the Nuovo device number, so a Nuovo
+            // customer who paid to their ID number needs the deposit assigned
+            // first. An order only qualifies once a device exists on that
+            // account -- no contract before its device.
             var sql = @"SELECT wo.OrderId, 
                         	   wo.MpesaDepositRef, 
-                        	   kp.AccountNo, 
+                        	   COALESCE(op.AccountNo, kp.AccountNo) AS AccountNo, 
                         	   wo.TotalAmount,
 	                           wo.FirstName,
                                wo.DailySalePrice,
@@ -286,8 +293,12 @@ namespace Ranalo.Woocommece.Api.DataStore
                         FROM Woo_Orders wo
                         INNER JOIN KosePayments kp
                             ON kp.MpesaCode = wo.MpesaDepositRef
-                        LEFT JOIN Contract_Info ci
-                            ON ci.ID = kp.AccountNoBigint
+                        OUTER APPLY (SELECT TOP 1 o.AccountNo, o.AccountNoBigint
+                                     FROM OrphanedPayments o
+                                     WHERE o.MpesaCode = kp.MpesaCode
+                                     ORDER BY o.DateCreated DESC) op
+                        INNER JOIN Devices d
+                            ON d.Id = COALESCE(op.AccountNoBigint, kp.AccountNoBigint)
                         WHERE wo.[Status] IN ('approved', 'approval-waiting')
                           AND wo.ContractId IS NULL;";
 

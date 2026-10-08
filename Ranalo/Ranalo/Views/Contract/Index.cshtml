@@ -148,6 +148,14 @@
             </div><!-- .nk-block-head-content -->
         </div><!-- .nk-block-between -->
     </div><!-- .nk-block-head -->
+    @if (TempData["ContractError"] is string contractError)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em>@contractError
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">

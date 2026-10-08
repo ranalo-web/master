@@ -36,7 +36,8 @@ namespace Ranalo.Woocommece.Api.Services
         Task<List<int>> SyncUpdateNextOfKinWooOrders();
         Task<List<int>> SyncUpdateMetaDataWooOrders();
 
-        Task CreateContractSingle(ContractCreateDto order);
+        // false = not created: the account isn't a number or has no device.
+        Task<bool> CreateContractSingle(ContractCreateDto order);
 
         Task<Device?> GetDeviceById(long deviceId);
 
