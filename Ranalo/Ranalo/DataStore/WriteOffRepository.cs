@@ -357,6 +357,11 @@ namespace Ranalo.DataStore
                     WHERE t.NextPaymentDate IS NULL
                       AND c.EndDate IS NOT NULL
                       AND t.PaidToDate < c.ContractValue
+                      -- Only a device that was enrolled can be recovered: a
+                      -- contract on an account with no device (a duplicate,
+                      -- or a dealer's ghost customer) is ended without being
+                      -- a repossession; fraud is written off by an admin.
+                      AND EXISTS (SELECT 1 FROM Devices dv WHERE dv.Id = c.AccountNo)
                 ),
                 pending_history AS (
                     SELECT h.*
