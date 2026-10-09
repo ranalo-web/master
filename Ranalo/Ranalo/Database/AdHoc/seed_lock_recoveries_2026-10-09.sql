@@ -4,6 +4,9 @@
 -- four IMEIs sent to Veripay on 2026-10-09 (scripts/imeis_example.csv).
 -- Details are copied from Devices; skips any account already open there.
 
+-- Needed for the filtered index on LockRecoveries (sqlcmd defaults it OFF).
+SET QUOTED_IDENTIFIER ON;
+
 INSERT INTO LockRecoveries (AccountNo, Imei, Make, Model, CustomerName, DealerName, OriginalLockGroup, Reason, Status, Notes)
 SELECT d.Id, d.ImeiNo, d.Make, d.Model,
        COALESCE(ci.First_Name, d.Name, d.CustomerName),
