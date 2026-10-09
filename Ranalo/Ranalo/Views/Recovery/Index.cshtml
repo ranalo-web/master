@@ -1,0 +1,142 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model RecoveryListViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var tabs = new[] { ("open", "In progress"), ("moved", "Moved to Knox"), ("ended", "Not catchable / closed"), ("all", "All") };
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-head-content">
+            <h3 class="nk-block-title page-title">Recovery</h3>
+            <div class="nk-block-des text-soft">
+                <p>Phones we're trying to get back under a lock, e.g. a Nuovo phone whose lock was removed. Samsung phones can be moved to Knox one step at a time. Once the lock works, Move to Knox and the daily lock jobs use Knox from then on. A phone that can't be caught stays with its current locker.</p>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["RecoveryResult"] is string result)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em> @result
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["RecoveryError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md">
+                <h6 class="title mb-2">Add a phone</h6>
+                <form action="/recovery/add" method="post" class="d-flex flex-wrap align-items-end" style="gap:8px;">
+                    <div>
+                        <label class="form-label small mb-1" for="accountNo">Account</label>
+                        <input type="number" id="accountNo" name="accountNo" required class="form-control form-control-sm" style="width:160px;" placeholder="e.g. 8511324" />
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="reason">Reason</label>
+                        <select id="reason" name="reason" class="form-select form-select-sm" style="width:auto;">
+                            @foreach (var reason in RecoveryReason.All)
+                            {
+                                <option value="@reason">@reason</option>
+                            }
+                        </select>
+                    </div>
+                    <div style="flex:1; min-width:200px;">
+                        <label class="form-label small mb-1" for="notes">Notes</label>
+                        <input type="text" id="notes" name="notes" maxlength="1000" class="form-control form-control-sm" />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">Add</button>
+                </form>
+                <div id="lookup" class="small text-soft mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md">
+                <ul class="nav nav-tabs nav-tabs-s2" style="border:0;">
+                    @foreach (var (key, label) in tabs)
+                    {
+                        <li class="nav-item"><a class="nav-link @(Model.Status == key ? "active" : "")" href="/recovery?status=@key">@label</a></li>
+                    }
+                </ul>
+            </div>
+            <div class="card-inner p-0 border-top">
+                <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;">
+                        <thead>
+                            <tr>
+                                <th class="wl-th">Account</th>
+                                <th class="wl-th">Phone</th>
+                                <th class="wl-th">IMEI</th>
+                                <th class="wl-th">Customer</th>
+                                <th class="wl-th">Dealer</th>
+                                <th class="wl-th">Reason</th>
+                                <th class="wl-th">Locker now</th>
+                                <th class="wl-th">Status</th>
+                                <th class="wl-th">Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Recoveries.Count == 0)
+                            {
+                                <tr><td colspan="9" class="text-center text-soft py-4">No phones here.</td></tr>
+                            }
+                            @foreach (var r in Model.Recoveries)
+                            {
+                                <tr>
+                                    <td><a href="/recovery/@r.Id" class="fw-medium">@r.AccountNo</a></td>
+                                    <td>@r.Make @r.Model</td>
+                                    <td>@r.Imei</td>
+                                    <td>@r.CustomerName</td>
+                                    <td>@r.DealerName</td>
+                                    <td>@r.Reason</td>
+                                    <td>@RecoveryRules.LockGroupName(r.CurrentLockGroup) @(r.Locked == true ? "· locked" : r.Locked == false ? "· unlocked" : "")</td>
+                                    <td><span class="badge @(r.Status == RecoveryStatus.MovedToKnox ? "bg-success" : r.Status == RecoveryStatus.NotCatchable ? "bg-danger" : "bg-light text-dark")">@RecoveryStatus.Label(r.Status)</span></td>
+                                    <td>@r.UpdatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var input = document.getElementById('accountNo');
+        var out = document.getElementById('lookup');
+        var timer;
+        input.addEventListener('input', function () {
+            clearTimeout(timer);
+            var value = input.value.trim();
+            if (value.length < 5) { out.textContent = ''; return; }
+            timer = setTimeout(function () {
+                fetch('/recovery/lookup?accountNo=' + encodeURIComponent(value))
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (d) {
+                        if (input.value.trim() !== value) return;
+                        if (!d) { out.textContent = 'No device on account ' + value + '.'; return; }
+                        var lockers = { 2: 'Knox', 3: 'Transsion' };
+                        out.textContent = [d.make, d.model].filter(Boolean).join(' ') + ', IMEI ' + (d.imei || '?')
+                            + ', ' + (d.customerName || 'no name') + (d.dealerName ? ' (' + d.dealerName + ')' : '')
+                            + ', on ' + (lockers[d.lockGroup] || 'Nuovo') + '.';
+                    })
+                    .catch(function () { out.textContent = ''; });
+            }, 300);
+        });
+    })();
+</script>

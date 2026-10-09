@@ -291,7 +291,7 @@
                                     }
                                     else
                                     {
-                                        <div class="badge bg-light rounded-pill ucap">@Model?.OrderID</div>
+                                        <div class="badge bg-light rounded-pill ucap">@(Model.OrderID == 0 && Model.AccountId != 0 ? Model.AccountId : Model.OrderID)</div>
                                     }
 
                                     <h5>@Model.FirstName @Model.LastName</h5>

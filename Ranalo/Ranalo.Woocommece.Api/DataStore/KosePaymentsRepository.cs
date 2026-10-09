@@ -353,7 +353,9 @@ namespace Ranalo.Woocommece.Api.DataStore
                                                ,[DlcStatus] = @DlcStatus
                                                ,[LastUpdatedDate] = GETDATE()
                                                , [LockGroup] = 1
-                                          WHERE [Id] = @Id";
+                                          -- Nuovo's list never overwrites a phone the app has
+                                          -- moved to Knox or Transsion (e.g. through Recovery).
+                                          WHERE [Id] = @Id AND ISNULL([LockGroup], 1) = 1";
 
             foreach (var record in groupedRecords)
             {

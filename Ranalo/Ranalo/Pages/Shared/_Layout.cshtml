@@ -134,6 +134,18 @@
                                             <span class="nk-menu-text">Watchlist</span>
                                         </a>
                                     </li>
+                                    <li class="nk-menu-item">
+                                        <a href="/fraud" class="nk-menu-link">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-shield-alert"></em></span>
+                                            <span class="nk-menu-text">Fraud</span>
+                                        </a>
+                                    </li>
+                                    <li class="nk-menu-item">
+                                        <a href="/recovery" class="nk-menu-link">
+                                            <span class="nk-menu-icon"><em class="icon ni ni-lock-alt"></em></span>
+                                            <span class="nk-menu-text">Recovery</span>
+                                        </a>
+                                    </li>
 
                                     <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Collections</h6></li>
                                     <li class="nk-menu-item has-sub">
@@ -323,6 +335,15 @@
                                                 <span class="nk-menu-text">Watchlist</span>
                                             </a>
                                         </li>
+                                        @if (isDealer || isAgent)
+                                        {
+                                            <li class="nk-menu-item">
+                                                <a href="/verification" class="nk-menu-link">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-shield-check"></em></span>
+                                                    <span class="nk-menu-text">Verification</span>
+                                                </a>
+                                            </li>
+                                        }
                                     }
 
                                     <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Collections</h6></li>

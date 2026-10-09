@@ -177,28 +177,33 @@ namespace Ranalo.Services
                 customerDetails = await _applicationReportRepository.GetCustomerDetailsByAccountId((int)orderId);
             }
 
-            //These are accounts with no orders
+            //These are accounts with no orders (orderId is the account number).
+            //An account can have a device but no contract or payments yet
+            //(e.g. the "no payments" report), so nothing here may assume one.
             if (customerDetails == null)
             {
-                customerDetails = new CustomerDetails();
-                
+                customerDetails = new CustomerDetails { AccountId = (int)orderId };
+
                 customerDetails.Summary = await _applicationReportRepository.GetPaymentSummaryForAccountId(orderId.ToString());
 
-                customerDetails.FirstName = customerDetails?.Summary?.FirstName ?? "";
+                customerDetails.FirstName = customerDetails.Summary?.FirstName ?? "";
 
                 var accountPayments = await _applicationReportRepository.GetPaymentsForAccount(orderId.ToString());
-                if (accountPayments != null)
+                if (accountPayments?.Payments != null)
                 {
-                    customerDetails.Payments = accountPayments.Payments!;
+                    customerDetails.Payments = accountPayments.Payments;
                 }
 
-                var accountDevice = await _devicesRepository.GetDeviceByAccountId(Convert.ToInt64(customerDetails?.Payments?.FirstOrDefault()?.AccountNo));
+                var accountDevice = await _devicesRepository.GetDeviceByAccountId(orderId);
                 if (accountDevice != null)
                 {
                     customerDetails.DeviceDetails = accountDevice;
                 }
 
-                customerDetails.Summary = await _applicationReportRepository.GetPaymentSummaryForAccountId(orderId.ToString());
+                if (customerDetails.Summary == null)
+                {
+                    return customerDetails;
+                }
 
                 var totalDueAll = _calculatorService.CalculateTotalDue(customerDetails.Summary.Daily, customerDetails.Summary.Weekly, customerDetails.Summary.Monthly, customerDetails.Summary.Deposit, customerDetails.Summary.FirstPaymentDate, customerDetails.Summary.TermsInMonths);
 

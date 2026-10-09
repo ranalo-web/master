@@ -1,0 +1,287 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model FraudViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var statusTabs = new[] { ("active", "Not cleared"), ("open", "Open"), ("investigating", "Investigating"), ("confirmed", "Confirmed"), ("cleared", "Cleared"), ("all", "All") };
+    var highRisk = Model.Dealers.Where(d => d.Level == FraudRiskLevel.High).ToList();
+    var selectedDealer = Model.Dealers.FirstOrDefault(d => d.DealerId.HasValue && d.DealerId == Model.DealerId);
+    string Link(string? check, int? dealerId, string status) => Url.Action("Index", "Fraud", new { check, dealerId, status })!;
+    string LevelBadge(FraudRiskLevel level) => level switch
+    {
+        FraudRiskLevel.High => "badge bg-danger",
+        FraudRiskLevel.Watch => "badge bg-warning text-dark",
+        _ => "badge bg-light text-dark",
+    };
+    string ReviewBadge(string status) => status switch
+    {
+        FraudReviewStatus.Confirmed => "badge bg-danger",
+        FraudReviewStatus.Investigating => "badge bg-warning text-dark",
+        FraudReviewStatus.Cleared => "badge bg-success",
+        _ => "badge bg-light text-dark",
+    };
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Fraud</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Early warnings checked live against contracts, devices, payments and orders. Only admins can see this page. Dealers and agents are never told which check fired.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="@Url.Action("Export", "Fraud", new { check = Model.Check, dealerId = Model.DealerId, status = Model.Status })" class="btn btn-outline-light">
+                    <em class="icon ni ni-download"></em><span>Export CSV</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["FraudResult"] is string result)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em> @result
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["FraudError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @foreach (var d in highRisk)
+    {
+        <div class="alert alert-danger alert-icon">
+            <em class="icon ni ni-alert-circle"></em>
+            <strong>@d.DealerName</strong> is high risk:
+            @if (d.Confirmed > 0)
+            {
+                <span>@d.Confirmed confirmed fraud flag(s);</span>
+            }
+            @d.DepositOnly of @d.Contracts contracts (@d.DepositOnlyRate.ToString("P0")) paid only the deposit, against @Model.OverallDepositOnlyRate.ToString("P0") for the company.
+            KES @d.AmountAtRisk.ToString("N0") at risk.
+            @if (d.DealerId.HasValue)
+            {
+                <a href="@Link(null, d.DealerId, "active")" class="alert-link">See their flags</a>
+            }
+        </div>
+    }
+
+    @* Early-warning tiles, one per check. *@
+    <div class="nk-block">
+        <div class="row g-gs">
+            @foreach (var s in Model.Checks)
+            {
+                var selected = Model.Check == s.Check.Code;
+                <div class="col-6 col-md-3">
+                    <a href="@Link(selected ? null : s.Check.Code, Model.DealerId, Model.Status)" class="card card-bordered h-100 @(selected ? "border-primary" : "")" style="text-decoration:none;" title="@s.Check.Description">
+                        <div class="card-inner">
+                            <div class="text-soft small">
+                                @s.Check.Title
+                                @if (!s.Check.Strong)
+                                {
+                                    <span class="text-soft" title="Weaker signal: expect more false alarms">&middot; weak</span>
+                                }
+                            </div>
+                            <div class="fs-4 fw-bold @(s.Open > 0 && s.Check.Strong ? "text-danger" : "")">@s.Open.ToString("N0")</div>
+                            <div class="small">
+                                @if (s.NewThisWeek > 0)
+                                {
+                                    <span class="text-danger fw-medium">+@s.NewThisWeek new this week</span>
+                                }
+                                else
+                                {
+                                    <span class="text-soft">none new this week</span>
+                                }
+                                @if (s.Confirmed > 0)
+                                {
+                                    <span class="text-soft">&middot; @s.Confirmed confirmed</span>
+                                }
+                            </div>
+                            @if (s.AmountAtRisk > 0)
+                            {
+                                <div class="text-soft small">KES @s.AmountAtRisk.ToString("N0") at risk</div>
+                            }
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Dealer report. *@
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md">
+                <h6 class="title mb-1">Dealer risk</h6>
+                <p class="text-soft small mb-0">
+                    Contracts 14+ days old. Company rate of deposit-only contracts: <strong>@Model.OverallDepositOnlyRate.ToString("P1")</strong>.
+                    High = any confirmed fraud, or 5+ deposit-only contracts at twice the company rate. Watch = 3+ at 1.5 times the rate, or 3+ other flags. Cleared flags don't count.
+                </p>
+            </div>
+            <div class="card-inner p-0 border-top">
+                <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;">
+                        <thead>
+                            <tr>
+                                <th class="wl-th">Dealer</th>
+                                <th class="wl-th">Risk</th>
+                                <th class="wl-th text-end">Contracts</th>
+                                <th class="wl-th text-end">Deposit only</th>
+                                <th class="wl-th text-end">Rate</th>
+                                <th class="wl-th text-end">Lock overdue</th>
+                                <th class="wl-th text-end">Other flags</th>
+                                <th class="wl-th text-end">Confirmed</th>
+                                <th class="wl-th text-end" title="Unpaid contract value on flagged accounts (not counting lock-overdue)">At risk (KES)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var d in Model.Dealers)
+                            {
+                                <tr class="@(d.DealerId.HasValue && d.DealerId == Model.DealerId ? "table-active" : "")">
+                                    <td>
+                                        @if (d.DealerId.HasValue)
+                                        {
+                                            <a href="@Link(Model.Check, d.DealerId == Model.DealerId ? null : d.DealerId, Model.Status)" class="fw-medium">@d.DealerName</a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-soft">@d.DealerName</span>
+                                        }
+                                    </td>
+                                    <td><span class="@LevelBadge(d.Level)">@d.Level</span></td>
+                                    <td class="text-end">@d.Contracts.ToString("N0")</td>
+                                    <td class="text-end">@d.DepositOnly.ToString("N0")</td>
+                                    <td class="text-end @(d.DepositOnlyRate >= 2 * Model.OverallDepositOnlyRate && d.DepositOnly > 0 ? "text-danger fw-bold" : "")">@d.DepositOnlyRate.ToString("P0")</td>
+                                    <td class="text-end">@d.LockOverdue.ToString("N0")</td>
+                                    <td class="text-end">@d.OtherFlags.ToString("N0")</td>
+                                    <td class="text-end">@d.Confirmed.ToString("N0")</td>
+                                    <td class="text-end">@d.AmountAtRisk.ToString("N0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Flags. *@
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md d-flex flex-wrap justify-content-between align-items-center" style="gap:12px;">
+                <div>
+                    <h6 class="title mb-1">
+                        @(FraudRules.GetCheck(Model.Check)?.Title ?? "All checks")
+                        @if (selectedDealer != null)
+                        {
+                            <span class="text-soft">&middot; @selectedDealer.DealerName</span>
+                        }
+                        <span class="text-soft">(@Model.Flags.Count.ToString("N0"))</span>
+                    </h6>
+                    @if (Model.Check != null || Model.DealerId != null)
+                    {
+                        <a href="@Link(null, null, Model.Status)" class="small">Show all checks and dealers</a>
+                    }
+                </div>
+                <ul class="nav nav-tabs nav-tabs-s2" style="border:0;">
+                    @foreach (var (key, label) in statusTabs)
+                    {
+                        <li class="nav-item"><a class="nav-link @(Model.Status == key ? "active" : "")" href="@Link(Model.Check, Model.DealerId, key)">@label</a></li>
+                    }
+                </ul>
+            </div>
+            <div class="card-inner p-0 border-top">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="wl-th">Check</th>
+                                <th class="wl-th">Flagged</th>
+                                <th class="wl-th">Account / orders</th>
+                                <th class="wl-th">Customer</th>
+                                <th class="wl-th">Dealer</th>
+                                <th class="wl-th" style="min-width:320px;">What was found</th>
+                                <th class="wl-th text-end">At risk</th>
+                                <th class="wl-th" style="min-width:260px;">Review</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Flags.Count == 0)
+                            {
+                                <tr><td colspan="8" class="text-center text-soft py-4">Nothing flagged here.</td></tr>
+                            }
+                            @foreach (var f in Model.Flags)
+                            {
+                                var info = FraudRules.GetCheck(f.CheckCode);
+                                <tr>
+                                    <td style="white-space:nowrap;">
+                                        <span class="fw-medium">@info?.Title</span>
+                                        @if (f.FlaggedOn >= DateTime.Today.AddDays(-FraudRules.NewFlagDays))
+                                        {
+                                            <span class="badge bg-danger ms-1">New</span>
+                                        }
+                                    </td>
+                                    <td style="white-space:nowrap;">@f.FlaggedOn.ToString("dd/MM/yyyy")</td>
+                                    <td style="white-space:nowrap;">
+                                        @if (f.AccountNo.HasValue)
+                                        {
+                                            <div><a href="/account-details/@f.AccountNo" class="fw-medium">@f.AccountNo</a></div>
+                                        }
+                                        @foreach (var orderId in f.OrderIds.Take(6))
+                                        {
+                                            <div class="small"><a href="/order-details/@orderId">Order @orderId</a></div>
+                                        }
+                                        @if (f.OrderIds.Count > 6)
+                                        {
+                                            <div class="small text-soft">+@(f.OrderIds.Count - 6) more</div>
+                                        }
+                                    </td>
+                                    <td>@f.CustomerName</td>
+                                    <td>@f.DealerName</td>
+                                    <td class="small">@f.Evidence</td>
+                                    <td class="text-end" style="white-space:nowrap;">@(f.AmountAtRisk > 0 ? f.AmountAtRisk.ToString("N0") : "")</td>
+                                    <td>
+                                        <div class="mb-1">
+                                            <span class="@ReviewBadge(f.ReviewStatus)">@f.ReviewStatus</span>
+                                            @if (f.Review?.ReviewedAtUtc != null)
+                                            {
+                                                <span class="small text-soft">@f.Review.ReviewedByName, @f.Review.ReviewedAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(f.Review?.Notes))
+                                        {
+                                            <div class="small mb-1">@f.Review!.Notes</div>
+                                        }
+                                        <form action="/fraud/review" method="post" class="d-flex flex-wrap" style="gap:4px;">
+                                            <input type="hidden" name="checkCode" value="@f.CheckCode" />
+                                            <input type="hidden" name="subjectKey" value="@f.SubjectKey" />
+                                            <input type="hidden" name="check" value="@Model.Check" />
+                                            <input type="hidden" name="dealerId" value="@Model.DealerId" />
+                                            <input type="hidden" name="listStatus" value="@Model.Status" />
+                                            <select name="status" class="form-select form-select-sm" style="width:auto;">
+                                                @foreach (var s in FraudReviewStatus.Settable.Prepend(FraudReviewStatus.Open))
+                                                {
+                                                    <option value="@s" selected="@(s == f.ReviewStatus)">@s</option>
+                                                }
+                                            </select>
+                                            <input type="text" name="notes" value="@f.Review?.Notes" maxlength="1000" class="form-control form-control-sm" style="width:150px;" placeholder="Note" />
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

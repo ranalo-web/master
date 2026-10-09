@@ -119,7 +119,10 @@ namespace Ranalo.SumsungKnox
 
         private string GetFullPath(string relativePath)
         {
-            return Path.Combine(AppContext.BaseDirectory, relativePath);
+            // The setting is written with Windows separators (Azure); make it
+            // work on a Mac too.
+            return Path.Combine(AppContext.BaseDirectory,
+                relativePath.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar));
         }
     }
 }
