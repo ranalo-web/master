@@ -77,7 +77,8 @@ namespace Ranalo.Controllers
                 return View(customerDetails);
             }
             //Get customer Notes
-            var customerId = customerDetails.OrderID == 0 ? long.Parse(customerDetails.Payments.FirstOrDefault().AccountNo) : customerDetails.OrderID;
+            // No order: notes are kept against the account number (the route id).
+            var customerId = customerDetails.OrderID == 0 ? orderId : customerDetails.OrderID;
             var notes = await _applicationReportService.GetNotesByOrderIdAsync(customerId);
 
             if (notes != null)
