@@ -106,6 +106,8 @@ builder.Services.AddScoped<ICostBackfillRepository, CostBackfillRepository>();
 builder.Services.AddScoped<IWriteOffRepository, WriteOffRepository>();
 builder.Services.AddScoped<IFraudService, FraudService>();
 builder.Services.AddScoped<IFraudRepository, FraudRepository>();
+builder.Services.AddScoped<IRecoveryService, RecoveryService>();
+builder.Services.AddScoped<ILockRecoveryRepository, LockRecoveryRepository>();
 builder.Services.AddScoped<ICommissionPayoutService, CommissionPayoutService>();
 builder.Services.AddScoped<ICommissionPayoutRepository, CommissionPayoutRepository>();
 builder.Services.AddScoped<IDealerAllocationRepository, DealerAllocationRepository>();
