@@ -35,6 +35,7 @@ namespace Ranalo.Models
         public string? CustomerName { get; set; }
         public int? DealerId { get; set; }
         public string? DealerName { get; set; }
+        public long? AgentUserId { get; set; }      // Contract_Info.AssignedAgentId
         public DateTime StartDate { get; set; }
         public decimal Deposit { get; set; }
         public decimal ContractValue { get; set; }
@@ -60,9 +61,12 @@ namespace Ranalo.Models
         public string? Imei { get; set; }
         public string? MpesaDepositRef { get; set; }
         public string? DealerRef { get; set; }
-        public long? AccountNo { get; set; }        // the order's contract account, if it has one
+        // The order's contract account, else the enrolled account its
+        // deposit was paid to -- how dealers see their orders elsewhere.
+        public long? AccountNo { get; set; }
         public int? DealerId { get; set; }          // the dealer of that account's device
         public string? DealerName { get; set; }
+        public long? AgentUserId { get; set; }      // the account's assigned agent
     }
 
     public class FraudNextOfKinRow
@@ -135,6 +139,29 @@ namespace Ranalo.Models
         public int NewThisWeek { get; set; }
         public int Confirmed { get; set; }
         public decimal AmountAtRisk { get; set; }
+    }
+
+    // What a dealer or agent sees: never which check fired or why.
+    public static class VerificationStatus
+    {
+        public const string UnderVerification = "Under verification";
+        public const string Failed = "Failed – suspected fraud";
+    }
+
+    public class VerificationItem
+    {
+        public long? AccountNo { get; set; }
+        public long? OrderId { get; set; }
+        public string? CustomerName { get; set; }
+        public int? DealerId { get; set; }
+        public long? AgentUserId { get; set; }
+        public DateTime Since { get; set; }
+        public string Status { get; set; } = VerificationStatus.UnderVerification;
+    }
+
+    public class VerificationViewModel
+    {
+        public List<VerificationItem> Items { get; set; } = new();
     }
 
     public class FraudViewModel

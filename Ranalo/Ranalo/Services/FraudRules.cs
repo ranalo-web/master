@@ -357,6 +357,62 @@ namespace Ranalo.Services
                 .ToList();
         }
 
+        // --- Dealer / agent view ---------------------------------------------
+        //
+        // Dealers and agents see an account or order as "Under verification"
+        // as soon as any check fires on it, and "Failed – suspected fraud"
+        // once an admin confirms. Never which check, nor the evidence.
+        // Cleared flags and lock-overdue (our own lock problem, not the
+        // dealer's doing) never show.
+        public static List<VerificationItem> VerificationItems(
+            IEnumerable<FraudFlag> flags, IEnumerable<FraudContractRow> contracts, IEnumerable<FraudOrderRow> orders)
+        {
+            var contractsByAccount = contracts.GroupBy(c => c.AccountNo).ToDictionary(g => g.Key, g => g.First());
+            var ordersById = orders.GroupBy(o => o.OrderId).ToDictionary(g => g.Key, g => g.First());
+            var items = new Dictionary<string, VerificationItem>();
+
+            void Add(long? accountNo, long? orderId, string? customer, int? dealerId, long? agentUserId, DateTime since, bool confirmed)
+            {
+                var key = accountNo.HasValue ? "a:" + accountNo : "o:" + orderId;
+                if (!items.TryGetValue(key, out var item))
+                {
+                    item = new VerificationItem
+                    {
+                        AccountNo = accountNo, OrderId = orderId, CustomerName = customer,
+                        DealerId = dealerId, AgentUserId = agentUserId, Since = since,
+                    };
+                    items[key] = item;
+                }
+                item.OrderId ??= orderId;
+                item.DealerId ??= dealerId;
+                item.AgentUserId ??= agentUserId;
+                if (since < item.Since) item.Since = since;
+                if (confirmed) item.Status = VerificationStatus.Failed;
+            }
+
+            foreach (var f in flags)
+            {
+                if (f.CheckCode == FraudCheckCodes.LockOverdue || f.ReviewStatus == FraudReviewStatus.Cleared) continue;
+                var confirmed = f.ReviewStatus == FraudReviewStatus.Confirmed;
+
+                if (IsAccountCheck(f.CheckCode) && f.AccountNo.HasValue)
+                {
+                    var c = contractsByAccount.GetValueOrDefault(f.AccountNo.Value);
+                    Add(f.AccountNo, null, f.CustomerName, f.DealerId, c?.AgentUserId, f.FlaggedOn, confirmed);
+                    continue;
+                }
+
+                // Order checks: each order on its own, with its own dealer.
+                foreach (var orderId in f.OrderIds)
+                {
+                    if (!ordersById.TryGetValue(orderId, out var o)) continue;
+                    Add(o.AccountNo, o.OrderId, o.CustomerName, o.DealerId, o.AgentUserId, f.FlaggedOn, confirmed);
+                }
+            }
+
+            return items.Values.OrderByDescending(i => i.Status == VerificationStatus.Failed).ThenByDescending(i => i.Since).ToList();
+        }
+
         public static bool IsAccountCheck(string code) =>
             code is FraudCheckCodes.DepositOnly or FraudCheckCodes.NoDevice or FraudCheckCodes.LockOverdue;
 

@@ -1,0 +1,84 @@
+@using Ranalo.Models
+@model VerificationViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var failed = Model.Items.Count(i => i.Status == VerificationStatus.Failed);
+    var pending = Model.Items.Count - failed;
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-head-content">
+            <h3 class="nk-block-title page-title">Verification</h3>
+            <div class="nk-block-des text-soft">
+                <p>Accounts and orders that Ranalo is checking before they go ahead. Our team will contact you if anything is needed. Please don't hand over phones on orders under verification until they are cleared.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-6 col-md-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="text-soft small">@VerificationStatus.UnderVerification</div>
+                        <div class="fs-4 fw-bold">@pending.ToString("N0")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="text-soft small">@VerificationStatus.Failed</div>
+                        <div class="fs-4 fw-bold @(failed > 0 ? "text-danger" : "")">@failed.ToString("N0")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;">
+                        <thead>
+                            <tr>
+                                <th class="wl-th">Account</th>
+                                <th class="wl-th">Order</th>
+                                <th class="wl-th">Customer</th>
+                                <th class="wl-th">Since</th>
+                                <th class="wl-th">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Items.Count == 0)
+                            {
+                                <tr><td colspan="5" class="text-center text-soft py-4">Nothing under verification.</td></tr>
+                            }
+                            @foreach (var i in Model.Items)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (i.AccountNo.HasValue)
+                                        {
+                                            <a href="/account-details/@i.AccountNo" class="fw-medium">@i.AccountNo</a>
+                                        }
+                                    </td>
+                                    <td>@i.OrderId</td>
+                                    <td>@i.CustomerName</td>
+                                    <td>@i.Since.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <span class="badge @(i.Status == VerificationStatus.Failed ? "bg-danger" : "bg-warning text-dark")">@i.Status</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

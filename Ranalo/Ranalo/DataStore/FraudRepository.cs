@@ -45,6 +45,7 @@ namespace Ranalo.DataStore
                     ci.First_Name AS CustomerName,
                     dl.DealerId,
                     dl.CompanyName AS DealerName,
+                    ci.AssignedAgentId AS AgentUserId,
                     ci.StartDate,
                     ISNULL(ci.Deposit, 0) AS Deposit,
                     CAST(ci.Deposit + ci.Daily * 30 * ci.Term_in_Months
@@ -99,13 +100,28 @@ namespace Ranalo.DataStore
                     o.IMEI AS Imei,
                     o.MpesaDepositRef,
                     o.DealerRef,
-                    ci.ID AS AccountNo,
+                    acct.AccountNo,
                     dl.DealerId,
-                    dl.CompanyName AS DealerName
+                    dl.CompanyName AS DealerName,
+                    oc.AssignedAgentId AS AgentUserId
                 FROM Latest o
                 LEFT JOIN Contract_Info ci ON ci.ContractID = o.ContractId
-                LEFT JOIN Devices d ON d.Id = ci.ID
+                -- No contract yet: the enrolled account the deposit was paid to.
+                OUTER APPLY (
+                    SELECT TOP 1 COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo
+                    FROM KosePayments kp
+                    LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
+                    INNER JOIN Devices kd ON kd.Id = COALESCE(op.AccountNoBigint, kp.AccountNoBigint)
+                    WHERE ci.ID IS NULL AND LEN(o.MpesaDepositRef) >= 8 AND kp.MpesaCode = o.MpesaDepositRef
+                ) dep
+                CROSS APPLY (SELECT COALESCE(ci.ID, dep.AccountNo) AS AccountNo) acct
+                LEFT JOIN Devices d ON d.Id = acct.AccountNo
                 LEFT JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                OUTER APPLY (
+                    SELECT TOP 1 x.AssignedAgentId FROM Contract_Info x
+                    WHERE x.ID = acct.AccountNo AND x.EndDate IS NULL
+                    ORDER BY x.ContractID DESC
+                ) oc
                 WHERE o.rn = 1
                   AND ISNULL(o.Status, '') NOT IN ('cancelled', 'failed', 'checkout-draft', 'rejected', 'trash', 'refunded')";
 

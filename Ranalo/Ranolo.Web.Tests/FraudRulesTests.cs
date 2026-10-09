@@ -217,5 +217,45 @@ namespace Ranolo.Web.Tests
             Assert.That(summary.Open, Is.EqualTo(1));
             Assert.That(summary.Confirmed, Is.EqualTo(1));
         }
+            [Test]
+        public void DealersAndAgentsSeeANeutralStatusAndNeverLockOverdue()
+        {
+            var depositOnly = Contract(1, paid: 3_000m, dealerId: 13);
+            depositOnly.AgentUserId = 42;
+            var overdue = Contract(2, paid: 9_000m, dealerId: 13);
+            overdue.Locked = false; overdue.NextLockDate = "28/05/2026"; overdue.Shortfall = 1_000m;
+            var orders = new[]
+            {
+                Order(18804, "50522869", imei: "357095838643699"),
+                Order(18805, "29399689", imei: "357095838643699", account: 7000001),
+            };
+            orders[1].DealerId = 14;
+
+            var flags = Run(new[] { depositOnly, overdue }, orders);
+            Assert.That(flags.Any(f => f.CheckCode == FraudCheckCodes.LockOverdue), Is.True);
+
+            var items = FraudRules.VerificationItems(flags, new[] { depositOnly, overdue }, orders);
+            Assert.That(items.Select(i => (i.AccountNo, i.OrderId)), Is.EquivalentTo(new (long?, long?)[]
+            {
+                (1, null), (null, 18804), (7000001, 18805),
+            }));
+            Assert.That(items.All(i => i.Status == VerificationStatus.UnderVerification), Is.True);
+            Assert.That(items.Single(i => i.AccountNo == 1).AgentUserId, Is.EqualTo(42));
+            Assert.That(items.Single(i => i.OrderId == 18805).DealerId, Is.EqualTo(14));
+        }
+
+        [Test]
+        public void ConfirmedShowsAsFailedAndClearedDisappears()
+        {
+            var a = Contract(1, paid: 3_000m);
+            var b = Contract(2, paid: 3_000m);
+            var flags = Run(new[] { a, b });
+            flags.Single(f => f.AccountNo == 1).Review = new FraudReview { Status = FraudReviewStatus.Confirmed };
+            flags.Single(f => f.AccountNo == 2).Review = new FraudReview { Status = FraudReviewStatus.Cleared };
+
+            var items = FraudRules.VerificationItems(flags, new[] { a, b }, Array.Empty<FraudOrderRow>());
+            Assert.That(items.Single().AccountNo, Is.EqualTo(1));
+            Assert.That(items.Single().Status, Is.EqualTo(VerificationStatus.Failed));
+        }
     }
 }

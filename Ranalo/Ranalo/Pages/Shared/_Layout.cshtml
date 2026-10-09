@@ -335,6 +335,15 @@
                                                 <span class="nk-menu-text">Watchlist</span>
                                             </a>
                                         </li>
+                                        @if (isDealer || isAgent)
+                                        {
+                                            <li class="nk-menu-item">
+                                                <a href="/verification" class="nk-menu-link">
+                                                    <span class="nk-menu-icon"><em class="icon ni ni-shield-check"></em></span>
+                                                    <span class="nk-menu-text">Verification</span>
+                                                </a>
+                                            </li>
+                                        }
                                     }
 
                                     <li class="nk-menu-heading"><h6 class="overline-title text-primary-alt">Collections</h6></li>
