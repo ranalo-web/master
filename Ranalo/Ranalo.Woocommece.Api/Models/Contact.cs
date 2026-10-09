@@ -8,6 +8,8 @@
         public string Email { get; set; }
         public string Phone { get; set; }
         public string Address { get; set; }
+        // Next of kin's national ID (form field billing_next_of_kin_id_number[_2]).
+        public string? IdNumber { get; set; }
     }
 
 

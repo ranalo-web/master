@@ -103,9 +103,12 @@ namespace Ranalo.Woocommece.Api.Services
                         await _wooOrderProductRepository.InsertNextOfKinAsync(order.NextOfKin);
                     }
 
-                    if (order.NextOfKin2 != null)
+                    // Its own insert: the first next of kin's one skips an
+                    // order that already has a next of kin, so the second
+                    // was never saved.
+                    if (order.NextOfKin2 != null && !string.IsNullOrWhiteSpace(order.NextOfKin2.Name))
                     {
-                        await _wooOrderProductRepository.InsertNextOfKinAsync(order.NextOfKin2);
+                        await _wooOrderProductRepository.InsertNextOfKin2Async(order.NextOfKin2);
                     }
 
                     if (order.MetaData != null)
@@ -927,7 +930,8 @@ namespace Ranalo.Woocommece.Api.Services
                 Name = lookup.GetValueOrDefault("billing_next_of_kin", string.Empty),
                 Phone = lookup.GetValueOrDefault("billing_next_of_kin_contacts", string.Empty),
                 Email = lookup.GetValueOrDefault("billing_email_of_your_next_of_kin", string.Empty),
-                Address = lookup.GetValueOrDefault("billing_next_of_kin_address", string.Empty)
+                Address = lookup.GetValueOrDefault("billing_next_of_kin_address", string.Empty),
+                IdNumber = lookup.GetValueOrDefault("billing_next_of_kin_id_number", string.Empty)
             };
         }
 
@@ -951,7 +955,8 @@ namespace Ranalo.Woocommece.Api.Services
                 Name = lookup.GetValueOrDefault("billing_next_of_kin_2", string.Empty),
                 Phone = lookup.GetValueOrDefault("billing_next_of_kin_contacts_2", string.Empty),
                 Email = lookup.GetValueOrDefault("billing_email_of_your_next_of_kin_2", string.Empty),
-                Address = lookup.GetValueOrDefault("billing_next_of_kin_address_2", string.Empty)
+                Address = lookup.GetValueOrDefault("billing_next_of_kin_address_2", string.Empty),
+                IdNumber = lookup.GetValueOrDefault("billing_next_of_kin_id_number_2", string.Empty)
             };
         }
 

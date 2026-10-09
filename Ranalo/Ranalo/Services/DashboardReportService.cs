@@ -710,8 +710,10 @@ namespace Ranalo.Services
                     Phone = r.CustomerPhone,
                 NextOfKinName = r.NextOfKinName,
                 NextOfKinPhone = r.NextOfKinPhone,
+                NextOfKinIdNumber = r.NextOfKinIdNumber,
                 NextOfKin2Name = r.NextOfKin2Name,
                 NextOfKin2Phone = r.NextOfKin2Phone,
+                NextOfKin2IdNumber = r.NextOfKin2IdNumber,
                     DealerName = r.DealerName ?? "",
                     Detail = $"KES {Math.Max(0, -r.ArrearsAmount):N0} overdue, {Math.Round(LockDays(r))} days",
                 }).ToList();
@@ -784,8 +786,10 @@ namespace Ranalo.Services
                 Phone = r.CustomerPhone,
                 NextOfKinName = r.NextOfKinName,
                 NextOfKinPhone = r.NextOfKinPhone,
+                NextOfKinIdNumber = r.NextOfKinIdNumber,
                 NextOfKin2Name = r.NextOfKin2Name,
                 NextOfKin2Phone = r.NextOfKin2Phone,
+                NextOfKin2IdNumber = r.NextOfKin2IdNumber,
                 Detail = $"{Math.Round(LockDays(r))} days overdue",
             }).ToList();
 
@@ -800,8 +804,10 @@ namespace Ranalo.Services
                 Phone = r.CustomerPhone,
                 NextOfKinName = r.NextOfKinName,
                 NextOfKinPhone = r.NextOfKinPhone,
+                NextOfKinIdNumber = r.NextOfKinIdNumber,
                 NextOfKin2Name = r.NextOfKin2Name,
                 NextOfKin2Phone = r.NextOfKin2Phone,
+                NextOfKin2IdNumber = r.NextOfKin2IdNumber,
                 Detail = $"KES {Math.Max(0, -r.ArrearsAmount):N0} due",
             }).ToList();
 
@@ -816,8 +822,10 @@ namespace Ranalo.Services
                 Phone = r.CustomerPhone,
                 NextOfKinName = r.NextOfKinName,
                 NextOfKinPhone = r.NextOfKinPhone,
+                NextOfKinIdNumber = r.NextOfKinIdNumber,
                 NextOfKin2Name = r.NextOfKin2Name,
                 NextOfKin2Phone = r.NextOfKin2Phone,
+                NextOfKin2IdNumber = r.NextOfKin2IdNumber,
                 Detail = $"{PaymentsAhead(r)} payments ahead",
             }).ToList();
 
@@ -1090,8 +1098,10 @@ namespace Ranalo.Services
                 Phone = x.Row.CustomerPhone,
                 NextOfKinName = x.Row.NextOfKinName,
                 NextOfKinPhone = x.Row.NextOfKinPhone,
+                NextOfKinIdNumber = x.Row.NextOfKinIdNumber,
                 NextOfKin2Name = x.Row.NextOfKin2Name,
                 NextOfKin2Phone = x.Row.NextOfKin2Phone,
+                NextOfKin2IdNumber = x.Row.NextOfKin2IdNumber,
             })
             .ToList();
 

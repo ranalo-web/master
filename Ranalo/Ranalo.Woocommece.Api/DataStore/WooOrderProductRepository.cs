@@ -146,14 +146,18 @@ namespace Ranalo.Woocommece.Api.DataStore
                               ,[Name]
                               ,[Phone]
                               ,[Email]
-                              ,[Address])
+                              ,[Address]
+                              ,[IdNumber]
+                              ,[IsPrimary])
                         VALUES
                               (@Id
                               ,@OrderId
                               ,@Name
                               ,@Phone
                               ,@Email
-                              ,@Address);"
+                              ,@Address
+                              ,@IdNumber
+                              ,1);"
                                ;
 
             await _db.ExecuteScalarAsync<int>(sql, new
@@ -163,8 +167,8 @@ namespace Ranalo.Woocommece.Api.DataStore
                 Name = nextOfKin.Name,
                 Phone = nextOfKin.Phone,
                 Email = nextOfKin.Email,
-                Address = nextOfKin.Address
-
+                Address = nextOfKin.Address,
+                IdNumber = string.IsNullOrWhiteSpace(nextOfKin.IdNumber) ? null : nextOfKin.IdNumber.Trim()
             });
         }
 
@@ -194,6 +198,7 @@ namespace Ranalo.Woocommece.Api.DataStore
                               ,[Phone]
                               ,[Email]
                               ,[Address]
+                              ,[IdNumber]
                               ,[IsPrimary])
                         VALUES
                               (@Id
@@ -202,6 +207,7 @@ namespace Ranalo.Woocommece.Api.DataStore
                               ,@Phone
                               ,@Email
                               ,@Address
+                              ,@IdNumber
                               ,0);"
                                ;
 
@@ -212,8 +218,8 @@ namespace Ranalo.Woocommece.Api.DataStore
                 Name = nextOfKin.Name,
                 Phone = nextOfKin.Phone,
                 Email = nextOfKin.Email,
-                Address = nextOfKin.Address
-
+                Address = nextOfKin.Address,
+                IdNumber = string.IsNullOrWhiteSpace(nextOfKin.IdNumber) ? null : nextOfKin.IdNumber.Trim()
             });
         }
 

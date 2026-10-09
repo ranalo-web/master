@@ -255,8 +255,10 @@
         // order (Woo_Orders_NextOfKin). Null when none was captured.
         public string? NextOfKinName { get; set; }
         public string? NextOfKinPhone { get; set; }
+        public string? NextOfKinIdNumber { get; set; }
         public string? NextOfKin2Name { get; set; }
         public string? NextOfKin2Phone { get; set; }
+        public string? NextOfKin2IdNumber { get; set; }
     }
 
     public class DealerWatchlistEntry
@@ -275,8 +277,10 @@
         // order (Woo_Orders_NextOfKin). Null when none was captured.
         public string? NextOfKinName { get; set; }
         public string? NextOfKinPhone { get; set; }
+        public string? NextOfKinIdNumber { get; set; }
         public string? NextOfKin2Name { get; set; }
         public string? NextOfKin2Phone { get; set; }
+        public string? NextOfKin2IdNumber { get; set; }
     }
 
     public class DealerContract

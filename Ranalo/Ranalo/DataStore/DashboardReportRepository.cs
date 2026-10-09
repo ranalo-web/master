@@ -934,8 +934,10 @@ namespace Ranalo.DataStore
             public bool IsManuallyRestructured { get; set; }
             public string? NextOfKinName { get; set; }
             public string? NextOfKinPhone { get; set; }
+            public string? NextOfKinIdNumber { get; set; }
             public string? NextOfKin2Name { get; set; }
             public string? NextOfKin2Phone { get; set; }
+            public string? NextOfKin2IdNumber { get; set; }
         }
 
         public async Task<List<DashboardAccountDetailRow>> GetDealerAccountDetailsAsync(int? dealerId, int? agentUserId = null)
@@ -981,6 +983,8 @@ namespace Ranalo.DataStore
                     nk1.Phone AS NextOfKinPhone,
                     nk2.[Name] AS NextOfKin2Name,
                     nk2.Phone AS NextOfKin2Phone,
+                    nk1.IdNumber AS NextOfKinIdNumber,
+                    nk2.IdNumber AS NextOfKin2IdNumber,
                     ci.BuyingPrice,
                     pt.LastPaymentDate,
                     -- Manual restructures are the only ones stored; auto
@@ -1013,12 +1017,12 @@ namespace Ranalo.DataStore
                 -- Next of kin captured on that same order (primary and second),
                 -- same table and IsPrimary flag as the customer details pages.
                 OUTER APPLY (
-                    SELECT TOP 1 nk.[Name], nk.Phone
+                    SELECT TOP 1 nk.[Name], nk.Phone, nk.IdNumber
                     FROM Woo_Orders_NextOfKin nk
                     WHERE nk.OrderId = ph.OrderID AND nk.IsPrimary = 1
                 ) nk1
                 OUTER APPLY (
-                    SELECT TOP 1 nk.[Name], nk.Phone
+                    SELECT TOP 1 nk.[Name], nk.Phone, nk.IdNumber
                     FROM Woo_Orders_NextOfKin nk
                     WHERE nk.OrderId = ph.OrderID AND nk.IsPrimary = 0
                 ) nk2
@@ -1050,8 +1054,10 @@ namespace Ranalo.DataStore
                     IsManuallyRestructured = row.IsManuallyRestructured,
                     NextOfKinName = row.NextOfKinName,
                     NextOfKinPhone = row.NextOfKinPhone,
+                    NextOfKinIdNumber = row.NextOfKinIdNumber,
                     NextOfKin2Name = row.NextOfKin2Name,
                     NextOfKin2Phone = row.NextOfKin2Phone,
+                    NextOfKin2IdNumber = row.NextOfKin2IdNumber,
                 }).ToList();
             }
             catch (SqlException ex)
