@@ -112,7 +112,10 @@ namespace Ranalo.Controllers
                 OrderId = orderId
             };
 
-            await _syncService.CreateContractSingle(contractToUpdate);
+            if (!await _syncService.CreateContractSingle(contractToUpdate))
+            {
+                TempData["ContractError"] = $"No contract created: there is no device on account {deviceId}. Enrol the device first, or use the device's account number.";
+            }
 
             return RedirectToAction("Index", "Contract");
         }

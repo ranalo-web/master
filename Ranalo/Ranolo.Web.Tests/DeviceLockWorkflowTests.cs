@@ -947,6 +947,71 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
+        public async Task ReleaseRejected_RemovesFromProvider_KeepsNote()
+        {
+            var task = await QueuedAsync(3);
+            await _service.RejectAsync(task.Id, Admin, "keep for now");
+
+            var result = await _service.ReleaseRejectedAsync(task.Id, Admin);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(task.Status, Is.EqualTo("Completed"));
+            Assert.That(task.DecisionNote, Is.EqualTo("keep for now"));
+            Assert.That(_payTrigger.RemoveCalls, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public async Task ReleaseRejected_NonAdmin_Refused()
+        {
+            var task = await QueuedAsync(3);
+            await _service.RejectAsync(task.Id, Admin, null);
+
+            var result = await _service.ReleaseRejectedAsync(task.Id, Approver);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(task.Status, Is.EqualTo("Rejected"));
+            Assert.That(_payTrigger.RemoveCalls, Is.Empty);
+        }
+
+        [Test]
+        public async Task ReleaseRejected_NotRejected_Refused()
+        {
+            var task = await QueuedAsync(3);
+
+            var result = await _service.ReleaseRejectedAsync(task.Id, Admin);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(task.Status, Is.EqualTo("Pending"));
+            Assert.That(_payTrigger.RemoveCalls, Is.Empty);
+        }
+
+        [Test]
+        public async Task ReleaseRejected_AccountQueuedAgain_Refused()
+        {
+            var task = await QueuedAsync(3);
+            await _service.RejectAsync(task.Id, Admin, null);
+            await _service.QueueAsync(new[] { new DeviceRemovalTask { AccountId = task.AccountId, Imei = task.Imei, LockGroup = 3 } });
+
+            var result = await _service.ReleaseRejectedAsync(task.Id, Admin);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(task.Status, Is.EqualTo("Rejected"));
+            Assert.That(_payTrigger.RemoveCalls, Is.Empty);
+        }
+
+        [Test]
+        public async Task ReleaseRejected_ProviderFails_LeftFailedToRetry()
+        {
+            var task = await QueuedAsync(3, imei: null);
+            await _service.RejectAsync(task.Id, Admin, null);
+
+            var result = await _service.ReleaseRejectedAsync(task.Id, Admin);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(task.Status, Is.EqualTo("Failed"));
+        }
+
+        [Test]
         public async Task QueueExistingFullyPaid_QueuesWhatTheScanFinds()
         {
             _tasks.FullyPaidWithoutTask.Add(new DeviceRemovalTask { AccountId = 1, Imei = "1", LockGroup = 2 });

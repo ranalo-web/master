@@ -71,6 +71,7 @@
                                         {
                                             <a href="tel:@e.NextOfKinPhone">@e.NextOfKinPhone</a>
                                             <span class="d-block sub-text">@e.NextOfKinName</span>
+                                            @if (!string.IsNullOrWhiteSpace(e.NextOfKinIdNumber)) { <span class="d-block sub-text">ID: @e.NextOfKinIdNumber</span> }
                                         }
                                     </td>
                                     <td>
@@ -82,6 +83,7 @@
                                         {
                                             <a href="tel:@e.NextOfKin2Phone">@e.NextOfKin2Phone</a>
                                             <span class="d-block sub-text">@e.NextOfKin2Name</span>
+                                            @if (!string.IsNullOrWhiteSpace(e.NextOfKin2IdNumber)) { <span class="d-block sub-text">ID: @e.NextOfKin2IdNumber</span> }
                                         }
                                     </td>
                                     <td><span class="text-success">@e.Detail</span></td>

@@ -105,7 +105,10 @@ window.Ranalo.sortTable = function (th) {
 
     function cellText(row) {
         var cell = row.children[colIndex];
-        return cell ? cell.textContent.trim() : '';
+        if (!cell) return '';
+        // A cell can give its own sort key, e.g. yyyyMMdd for a formatted date.
+        var key = cell.getAttribute('data-sort');
+        return key !== null ? key : cell.textContent.trim();
     }
     function numericValue(text) {
         var cleaned = text.replace(/[^0-9.\-]/g, '');

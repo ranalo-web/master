@@ -705,6 +705,7 @@
                                             {
                                                 <a href="tel:@e.NextOfKinPhone">@e.NextOfKinPhone</a>
                                                 <span class="d-block sub-text">@e.NextOfKinName</span>
+                                                @if (!string.IsNullOrWhiteSpace(e.NextOfKinIdNumber)) { <span class="d-block sub-text">ID: @e.NextOfKinIdNumber</span> }
                                             }
                                         </td>
                                         <td>
@@ -716,6 +717,7 @@
                                             {
                                                 <a href="tel:@e.NextOfKin2Phone">@e.NextOfKin2Phone</a>
                                                 <span class="d-block sub-text">@e.NextOfKin2Name</span>
+                                                @if (!string.IsNullOrWhiteSpace(e.NextOfKin2IdNumber)) { <span class="d-block sub-text">ID: @e.NextOfKin2IdNumber</span> }
                                             }
                                         </td>
                                         <td><span class="text-danger">@e.Detail</span></td>
@@ -817,6 +819,7 @@
                                             {
                                                 <a href="tel:@e.NextOfKinPhone">@e.NextOfKinPhone</a>
                                                 <span class="d-block sub-text">@e.NextOfKinName</span>
+                                                @if (!string.IsNullOrWhiteSpace(e.NextOfKinIdNumber)) { <span class="d-block sub-text">ID: @e.NextOfKinIdNumber</span> }
                                             }
                                         </td>
                                         <td>
@@ -828,6 +831,7 @@
                                             {
                                                 <a href="tel:@e.NextOfKin2Phone">@e.NextOfKin2Phone</a>
                                                 <span class="d-block sub-text">@e.NextOfKin2Name</span>
+                                                @if (!string.IsNullOrWhiteSpace(e.NextOfKin2IdNumber)) { <span class="d-block sub-text">ID: @e.NextOfKin2IdNumber</span> }
                                             }
                                         </td>
                                         <td><span class="text-warning">@e.Detail</span></td>
@@ -929,6 +933,7 @@
                                             {
                                                 <a href="tel:@e.NextOfKinPhone">@e.NextOfKinPhone</a>
                                                 <span class="d-block sub-text">@e.NextOfKinName</span>
+                                                @if (!string.IsNullOrWhiteSpace(e.NextOfKinIdNumber)) { <span class="d-block sub-text">ID: @e.NextOfKinIdNumber</span> }
                                             }
                                         </td>
                                         <td>
@@ -940,6 +945,7 @@
                                             {
                                                 <a href="tel:@e.NextOfKin2Phone">@e.NextOfKin2Phone</a>
                                                 <span class="d-block sub-text">@e.NextOfKin2Name</span>
+                                                @if (!string.IsNullOrWhiteSpace(e.NextOfKin2IdNumber)) { <span class="d-block sub-text">ID: @e.NextOfKin2IdNumber</span> }
                                             }
                                         </td>
                                         <td><span class="text-success">@e.Detail</span></td>
@@ -1098,6 +1104,7 @@
                                             {
                                                 <a href="tel:@c.NextOfKinPhone">@c.NextOfKinPhone</a>
                                                 <span class="d-block sub-text">@c.NextOfKinName</span>
+                                                @if (!string.IsNullOrWhiteSpace(c.NextOfKinIdNumber)) { <span class="d-block sub-text">ID: @c.NextOfKinIdNumber</span> }
                                             }
                                         </td>
                                         <td>
@@ -1109,6 +1116,7 @@
                                             {
                                                 <a href="tel:@c.NextOfKin2Phone">@c.NextOfKin2Phone</a>
                                                 <span class="d-block sub-text">@c.NextOfKin2Name</span>
+                                                @if (!string.IsNullOrWhiteSpace(c.NextOfKin2IdNumber)) { <span class="d-block sub-text">ID: @c.NextOfKin2IdNumber</span> }
                                             }
                                         </td>
                                         <td><span class="@(c.DaysPastLock > 90 ? "text-danger fw-bold" : "text-danger")">@c.DaysPastLock</span></td>

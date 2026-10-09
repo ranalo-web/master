@@ -111,7 +111,7 @@
                                         }
                                         @if (c.Contact?.NextOfKinName is { Length: > 0 } kin)
                                         {
-                                            <span class="d-block small">Next of kin: @kin@if (c.Contact.NextOfKinPhone is { Length: > 0 } kinPhone) { <text> · </text><a href="tel:@kinPhone">@kinPhone</a> }</span>
+                                            <span class="d-block small">Next of kin: @kin@if (c.Contact.NextOfKinPhone is { Length: > 0 } kinPhone) { <text> · </text><a href="tel:@kinPhone">@kinPhone</a> }@if (c.Contact.NextOfKinIdNumber is { Length: > 0 } kinId) { <text> · ID @kinId</text> }</span>
                                         }
                                         else
                                         {

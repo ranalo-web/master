@@ -225,6 +225,15 @@ namespace Ranolo.Web.Tests
             return Task.FromResult(true);
         }
 
+        public Task<bool> ReopenRejectedAsync(int id)
+        {
+            var t = Items.FirstOrDefault(x => x.Id == id);
+            if (t == null || t.Status != "Rejected") return Task.FromResult(false);
+            if (Items.Any(o => o.AccountId == t.AccountId && o.Id != t.Id && Live.Contains(o.Status))) return Task.FromResult(false);
+            t.Status = "Pending";
+            return Task.FromResult(true);
+        }
+
         public Task<List<DeviceRemovalTask>> FindFullyPaidWithoutTaskAsync() => Task.FromResult(FullyPaidWithoutTask.ToList());
     }
 

@@ -18,6 +18,9 @@ namespace Ranalo.Models
         // re-implementing DeviceLockRules.
         public Func<Enrolment, Ranalo.Services.DeviceLock.ApprovalDecision>? CanApprove { get; set; }
         public bool IsAdmin { get; set; }
+
+        // Devices.LockGroup per enrolment account; missing = no device yet.
+        public Dictionary<long, int?> LockGroups { get; set; } = new();
         public IEnumerable<Ranalo.DataStore.Dealer>? Dealers { get; set; }
     }
 

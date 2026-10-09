@@ -347,7 +347,8 @@ namespace Ranalo.DataStore
             const string sql = @"
                 SELECT a.AccountNo, o.OrderID, o.Phone AS CustomerPhone,
                        nk1.[Name] AS NextOfKinName, nk1.Phone AS NextOfKinPhone,
-                       nk2.[Name] AS NextOfKin2Name, nk2.Phone AS NextOfKin2Phone
+                       nk2.[Name] AS NextOfKin2Name, nk2.Phone AS NextOfKin2Phone,
+                       nk1.IdNumber AS NextOfKinIdNumber, nk2.IdNumber AS NextOfKin2IdNumber
                 FROM (SELECT CAST(value AS BIGINT) AS AccountNo FROM STRING_SPLIT(@Ids, ',')) a
                 CROSS APPLY (
                     SELECT TOP 1 wo.OrderID, wo.Phone
@@ -356,8 +357,8 @@ namespace Ranalo.DataStore
                     WHERE kp.AccountNoBigint = a.AccountNo
                     ORDER BY wo.DateCreated DESC
                 ) o
-                OUTER APPLY (SELECT TOP 1 k.[Name], k.Phone FROM Woo_Orders_NextOfKin k WHERE k.OrderId = o.OrderID AND k.IsPrimary = 1) nk1
-                OUTER APPLY (SELECT TOP 1 k.[Name], k.Phone FROM Woo_Orders_NextOfKin k WHERE k.OrderId = o.OrderID AND k.IsPrimary = 0) nk2";
+                OUTER APPLY (SELECT TOP 1 k.[Name], k.Phone, k.IdNumber FROM Woo_Orders_NextOfKin k WHERE k.OrderId = o.OrderID AND k.IsPrimary = 1) nk1
+                OUTER APPLY (SELECT TOP 1 k.[Name], k.Phone, k.IdNumber FROM Woo_Orders_NextOfKin k WHERE k.OrderId = o.OrderID AND k.IsPrimary = 0) nk2";
 
             var result = new Dictionary<long, AccountContact>();
             foreach (var chunk in accountNos.Distinct().Chunk(500))

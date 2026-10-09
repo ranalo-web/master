@@ -53,7 +53,7 @@
                                 @foreach (var account in Model.SearchResults)
                                 {
                                     <tr>
-                                        <td><span class="fw-medium">@account.AccountNo</span></td>
+                                        <td><a href="/account-details/@account.AccountNo" class="fw-medium">@account.AccountNo</a></td>
                                         <td>@account.CustomerName</td>
                                         <td>@account.Make @account.Model</td>
                                         <td class="text-end">
@@ -106,7 +106,7 @@
                         @foreach (var entry in Model.Watchlist)
                         {
                             <tr>
-                                <td><span class="fw-medium">@entry.AccountId</span></td>
+                                <td><a href="/account-details/@entry.AccountId" class="fw-medium">@entry.AccountId</a></td>
                                 <td>@entry.CustomerName</td>
                                 <td>@(entry.DealerName ?? "No dealer")</td>
                                 <td>@(entry.AgentName ?? "-")</td>

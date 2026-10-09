@@ -21,5 +21,9 @@ namespace Ranalo.DataStore
 
         Task<DevicesWithDealerViewModel> GetDevicesWithNoPayments(int? dealerId, int page, int pageSize, string searchTerm, int? agentUserId = null);
         Task<DevicesWithDealerViewModel> GetAllDevicesByUserAccountIdAsync(int userId, int page, int pageSize, string searchTerm);
+
+        // Devices.LockGroup (1 Nuovo, 2 Knox, 3 Transsion/PayTrigger) by
+        // account. Accounts with no device row are left out.
+        Task<Dictionary<long, int?>> GetLockGroupsAsync(IEnumerable<long> accountIds);
     }
 }

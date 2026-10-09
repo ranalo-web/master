@@ -38,7 +38,21 @@ namespace Ranalo.Models
             ? BuyingPrice.Value + CommissionsPaid + RepossessionCost - TotalPaid - ResaleValue
             : null;
 
-        public string ReasonLabel => Reason == "Repossessed" ? "Repossessed" : "360 days no payment";
+        // Fraud is recorded by an admin (e.g. a dealer's ghost customer);
+        // it is never reinstated by a payment.
+        public string ReasonLabel => Reason switch
+        {
+            "Repossessed" => "Repossessed",
+            "Fraud" => "Fraud",
+            _ => "360 days no payment"
+        };
+
+        public string ReasonBadge => Reason switch
+        {
+            "Repossessed" => "bg-info",
+            "Fraud" => "bg-danger",
+            _ => "bg-warning"
+        };
 
         public string DisplayStatus => ReinstatedDate.HasValue ? "Reinstated" : Status;
     }

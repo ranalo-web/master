@@ -425,6 +425,19 @@ namespace Ranalo.DataStore
             };
         }
 
+        public async Task<Dictionary<long, int?>> GetLockGroupsAsync(IEnumerable<long> accountIds)
+        {
+            var ids = accountIds.Distinct().ToList();
+            if (ids.Count == 0)
+            {
+                return new Dictionary<long, int?>();
+            }
+
+            var rows = await _db.QueryAsync<(long Id, int? LockGroup)>(
+                "SELECT CAST(Id AS BIGINT) AS Id, LockGroup FROM Devices WHERE Id IN @Ids", new { Ids = ids });
+            return rows.ToDictionary(r => r.Id, r => r.LockGroup);
+        }
+
         public async Task<Device?> GetDeviceByAccountId(long accountId)
         {
             var sql = @"SELECT * FROM Devices

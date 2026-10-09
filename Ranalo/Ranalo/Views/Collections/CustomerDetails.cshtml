@@ -113,6 +113,7 @@
                                     <dd class="fw-medium">@kin.Name</dd>
                                     <dt>Phone</dt>
                                     <dd>@if (!string.IsNullOrWhiteSpace(kin.Phone)) { <a href="tel:@Tel(kin.Phone)"><em class="icon ni ni-call"></em> @kin.Phone</a> } else { <span>-</span> }</dd>
+                                    @if (!string.IsNullOrWhiteSpace(kin.IdNumber)) { <dt>ID number</dt><dd>@kin.IdNumber</dd> }
                                     @if (!string.IsNullOrWhiteSpace(kin.Email)) { <dt>Email</dt><dd>@kin.Email</dd> }
                                     @if (!string.IsNullOrWhiteSpace(kin.Address)) { <dt>Address</dt><dd>@kin.Address</dd> }
                                 </dl>

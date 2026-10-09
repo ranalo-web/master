@@ -27,6 +27,10 @@ namespace Ranalo.DataStore
         // Pending/Failed -> Rejected.
         Task<bool> RejectAsync(int id, int userId, string? note, DateTime nowUtc);
 
+        // Rejected -> Pending, so a rejected device can be released later.
+        // false if it isn't rejected or the account already has a live task.
+        Task<bool> ReopenRejectedAsync(int id);
+
         // Devices already at the fully-paid lock date (31/12/9999, or
         // 31/12/2099 for Transsion) with no live task.
         Task<List<DeviceRemovalTask>> FindFullyPaidWithoutTaskAsync();
@@ -146,6 +150,33 @@ namespace Ranalo.DataStore
                 SET Status = 'Rejected', DecidedByUserId = @UserId, DecidedAtUtc = @Now, DecisionNote = @Note
                 WHERE Id = @Id AND Status IN ('Pending', 'Failed')",
                 new { Id = id, UserId = userId, Note = note, Now = nowUtc }) == 1;
+        }
+
+        public async Task<bool> ReopenRejectedAsync(int id)
+        {
+            // The rejection note is kept so the history still shows why it
+            // was held back.
+            const string sql = @"
+                UPDATE t
+                SET Status = 'Pending'
+                FROM dbo.DeviceRemovalTasks t
+                WHERE t.Id = @Id
+                  AND t.Status = 'Rejected'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM dbo.DeviceRemovalTasks o WITH (UPDLOCK, HOLDLOCK)
+                      WHERE o.AccountId = t.AccountId
+                        AND o.Id <> t.Id
+                        AND o.Status IN ('Pending', 'Processing', 'Failed', 'Completed'));";
+
+            try
+            {
+                return await _db.ExecuteAsync(sql, new { Id = id }) == 1;
+            }
+            catch (SqlException ex) when (ex.Number is 2627 or 2601)
+            {
+                // Unique index backstop: queued again concurrently.
+                return false;
+            }
         }
 
         public async Task<List<DeviceRemovalTask>> FindFullyPaidWithoutTaskAsync()

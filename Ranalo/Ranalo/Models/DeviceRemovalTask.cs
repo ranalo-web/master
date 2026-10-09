@@ -43,6 +43,9 @@ namespace Ranalo.Models
         public int PageSize { get; set; }
         public int TotalCount { get; set; }
         public int TotalPages => PageSize == 0 ? 0 : (int)Math.Ceiling((double)TotalCount / PageSize);
+        // Shown under the queue on the "Waiting for you" tab, to release later.
+        public List<DeviceRemovalTask> Rejected { get; set; } = new();
+        public int RejectedCount { get; set; }
         public List<string> Messages { get; set; } = new();
         public List<string> Errors { get; set; } = new();
     }

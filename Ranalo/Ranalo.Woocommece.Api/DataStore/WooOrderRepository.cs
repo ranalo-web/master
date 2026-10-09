@@ -96,5 +96,17 @@ namespace Ranalo.Woocommece.Api.DataStore
             var sql = "SELECT * FROM [dbo].[KosePayments] WHERE MpesaCode = @MpesaCode";
             return await _db.QueryFirstOrDefaultAsync<MpesaRecord>(sql, new { MpesaCode = mpesaCode });
         }
+
+        public async Task<string?> GetPaymentAccountNoAsync(string mpesaCode)
+        {
+            const string sql = @"
+                SELECT TOP 1 COALESCE(op.AccountNo, kp.AccountNo)
+                FROM [dbo].[KosePayments] kp
+                OUTER APPLY (SELECT TOP 1 o.AccountNo FROM [dbo].[OrphanedPayments] o
+                             WHERE o.MpesaCode = kp.MpesaCode
+                             ORDER BY o.DateCreated DESC) op
+                WHERE kp.MpesaCode = @MpesaCode";
+            return await _db.QueryFirstOrDefaultAsync<string?>(sql, new { MpesaCode = mpesaCode });
+        }
     }
 }

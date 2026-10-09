@@ -1,6 +1,7 @@
 ﻿using Azure;
 using Microsoft.AspNetCore.Mvc;
 using Ranalo.Configuration;
+using Ranalo.DataStore;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.Services;
@@ -18,13 +19,16 @@ namespace Ranalo.Controllers
         private readonly ISyncService _syncService;
         private readonly IEnrolmentCheckService _checks;
         private readonly ITranssionEnrolmentWorkflow _transsion;
+        private readonly IDevicesRepository _devices;
         public EnrolmentsController(IUserService userService, 
             IEnrolmentService enrolmentService, 
             IApplicationReportService applicationReportService,
             ISyncService syncService,
             IEnrolmentCheckService checks,
-            ITranssionEnrolmentWorkflow transsion)
+            ITranssionEnrolmentWorkflow transsion,
+            IDevicesRepository devices)
         {
+            _devices = devices;
             _userService = userService;
             _enrolmentService = enrolmentService;
             _applicationReportService = applicationReportService;
@@ -59,6 +63,7 @@ namespace Ranalo.Controllers
                     IsAdmin = settings.RoleId == UserRole.Admin,
                     CanApprove = e => DeviceLockRules.CanApproveEnrolment(settings.RoleId, settings.UserId, e),
                 };
+                response.LockGroups = await _devices.GetLockGroupsAsync(response.Enrolments.Select(e => e.AccountId));
                 AddFlash(response);
 
                 return View(response);
@@ -80,6 +85,7 @@ namespace Ranalo.Controllers
                 TotalCount = dealerEnrolments.TotalCount,
                 SearchTerm = searchTerm.Trim(),
             };
+            dealerResponse.LockGroups = await _devices.GetLockGroupsAsync(dealerResponse.Enrolments.Select(e => e.AccountId));
             AddFlash(dealerResponse);
 
             return View(dealerResponse);

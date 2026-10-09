@@ -126,7 +126,7 @@
                                         <td>@r.CustomerName</td>
                                         <td>@r.DealerName</td>
                                         <td>@(r.DeviceName ?? "-")</td>
-                                        <td><span class="badge badge-dim @(r.Reason == "Repossessed" ? "bg-info" : "bg-warning")">@r.ReasonLabel</span></td>
+                                        <td><span class="badge badge-dim @r.ReasonBadge">@r.ReasonLabel</span></td>
                                         <td>@r.WrittenOffDate.ToString("dd MMM yyyy")</td>
                                         <td>@(r.LastPaymentDate?.ToString("dd MMM yyyy") ?? "Never paid")</td>
                                         <td class="text-end">@r.ContractValue.ToString("N0")</td>

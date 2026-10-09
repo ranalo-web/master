@@ -411,6 +411,10 @@ namespace Ranalo.Woocommece.Api.DataStore
                 await _db.ExecuteAsync(updateQuery, device);
         }
 
+        // Returns the account's open contract (existing or new), or 0 when the
+        // account has no device: a contract is never created before its
+        // device, so it can't land on a number nothing is enrolled under (a
+        // Nuovo customer who paid the deposit to their ID number).
         public async Task<int> AddContractAsync(ContractInfo contract)
         {
             var existingSql = @"SELECT ContractID FROM Contract_Info 
@@ -421,6 +425,13 @@ namespace Ranalo.Woocommece.Api.DataStore
             if (existingContractId.HasValue)
             {
                 return existingContractId.Value;
+            }
+
+            var deviceExists = await _db.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM Devices WHERE Id = @Id", new { Id = contract.ID });
+            if (deviceExists == 0)
+            {
+                return 0;
             }
 
             var sql = @"

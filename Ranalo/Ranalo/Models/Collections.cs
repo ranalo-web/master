@@ -219,8 +219,10 @@ namespace Ranalo.Models
         public string? CustomerPhone { get; set; }
         public string? NextOfKinName { get; set; }
         public string? NextOfKinPhone { get; set; }
+        public string? NextOfKinIdNumber { get; set; }
         public string? NextOfKin2Name { get; set; }
         public string? NextOfKin2Phone { get; set; }
+        public string? NextOfKin2IdNumber { get; set; }
     }
 
     // Customer Details (collectors): contact, next of kin, linked order,

@@ -77,6 +77,7 @@ namespace Ranalo.DataStore
                           ,[First_Name] as FirstName
                           ,TotalAmount
                           ,[BuyingPrice]
+                          ,[StartDate]
                         FROM Contract_Info
                          WHERE (
                             @SearchTerm IS NULL
@@ -97,7 +98,7 @@ namespace Ranalo.DataStore
                 PageSize = pageSize,
                 SearchTerm = searchParam,
                 TotalRecords = totalRecords,
-                TotalPages = totalRecords / pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
             };
 
             return result;

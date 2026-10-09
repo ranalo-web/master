@@ -10,6 +10,15 @@
 
 @functions
 {
+    // Full contract value: deposit plus every instalment over the term (the
+    // same formula as ContractValue in CollectionsRepository). Worked out here
+    // rather than read from Total_Cost, which can be stale or hand-edited.
+    private decimal ContractValue(Ranalo.Calculator.Logic.Models.ContractInfo c) =>
+        c.Deposit
+        + c.Daily * 30 * c.TermInMonths
+        + c.Weekly * (30m / 7m) * c.TermInMonths
+        + c.Monthly * c.TermInMonths;
+
     private string SetStatusBadge(int notPaid)
     {
         var statusClass = "";
@@ -139,6 +148,14 @@
             </div><!-- .nk-block-head-content -->
         </div><!-- .nk-block-between -->
     </div><!-- .nk-block-head -->
+    @if (TempData["ContractError"] is string contractError)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em>@contractError
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -218,14 +235,17 @@
                     <table class="table mb-0" style="white-space:nowrap;" data-key="contracts" data-page-size="10">
                         <thead>
                             <tr>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Account</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Account No</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Name</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Date Added</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Deposit</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Daily</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Weekly</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Monthly</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Term</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Loan</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Costs</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Full contract value: deposit plus all instalments over the term">Total Cost</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Cost of sale: the phone's buying price">COS</th>
                                 <th class="wl-th"></th>
                             </tr>
                         </thead>
@@ -233,17 +253,17 @@
                         @foreach (var report in Model.Contracts)
                         {
                             <tr>
-                                <td>
-                                    <a href="/account-details/@report.ID" class="fw-medium">@report.FirstName</a>
-                                    <span class="d-block sub-text">AC: @report.ID</span>
-                                </td>
+                                <td><a href="/account-details/@report.ID" class="fw-medium">@report.ID</a></td>
+                                <td>@report.FirstName</td>
+                                <td data-sort="@(report.StartDate?.ToString("yyyyMMdd") ?? "0")">@(report.StartDate?.ToString("dd MMM yyyy") ?? "")</td>
                                 <td>@report.Deposit</td>
                                 <td>@report.Daily</td>
                                 <td>@report.Weekly</td>
                                 <td>@report.Monthly</td>
                                 <td>@report.TermInMonths</td>
                                 <td>@report.TotalLoan</td>
-                                <td>@report.TotalCost</td>
+                                <td>@ContractValue(report).ToString("N0")</td>
+                                <td class="@(report.BuyingPrice.HasValue ? "" : "text-warning")" data-sort="@(report.BuyingPrice ?? 0)">@(report.BuyingPrice.HasValue ? report.BuyingPrice.Value.ToString("N0") : "Not set")</td>
                                 <td class="text-end">
                                     <ul class="nk-tb-actions gx-2 justify-content-end">
                                         <li>
