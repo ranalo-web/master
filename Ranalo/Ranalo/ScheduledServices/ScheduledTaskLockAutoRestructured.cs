@@ -38,7 +38,10 @@ namespace Ranalo.ScheduledServices
                         var reminderService = scope.ServiceProvider.GetRequiredService<IApplicationReportService>();
                         var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
                         var enrolmentService = scope.ServiceProvider.GetRequiredService<IEnrolmentService>();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService);
+                        // If this lookup fails the run is skipped rather than risk
+                        // unlocking a lost/stolen phone.
+                        var lostStolen = await scope.ServiceProvider.GetRequiredService<ILostStolenRepository>().GetLockedAccountNosAsync();
+                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService, lostStolen);
                         foreach (var order in inactiveUsers)
                         {
                             _logger.LogInformation("lock Auto restructured for: {user}", order.AccountId);
@@ -65,10 +68,14 @@ namespace Ranalo.ScheduledServices
         public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, 
             IApplicationReportService applicationReportService, 
             IPaymentsRepository paymentsRepository,
-            IEnrolmentService enrolmentService
+            IEnrolmentService enrolmentService,
+            IReadOnlySet<long>? lostStolenLocked = null
             )
         {
-            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); 
+            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, "");
+
+            // Lost/stolen phones stay locked whatever the customer pays.
+            LostStolenRules.LeaveLocked(records?.StatusReports, r => r.AccountNo, lostStolenLocked);
 
             // Get all restructured records to remove from the auto restructure list
 

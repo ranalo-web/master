@@ -36,7 +36,10 @@ namespace Ranalo.ScheduledServices
                         var reminderService = scope.ServiceProvider.GetRequiredService<IApplicationReportService>();
                         var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
                         var enrolmentService = scope.ServiceProvider.GetRequiredService<IEnrolmentService>();
-                        var inactiveUsers = await Process(deviceProcessor, reminderService, paymentsRepository, enrolmentService);
+                        // If this lookup fails the run is skipped rather than risk
+                        // unlocking a lost/stolen phone.
+                        var lostStolen = await scope.ServiceProvider.GetRequiredService<ILostStolenRepository>().GetLockedAccountNosAsync();
+                        var inactiveUsers = await Process(deviceProcessor, reminderService, paymentsRepository, enrolmentService, lostStolen);
                         foreach (var device in inactiveUsers)
                         {
                             _logger.LogInformation("Restructured locking locked: {device}", device.AccountId);
@@ -60,9 +63,13 @@ namespace Ranalo.ScheduledServices
             _logger.LogInformation("Restructured locking task stopped at: {time}", DateTime.UtcNow);
         }
 
-        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, IApplicationReportService reminderService, IPaymentsRepository paymentsRepository, IEnrolmentService enrolmentService)
+        public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, IApplicationReportService reminderService, IPaymentsRepository paymentsRepository, IEnrolmentService enrolmentService,
+            IReadOnlySet<long>? lostStolenLocked = null)
         {
             var records = await reminderService.GetAllRestructured("", 1, 1000); ;
+
+            // Lost/stolen phones stay locked whatever the customer pays.
+            LostStolenRules.LeaveLocked(records?.Records, r => r.AccountNo, lostStolenLocked);
 
             //Remove all fully paid
             records.Records?.RemoveAll(x => x.Arrears > 0 && x.LoanBalance < 0);

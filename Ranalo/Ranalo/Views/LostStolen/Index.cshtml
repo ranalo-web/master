@@ -1,0 +1,376 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model LostStolenViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var maxSize = LostStolenRules.MaxFileSizeLabel;
+    string StatusBadge(string status) => status switch
+    {
+        LostStolenStatus.Pending => "bg-warning",
+        LostStolenStatus.Confirmed => "bg-danger",
+        LostStolenStatus.Rejected => "bg-secondary",
+        _ => "bg-success",
+    };
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-head-content">
+            <h3 class="nk-block-title page-title">Lost &amp; Stolen Phones</h3>
+            <div class="nk-block-des text-soft">
+                <p>Report a phone that has been lost or stolen, with the police abstract or other evidence. An admin confirms it and the phone is locked straight away, and it stays locked until the report is closed. <strong>The customer still owes the balance</strong> and keeps paying as normal.</p>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["LostStolenSuccess"] is string success)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible"><em class="icon ni ni-check-circle"></em> @success<button class="close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (TempData["LostStolenError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible"><em class="icon ni ni-cross-circle"></em> @error<button class="close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (Model.SetupMissing)
+    {
+        <div class="alert alert-warning alert-icon"><em class="icon ni ni-alert-circle"></em> Lost &amp; Stolen isn't switched on yet. Run Database/LostStolen/001_create_lost_stolen_reports.sql.</div>
+    }
+    else
+    {
+        <div class="nk-block">
+            <div class="card card-bordered card-preview">
+                <div class="card-inner">
+                    <span class="preview-title-lg overline-title">Report a phone</span>
+                    <form action="/lost-stolen" method="get" class="form-inline">
+                        <input type="hidden" name="tab" value="@Model.Tab" />
+                        <div class="form-group d-flex" style="gap: 8px;">
+                            <input type="text" name="searchTerm" class="form-control" placeholder="Search by name, account no, or phone" value="@Model.SearchTerm">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                        </div>
+                    </form>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+                    {
+                        <div class="mt-3">
+                            @if (Model.SearchResults.Count == 0)
+                            {
+                                <p class="text-soft">None of your accounts matched "@Model.SearchTerm".</p>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table mb-0" style="white-space:nowrap;">
+                                        <thead><tr><th class="wl-th">Account No</th><th class="wl-th">Customer</th><th class="wl-th">Device</th><th class="wl-th"></th></tr></thead>
+                                        <tbody>
+                                            @foreach (var account in Model.SearchResults)
+                                            {
+                                                <tr>
+                                                    <td><a href="/account-details/@account.AccountNo" class="fw-medium">@account.AccountNo</a></td>
+                                                    <td>@account.CustomerName</td>
+                                                    <td>@account.Make @account.Model</td>
+                                                    <td class="text-end">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#report-modal"
+                                                                data-account="@account.AccountNo" data-name="@account.CustomerName">Report lost / stolen</button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="nk-block">
+            <div class="card card-bordered">
+                <div class="card-inner card-inner-md d-flex flex-wrap justify-content-between align-items-center" style="gap:.5rem;">
+                    <span class="preview-title-lg overline-title mb-0">Reports</span>
+                    <div>
+                        <a href="/lost-stolen?tab=open" class="btn btn-sm @(Model.Tab == "open" ? "btn-primary" : "btn-outline-light btn-white")">Open</a>
+                        <a href="/lost-stolen?tab=closed" class="btn btn-sm @(Model.Tab == "closed" ? "btn-primary" : "btn-outline-light btn-white")">Closed &amp; rejected</a>
+                    </div>
+                </div>
+                @if (Model.Tab == "open" && Model.Reports.Count > 0)
+                {
+                    <div class="card-inner py-2 border-top small text-soft">
+                        @Model.PendingCount waiting for an admin · @Model.ConfirmedCount confirmed and locked
+                    </div>
+                }
+                <div class="card-inner p-0">
+                    @if (Model.Reports.Count == 0)
+                    {
+                        <div class="card-inner"><p class="text-soft">@(Model.Tab == "open" ? "No open reports." : "No closed or rejected reports.")</p></div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table mb-0" style="font-size:13px;">
+                                <thead>
+                                    <tr>
+                                        <th class="wl-th">Account</th>
+                                        <th class="wl-th">What happened</th>
+                                        <th class="wl-th">Reported</th>
+                                        <th class="wl-th">Evidence</th>
+                                        <th class="wl-th">Status</th>
+                                        <th class="wl-th"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var r in Model.Reports)
+                                    {
+                                        <tr>
+                                            <td style="white-space:nowrap;">
+                                                <a href="/account-details/@r.AccountNo" class="fw-medium">@r.AccountNo</a>
+                                                <span class="d-block">@(r.CustomerName ?? "(no name)")</span>
+                                                <span class="d-block sub-text">@(r.ProductName ?? "Unknown device") · @(r.DealerName ?? "No dealer")</span>
+                                                @if (!string.IsNullOrWhiteSpace(r.LastConnectedAt))
+                                                {
+                                                    <span class="d-block sub-text" title="Last time the phone checked in with its lock provider">Last seen: @r.LastConnectedAt</span>
+                                                }
+                                            </td>
+                                            <td style="min-width:220px;">
+                                                <span class="badge badge-dim @(r.Kind == LostStolenKind.Stolen ? "bg-danger" : "bg-warning")">@r.Kind</span>
+                                                <span class="sub-text">on @r.IncidentDate.ToString("dd MMM yyyy")</span>
+                                                <span class="d-block">@r.Description</span>
+                                                @if (!string.IsNullOrWhiteSpace(r.PoliceRef))
+                                                {
+                                                    <span class="d-block sub-text">Police ref: @r.PoliceRef</span>
+                                                }
+                                            </td>
+                                            <td style="white-space:nowrap;">
+                                                @r.ReportedByName <span class="text-soft">(@r.ReportedByRole)</span>
+                                                <span class="d-block sub-text">@r.ReportedAtUtc.ToLocalTime().ToString("dd MMM yyyy")</span>
+                                            </td>
+                                            <td>
+                                                @if (r.Evidence.Count == 0)
+                                                {
+                                                    <span class="text-danger small">None yet</span>
+                                                }
+                                                @foreach (var e in r.Evidence)
+                                                {
+                                                    <a href="/lost-stolen/evidence/@e.Id" target="_blank" rel="noopener" class="d-block small">
+                                                        <em class="icon ni @(e.ContentType == "application/pdf" ? "ni-file-pdf" : "ni-img")"></em> @e.FileName
+                                                    </a>
+                                                }
+                                                @if (r.IsOpen)
+                                                {
+                                                    <button type="button" class="btn btn-xs btn-outline-light btn-white mt-1" data-bs-toggle="modal" data-bs-target="#evidence-modal"
+                                                            data-report="@r.Id" data-account="@r.AccountNo">Add evidence</button>
+                                                }
+                                            </td>
+                                            <td style="min-width:160px;">
+                                                <span class="badge @StatusBadge(r.Status)">@(r.Status == LostStolenStatus.Closed ? "Closed: " + LostStolenOutcome.Label(r.Outcome) : r.Status == LostStolenStatus.Confirmed ? "Confirmed, locked" : r.Status)</span>
+                                                @if (r.DecidedAtUtc.HasValue)
+                                                {
+                                                    <span class="d-block sub-text">@(r.Status == LostStolenStatus.Rejected ? "Rejected" : "Confirmed") by @r.DecidedByName, @r.DecidedAtUtc.Value.ToLocalTime().ToString("dd MMM")</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(r.DecisionNote))
+                                                {
+                                                    <span class="d-block small">@r.DecisionNote</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(r.LockResult))
+                                                {
+                                                    <span class="d-block small @(r.LockResult.StartsWith("FAILED") ? "text-danger" : "text-soft")" title="@r.LockResult">Lock: @(r.LockResult.Length > 60 ? r.LockResult[..60] + "…" : r.LockResult)</span>
+                                                }
+                                                @if (r.ClosedAtUtc.HasValue)
+                                                {
+                                                    <span class="d-block sub-text">by @r.ClosedByName, @r.ClosedAtUtc.Value.ToLocalTime().ToString("dd MMM yyyy")</span>
+                                                    @if (!string.IsNullOrWhiteSpace(r.ClosedNote)) { <span class="d-block small">@r.ClosedNote</span> }
+                                                }
+                                            </td>
+                                            <td class="text-end" style="white-space:nowrap;">
+                                                @if (Model.CanDecide && r.Status == LostStolenStatus.Pending)
+                                                {
+                                                    <form method="post" action="/lost-stolen/@r.Id/confirm" class="d-inline" data-saving
+                                                          onsubmit="return confirm('Confirm this report and lock account @r.AccountNo\'s phone now?');">
+                                                        <button type="submit" class="btn btn-sm btn-danger" disabled="@(r.Evidence.Count == 0)"
+                                                                title="@(r.Evidence.Count == 0 ? "Needs evidence first" : null)">Confirm &amp; lock</button>
+                                                    </form>
+                                                    <button type="button" class="btn btn-sm btn-outline-light btn-white" data-bs-toggle="modal" data-bs-target="#reject-modal"
+                                                            data-report="@r.Id" data-account="@r.AccountNo">Reject</button>
+                                                }
+                                                @if (Model.CanDecide && r.Status == LostStolenStatus.Confirmed)
+                                                {
+                                                    <form method="post" action="/lost-stolen/@r.Id/lock" class="d-inline" data-saving>
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Lock again</button>
+                                                    </form>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#close-modal"
+                                                            data-report="@r.Id" data-account="@r.AccountNo">Close</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="modal fade" tabindex="-1" id="report-modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="/lost-stolen/report" enctype="multipart/form-data" data-saving>
+                <div class="modal-header">
+                    <h5 class="modal-title">Report account <span class="js-account"></span> lost or stolen</h5>
+                    <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close"><em class="icon ni ni-cross"></em></a>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="AccountNo" class="js-account-input" />
+                    <p class="text-soft small js-name"></p>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Lost or stolen?</label>
+                            <select name="Kind" class="form-select form-control" required>
+                                <option value="Stolen">Stolen</option>
+                                <option value="Lost">Lost</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">When?</label>
+                            <input type="date" name="IncidentDate" class="form-control" required max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">What happened?</label>
+                            <textarea name="Description" class="form-control" rows="3" maxlength="@LostStolenRules.DescriptionMaxLength" required
+                                      placeholder="e.g. Snatched at the matatu stage in town on Friday evening"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Police abstract / OB number <span class="text-soft">(if they have one)</span></label>
+                            <input type="text" name="PoliceRef" class="form-control" maxlength="@LostStolenRules.PoliceRefMaxLength" placeholder="e.g. OB 23/12/10/2026" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Evidence</label>
+                            <input type="file" name="files" class="form-control" multiple accept=".jpg,.jpeg,.png,.webp,.pdf" />
+                            <span class="form-note">Police abstract or other proof: photos or PDF, up to @LostStolenRules.MaxFilesPerUpload files, @maxSize each. An admin can only confirm once there's evidence; you can add it later.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-danger">Send report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" tabindex="-1" id="evidence-modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" class="js-report-action" data-action="/lost-stolen/{id}/evidence" enctype="multipart/form-data" data-saving>
+                <div class="modal-header">
+                    <h5 class="modal-title">Add evidence: account <span class="js-account"></span></h5>
+                    <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close"><em class="icon ni ni-cross"></em></a>
+                </div>
+                <div class="modal-body">
+                    <input type="file" name="files" class="form-control" multiple required accept=".jpg,.jpeg,.png,.webp,.pdf" />
+                    <span class="form-note">Photos or PDF, up to @LostStolenRules.MaxFilesPerUpload files, @maxSize each.</span>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (Model.CanDecide)
+{
+    <div class="modal fade" tabindex="-1" id="reject-modal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form method="post" class="js-report-action" data-action="/lost-stolen/{id}/reject" data-saving>
+                    <div class="modal-header">
+                        <h5 class="modal-title">Reject report: account <span class="js-account"></span></h5>
+                        <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close"><em class="icon ni ni-cross"></em></a>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">Why?</label>
+                        <textarea name="note" class="form-control" rows="3" maxlength="500" required placeholder="e.g. Abstract is for a different phone"></textarea>
+                        <span class="form-note">The phone is not locked. The reporter sees this note.</span>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-outline-danger">Reject</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" tabindex="-1" id="close-modal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form method="post" class="js-report-action" data-action="/lost-stolen/{id}/close" data-saving>
+                    <div class="modal-header">
+                        <h5 class="modal-title">Close report: account <span class="js-account"></span></h5>
+                        <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close"><em class="icon ni ni-cross"></em></a>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">How did it end?</label>
+                        <select name="outcome" class="form-select form-control" required>
+                            <option value="">Choose…</option>
+                            <option value="@LostStolenOutcome.Found">Found: phone is back</option>
+                            <option value="@LostStolenOutcome.PaidOff">Paid off: customer finished paying</option>
+                            <option value="@LostStolenOutcome.WrittenOff">Written off</option>
+                        </select>
+                        <label class="form-label mt-3">Note <span class="text-soft">(optional)</span></label>
+                        <textarea name="note" class="form-control" rows="2" maxlength="500"></textarea>
+                        <span class="form-note">After closing, the nightly jobs manage the phone's lock from their next run, so a phone that's found and up to date gets unlocked.</span>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Close report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Fill the modal from the button that opened it.
+        document.querySelectorAll('.modal').forEach(function (m) {
+            m.addEventListener('show.bs.modal', function (e) {
+                var b = e.relatedTarget;
+                if (!b) return;
+                m.querySelectorAll('.js-account').forEach(function (s) { s.textContent = b.dataset.account; });
+                var input = m.querySelector('.js-account-input');
+                if (input) input.value = b.dataset.account;
+                var name = m.querySelector('.js-name');
+                if (name) name.textContent = b.dataset.name || '';
+                var form = m.querySelector('form.js-report-action');
+                if (form) form.action = form.dataset.action.replace('{id}', b.dataset.report);
+            });
+        });
+        // Say straight away when a file is too big or there are too many,
+        // rather than after uploading them (the server checks again).
+        document.querySelectorAll('input[type=file][name=files]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                var max = @LostStolenRules.MaxFileBytes, maxFiles = @LostStolenRules.MaxFilesPerUpload, problems = [];
+                if (input.files.length > maxFiles) problems.push('Choose at most ' + maxFiles + ' files.');
+                Array.prototype.forEach.call(input.files, function (f) {
+                    if (f.size > max) problems.push(f.name + ' is ' + (f.size / 1048576).toFixed(2) + ' MB; the limit is @LostStolenRules.MaxFileSizeLabel.');
+                });
+                input.setCustomValidity(problems.join(' '));
+                if (problems.length) input.reportValidity();
+            });
+        });
+        // Show the click registered and stop a second click sending twice.
+        document.querySelectorAll('form[data-saving]').forEach(function (f) {
+            f.addEventListener('submit', function (e) {
+                if (e.defaultPrevented) return;   // "Cancel" on the confirm box
+                var btn = f.querySelector('button[type=submit]');
+                btn.disabled = true;
+                btn.textContent = 'Saving…';
+            });
+        });
+    </script>
+}
