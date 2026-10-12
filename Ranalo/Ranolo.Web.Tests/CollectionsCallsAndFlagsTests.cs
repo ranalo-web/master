@@ -239,3 +239,121 @@ namespace Ranolo.Web.Tests
         }
     }
 }
+
+namespace Ranolo.Web.Tests
+{
+    // My Collections search box.
+    public class CollectionsSearchTests
+    {
+        private static CollectionCaseRow Case() => new()
+        {
+            AccountNo = 7320500,
+            CustomerName = "Austine Otieno",
+            Contact = new AccountContact
+            {
+                AccountNo = 7320500,
+                CustomerPhone = "0712345678",
+                NextOfKinName = "Mary Achieng",
+                NextOfKinPhone = "254722111222",
+                NextOfKin2Name = "John Ouma",
+                NextOfKin2Phone = "+254 733 999 888",
+            },
+        };
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("   ")]
+        public void BlankSearchMatchesEverything(string? term)
+        {
+            Assert.That(CollectionsRules.MatchesSearch(Case(), term), Is.True);
+        }
+
+        [TestCase("7320500")]
+        [TestCase("73205")]
+        [TestCase("austine")]
+        [TestCase("ACHIENG")]
+        [TestCase("john ouma")]
+        public void MatchesAccountAndNames(string term)
+        {
+            Assert.That(CollectionsRules.MatchesSearch(Case(), term), Is.True);
+        }
+
+        [TestCase("0712345678")]
+        [TestCase("254712345678")]
+        [TestCase("+254 712 345 678")]
+        [TestCase("0722111222")]   // first next of kin, stored as 254...
+        [TestCase("0733 999888")]  // second next of kin, stored as +254 ...
+        public void MatchesPhonesWrittenAnyWay(string term)
+        {
+            Assert.That(CollectionsRules.MatchesSearch(Case(), term), Is.True);
+        }
+
+        [TestCase("Wanjiru")]
+        [TestCase("0799000000")]
+        [TestCase("12")]           // too short to search phones by
+        public void NoMatch(string term)
+        {
+            Assert.That(CollectionsRules.MatchesSearch(Case(), term), Is.False);
+        }
+
+        [Test]
+        public void CaseWithNoContactStillSearchesByNameAndAccount()
+        {
+            var c = new CollectionCaseRow { AccountNo = 9162191, CustomerName = "Peter" };
+            Assert.That(CollectionsRules.MatchesSearch(c, "peter"), Is.True);
+            Assert.That(CollectionsRules.MatchesSearch(c, "0712345678"), Is.False);
+        }
+    }
+}
+
+namespace Ranolo.Web.Tests
+{
+    public class NextOfKinListTests
+    {
+        private static AccountContact Contact(string? n1, string? p1, string? n2, string? p2) => new()
+        {
+            NextOfKinName = n1, NextOfKinPhone = p1, NextOfKinIdNumber = n1 == null ? null : "111",
+            NextOfKin2Name = n2, NextOfKin2Phone = p2, NextOfKin2IdNumber = n2 == null ? null : "222",
+        };
+
+        [Test]
+        public void BothShownFirstThenSecondWithTheirDetails()
+        {
+            var kin = CollectionsRules.NextOfKin(Contact("Mary", "0722111222", "John", "0733999888"));
+
+            Assert.That(kin.Select(k => (k.Name, k.Phone, k.IdNumber)), Is.EqualTo(new[]
+            {
+                ("Mary", "0722111222", "111"), ("John", "0733999888", "222"),
+            }));
+        }
+
+        [Test]
+        public void SamePersonStoredTwiceShowsOnce()
+        {
+            // Seen on a real account: "Diana Rose 0740308949" as both.
+            Assert.That(CollectionsRules.NextOfKin(Contact("Diana Rose", "0740308949", "Diana Rose", "0740308949")), Has.Count.EqualTo(1));
+            Assert.That(CollectionsRules.NextOfKin(Contact("Diana", "0740308949", "D. Rose", "254740308949")), Has.Count.EqualTo(1), "same phone, written differently");
+            Assert.That(CollectionsRules.NextOfKin(Contact("Diana", null, "diana ", null)), Has.Count.EqualTo(1), "same name, no phones");
+        }
+
+        [Test]
+        public void SameNameDifferentPhonesAreTwoPeople()
+        {
+            Assert.That(CollectionsRules.NextOfKin(Contact("John", "0711000000", "John", "0722000000")), Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        public void OnlySecondOnFileStillShows()
+        {
+            var kin = CollectionsRules.NextOfKin(Contact(null, null, "John", "0733999888"));
+            Assert.That(kin.Single().Name, Is.EqualTo("John"));
+        }
+
+        [Test]
+        public void NothingOnFile()
+        {
+            Assert.That(CollectionsRules.NextOfKin(null), Is.Empty);
+            Assert.That(CollectionsRules.NextOfKin(Contact(null, null, null, null)), Is.Empty);
+        }
+    }
+}

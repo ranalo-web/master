@@ -87,6 +87,56 @@ namespace Ranalo.Services
         // A promise to pay can't be in the past.
         public static bool IsValidPromiseDate(DateTime? promisedDate, DateTime today) =>
             promisedDate == null || promisedDate.Value.Date >= today.Date;
+
+        // My Collections search: account number, customer or next-of-kin
+        // name, or phone. Phones match on their last 9 digits, so 0712 345678,
+        // 254712345678 and +254 712 345 678 are the same number.
+        public static bool MatchesSearch(Ranalo.Models.CollectionCaseRow c, string? term)
+        {
+            if (string.IsNullOrWhiteSpace(term)) return true;
+            term = term.Trim();
+
+            if (c.AccountNo.ToString().Contains(term)) return true;
+
+            var names = new[] { c.CustomerName, c.Contact?.NextOfKinName, c.Contact?.NextOfKin2Name };
+            if (names.Any(n => n != null && n.Contains(term, StringComparison.OrdinalIgnoreCase))) return true;
+
+            var digits = PhoneKey(term);
+            if (digits.Length < 4) return false;
+            var phones = new[] { c.Contact?.CustomerPhone, c.Contact?.NextOfKinPhone, c.Contact?.NextOfKin2Phone };
+            return phones.Any(p => p != null && PhoneKey(p).Contains(digits));
+        }
+
+        // The account's next of kin to show, first then second. The second is
+        // left out when it's the same person again (same phone, or same name
+        // with no phone) -- some orders store one contact twice.
+        public static List<(string? Name, string? Phone, string? IdNumber)> NextOfKin(Ranalo.Models.AccountContact? contact)
+        {
+            var result = new List<(string? Name, string? Phone, string? IdNumber)>();
+            if (contact == null) return result;
+
+            foreach (var k in new[]
+            {
+                (Name: contact.NextOfKinName, Phone: contact.NextOfKinPhone, IdNumber: contact.NextOfKinIdNumber),
+                (Name: contact.NextOfKin2Name, Phone: contact.NextOfKin2Phone, IdNumber: contact.NextOfKin2IdNumber),
+            })
+            {
+                if (string.IsNullOrWhiteSpace(k.Name) && string.IsNullOrWhiteSpace(k.Phone)) continue;
+
+                var repeat = result.Any(r =>
+                    !string.IsNullOrWhiteSpace(k.Phone) && !string.IsNullOrWhiteSpace(r.Phone)
+                        ? PhoneKey(k.Phone) == PhoneKey(r.Phone)
+                        : string.Equals(k.Name?.Trim(), r.Name?.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (!repeat) result.Add(k);
+            }
+            return result;
+        }
+
+        private static string PhoneKey(string value)
+        {
+            var digits = new string(value.Where(char.IsDigit).ToArray());
+            return digits.Length > 9 ? digits[^9..] : digits.TrimStart('0');
+        }
     }
 
     // The latest collections case on one contract, as the commission
