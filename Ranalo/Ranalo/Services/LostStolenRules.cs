@@ -13,7 +13,10 @@ namespace Ranalo.Services
     //     customer's payment doesn't unlock it for whoever has it.
     public static class LostStolenRules
     {
-        public const int MaxFileBytes = 5 * 1024 * 1024;
+        // 0.25 MB each for now (agreed 2026-10-12): enough for a phone photo
+        // of the abstract at normal quality, and keeps the database small.
+        public const int MaxFileBytes = 256 * 1024;
+        public const string MaxFileSizeLabel = "0.25 MB";
         public const int MaxFilesPerUpload = 5;
         public const int DescriptionMaxLength = 1000;
         public const int PoliceRefMaxLength = 100;
@@ -56,7 +59,7 @@ namespace Ranalo.Services
         public static (string? ContentType, string? Error) CheckEvidence(string fileName, byte[] content)
         {
             if (content.Length == 0) return (null, $"{fileName} is empty.");
-            if (content.Length > MaxFileBytes) return (null, $"{fileName} is over {MaxFileBytes / 1024 / 1024} MB.");
+            if (content.Length > MaxFileBytes) return (null, $"{fileName} is over {MaxFileSizeLabel}. Take the photo at a lower size, or scan it smaller.");
 
             var type = Path.GetExtension(fileName).ToLowerInvariant() switch
             {

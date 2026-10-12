@@ -3,7 +3,7 @@
 @model LostStolenViewModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
-    var maxMb = LostStolenRules.MaxFileBytes / 1024 / 1024;
+    var maxSize = LostStolenRules.MaxFileSizeLabel;
     string StatusBadge(string status) => status switch
     {
         LostStolenStatus.Pending => "bg-warning",
@@ -250,7 +250,7 @@
                         <div class="col-12">
                             <label class="form-label">Evidence</label>
                             <input type="file" name="files" class="form-control" multiple accept=".jpg,.jpeg,.png,.webp,.pdf" />
-                            <span class="form-note">Police abstract or other proof: photos or PDF, up to @LostStolenRules.MaxFilesPerUpload files, @maxMb MB each. An admin can only confirm once there's evidence; you can add it later.</span>
+                            <span class="form-note">Police abstract or other proof: photos or PDF, up to @LostStolenRules.MaxFilesPerUpload files, @maxSize each. An admin can only confirm once there's evidence; you can add it later.</span>
                         </div>
                     </div>
                 </div>
@@ -272,7 +272,7 @@
                 </div>
                 <div class="modal-body">
                     <input type="file" name="files" class="form-control" multiple required accept=".jpg,.jpeg,.png,.webp,.pdf" />
-                    <span class="form-note">Photos or PDF, up to @LostStolenRules.MaxFilesPerUpload files, @maxMb MB each.</span>
+                    <span class="form-note">Photos or PDF, up to @LostStolenRules.MaxFilesPerUpload files, @maxSize each.</span>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">Upload</button>
@@ -348,6 +348,19 @@
                 if (name) name.textContent = b.dataset.name || '';
                 var form = m.querySelector('form.js-report-action');
                 if (form) form.action = form.dataset.action.replace('{id}', b.dataset.report);
+            });
+        });
+        // Say straight away when a file is too big or there are too many,
+        // rather than after uploading them (the server checks again).
+        document.querySelectorAll('input[type=file][name=files]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                var max = @LostStolenRules.MaxFileBytes, maxFiles = @LostStolenRules.MaxFilesPerUpload, problems = [];
+                if (input.files.length > maxFiles) problems.push('Choose at most ' + maxFiles + ' files.');
+                Array.prototype.forEach.call(input.files, function (f) {
+                    if (f.size > max) problems.push(f.name + ' is ' + (f.size / 1048576).toFixed(2) + ' MB; the limit is @LostStolenRules.MaxFileSizeLabel.');
+                });
+                input.setCustomValidity(problems.join(' '));
+                if (problems.length) input.reportValidity();
             });
         });
         // Show the click registered and stop a second click sending twice.

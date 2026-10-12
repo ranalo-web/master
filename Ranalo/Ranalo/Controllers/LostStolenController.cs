@@ -56,7 +56,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("lost-stolen/report")]
-        [RequestSizeLimit(30_000_000)]
+        [RequestSizeLimit(30_000_000)]   // generous, so an oversized photo gets our "too big" message, not an error page
         public async Task<IActionResult> Report(NewLostStolenReport report, List<IFormFile>? files)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
@@ -72,7 +72,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("lost-stolen/{id:int}/evidence")]
-        [RequestSizeLimit(30_000_000)]
+        [RequestSizeLimit(30_000_000)]   // generous, so an oversized photo gets our "too big" message, not an error page
         public async Task<IActionResult> AddEvidence(int id, List<IFormFile>? files)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
@@ -155,7 +155,7 @@ namespace Ranalo.Controllers
                 if (f.Length == 0) continue;
                 if (f.Length > LostStolenRules.MaxFileBytes)
                 {
-                    return (uploads, $"{LostStolenRules.SafeFileName(f.FileName)} is over {LostStolenRules.MaxFileBytes / 1024 / 1024} MB.");
+                    return (uploads, $"{LostStolenRules.SafeFileName(f.FileName)} is over {LostStolenRules.MaxFileSizeLabel}. Take the photo at a lower size, or scan it smaller.");
                 }
 
                 using var ms = new MemoryStream();

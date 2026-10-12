@@ -13,7 +13,7 @@
 -- the next run.
 --
 -- LostStolenEvidence holds the uploaded files themselves (images/PDF, max
--- 5 MB each, checked by the app).
+-- 0.25 MB each, checked by the app).
 --
 -- Safe to re-run: every step is guarded.
 

@@ -145,7 +145,16 @@ namespace Ranolo.Web.Tests
             Assert.That(LostStolenRules.CheckEvidence("a.pdf", Array.Empty<byte>()).Error, Does.Contain("empty"));
             var big = new byte[LostStolenRules.MaxFileBytes + 1];
             Pdf.CopyTo(big, 0);
-            Assert.That(LostStolenRules.CheckEvidence("a.pdf", big).Error, Does.Contain("5 MB"));
+            Assert.That(LostStolenRules.CheckEvidence("a.pdf", big).Error, Does.Contain("0.25 MB"));
+        }
+
+        [Test]
+        public void FileOfExactlyTheLimitIsAccepted()
+        {
+            Assert.That(LostStolenRules.MaxFileBytes, Is.EqualTo(256 * 1024));
+            var atLimit = new byte[LostStolenRules.MaxFileBytes];
+            Jpeg.CopyTo(atLimit, 0);
+            Assert.That(LostStolenRules.CheckEvidence("abstract.jpg", atLimit).Error, Is.Null);
         }
 
         [Test]
