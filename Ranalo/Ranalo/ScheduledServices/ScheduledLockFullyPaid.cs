@@ -38,7 +38,10 @@ namespace Ranalo.ScheduledServices
                         var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
                         var enrolmentService = scope.ServiceProvider.GetRequiredService<IEnrolmentService>();
                         var removalService = scope.ServiceProvider.GetRequiredService<IDeviceRemovalService>();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService, removalService);
+                        // If this lookup fails the run is skipped rather than risk
+                        // releasing a lost/stolen phone.
+                        var lostStolen = await scope.ServiceProvider.GetRequiredService<ILostStolenRepository>().GetLockedAccountNosAsync();
+                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService, removalService, lostStolen);
                         foreach (var order in inactiveUsers)
                         {
                             _logger.LogInformation("Unlock fully paid lock Auto for: {user}", order.AccountId);
@@ -70,9 +73,15 @@ namespace Ranalo.ScheduledServices
             IApplicationReportService applicationReportService,
             IPaymentsRepository paymentsRepository,
             IEnrolmentService enrolmentService,
-            IDeviceRemovalService removalService)
+            IDeviceRemovalService removalService,
+            IReadOnlySet<long>? lostStolenLocked = null)
         {
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, "");
+
+            // A lost/stolen phone isn't set to 31/12/9999 or queued for
+            // removal when paid off -- that would hand it to whoever has it.
+            // Closing the report as Paid off lets the next run release it.
+            LostStolenRules.LeaveLocked(records?.StatusReports, r => r.AccountNo, lostStolenLocked);
 
             var fullyPaid = FullyPaidPlanner.Select(records?.StatusReports, DateTime.UtcNow.Year);
             if (!fullyPaid.Any())
