@@ -39,7 +39,7 @@ namespace Ranalo.Controllers
         // Collector dashboard: the accounts they hold, what they've recovered
         // and earned. Also reachable by dealers/agents who are collectors too.
         [Route("collections-home/{page:int?}")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? search = null)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -58,6 +58,9 @@ namespace Ranalo.Controllers
             await SetViewBags(settings, "collector");
 
             var model = await _collections.GetCollectorDashboardAsync(settings.UserId);
+            model.HeldCount = model.Cases.Count;
+            model.Search = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+            model.Cases = model.Cases.Where(c => CollectionsRules.MatchesSearch(c, model.Search)).ToList();
             model.Payouts = await _payouts.GetPayoutsAsync(CommissionPayeeType.Collector, collectorUserId: settings.UserId, top: 10);
             return View(model);
         }

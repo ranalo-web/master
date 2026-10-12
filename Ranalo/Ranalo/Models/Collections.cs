@@ -205,6 +205,11 @@ namespace Ranalo.Models
     public class CollectorDashboardViewModel
     {
         public bool SetupMissing { get; set; }
+
+        // My accounts search (CollectionsRules.MatchesSearch). The summary
+        // cards always cover every account held; only the list is filtered.
+        public string? Search { get; set; }
+        public int HeldCount { get; set; }
         public CollectorSummary Summary { get; set; } = new();
         public List<CollectionCaseRow> Cases { get; set; } = new();
         public List<CollectorCaseEarning> Earnings { get; set; } = new();

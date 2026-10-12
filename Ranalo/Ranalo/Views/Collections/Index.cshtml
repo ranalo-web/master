@@ -79,10 +79,30 @@
 
     <div class="nk-block">
         <div class="card card-bordered">
-            <div class="card-inner border-bottom py-2"><h6 class="title mb-0">My accounts</h6></div>
-            @if (Model.Cases.Count == 0)
+            <div class="card-inner border-bottom py-2 d-flex flex-wrap justify-content-between align-items-center" style="gap:.5rem;">
+                <h6 class="title mb-0">My accounts
+                    <span class="text-soft small fw-normal">@(Model.Search != null ? $"{Model.Cases.Count} of {Model.HeldCount}" : Model.HeldCount.ToString())</span>
+                </h6>
+                @if (Model.HeldCount > 0)
+                {
+                    <form method="get" action="/collections-home" class="d-flex" style="gap:.5rem;">
+                        <input type="search" name="search" class="form-control form-control-sm" style="min-width:220px;" value="@Model.Search"
+                               placeholder="Name, account no or phone" aria-label="Search my accounts" />
+                        <button type="submit" class="btn btn-sm btn-primary"><em class="icon ni ni-search"></em><span>Search</span></button>
+                        @if (Model.Search != null)
+                        {
+                            <a href="/collections-home" class="btn btn-sm btn-outline-light btn-white">Clear</a>
+                        }
+                    </form>
+                }
+            </div>
+            @if (Model.HeldCount == 0)
             {
                 <div class="card-inner text-soft">No accounts are assigned to you right now.</div>
+            }
+            else if (Model.Cases.Count == 0)
+            {
+                <div class="card-inner text-soft">None of your accounts match "@Model.Search". Search by customer or next-of-kin name, account number, or phone.</div>
             }
             else
             {
@@ -109,13 +129,15 @@
                                         {
                                             <a href="tel:@phone" class="d-block small"><em class="icon ni ni-call"></em> @phone</a>
                                         }
-                                        @if (c.Contact?.NextOfKinName is { Length: > 0 } kin)
-                                        {
-                                            <span class="d-block small">Next of kin: @kin@if (c.Contact.NextOfKinPhone is { Length: > 0 } kinPhone) { <text> · </text><a href="tel:@kinPhone">@kinPhone</a> }@if (c.Contact.NextOfKinIdNumber is { Length: > 0 } kinId) { <text> · ID @kinId</text> }</span>
-                                        }
-                                        else
+                                        @{ var kins = CollectionsRules.NextOfKin(c.Contact); }
+                                        @if (kins.Count == 0)
                                         {
                                             <span class="d-block small text-soft">No next of kin on file</span>
+                                        }
+                                        @for (var i = 0; i < kins.Count; i++)
+                                        {
+                                            var k = kins[i];
+                                            <span class="d-block small">Next of kin@(kins.Count > 1 ? $" {i + 1}" : ""): @(string.IsNullOrWhiteSpace(k.Name) ? "(no name)" : k.Name)@if (k.Phone is { Length: > 0 } kinPhone) { <text> · </text><a href="tel:@kinPhone">@kinPhone</a> }@if (k.IdNumber is { Length: > 0 } kinId) { <text> · ID @kinId</text> }</span>
                                         }
                                         @if (c.LastCall != null)
                                         {
