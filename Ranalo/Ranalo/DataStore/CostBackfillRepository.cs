@@ -64,6 +64,9 @@ namespace Ranalo.DataStore
             return rows.ToList();
         }
 
+        // Enrolled devices only, like the Devices > No Contract page --
+        // un_registered (deregistered), checkin and enrollment_failed rows
+        // aren't live phones waiting for a contract.
         public async Task<List<CostBackfillDeviceRow>> GetDevicesWithoutContractsAsync()
         {
             const string sql = @"
@@ -77,7 +80,8 @@ namespace Ranalo.DataStore
                     d.CreatedAt
                 FROM Devices d
                 LEFT JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                WHERE NOT EXISTS (SELECT 1 FROM Contract_Info ci WHERE ci.ID = d.Id)
+                WHERE d.[Status] = 'enrolled'
+                  AND NOT EXISTS (SELECT 1 FROM Contract_Info ci WHERE ci.ID = d.Id)
                 ORDER BY d.CreatedAt DESC";
 
             var rows = await _db.QueryAsync<CostBackfillDeviceRow>(sql);
