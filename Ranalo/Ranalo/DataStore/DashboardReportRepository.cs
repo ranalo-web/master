@@ -317,13 +317,17 @@ namespace Ranalo.DataStore
             }
         }
 
+        // Financials commissions are cash paid out, on the day paid: every
+        // payout to a dealer, agent or collector (CommissionPayouts -- one
+        // header per payment; its per-account lines in Dealer/Agent/
+        // CollectorCommissionPayments add up to the same amount).
         public async Task<List<DashboardMonthAmountRow>> GetCommissionsPaidByMonthAsync(int months)
         {
             var rangeStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-(months - 1));
 
             const string sql = @"
-                SELECT YEAR(PaidDate) AS Year, MONTH(PaidDate) AS Month, SUM(AmountPaid) AS Total
-                FROM DealerCommissionPayments
+                SELECT YEAR(PaidDate) AS Year, MONTH(PaidDate) AS Month, SUM(Amount) AS Total
+                FROM CommissionPayouts
                 WHERE PaidDate >= @RangeStart
                 GROUP BY YEAR(PaidDate), MONTH(PaidDate)";
 
@@ -334,7 +338,7 @@ namespace Ranalo.DataStore
             }
             catch (SqlException ex) when (IsMissingTable(ex))
             {
-                _logger.LogWarning(ex, "DealerCommissionPayments table not found; returning no commissions-by-month rows.");
+                _logger.LogWarning(ex, "CommissionPayouts table not found; returning no commissions-by-month rows.");
                 return new List<DashboardMonthAmountRow>();
             }
             catch (SqlException ex)
@@ -360,7 +364,7 @@ namespace Ranalo.DataStore
 
         public async Task<decimal> GetAllTimeCommissionsPaidAsync()
         {
-            const string sql = "SELECT ISNULL(SUM(AmountPaid), 0) FROM DealerCommissionPayments";
+            const string sql = "SELECT ISNULL(SUM(Amount), 0) FROM CommissionPayouts";
             try
             {
                 return await _db.QuerySingleAsync<decimal>(sql);
@@ -421,10 +425,10 @@ namespace Ranalo.DataStore
         public async Task<decimal> GetCommissionsPaidForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive)
         {
             const string sql = @"
-                SELECT ISNULL(SUM(dcp.AmountPaid), 0)
-                FROM DealerCommissionPayments dcp
-                WHERE (@FromDate IS NULL OR dcp.PaidDate >= @FromDate)
-                  AND (@ToDate IS NULL OR dcp.PaidDate < @ToDate)";
+                SELECT ISNULL(SUM(cp.Amount), 0)
+                FROM CommissionPayouts cp
+                WHERE (@FromDate IS NULL OR cp.PaidDate >= @FromDate)
+                  AND (@ToDate IS NULL OR cp.PaidDate < @ToDate)";
 
             try
             {
@@ -432,7 +436,7 @@ namespace Ranalo.DataStore
             }
             catch (SqlException ex) when (IsMissingTable(ex))
             {
-                _logger.LogWarning(ex, "DealerCommissionPayments table not found; returning 0 commissions paid for period.");
+                _logger.LogWarning(ex, "CommissionPayouts table not found; returning 0 commissions paid for period.");
                 return 0;
             }
             catch (SqlException ex)
