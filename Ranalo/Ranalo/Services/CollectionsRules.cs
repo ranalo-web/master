@@ -67,6 +67,26 @@ namespace Ranalo.Services
         public static bool IsConflicted(CollectorCandidate collector, int? accountAgentUserId, int? accountDealerId) =>
             (accountAgentUserId.HasValue && collector.UserId == accountAgentUserId.Value)
             || (collector.IsDealerUser && accountDealerId.HasValue && collector.DealerId == accountDealerId.Value);
+
+        // Flag and call notes: trimmed, single-spaced, at most 500 characters
+        // (the column size). Blank comes back as null.
+        public const int NoteMaxLength = 500;
+
+        public static string? CleanNote(string? note)
+        {
+            if (string.IsNullOrWhiteSpace(note)) return null;
+            var clean = string.Join(' ', note.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            return clean.Length > NoteMaxLength ? clean[..NoteMaxLength] : clean;
+        }
+
+        // The same note already open from this collector on the case -- a
+        // double click or a resubmit -- isn't flagged a second time.
+        public static bool IsRepeatFlag(IEnumerable<string?> openNotesFromCollector, string note) =>
+            openNotesFromCollector.Any(n => string.Equals(CleanNote(n), CleanNote(note), StringComparison.OrdinalIgnoreCase));
+
+        // A promise to pay can't be in the past.
+        public static bool IsValidPromiseDate(DateTime? promisedDate, DateTime today) =>
+            promisedDate == null || promisedDate.Value.Date >= today.Date;
     }
 
     // The latest collections case on one contract, as the commission

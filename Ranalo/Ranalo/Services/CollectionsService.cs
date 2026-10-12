@@ -16,6 +16,7 @@ namespace Ranalo.Services
         Task<(bool Ok, string Message)> ReturnAsync(IReadOnlyCollection<int> caseIds, int byUserId);
 
         Task<(bool Ok, string Message)> AddFlagAsync(int caseId, int collectorUserId, string? note);
+        Task<(bool Ok, string Message)> AddCallNoteAsync(int caseId, int collectorUserId, string? note, DateTime? promisedDate);
         Task<bool> ResolveFlagAsync(int flagId, int byUserId);
 
         // Dealer / Agent dashboards: their accounts that went to collections.
@@ -360,20 +361,61 @@ namespace Ranalo.Services
 
         public async Task<(bool Ok, string Message)> AddFlagAsync(int caseId, int collectorUserId, string? note)
         {
-            if (string.IsNullOrWhiteSpace(note))
+            var clean = CollectionsRules.CleanNote(note);
+            if (clean == null)
             {
                 return (false, "Add a note saying what you tried.");
             }
 
-            var holder = (await _repository.GetPeriodsAsync(collectorUserId, caseId)).FirstOrDefault(p => p.EndAt == null);
-            if (holder == null)
+            if (!await HoldsCaseAsync(caseId, collectorUserId))
             {
                 return (false, "That account isn't assigned to you.");
             }
 
-            await _repository.AddFlagAsync(caseId, collectorUserId, note.Trim().Length > 500 ? note.Trim()[..500] : note.Trim());
-            return (true, "Flagged for the admin team.");
+            var open = (await _repository.GetFlagsAsync(openOnly: true))
+                .Where(f => f.CaseId == caseId && f.CollectorUserId == collectorUserId)
+                .Select(f => f.Note);
+            if (CollectionsRules.IsRepeatFlag(open, clean))
+            {
+                return (true, "Already flagged for the admin team -- they'll pick it up from the Flags list.");
+            }
+
+            await _repository.AddFlagAsync(caseId, collectorUserId, clean);
+            return (true, "Flagged for the admin team. They'll see it on their Flags list.");
         }
+
+        public async Task<(bool Ok, string Message)> AddCallNoteAsync(int caseId, int collectorUserId, string? note, DateTime? promisedDate)
+        {
+            var clean = CollectionsRules.CleanNote(note);
+            if (clean == null)
+            {
+                return (false, "Add a note on what you discussed.");
+            }
+
+            if (!CollectionsRules.IsValidPromiseDate(promisedDate, DateTime.Today))
+            {
+                return (false, "The promised payment date can't be in the past.");
+            }
+
+            if (!await HoldsCaseAsync(caseId, collectorUserId))
+            {
+                return (false, "That account isn't assigned to you.");
+            }
+
+            if (!await _repository.AddCallNoteAsync(caseId, collectorUserId, clean, promisedDate))
+            {
+                _logger.LogWarning("CollectionCallNotes missing -- run Database/Collections/002_create_collection_call_notes.sql");
+                return (false, "Call notes aren't switched on yet. Ask the admin team to set them up.");
+            }
+
+            return (true, promisedDate.HasValue
+                ? $"Call saved. Customer promised to pay by {promisedDate.Value:dd MMM yyyy}."
+                : "Call saved.");
+        }
+
+        // The collector's stint on the case is still open.
+        private async Task<bool> HoldsCaseAsync(int caseId, int collectorUserId) =>
+            (await _repository.GetPeriodsAsync(collectorUserId, caseId)).Any(p => p.EndAt == null);
 
         public Task<bool> ResolveFlagAsync(int flagId, int byUserId) => _repository.ResolveFlagAsync(flagId, byUserId);
 
@@ -506,6 +548,7 @@ namespace Ranalo.Services
         {
             var byCase = periods.ToLookup(p => p.CaseId);
             var flags = (await _repository.GetFlagsAsync(openOnly: true)).ToLookup(f => f.CaseId);
+            var calls = await _repository.GetLatestCallNotesAsync();
             var terms = await _reportRepository.GetCollectionTermsAsync();
             var now = DateTime.Now;
 
@@ -536,6 +579,7 @@ namespace Ranalo.Services
                 var caseFlags = flags[c.CaseId].ToList();
                 c.OpenFlagCount = caseFlags.Count;
                 c.LatestFlagNote = caseFlags.OrderByDescending(f => f.CreatedAt).FirstOrDefault()?.Note;
+                c.LastCall = calls.GetValueOrDefault(c.CaseId);
 
                 var t = terms.GetValueOrDefault(c.ContractId);
                 if (t != null && t.CaseId == c.CaseId)

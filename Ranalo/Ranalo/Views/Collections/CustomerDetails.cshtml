@@ -140,13 +140,30 @@
                             {
                                 <p class="small text-info mt-2 mb-0">The device was repossessed and resold: payments from the new customer count toward this collection.</p>
                             }
+                            @if (k.LastCall != null)
+                            {
+                                <p class="small text-success mt-2 mb-0"><em class="icon ni ni-chat"></em> Spoke to customer @k.LastCall.CreatedAt.ToString("dd MMM yyyy")@(k.LastCall.CollectorName != null ? " (" + k.LastCall.CollectorName.Trim() + ")" : ""): @k.LastCall.Note@if (k.LastCall.PromisedDate.HasValue) { <text> · promised to pay by @k.LastCall.PromisedDate.Value.ToString("dd MMM yyyy")</text> }</p>
+                            }
                             @if (k.OpenFlagCount > 0)
                             {
                                 <p class="small text-warning mt-2 mb-0"><em class="icon ni ni-flag"></em> Flagged: @k.LatestFlagNote</p>
                             }
                             @if (Model.ViewerHoldsCase)
                             {
-                                <form method="post" action="/collections/flag" class="mt-3">
+                                <form method="post" action="/collections/call-note" class="mt-3" data-saving>
+                                    <input type="hidden" name="caseId" value="@k.CaseId" />
+                                    <input type="hidden" name="accountNo" value="@Model.AccountNo" />
+                                    <label class="form-label" for="call-note">Spoke to the customer?</label>
+                                    <div class="d-flex flex-wrap" style="gap:.5rem;">
+                                        <input type="text" name="note" id="call-note" maxlength="500" required class="form-control flex-grow-1" style="min-width:200px;"
+                                               placeholder="What did you discuss? e.g. will pay 500 a week from Friday" />
+                                        <input type="date" name="promisedDate" class="form-control" style="max-width:180px;" title="Promised to pay by (optional)"
+                                               min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                                        <button type="submit" class="btn btn-outline-success">Save call</button>
+                                    </div>
+                                    <span class="form-note">Date is optional: when they promised to pay.</span>
+                                </form>
+                                <form method="post" action="/collections/flag" class="mt-3" data-saving>
                                     <input type="hidden" name="caseId" value="@k.CaseId" />
                                     <input type="hidden" name="accountNo" value="@Model.AccountNo" />
                                     <label class="form-label" for="flag-note">Can't reach this customer?</label>
@@ -283,3 +300,17 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Show the click registered (the page reload can take a moment) and
+        // stop a second click saving the note twice.
+        document.querySelectorAll('form[data-saving]').forEach(function (f) {
+            f.addEventListener('submit', function () {
+                var btn = f.querySelector('button[type=submit]');
+                btn.disabled = true;
+                btn.textContent = 'Saving…';
+            });
+        });
+    </script>
+}

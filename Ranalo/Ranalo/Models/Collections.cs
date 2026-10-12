@@ -76,6 +76,9 @@ namespace Ranalo.Models
         public int OpenFlagCount { get; set; }
         public string? LatestFlagNote { get; set; }
 
+        // The latest "spoke to customer" note on the case (null = none).
+        public CollectionCallNote? LastCall { get; set; }
+
         // From the online order, for the collector's list (null = no order).
         public AccountContact? Contact { get; set; }
 
@@ -131,6 +134,17 @@ namespace Ranalo.Models
         public decimal Due { get; set; }
         public int DueForReassignment { get; set; }
         public int OpenFlags { get; set; }
+    }
+
+    // A collector's note after speaking to the customer.
+    public class CollectionCallNote
+    {
+        public int CaseId { get; set; }
+        public int CollectorUserId { get; set; }
+        public string? CollectorName { get; set; }
+        public string Note { get; set; } = "";
+        public DateTime? PromisedDate { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class CollectionFlagRow
