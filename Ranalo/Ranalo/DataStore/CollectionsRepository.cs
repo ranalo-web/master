@@ -35,6 +35,11 @@ namespace Ranalo.DataStore
 
         Task AddFlagAsync(int caseId, int collectorUserId, string note);
 
+        // "Spoke to customer" notes (Database/Collections/002). Saving returns
+        // false, and reading returns nothing, until that script has run.
+        Task<bool> AddCallNoteAsync(int caseId, int collectorUserId, string note, DateTime? promisedDate);
+        Task<Dictionary<int, CollectionCallNote>> GetLatestCallNotesAsync();
+
         // Customer phone and next of kin from each account's online order
         // (Woo_Orders, found by the deposit M-Pesa code). Accounts with no
         // order are missing from the result.
@@ -138,47 +143,53 @@ namespace Ranalo.DataStore
                   AND (@All = 1 OR ci.ID IN @Ids)
                 OPTION (RECOMPILE)";
 
+        // Staged through temp tables: as one CTE query with OPTION (RECOMPILE),
+        // filtering to one collector got a plan that took ~60s (the My
+        // Collections page); this returns the same rows in about a second.
         internal const string PeriodsSql = @"
-                ;WITH P AS (
-                    SELECT a.Id AS AssignmentId, a.CaseId, a.CollectorUserId, a.StartAt, a.EndAt, c.AccountNo,
-                           u.[Name] + ' ' + ISNULL(u.[LastName], '') AS CollectorName
-                    FROM CollectionAssignments a
-                    INNER JOIN CollectionCases c ON c.Id = a.CaseId
-                    LEFT JOIN Users u ON u.UserId = a.CollectorUserId
-                    WHERE (@CollectorUserId IS NULL OR a.CollectorUserId = @CollectorUserId)
-                      AND (@CaseId IS NULL OR a.CaseId = @CaseId)
-                ),
-                Dev AS (
-                    SELECT DISTINCT AccountNo, CAST(AccountNo AS VARCHAR(30)) + '_R' AS Renamed FROM P
-                ),
-                DevPay AS (
-                    SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
-                    FROM Dev dv
-                    INNER JOIN KosePayments kp ON kp.AccountNoBigint = dv.AccountNo
-                    WHERE NOT EXISTS (SELECT 1 FROM OrphanedPayments op
-                                      WHERE op.MpesaCode = kp.MpesaCode
-                                        AND op.AccountNoBigint IS NOT NULL AND op.AccountNoBigint <> dv.AccountNo)
-                    UNION
-                    SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
-                    FROM Dev dv
-                    INNER JOIN KosePayments kp ON kp.AccountNo = dv.Renamed
-                    UNION
-                    SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
-                    FROM Dev dv
-                    INNER JOIN OrphanedPayments op ON op.AccountNoBigint = dv.AccountNo OR op.AccountNo = dv.Renamed
-                    INNER JOIN KosePayments kp ON kp.MpesaCode = op.MpesaCode
-                )
+                SELECT a.Id AS AssignmentId, a.CaseId, a.CollectorUserId, a.StartAt, a.EndAt, c.AccountNo,
+                       u.[Name] + ' ' + ISNULL(u.[LastName], '') AS CollectorName
+                INTO #P
+                FROM CollectionAssignments a
+                INNER JOIN CollectionCases c ON c.Id = a.CaseId
+                LEFT JOIN Users u ON u.UserId = a.CollectorUserId
+                WHERE (@CollectorUserId IS NULL OR a.CollectorUserId = @CollectorUserId)
+                  AND (@CaseId IS NULL OR a.CaseId = @CaseId);
+
+                SELECT DISTINCT AccountNo, CAST(AccountNo AS VARCHAR(30)) + '_R' AS Renamed INTO #Dev FROM #P;
+
+                SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+                INTO #DevPay
+                FROM #Dev dv
+                INNER JOIN KosePayments kp ON kp.AccountNoBigint = dv.AccountNo
+                WHERE NOT EXISTS (SELECT 1 FROM OrphanedPayments op
+                                  WHERE op.MpesaCode = kp.MpesaCode
+                                    AND op.AccountNoBigint IS NOT NULL AND op.AccountNoBigint <> dv.AccountNo)
+                UNION
+                SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+                FROM #Dev dv
+                INNER JOIN KosePayments kp ON kp.AccountNo = dv.Renamed
+                UNION
+                SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+                FROM #Dev dv
+                INNER JOIN OrphanedPayments op ON op.AccountNoBigint = dv.AccountNo
+                INNER JOIN KosePayments kp ON kp.MpesaCode = op.MpesaCode
+                UNION
+                SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+                FROM #Dev dv
+                INNER JOIN OrphanedPayments op ON op.AccountNo = dv.Renamed
+                INNER JOIN KosePayments kp ON kp.MpesaCode = op.MpesaCode;
+
                 SELECT
                     p.AssignmentId, p.CaseId, p.CollectorUserId, p.CollectorName, p.StartAt, p.EndAt,
                     CAST(ISNULL(SUM(dp.AmountValue), 0) AS DECIMAL(18,2)) AS Recovered,
                     CAST(ISNULL(SUM(CASE WHEN dp.PaymentDateValue >= @MonthStart THEN dp.AmountValue END), 0) AS DECIMAL(18,2)) AS RecoveredThisMonth,
                     MAX(dp.PaymentDateValue) AS LastPaymentAt
-                FROM P p
-                LEFT JOIN DevPay dp ON dp.AccountNo = p.AccountNo
+                FROM #P p
+                LEFT JOIN #DevPay dp ON dp.AccountNo = p.AccountNo
                     AND dp.PaymentDateValue >= p.StartAt
                     AND (p.EndAt IS NULL OR dp.PaymentDateValue < p.EndAt)
-                GROUP BY p.AssignmentId, p.CaseId, p.CollectorUserId, p.CollectorName, p.StartAt, p.EndAt
-                OPTION (RECOMPILE)";
+                GROUP BY p.AssignmentId, p.CaseId, p.CollectorUserId, p.CollectorName, p.StartAt, p.EndAt;";
 
         // Shortfall uses the commission calculator's formula
         // (DashboardReportRepository.FetchAgentCommissionAccountRowsAsync),
@@ -388,6 +399,41 @@ namespace Ranalo.DataStore
             await _db.ExecuteAsync(
                 "INSERT INTO CollectionFlags (CaseId, CollectorUserId, Note) VALUES (@CaseId, @CollectorUserId, @Note)",
                 new { CaseId = caseId, CollectorUserId = collectorUserId, Note = note });
+        }
+
+        public async Task<bool> AddCallNoteAsync(int caseId, int collectorUserId, string note, DateTime? promisedDate)
+        {
+            const string sql = @"
+                IF OBJECT_ID('dbo.CollectionCallNotes') IS NULL
+                    SELECT CAST(0 AS BIT)
+                ELSE
+                BEGIN
+                    INSERT INTO CollectionCallNotes (CaseId, CollectorUserId, Note, PromisedDate)
+                    VALUES (@CaseId, @CollectorUserId, @Note, @PromisedDate);
+                    SELECT CAST(1 AS BIT);
+                END";
+
+            return await _db.ExecuteScalarAsync<bool>(sql, new { CaseId = caseId, CollectorUserId = collectorUserId, Note = note, PromisedDate = promisedDate?.Date });
+        }
+
+        public async Task<Dictionary<int, CollectionCallNote>> GetLatestCallNotesAsync()
+        {
+            const string sql = @"
+                IF OBJECT_ID('dbo.CollectionCallNotes') IS NOT NULL
+                    SELECT n.CaseId, n.CollectorUserId, u.[Name] + ' ' + ISNULL(u.[LastName], '') AS CollectorName,
+                           n.Note, CAST(n.PromisedDate AS DATETIME2) AS PromisedDate, n.CreatedAt
+                    FROM (
+                        SELECT *, ROW_NUMBER() OVER (PARTITION BY CaseId ORDER BY CreatedAt DESC, Id DESC) AS rn
+                        FROM CollectionCallNotes
+                    ) n
+                    LEFT JOIN Users u ON u.UserId = n.CollectorUserId
+                    WHERE n.rn = 1
+                ELSE
+                    SELECT CAST(NULL AS INT) AS CaseId, CAST(NULL AS INT) AS CollectorUserId, CAST(NULL AS NVARCHAR(200)) AS CollectorName,
+                           CAST(NULL AS NVARCHAR(500)) AS Note, CAST(NULL AS DATETIME2) AS PromisedDate, CAST(NULL AS DATETIME2) AS CreatedAt
+                    WHERE 1 = 0";
+
+            return (await _db.QueryAsync<CollectionCallNote>(sql)).ToDictionary(n => n.CaseId);
         }
 
         public async Task<bool> ResolveFlagAsync(int flagId, int resolvedByUserId)

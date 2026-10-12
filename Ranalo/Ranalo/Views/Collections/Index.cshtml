@@ -117,6 +117,10 @@
                                         {
                                             <span class="d-block small text-soft">No next of kin on file</span>
                                         }
+                                        @if (c.LastCall != null)
+                                        {
+                                            <span class="d-block small text-success"><em class="icon ni ni-chat"></em> Spoke @c.LastCall.CreatedAt.ToString("dd MMM"): @c.LastCall.Note@if (c.LastCall.PromisedDate.HasValue) { <text> · promised to pay by @c.LastCall.PromisedDate.Value.ToString("dd MMM")</text> }</span>
+                                        }
                                         @if (c.OpenFlagCount > 0) { <span class="d-block small text-warning"><em class="icon ni ni-flag"></em> Flagged: @c.LatestFlagNote</span> }
                                     </td>
                                     <td class="cd-md">KES @c.ShortfallAtHandover.ToString("N0")</td>
@@ -126,8 +130,12 @@
                                         <span class="d-block sub-text @(c.DueForReassignment ? "text-danger fw-bold" : "")">@c.DaysWithoutPaymentWhileHeld days without payment</span>
                                     </td>
                                     <td class="text-end">
-                                        <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#flag-modal"
-                                                data-case="@c.CaseId" data-name="@c.CustomerName">Can't reach</button>
+                                        <div class="d-flex flex-column align-items-end" style="gap:.25rem;">
+                                            <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#call-modal"
+                                                    data-case="@c.CaseId" data-name="@c.CustomerName">Spoke to customer</button>
+                                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#flag-modal"
+                                                    data-case="@c.CaseId" data-name="@c.CustomerName">Can't reach</button>
+                                        </div>
                                     </td>
                                 </tr>
                             }
@@ -190,10 +198,34 @@
     </div>
 </div>
 
+<div class="modal fade" tabindex="-1" id="call-modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="/collections/call-note" data-saving>
+                <div class="modal-header">
+                    <h5 class="modal-title">Spoke to <span id="call-name"></span></h5>
+                    <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close"><em class="icon ni ni-cross"></em></a>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="caseId" id="call-case" />
+                    <label class="form-label" for="call-note">What did you discuss?</label>
+                    <textarea class="form-control" name="note" id="call-note" rows="3" maxlength="500" required
+                              placeholder="e.g. Lost job, will pay 500 a week from Friday"></textarea>
+                    <label class="form-label mt-3" for="call-promised">Promised to pay by (optional)</label>
+                    <input type="date" class="form-control" name="promisedDate" id="call-promised" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Save call</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" tabindex="-1" id="flag-modal">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <form method="post" action="/collections/flag">
+            <form method="post" action="/collections/flag" data-saving>
                 <div class="modal-header">
                     <h5 class="modal-title">Can't reach <span id="flag-name"></span></h5>
                     <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close"><em class="icon ni ni-cross"></em></a>
@@ -219,6 +251,20 @@
             var b = e.relatedTarget;
             document.getElementById('flag-case').value = b.dataset.case;
             document.getElementById('flag-name').textContent = b.dataset.name || 'customer';
+        });
+        document.getElementById('call-modal').addEventListener('show.bs.modal', function (e) {
+            var b = e.relatedTarget;
+            document.getElementById('call-case').value = b.dataset.case;
+            document.getElementById('call-name').textContent = b.dataset.name || 'customer';
+        });
+        // Show the click registered (the page reload can take a moment) and
+        // stop a second click saving the note twice.
+        document.querySelectorAll('form[data-saving]').forEach(function (f) {
+            f.addEventListener('submit', function () {
+                var btn = f.querySelector('button[type=submit]');
+                btn.disabled = true;
+                btn.textContent = 'Saving…';
+            });
         });
     </script>
 }

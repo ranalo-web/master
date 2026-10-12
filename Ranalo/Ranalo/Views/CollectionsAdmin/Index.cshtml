@@ -333,6 +333,7 @@
                                                 <a href="/account-details/@c.AccountNo" target="_blank" class="fw-medium">@(string.IsNullOrWhiteSpace(c.CustomerName) ? "(no name)" : c.CustomerName)</a>
                                                 <span class="d-block sub-text">AC @c.AccountNo · since @c.HandoverAt.ToString("dd MMM yyyy")@(c.IsGoLiveBackfill ? " (go-live)" : "")</span>
                                                 @if (c.ContractEnded) { <span class="badge badge-dim bg-info">Repossessed &amp; resold</span> }
+                                                @if (c.LastCall != null) { <span class="d-block small text-success" title="@c.LastCall.Note"><em class="icon ni ni-chat"></em> Spoke @c.LastCall.CreatedAt.ToString("dd MMM"): @c.LastCall.Note@if (c.LastCall.PromisedDate.HasValue) { <text> · promised @c.LastCall.PromisedDate.Value.ToString("dd MMM")</text> }</span> }
                                                 @if (c.OpenFlagCount > 0) { <span class="d-block small text-warning" title="@c.LatestFlagNote"><em class="icon ni ni-flag"></em> Can't reach: @c.LatestFlagNote</span> }
                                             </td>
                                             <td>

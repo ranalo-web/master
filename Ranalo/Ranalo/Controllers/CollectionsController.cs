@@ -79,6 +79,22 @@ namespace Ranalo.Controllers
             return accountNo.HasValue ? Redirect($"/customer-details/{accountNo}") : RedirectToAction("Index");
         }
 
+        // "Spoke to customer" -- what was discussed, and any promised date.
+        [HttpPost]
+        [Route("collections/call-note")]
+        public async Task<IActionResult> AddCallNote(int caseId, string? note, DateTime? promisedDate, long? accountNo = null)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var (ok, message) = await _collections.AddCallNoteAsync(caseId, settings.UserId, note, promisedDate);
+            TempData[ok ? "CollectionsSuccess" : "CollectionsError"] = message;
+            return accountNo.HasValue ? Redirect($"/customer-details/{accountNo}") : RedirectToAction("Index");
+        }
+
         [HttpGet]
         [Route("new-collections/{page:int?}")]
         public async Task<IActionResult> NewCollections(string searchTerm = "", int page = 1, int pageSize = 10)
