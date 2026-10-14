@@ -29,7 +29,7 @@
         (RecoveryAction.TranssionSend, "1. Send to Transsion", "Pre-enrols the IMEI with Transsion PayTrigger. It locks as soon as the phone connects. Nuovo stays on the phone.", "btn-outline-primary",
             $"Send IMEI {r.Imei} to Transsion? It locks as soon as the phone connects."),
         (RecoveryAction.TranssionCheck, "2. Check in Transsion", "Looks the phone up in Transsion. Once it's active there, the daily lock jobs take it over (moved to Transsion).", "btn-outline-light", null),
-        (RecoveryAction.Lock, "3. Lock now", "Sets the Transsion lock date to now. Can be sent before the phone shows active; it locks once the phone checks in.", "btn-danger",
+        (RecoveryAction.Lock, "3. Lock now", "Sets the Transsion lock date to now. Only once the phone is active in Transsion; a sent phone locks on activation by itself.", "btn-danger",
             $"Lock {r.CustomerName}'s phone (account {r.AccountNo}) now?"),
         (RecoveryAction.Unlock, "Unlock", "Moves the Transsion lock date a day ahead.", "btn-outline-warning",
             $"Unlock account {r.AccountNo} in Transsion?"),

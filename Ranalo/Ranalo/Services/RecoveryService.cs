@@ -165,9 +165,7 @@ namespace Ranalo.Services
 
                 var newStatus = action == RecoveryAction.TranssionCheck
                     ? RecoveryRules.StatusAfterTranssionCheck(r.Status, success ? transsionState : null)
-                    : transsion && action is RecoveryAction.Lock or RecoveryAction.Unlock
-                        ? RecoveryRules.StatusAfterTranssionLock(action, success, r.Status)
-                        : RecoveryRules.StatusAfter(action, success, r.Status);
+                    : RecoveryRules.StatusAfter(action, success, r.Status);
                 if (action is not (RecoveryAction.MoveToKnox or RecoveryAction.MoveToTranssion) && (newStatus != r.Status || transId != null))
                 {
                     await _repository.UpdateAsync(r.Id, newStatus, transId);

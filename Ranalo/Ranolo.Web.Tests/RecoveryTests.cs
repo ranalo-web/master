@@ -42,7 +42,7 @@ namespace Ranolo.Web.Tests
             Assert.That(fresh, Does.Not.Contain(RecoveryAction.Upload), "no Knox steps for Transsion phones");
 
             var sent = RecoveryRules.AllowedActions(Phone(RecoveryStatus.UploadSent, make));
-            Assert.That(sent, Is.SupersetOf(new[] { RecoveryAction.Lock, RecoveryAction.Unlock }), "the lock date can be set once sent");
+            Assert.That(sent, Does.Not.Contain(RecoveryAction.Lock), "Transsion refuses a lock date before activation (code 20001)");
             Assert.That(sent, Does.Not.Contain(RecoveryAction.MoveToTranssion), "not until it's active");
 
             var active = RecoveryRules.AllowedActions(Phone(RecoveryStatus.Approved, make));
@@ -443,35 +443,6 @@ namespace Ranolo.Web.Tests
             Assert.That(_payTrigger.RepayCalls.Single().NextRepayTime, Is.EqualTo(_time.Now.ToUnixTimeSeconds()));
             Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.LockSent));
             Assert.That(_knox.Calls, Is.Empty, "Transsion phones never go to Knox");
-        }
-
-        [Test]
-        public async Task LockingASentPhoneBeforeItsActiveKeepsItSent()
-        {
-            // 7043758 / 7087695: online, but Transsion hasn't heard from them yet.
-            TranssionPhone(RecoveryStatus.UploadSent);
-
-            var result = await _service.RunAsync(2, RecoveryAction.Lock, null, 7);
-
-            Assert.That(result.Success, Is.True, result.Message);
-            Assert.That(_payTrigger.RepayCalls.Single().NextRepayTime, Is.EqualTo(_time.Now.ToUnixTimeSeconds()));
-            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent), "not active yet");
-        }
-
-        [Test]
-        public async Task ActiveCheckAfterAnEarlyLockStillHandsItOver()
-        {
-            TranssionPhone(RecoveryStatus.UploadSent);
-            await _service.RunAsync(2, RecoveryAction.Lock, null, 7);
-            _payTrigger.FindResponse = new FindLockStateResponse
-            {
-                Code = 200, Message = "Success",
-                Data = new FindLockStateData { Imei = "352367242606595", LockState = 3000, MobileStatus = 1000 },
-            };
-
-            await _service.RunAsync(2, RecoveryAction.TranssionCheck, null, 7);
-
-            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.MovedToTranssion));
         }
 
         [Test]

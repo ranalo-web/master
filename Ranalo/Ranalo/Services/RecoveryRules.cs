@@ -30,8 +30,8 @@ namespace Ranalo.Services
     //      and an Enrolments row, so the daily lock jobs manage it from then
     //      on. (Move to Transsion by hand if that didn't happen.)
     //   3. Lock now / Unlock through updateRepayInfo (lock date now / a day
-    //      ahead), any time after it's sent. Before it's active the status
-    //      stays "Sent to Transsion".
+    //      ahead), once it's active -- Transsion refuses a lock date before
+    //      activation (code 20001), and a sent phone locks on activation.
     // A phone that can't be caught is marked Not catchable and stays with
     // its old locker. Other brands are tracked with notes only.
     public static class RecoveryRules
@@ -87,15 +87,13 @@ namespace Ranalo.Services
             {
                 actions.Add(RecoveryAction.TranssionSend);
                 actions.Add(RecoveryAction.TranssionCheck);
-                // Once sent, the lock date can be set straight away (as with
-                // Knox): Transsion holds it until the phone checks in.
-                if (r.Status is RecoveryStatus.UploadSent or RecoveryStatus.Approved or RecoveryStatus.LockSent)
+                // Unlike Knox, Transsion refuses a lock date until the phone
+                // has activated ("the device is not activated", code 20001,
+                // 2026-10-14). Sent phones lock on activation anyway.
+                if (r.Status is RecoveryStatus.Approved or RecoveryStatus.LockSent)
                 {
                     actions.Add(RecoveryAction.Lock);
                     actions.Add(RecoveryAction.Unlock);
-                }
-                if (r.Status is RecoveryStatus.Approved or RecoveryStatus.LockSent)
-                {
                     actions.Add(RecoveryAction.MoveToTranssion);
                 }
                 return actions;
@@ -159,11 +157,6 @@ namespace Ranalo.Services
 
         // A Transsion check that finds the phone active makes a sent phone
         // "Active in Transsion"; it never moves a phone back.
-        // Lock/Unlock on a Transsion phone that isn't active yet only sets the
-        // lock date Transsion holds for it; it stays "Sent to Transsion".
-        public static string StatusAfterTranssionLock(RecoveryAction action, bool success, string current) =>
-            current == RecoveryStatus.UploadSent ? current : StatusAfter(action, success, current);
-
         public static string StatusAfterTranssionCheck(string current, int? lockState) =>
             lockState == TranssionActiveState && current is RecoveryStatus.Investigating or RecoveryStatus.UploadSent
                 ? RecoveryStatus.Approved
