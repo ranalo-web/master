@@ -150,7 +150,7 @@ namespace Ranalo.Controllers
 
                     // A Recovery phone sent to Transsion: hand it to the lock
                     // jobs now. Not retried through PayTrigger if it fails --
-                    // the hourly check (ScheduledRecoveryTranssionCheck) is
+                    // the daily check (ScheduledRecoveryTranssionCheck) is
                     // the fallback.
                     try
                     {

@@ -544,7 +544,7 @@ namespace Ranolo.Web.Tests
             Assert.That(_repo.LockGroupSet, Is.Null);
         }
 
-        // ---- Automatic Transsion checks (hourly job + webhook) ----
+        // ---- Automatic Transsion checks (daily job + webhook) ----
 
         private void TranssionSays(int lockState) => _payTrigger.FindResponse = new FindLockStateResponse
         {
@@ -575,7 +575,7 @@ namespace Ranolo.Web.Tests
 
             Assert.That(moved, Is.EqualTo(0));
             Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent));
-            Assert.That(_repo.Log, Is.Empty, "no log line every hour for a phone still waiting");
+            Assert.That(_repo.Log, Is.Empty, "no log line every day for a phone still waiting");
         }
 
         [Test]

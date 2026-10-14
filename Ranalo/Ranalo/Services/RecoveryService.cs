@@ -203,7 +203,7 @@ namespace Ranalo.Services
         public const int SystemUserId = 0;
 
         // Recovery phones waiting as "Sent to Transsion" (ScheduledRecovery-
-        // TranssionCheck, hourly): asks Transsion about each and runs Check
+        // TranssionCheck, daily): asks Transsion about each and runs Check
         // in Transsion only for the ones now active -- which moves them to
         // Transsion -- so waiting phones don't fill the log. Returns how
         // many moved.

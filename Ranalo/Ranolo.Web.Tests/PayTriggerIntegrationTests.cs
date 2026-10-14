@@ -290,7 +290,7 @@ namespace Ranolo.Web.Tests
 
             var result = await CreateController(repo, body, PayTriggerSigner.SignJson(body, "secret"), null, recoveries).DeviceStatusCallback();
 
-            Assert.That(StatusOf(result), Is.EqualTo(200), "the hourly check picks it up instead");
+            Assert.That(StatusOf(result), Is.EqualTo(200), "the daily check picks it up instead");
         }
 
         [TestCase("{\"imei\":\"123\",\"mobileStatus\":1000,\"state\":1000,\"notifyType\":1000}")]
