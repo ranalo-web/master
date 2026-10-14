@@ -17,6 +17,7 @@ namespace Ranalo.DataStore
         Task LogAsync(int recoveryId, string step, bool success, string? response, int? userId);
         Task SetLockGroupAsync(long accountNo, int lockGroup, bool? locked);
         Task MarkMovedAsync(int id, string movedStatus);
+        Task<List<LockerDevice>> GetLockerDevicesAsync();
     }
 
     // LockRecoveries / LockRecoveryAttempts (Database/Recovery/001).
@@ -137,5 +138,16 @@ namespace Ranalo.DataStore
                 UPDATE LockRecoveries
                 SET Status = @Status, MovedToKnoxAtUtc = SYSUTCDATETIME(), UpdatedAtUtc = SYSUTCDATETIME()
                 WHERE Id = @Id", new { Id = id, Status = movedStatus });
+
+        // Knox and Transsion phones the lock jobs manage, with an open contract.
+        public async Task<List<LockerDevice>> GetLockerDevicesAsync() =>
+            (await _db.QueryAsync<LockerDevice>(@"
+                SELECT d.Id AS AccountNo, LTRIM(RTRIM(d.ImeiNo)) AS Imei, NULLIF(LTRIM(RTRIM(d.ImeiNo2)), '') AS Imei2, d.LockGroup
+                FROM Devices d
+                WHERE d.LockGroup IN (2, 3)
+                  AND d.Status = 'enrolled'
+                  AND ISNULL(d.EnrollmentStatus, '') <> 'Removed'
+                  AND ISNULL(d.ImeiNo, '') <> ''
+                  AND EXISTS (SELECT 1 FROM Contract_Info c WHERE c.ID = d.Id AND c.EndDate IS NULL)")).ToList();
     }
 }

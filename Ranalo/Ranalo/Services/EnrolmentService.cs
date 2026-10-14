@@ -301,9 +301,17 @@ namespace Ranalo.Services
                 }
                 };
 
-                await _knoxGuardClient.ExecuteDeviceActionsAsync(request);
+                // Knox's reply used to be ignored: 41109528 was gone from Knox
+                // from June to October and every lock failed unseen. Record
+                // the failure and keep our row as it was -- the daily locker
+                // check (RecoveryService.CheckLockersAsync) opens a Recovery.
+                var response = await _knoxGuardClient.ExecuteDeviceActionsAsync(request);
+                if (!response.IsSuccessStatusCode)
+                {
+                    device.Result = $"Knox HTTP {(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}";
+                    continue;
+                }
 
-                //TODO:If this succeds we need to update the devices table
                 var existingDevice = await _kosePaymentsRepository.GetDeviceByAccountId(device.AccountId);
 
                 if(existingDevice != null)

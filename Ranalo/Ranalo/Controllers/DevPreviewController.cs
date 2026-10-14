@@ -514,6 +514,20 @@ namespace Ranalo.Controllers
             return Json(list);
         }
 
+        // Knox device detail by objectId, read-only (raw reply).
+        [HttpGet]
+        [Route("dev-preview/knox-device/{objectId}")]
+        public async Task<IActionResult> KnoxDevice(string objectId, [FromServices] Ranalo.SumsungKnox.IKnoxGuardClient knox)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var response = await knox.GetDeviceInfoAsync(objectId);
+            return Content(await response.Content.ReadAsStringAsync(), "application/json");
+        }
+
         // The real Recovery list, read-only.
         [HttpGet]
         [Route("dev-preview/recovery-list-live")]

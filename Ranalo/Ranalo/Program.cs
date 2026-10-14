@@ -197,6 +197,7 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService<ScheduledDashboardRollup>();
         builder.Services.AddHostedService<ScheduledWriteOffCheck>();
         builder.Services.AddHostedService<ScheduledRecoveryTranssionCheck>();
+        builder.Services.AddHostedService<ScheduledLockerCheck>();
     }
 }
 

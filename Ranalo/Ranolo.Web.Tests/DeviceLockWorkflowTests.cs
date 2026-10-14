@@ -1355,6 +1355,32 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
+        public async Task KnoxDailyLock_KnoxRefuses_RecordsItAndLeavesOurRowAlone()
+        {
+            // 41109528: gone from Knox; every daily lock failed unseen.
+            _knox.Status = System.Net.HttpStatusCode.NotFound;
+            _knox.Body = "{\"result\":\"FAIL\",\"error\":{\"code\":4040300,\"message\":\"DEVICE_NOT_FOUND\"}}";
+            var devices = new List<LockTransaction> { new() { AccountId = 2, AutoLockDate = new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc) } };
+
+            await _service.LockDevicesKnox(devices);
+
+            Assert.That(devices.Single().Result, Does.StartWith("Knox HTTP 404").And.Contain("DEVICE_NOT_FOUND"));
+            Assert.That(_devices.ById[2].NextLockDate, Is.EqualTo("10/10/2026"), "no lock date Knox never took");
+            Assert.That(_devices.Updated, Is.Empty);
+        }
+
+        [Test]
+        public async Task KnoxDailyLock_KnoxAccepts_UpdatesOurRow()
+        {
+            var devices = new List<LockTransaction> { new() { AccountId = 2, AutoLockDate = new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc) } };
+
+            await _service.LockDevicesKnox(devices);
+
+            Assert.That(devices.Single().Result, Is.Null);
+            Assert.That(_devices.ById[2].NextLockDate, Is.EqualTo("20/10/2026"));
+        }
+
+        [Test]
         public async Task Transsion_Pushes9999_AndRecordsIt()
         {
             var result = await _service.SetFullyPaidPayTrigger(new List<LockTransaction> { new() { AccountId = 3 } });

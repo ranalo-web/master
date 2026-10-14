@@ -19,6 +19,7 @@ namespace Ranalo.Services
         Task<(int? Id, string? Error)> AddAsync(long accountNo, string reason, string? notes, int userId);
         Task<RecoveryActionResult> RunAsync(int id, RecoveryAction action, string? note, int userId);
         Task<int> SweepTranssionAsync();
+        Task<List<string>> CheckLockersAsync();
         Task OnTranssionActivatedAsync(string imei);
     }
 
@@ -261,6 +262,78 @@ namespace Ranalo.Services
             }
         }
 
+        // Daily (ScheduledLockerCheck): every Knox/Transsion phone with an
+        // open contract must still be in Knox/Transsion. One that isn't gets
+        // a Recovery ("Lock lost") with the locker's reply, unless it already
+        // has an open one. Only a definite "not there" counts -- an error
+        // reaching Knox or Transsion is logged and the phone left alone.
+        // Added after 41109528 dropped out of Knox in June unnoticed.
+        public async Task<List<string>> CheckLockersAsync()
+        {
+            var opened = new List<string>();
+            foreach (var d in await _repository.GetLockerDevicesAsync())
+            {
+                try
+                {
+                    var missing = d.LockGroup == RecoveryRules.KnoxLockGroup
+                        ? await MissingFromKnoxAsync(d)
+                        : await MissingFromTranssionAsync(d);
+                    if (missing == null || (await _repository.GetOpenIdForAccountAsync(d.AccountNo)).HasValue)
+                    {
+                        continue;
+                    }
+
+                    var (id, error) = await AddAsync(d.AccountNo, RecoveryReason.LockLost, missing, SystemUserId);
+                    if (id.HasValue && error == null)
+                    {
+                        opened.Add($"{d.AccountNo}: {missing}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Locker check failed for account {Account}", d.AccountNo);
+                }
+            }
+            return opened;
+        }
+
+        private async Task<string?> MissingFromKnoxAsync(LockerDevice d)
+        {
+            foreach (var imei in new[] { d.Imei, d.Imei2 }.Where(i => !string.IsNullOrWhiteSpace(i)))
+            {
+                var list = await _knox.ListDevicesAsync(new ListDevicesRequest
+                {
+                    PageNum = 0, PageSize = 20, SortBy = "updateTime", SortOrder = "descending", Search = imei,
+                });
+                if (list == null || !string.Equals(list.Result, "SUCCESS", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;   // couldn't ask Knox: not proof it's gone
+                }
+                if (list.DeviceList?.Any(x => x.Imei == imei || x.Imei2 == imei || x.DeviceUid == imei) == true)
+                {
+                    return null;
+                }
+            }
+            return $"Not in Knox any more (searched IMEI {d.Imei}{(d.Imei2 != null ? " and " + d.Imei2 : "")}). Send it to Knox again.";
+        }
+
+        private async Task<string?> MissingFromTranssionAsync(LockerDevice d)
+        {
+            var state = await _payTrigger.FindLockStateAsync(new FindLockStateRequest { Imei = d.Imei });
+            if (state.Code == TranssionNotFoundCode)
+            {
+                return $"Not in Transsion any more: {state.Message} (code {state.Code}). Send it to Transsion again.";
+            }
+            if (state.IsSuccess && state.Data?.LockState == RecoveryRules.TranssionRemovedState)
+            {
+                return "Removed in Transsion (lock state 5000) while the contract is open. Send it to Transsion again.";
+            }
+            return null;
+        }
+
+        // findLockState: "The device-lock not exist".
+        private const int TranssionNotFoundCode = 50071;
+
         private async Task<List<LockRecovery>> WaitingForTranssionAsync() =>
             (await _repository.GetListAsync("open"))
                 .Where(r => RecoveryRules.IsTranssion(r.Make) && r.Status == RecoveryStatus.UploadSent)
@@ -274,12 +347,48 @@ namespace Ranalo.Services
             return (ok, Json(result), ok ? transId : null);
         }
 
+        // Veritech says "Complete" whether or not Knox took the phone
+        // (5871723, 8511324, 8583526, 8680519 never reached Knox), so a
+        // complete upload is checked against Knox too.
         private async Task<(bool, string?, string?)> UploadStatusAsync(LockRecovery r)
         {
             var result = await _veritech.GetTransactionStatusAsync(r.VeritechTransId!);
             var d = result?.Data;
-            var summary = d == null ? "" : $"Status {d.Status}, result {d.Result}, {d.Message}\n";
-            return (d != null, summary + Json(result), null);
+            if (d == null)
+            {
+                return (false, Json(result), null);
+            }
+
+            var summary = $"Status {d.Status}, result {d.Result}, {d.Message}";
+            if (string.Equals(d.Status, "Complete", StringComparison.OrdinalIgnoreCase))
+            {
+                var inKnox = await InKnoxAsync(r.Imei);
+                if (inKnox == false)
+                {
+                    return (false, $"Veritech says the upload is complete, but Knox doesn't have the phone. "
+                        + $"Ask Veritech why transaction {r.VeritechTransId} didn't reach Knox (often: the phone is registered to another Knox account).\n"
+                        + Json(result), null);
+                }
+                if (inKnox == true)
+                {
+                    summary += " -- Knox has the phone; approve it next.";
+                }
+            }
+            return (true, summary + "\n" + Json(result), null);
+        }
+
+        // True/false when Knox answered; null when it couldn't be asked.
+        private async Task<bool?> InKnoxAsync(string imei)
+        {
+            var list = await _knox.ListDevicesAsync(new ListDevicesRequest
+            {
+                PageNum = 0, PageSize = 20, SortBy = "updateTime", SortOrder = "descending", Search = imei,
+            });
+            if (list == null || !string.Equals(list.Result, "SUCCESS", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+            return list.DeviceList?.Any(x => x.Imei == imei || x.Imei2 == imei || x.DeviceUid == imei) == true;
         }
 
         private static async Task<(bool, string?, string?)> KnoxCallAsync(Func<Task<HttpResponseMessage>> call)

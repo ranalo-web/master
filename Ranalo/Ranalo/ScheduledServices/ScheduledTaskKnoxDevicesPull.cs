@@ -95,7 +95,12 @@ namespace Ranalo.ScheduledServices
                             LockType = SetLockedByRelock(device.RelockTimestamp) == false ? "unlocked" : "complete",
                             Locked = SetLockedByRelock(device.RelockTimestamp),
 
-                            LastConnectedAt = DateTimeOffset.FromUnixTimeMilliseconds(device.LastSeen).UtcDateTime.ToString("dd-MM-yy HH:mm:ss 'UTC'"),
+                            // Knox's list gives lastSeen 0 for every phone (and our
+                            // account can't read device details: 403), which used to
+                            // be stored as 01-01-70. Leave the field empty then.
+                            LastConnectedAt = device.LastSeen > 0
+                                ? DateTimeOffset.FromUnixTimeMilliseconds(device.LastSeen).UtcDateTime.ToString("dd-MM-yy HH:mm:ss 'UTC'")
+                                : null,
                             IsLockedOnSimSwap = device.IsSimControlLocked,
                             EnrollmentStatus = device.Status == "Enrolled" ? "Completed" : "Failed",
                             NextLockDateIsoFormat = TimestampHelper.FormatRelockTimestamp(device.RelockTimestamp),

@@ -36,7 +36,21 @@ namespace Ranalo.Models
 
     public static class RecoveryReason
     {
-        public static readonly string[] All = { "Fraud", "Collections", "Other" };
+        // Opened by the daily locker check: Knox/Transsion no longer has a
+        // phone with an open contract.
+        public const string LockLost = "Lock lost";
+
+        public static readonly string[] All = { "Fraud", "Collections", LockLost, "Other" };
+    }
+
+    // A phone the app locks through Knox (2) or Transsion (3), with an open
+    // contract -- what the daily locker check verifies.
+    public class LockerDevice
+    {
+        public long AccountNo { get; set; }
+        public string Imei { get; set; } = "";
+        public string? Imei2 { get; set; }
+        public int LockGroup { get; set; }
     }
 
     public enum RecoveryAction

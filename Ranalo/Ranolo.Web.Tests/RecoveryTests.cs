@@ -179,6 +179,8 @@ namespace Ranolo.Web.Tests
         private InterfaceFake<IKnoxGuardClient> _knox = null!;
         private HttpStatusCode _knoxStatus;
         private FakePayTrigger _payTrigger = null!;
+        private HashSet<string> _knoxHas = null!;
+        private string _knoxListResult = "SUCCESS";
         private FakeTime _time = null!;
         private RecoveryService _service = null!;
 
@@ -201,8 +203,15 @@ namespace Ranolo.Web.Tests
                 {
                     Data = new UploadDeviceResultModel { Transaction_Id = "vkdp-123", Status = "success" },
                 }),
+                ["GetTransactionStatusAsync"] = _ => Task.FromResult(new SuccessTransactionStatusResponse
+                {
+                    Data = new TransactionStatusResultModel { Status = "Complete" },
+                    Message = "OK",
+                }),
             });
 
+            _knoxHas = new HashSet<string>();
+            _knoxListResult = "SUCCESS";
             Task<HttpResponseMessage> Reply(object?[]? _) =>
                 Task.FromResult(new HttpResponseMessage(_knoxStatus) { Content = new StringContent("{\"result\":\"x\"}", Encoding.UTF8, "application/json") });
             IKnoxGuardClient knox;
@@ -210,6 +219,15 @@ namespace Ranolo.Web.Tests
             {
                 ["ApproveDeviceAsync"] = Reply,
                 ["ExecuteDeviceActionsAsync"] = Reply,
+                ["ListDevicesAsync"] = args =>
+                {
+                    var search = ((ListDevicesRequest)args![0]!).Search;
+                    return Task.FromResult(new ListDevicesResponse
+                    {
+                        Result = _knoxListResult,
+                        DeviceList = _knoxHas.Contains(search!) ? new List<DeviceDto> { new() { Imei = search } } : null,
+                    });
+                },
             });
 
             _payTrigger = new FakePayTrigger();
@@ -226,6 +244,32 @@ namespace Ranolo.Web.Tests
             Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.UploadSent));
             Assert.That(_repo.Items[1].VeritechTransId, Is.EqualTo("vkdp-123"));
             Assert.That(_repo.Log.Single().Step, Is.EqualTo("Upload"));
+        }
+
+        [Test]
+        public async Task UploadCompleteButNotInKnoxSaysAskVeritech()
+        {
+            // 5871723 (vkdp360691utid): Veritech "Complete", Knox never got it.
+            _repo.Items[1].Status = RecoveryStatus.UploadSent;
+            _repo.Items[1].VeritechTransId = "vkdp360691utid";
+
+            var result = await _service.RunAsync(1, RecoveryAction.UploadStatus, null, 7);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Does.Contain("Knox doesn't have the phone").And.Contain("vkdp360691utid"));
+        }
+
+        [Test]
+        public async Task UploadCompleteAndInKnoxSaysApproveNext()
+        {
+            _repo.Items[1].Status = RecoveryStatus.UploadSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+            _knoxHas.Add("355132188643698");
+
+            var result = await _service.RunAsync(1, RecoveryAction.UploadStatus, null, 7);
+
+            Assert.That(result.Success, Is.True, result.Message);
+            Assert.That(result.Message, Does.Contain("Knox has the phone"));
         }
 
         [Test]
@@ -640,6 +684,87 @@ namespace Ranolo.Web.Tests
             Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent));
         }
 
+        // ---- Daily locker check (after 41109528 dropped out of Knox) ----
+
+        private void OnKnox(long account, string imei, string? imei2 = null)
+        {
+            _repo.LockerDevices.Add(new LockerDevice { AccountNo = account, Imei = imei, Imei2 = imei2, LockGroup = 2 });
+            _repo.Devices[account] = new RecoveryDeviceLookup { AccountNo = account, Imei = imei, Make = null, Model = "SM-A165F/DS", LockGroup = 2 };
+        }
+
+        [Test]
+        public async Task LockerCheck_PhoneGoneFromKnox_OpensARecovery()
+        {
+            OnKnox(41109528, "352801608547712", "357778958547713");
+
+            var opened = await _service.CheckLockersAsync();
+
+            var recovery = _repo.Items.Values.Single(r => r.AccountNo == 41109528);
+            Assert.Multiple(() =>
+            {
+                Assert.That(opened.Single(), Does.StartWith("41109528"));
+                Assert.That(recovery.Reason, Is.EqualTo(RecoveryReason.LockLost));
+                Assert.That(recovery.Notes, Does.Contain("Not in Knox any more").And.Contain("357778958547713"));
+                Assert.That(recovery.Status, Is.EqualTo(RecoveryStatus.Investigating));
+            });
+        }
+
+        [Test]
+        public async Task LockerCheck_PhoneInKnox_NothingOpened()
+        {
+            OnKnox(2565870, "355039219214193");
+            _knoxHas.Add("355039219214193");
+
+            Assert.That(await _service.CheckLockersAsync(), Is.Empty);
+            Assert.That(_repo.Items.Values.Any(r => r.AccountNo == 2565870), Is.False);
+        }
+
+        [Test]
+        public async Task LockerCheck_KnoxHasItUnderTheSecondImei_NothingOpened()
+        {
+            OnKnox(2565870, "355039219214193", "355747149214196");
+            _knoxHas.Add("355747149214196");
+
+            Assert.That(await _service.CheckLockersAsync(), Is.Empty);
+        }
+
+        [Test]
+        public async Task LockerCheck_KnoxErrors_IsNotTakenAsGone()
+        {
+            OnKnox(2565870, "355039219214193");
+            _knoxListResult = "FAIL";
+
+            Assert.That(await _service.CheckLockersAsync(), Is.Empty);
+        }
+
+        [Test]
+        public async Task LockerCheck_AlreadyInRecovery_NotOpenedTwice()
+        {
+            OnKnox(8680519, "355132188643698");   // recovery 1 is open for 8680519
+
+            Assert.That(await _service.CheckLockersAsync(), Is.Empty);
+            Assert.That(_repo.Items.Values.Count(r => r.AccountNo == 8680519), Is.EqualTo(1));
+        }
+
+        [TestCase(50071, 0, true)]
+        [TestCase(200, 5000, true)]
+        [TestCase(200, 3000, false)]
+        [TestCase(500, 0, false)]
+        public async Task LockerCheck_Transsion(int code, int lockState, bool lost)
+        {
+            _repo.LockerDevices.Add(new LockerDevice { AccountNo = 22800363, Imei = "356938035643809", LockGroup = 3 });
+            _repo.Devices[22800363] = new RecoveryDeviceLookup { AccountNo = 22800363, Imei = "356938035643809", Make = "TECNO", LockGroup = 3 };
+            _payTrigger.FindResponse = new FindLockStateResponse
+            {
+                Code = code, Message = code == 50071 ? "The device-lock not exist" : "x",
+                Data = code == 200 ? new FindLockStateData { LockState = lockState } : null,
+            };
+
+            var opened = await _service.CheckLockersAsync();
+
+            Assert.That(opened.Count, Is.EqualTo(lost ? 1 : 0));
+        }
+
         [Test]
         public async Task TranssionUnreachableIsLoggedAsAFailure()
         {
@@ -713,6 +838,8 @@ namespace Ranolo.Web.Tests
 
             public Task SetLockGroupAsync(long accountNo, int lockGroup, bool? locked) { LockGroupSet = (accountNo, lockGroup, locked); return Task.CompletedTask; }
             public Task MarkMovedAsync(int id, string movedStatus) { Items[id].Status = movedStatus; return Task.CompletedTask; }
+            public List<LockerDevice> LockerDevices { get; } = new();
+            public Task<List<LockerDevice>> GetLockerDevicesAsync() => Task.FromResult(LockerDevices);
         }
     }
 }
