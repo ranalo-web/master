@@ -68,12 +68,15 @@ namespace Ranolo.Web.Tests
             r.Model = "SM-A165F/DS";
             r.CurrentLockGroup = 2;
 
-            Assert.That(RecoveryRules.AllowedActions(r), Is.EquivalentTo(new[]
-            {
-                RecoveryAction.Note, RecoveryAction.NotCatchable, RecoveryAction.Close,
-                RecoveryAction.KnoxCheck, RecoveryAction.Lock, RecoveryAction.Unlock,
-            }));
+            var actions = RecoveryRules.AllowedActions(r);
+            Assert.That(actions, Is.SupersetOf(new[] { RecoveryAction.KnoxCheck, RecoveryAction.Lock, RecoveryAction.Unlock }));
+            Assert.That(actions, Does.Contain(RecoveryAction.Upload), "Knox may have lost it (41109528): send it again");
+            Assert.That(actions, Does.Not.Contain(RecoveryAction.MoveToKnox), "it's already the Knox phone");
 
+            r.Status = RecoveryStatus.Approved;   // approved again after a re-upload
+            Assert.That(RecoveryRules.AllowedActions(r), Does.Not.Contain(RecoveryAction.MoveToKnox));
+
+            r.Status = RecoveryStatus.Investigating;
             r.VeritechTransId = null;
             Assert.That(RecoveryRules.AllowedActions(r), Does.Not.Contain(RecoveryAction.Lock), "no approve id to give Knox");
         }
@@ -299,6 +302,23 @@ namespace Ranolo.Web.Tests
             Assert.That(request.Actions.Select(a => a.Action), Is.EqualTo(new[] { "unLock", "lock" }));
             Assert.That(request.Actions[1].Timestamp, Is.EqualTo(_time.Now.AddDays(1).ToUnixTimeMilliseconds()), "relocks a day ahead");
             Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.Approved));
+        }
+
+        [Test]
+        public async Task ReApprovingAPhoneAlreadyOnKnoxUpdatesItsEnrolmentsApproveId()
+        {
+            // 41109528: Knox lost it; uploaded again, new transaction id.
+            var r = _repo.Items[1];
+            r.CurrentLockGroup = 2;
+            r.Status = RecoveryStatus.UploadSent;
+            r.VeritechTransId = "vkdp-new";
+            _enrolments.Items.Add(new Enrolment { Id = Guid.NewGuid(), AccountId = 8680519, IMEI = "355132188643698", VeriTechTransId = "vkdp465096utid" });
+
+            var result = await _service.RunAsync(1, RecoveryAction.Approve, null, 7);
+
+            Assert.That(result.Success, Is.True, result.Message);
+            Assert.That(_enrolments.Items.Single().VeriTechTransId, Is.EqualTo("vkdp-new"));
+            Assert.That(_repo.Log.Single().Response, Does.Contain("Enrolment approve id updated"));
         }
 
         [Test]

@@ -107,18 +107,12 @@ namespace Ranalo.Services
                 return actions;
             }
 
-            // Already on Knox (enrolled there): no upload or approval, just
-            // lock and unlock it with its enrolment's approve id.
-            if (r.CurrentLockGroup == KnoxLockGroup)
-            {
-                actions.Add(RecoveryAction.KnoxCheck);
-                if (hasTransaction)
-                {
-                    actions.Add(RecoveryAction.Lock);
-                    actions.Add(RecoveryAction.Unlock);
-                }
-                return actions;
-            }
+            // Already on Knox (enrolled there): lock and unlock it with its
+            // enrolment's approve id straight away. The upload and approval
+            // steps stay open in case Knox has lost it (41109528: approved
+            // in March, no longer in Knox by 2026-10-15). It's already the
+            // Knox phone, so no Move to Knox.
+            var onKnox = r.CurrentLockGroup == KnoxLockGroup;
 
             actions.Add(RecoveryAction.Upload);
             actions.Add(RecoveryAction.KnoxCheck);
@@ -127,10 +121,13 @@ namespace Ranalo.Services
                 actions.Add(RecoveryAction.UploadStatus);
                 actions.Add(RecoveryAction.Approve);
             }
-            if (r.Status is RecoveryStatus.Approved or RecoveryStatus.LockSent)
+            if (r.Status is RecoveryStatus.Approved or RecoveryStatus.LockSent || (onKnox && hasTransaction))
             {
                 actions.Add(RecoveryAction.Lock);
                 actions.Add(RecoveryAction.Unlock);
+            }
+            if (r.Status is RecoveryStatus.Approved or RecoveryStatus.LockSent && !onKnox)
+            {
                 actions.Add(RecoveryAction.MoveToKnox);
             }
             return actions;

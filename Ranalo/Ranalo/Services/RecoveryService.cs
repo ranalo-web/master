@@ -173,6 +173,22 @@ namespace Ranalo.Services
                     await _repository.UpdateAsync(r.Id, newStatus, transId);
                 }
 
+                // Re-approved a phone already on Knox (Knox had lost it): the
+                // daily lock jobs read the approve id from its enrolment.
+                if (action == RecoveryAction.Approve && success && r.CurrentLockGroup == RecoveryRules.KnoxLockGroup
+                    && !string.IsNullOrWhiteSpace(r.VeritechTransId))
+                {
+                    var enrolment = await _enrolments.GetByAccountIdAsync(r.AccountNo);
+                    if (enrolment != null && enrolment.VeriTechTransId != r.VeritechTransId)
+                    {
+                        response += $"\nEnrolment approve id updated from {enrolment.VeriTechTransId} to {r.VeritechTransId} for the daily lock jobs.";
+                        enrolment.VeriTechTransId = r.VeritechTransId;
+                        enrolment.Updated = UtcNow;
+                        enrolment.UpdatedBy = "RECOVERY";
+                        await _enrolments.UpdateEnrolmentAsync(enrolment);
+                    }
+                }
+
                 await _repository.LogAsync(r.Id, action.ToString(), success, Truncate(response), userId);
                 _logger.LogInformation("Recovery {Id} (account {Account}): {Action} by user {UserId}, success {Success}",
                     r.Id, r.AccountNo, action, userId, success);

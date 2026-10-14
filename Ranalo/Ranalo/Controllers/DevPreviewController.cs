@@ -496,6 +496,24 @@ namespace Ranalo.Controllers
             return View("~/Views/Recovery/Details.cshtml", model);
         }
 
+        // Knox device list search, read-only -- what Knox holds for an IMEI,
+        // second IMEI or serial.
+        [HttpGet]
+        [Route("dev-preview/knox-search/{term}")]
+        public async Task<IActionResult> KnoxSearch(string term, [FromServices] Ranalo.SumsungKnox.IKnoxGuardClient knox)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var list = await knox.ListDevicesAsync(new Ranalo.SumsungKnox.Models.ListDevicesRequest
+            {
+                PageNum = 0, PageSize = 20, SortBy = "updateTime", SortOrder = "descending", Search = term,
+            });
+            return Json(list);
+        }
+
         // The real Recovery list, read-only.
         [HttpGet]
         [Route("dev-preview/recovery-list-live")]
