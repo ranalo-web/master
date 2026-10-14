@@ -186,6 +186,23 @@ namespace Ranalo.Controllers
             return RedirectToAction("Index", "Enrolments");
         }
 
+        // Transsion: pre-enrol a phone PayTrigger never took or refused.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("enrolments/send-to-transsion/{enrolmentId:guid}")]
+        public async Task<IActionResult> SendToTranssion(Guid enrolmentId)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var result = await _enrolmentService.SendToTranssionAsync(enrolmentId, settings);
+            TempData[result.Success ? "EnrolmentMessage" : "EnrolmentError"] = result.Message;
+            return RedirectToAction("Index", "Enrolments");
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("enrolments/retry-unlock/{enrolmentId:guid}")]

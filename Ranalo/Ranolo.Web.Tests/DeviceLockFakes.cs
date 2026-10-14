@@ -107,7 +107,16 @@ namespace Ranolo.Web.Tests
             return Task.FromResult(RemoveResponse);
         }
 
-        public Task<FindLockStateResponse> FindLockStateAsync(FindLockStateRequest request) => throw new NotImplementedException();
+        public List<FindLockStateRequest> FindCalls { get; } = new();
+        public FindLockStateResponse FindResponse { get; set; } = new() { Code = 50071, Message = "The device-lock not exist" };
+
+        public Task<FindLockStateResponse> FindLockStateAsync(FindLockStateRequest request)
+        {
+            if (Throw != null) throw Throw;
+            FindCalls.Add(request);
+            return Task.FromResult(FindResponse);
+        }
+
         public Task<PayTriggerApiResponse> SendPushInfoAsync(SendPushInfoRequest request) => throw new NotImplementedException();
     }
 

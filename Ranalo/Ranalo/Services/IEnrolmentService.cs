@@ -1,4 +1,6 @@
-﻿using Ranalo.Models;
+﻿using Ranalo.DataStore.DataModels;
+using Ranalo.Models;
+using Ranalo.Services.DeviceLock;
 using Ranalo.SumsungKnox.Models;
 
 namespace Ranalo.Services
@@ -30,5 +32,6 @@ namespace Ranalo.Services
 
         Task<ListDevicesResponse> DoFilterDevicesFromKnox(string imei);
         Task SendReminderMessage(string imei);
+        Task<WorkflowResult> SendToTranssionAsync(Guid enrolmentId, User actor);
     }
 }

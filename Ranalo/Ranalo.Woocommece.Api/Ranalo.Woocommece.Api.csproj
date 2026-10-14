@@ -17,4 +17,8 @@
     <ProjectReference Include="..\Ranalo.Calculator.Logic\Ranalo.Calculator.Logic.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ranolo.Web.Tests" />
+  </ItemGroup>
+
 </Project>

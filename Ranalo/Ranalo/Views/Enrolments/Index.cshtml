@@ -169,34 +169,98 @@
                         </div>
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
+@{
+    // A row's action buttons: in their own column from tablet width up,
+    // under the status on a phone.
+    void ActionButtons(Enrolment enrolment)
+    {
+        var isTranssion = DeviceLockRules.IsTranssion(enrolment.DeviceBrand);
+        var decision = Model.CanApprove?.Invoke(enrolment);
+        if (isTranssion && Model.CanApprove != null)
+        {
+            if (DeviceLockRules.NeedsSendingToTranssion(enrolment))
+            {
+                <form method="post" action="/enrolments/send-to-transsion/@enrolment.Id" class="d-inline"
+                      title="Transsion doesn't have this phone yet">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-warning">Send to Transsion</button>
+                </form>
+            }
+            else if (decision?.Allowed == true)
+            {
+                <form method="post" action="/enrolments/approve-call/@enrolment.Id" class="d-inline"
+                      onsubmit="return confirm('Have you called @enrolment.FirstName @enrolment.LastName and confirmed this sale? The phone unlocks once it is switched on.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-primary">Approve call</button>
+                </form>
+            }
+            else if (DeviceLockRules.ReadyToUnlock(enrolment))
+            {
+                <form method="post" action="/enrolments/retry-unlock/@enrolment.Id" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-warning" title="@enrolment.PayTriggerResponse">Retry unlock</button>
+                </form>
+            }
+            else if (decision != null && !enrolment.CallApprovedAt.HasValue && enrolment.Status != EnrolmentStatus.Error)
+            {
+                <span class="small text-soft" style="white-space:normal">@decision.Reason</span>
+            }
+        }
+        else if (Model.CanApprove != null)
+        {
+            <ul class="nk-tb-actions gx-2 justify-content-md-end">
+                @if (decision?.Allowed == true && enrolment.Status == EnrolmentStatus.Pending)
+                {
+                    <li class="nk-tb-action-hidden">
+                        <a href="/approve-enrolment/@enrolment.IMEI" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Approve">
+                            <em class="icon ni ni-file-check-fill"></em>
+                        </a>
+                    </li>
+                }
+                <li class="nk-tb-action-hidden">
+                    <a href="/create-device/@enrolment.IMEI" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="+ Device">
+                        <em class="icon ni ni-mobile"></em>
+                    </a>
+                </li>
+                <li class="nk-tb-action-hidden">
+                    <a href="#" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Suspend">
+                        <em class="icon ni ni-user-cross-fill"></em>
+                    </a>
+                </li>
+            </ul>
+        }
+    }
+}
                 <div class="card-inner p-0">
                     <div class="table-responsive">
                     <table class="table mb-0" style="white-space:nowrap;" data-key="enrolments" data-page-size="10">
                         <thead>
                             <tr>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">User</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">National ID</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Name</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Surname</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">IMEI</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Brand</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Devices.LockGroup: 1 Nuovo, 2 Knox, 3 PayTrigger">Lock Group</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Date Created</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Date Updated</th>
+                                @* Narrow screens keep customer, account, status and the
+                                   action; the rest show as the width allows. *@
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th d-none d-sm-table-cell" onclick="Ranalo.sortTable(this)">National ID</th>
+                                <th class="wl-th d-none d-lg-table-cell" onclick="Ranalo.sortTable(this)">IMEI</th>
+                                <th class="wl-th d-none d-md-table-cell" onclick="Ranalo.sortTable(this)">Brand</th>
+                                <th class="wl-th d-none d-xl-table-cell" onclick="Ranalo.sortTable(this)" title="Devices.LockGroup: 1 Nuovo, 2 Knox, 3 PayTrigger">Lock Group</th>
+                                <th class="wl-th d-none d-lg-table-cell" onclick="Ranalo.sortTable(this)">Created</th>
+                                <th class="wl-th d-none d-xxl-table-cell" onclick="Ranalo.sortTable(this)">Updated</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
-                                <th class="wl-th"></th>
+                                <th class="wl-th d-none d-md-table-cell"></th>
                             </tr>
                         </thead>
                         <tbody>
                         @foreach (var enrolment in Model.Enrolments ?? Enumerable.Empty<Enrolment>())
                         {
                             <tr>
-                                <td><span class="fw-medium">@enrolment.FirstName @enrolment.LastName</span></td>
-                                <td><a href="/account-details/@enrolment.AccountId" class="link link-primary">@enrolment.AccountId</a></td>
-                                <td>@enrolment.FirstName</td>
-                                <td>@enrolment.LastName</td>
-                                <td>@enrolment.IMEI</td>
                                 <td>
+                                    <span class="fw-medium">@enrolment.FirstName @enrolment.LastName</span>
+                                    <div class="small d-sm-none"><a href="/account-details/@enrolment.AccountId" class="link link-primary">@enrolment.AccountId</a></div>
+                                    <div class="small text-soft d-lg-none">@enrolment.DeviceBrand · @enrolment.IMEI</div>
+                                </td>
+                                <td class="d-none d-sm-table-cell"><a href="/account-details/@enrolment.AccountId" class="link link-primary">@enrolment.AccountId</a></td>
+                                <td class="d-none d-lg-table-cell">@enrolment.IMEI</td>
+                                <td class="d-none d-md-table-cell">
                                     @enrolment.DeviceBrand
                                     @if (enrolment.BrandOverriddenByUserId.HasValue)
                                     {
@@ -205,17 +269,17 @@
                                 </td>
                                 @if (Model.LockGroups.TryGetValue(enrolment.AccountId, out var lockGroup) && lockGroup.HasValue)
                                 {
-                                    <td>
+                                    <td class="d-none d-xl-table-cell">
                                         @(lockGroup switch { 1 => "Nuovo", 2 => "Knox", 3 => "PayTrigger", _ => "Unknown" }) (@lockGroup)
                                     </td>
                                 }
                                 else
                                 {
-                                    <td class="text-soft" title="@(Model.LockGroups.ContainsKey(enrolment.AccountId) ? "Device has no lock group set" : "No device record for this account yet")">Not set</td>
+                                    <td class="text-soft d-none d-xl-table-cell" title="@(Model.LockGroups.ContainsKey(enrolment.AccountId) ? "Device has no lock group set" : "No device record for this account yet")">Not set</td>
                                 }
-                                <td>@enrolment.Created.ToString("dd MMM yyyy")</td>
-                                <td>@enrolment.Updated.ToString("dd MMM yyyy")</td>
-                                <td>
+                                <td class="d-none d-lg-table-cell">@enrolment.Created.ToString("dd MMM yyyy")</td>
+                                <td class="d-none d-xxl-table-cell">@enrolment.Updated.ToString("dd MMM yyyy")</td>
+                                <td style="white-space:normal; min-width:140px; max-width:260px;">
                                     <span class="@SetStatusBadge(enrolment.Status)" title="@enrolment.PayTriggerResponse">@DeviceLockRules.StatusText(enrolment)</span>
                                     @if (enrolment.DepositShort)
                                     {
@@ -223,59 +287,12 @@
                                     }
                                     @if (enrolment.Status == EnrolmentStatus.Error && !string.IsNullOrEmpty(enrolment.PayTriggerResponse))
                                     {
-                                        <div class="small text-soft" style="white-space:normal;max-width:320px">@enrolment.PayTriggerResponse</div>
+                                        <div class="small text-soft">@enrolment.PayTriggerResponse</div>
                                     }
+                                    <div class="d-md-none mt-1">@{ ActionButtons(enrolment); }</div>
                                 </td>
-                                <td class="text-end">
-                                    @{
-                                        var isTranssion = DeviceLockRules.IsTranssion(enrolment.DeviceBrand);
-                                        var decision = Model.CanApprove?.Invoke(enrolment);
-                                    }
-                                    @if (isTranssion && Model.CanApprove != null)
-                                    {
-                                        @if (decision?.Allowed == true)
-                                        {
-                                            <form method="post" action="/enrolments/approve-call/@enrolment.Id" class="d-inline"
-                                                  onsubmit="return confirm('Have you called @enrolment.FirstName @enrolment.LastName and confirmed this sale? The phone unlocks once it is switched on.');">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-sm btn-primary">Approve call</button>
-                                            </form>
-                                        }
-                                        else if (DeviceLockRules.ReadyToUnlock(enrolment))
-                                        {
-                                            <form method="post" action="/enrolments/retry-unlock/@enrolment.Id" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-sm btn-warning" title="@enrolment.PayTriggerResponse">Retry unlock</button>
-                                            </form>
-                                        }
-                                        else if (decision != null && !enrolment.CallApprovedAt.HasValue && enrolment.Status != EnrolmentStatus.Error)
-                                        {
-                                            <span class="small text-soft" style="white-space:normal">@decision.Reason</span>
-                                        }
-                                    }
-                                    else if (Model.CanApprove != null)
-                                    {
-                                    <ul class="nk-tb-actions gx-2 justify-content-end">
-                                        @if (decision?.Allowed == true && enrolment.Status == EnrolmentStatus.Pending)
-                                        {
-                                        <li class="nk-tb-action-hidden">
-                                            <a href="/approve-enrolment/@enrolment.IMEI" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Approve">
-                                                <em class="icon ni ni-file-check-fill"></em>
-                                            </a>
-                                        </li>
-                                        }
-                                        <li class="nk-tb-action-hidden">
-                                            <a href="/create-device/@enrolment.IMEI" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="+ Device">
-                                                <em class="icon ni ni-mobile"></em>
-                                            </a>
-                                        </li>
-                                        <li class="nk-tb-action-hidden">
-                                            <a href="#" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Suspend">
-                                                <em class="icon ni ni-user-cross-fill"></em>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                    }
+                                <td class="text-end d-none d-md-table-cell">
+                                    @{ ActionButtons(enrolment); }
                                 </td>
                             </tr>
                         }

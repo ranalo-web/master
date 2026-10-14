@@ -26,6 +26,7 @@ namespace Ranalo.Services.DeviceLock
     public interface ITranssionEnrolmentWorkflow
     {
         Task<Enrolment> PreEnrolAsync(Enrolment enrolment, int? deviceGroupId);
+        Task<WorkflowResult> SendAgainAsync(Guid enrolmentId, User actor, int? deviceGroupId);
         Task<WorkflowResult> ApproveCallAsync(Guid enrolmentId, User actor);
         Task<WorkflowResult> RetryUnlockAsync(Guid enrolmentId, User actor);
         Task OnActivatedAsync(string imei);
@@ -77,6 +78,15 @@ namespace Ranalo.Services.DeviceLock
             {
                 return await FailAsync(enrolment,
                     $"Account {enrolment.AccountId} already has device {existing.ImeiNo} ({existing.Status}). Remove it before enrolling another.");
+            }
+
+            // The webhook finds the device by IMEI, so the IMEI can't stay
+            // live on another account (e.g. a repossessed Nuovo phone).
+            var elsewhere = await _devices.GetDeviceByImeiAsync(enrolment.IMEI);
+            if (elsewhere != null && elsewhere.Id != enrolment.AccountId && elsewhere.Status != "removed" && elsewhere.EnrollmentStatus != "Removed")
+            {
+                return await FailAsync(enrolment,
+                    $"IMEI {enrolment.IMEI} is still on account {elsewhere.Id} ({elsewhere.Make} {elsewhere.Status}). End that contract and remove the device first.");
             }
 
             PayTriggerModels.PreEnrollImeiResponse response;
@@ -141,6 +151,34 @@ namespace Ranalo.Services.DeviceLock
             return enrolment;
         }
 
+        // Approver/admin: pre-enrol a Transsion enrolment PayTrigger never
+        // took or refused (DeviceLockRules.NeedsSendingToTranssion). Keeps a
+        // call approval already given, so the phone unlocks on activation.
+        public async Task<WorkflowResult> SendAgainAsync(Guid enrolmentId, User actor, int? deviceGroupId)
+        {
+            if (actor.RoleId is not (UserRole.Admin or UserRole.Approver))
+            {
+                return new WorkflowResult(false, "Only an approver or admin can send a phone to Transsion.");
+            }
+
+            var enrolment = await _enrolments.GetByEnrolmentIdAsync(enrolmentId);
+            if (enrolment == null || !DeviceLockRules.NeedsSendingToTranssion(enrolment))
+            {
+                return new WorkflowResult(false, "This enrolment doesn't need sending to Transsion.");
+            }
+
+            var result = await PreEnrolAsync(enrolment, deviceGroupId);
+            if (result.Status == EnrolmentStatus.Error)
+            {
+                return new WorkflowResult(false, result.PayTriggerResponse ?? "Transsion didn't take the phone.");
+            }
+
+            _logger.LogInformation("Transsion enrolment {Id} (IMEI {Imei}) sent again by user {UserId}", enrolment.Id, enrolment.IMEI, actor.UserId);
+            return new WorkflowResult(true,
+                $"Sent to Transsion. Ask the customer to switch phone {enrolment.IMEI} on and connect to the internet."
+                + (enrolment.CallApprovedAt.HasValue ? " The call is already approved, so it unlocks once it's active." : ""));
+        }
+
         public async Task<WorkflowResult> ApproveCallAsync(Guid enrolmentId, User actor)
         {
             var enrolment = await _enrolments.GetByEnrolmentIdAsync(enrolmentId);
@@ -197,6 +235,16 @@ namespace Ranalo.Services.DeviceLock
             var enrolment = await _enrolments.GetByImeiNumberAsync(imei);
             if (enrolment == null || !DeviceLockRules.IsTranssion(enrolment.DeviceBrand))
             {
+                return;
+            }
+
+            // We never sent this enrolment to Transsion, so the activation is
+            // for someone else's use of the IMEI (e.g. a phone Recovery sent
+            // on its own account) -- never unlock on its behalf.
+            if (DeviceLockRules.NeedsSendingToTranssion(enrolment))
+            {
+                _logger.LogWarning("Transsion activated {Imei}, but enrolment {Id} (account {Account}) was never sent; ignored",
+                    imei, enrolment.Id, enrolment.AccountId);
                 return;
             }
 

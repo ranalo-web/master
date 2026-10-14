@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Vml.Office;
 using iText.Kernel.Pdf;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Ranalo.DataStore;
+using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.Services.DeviceLock;
 using Ranalo.Services.Helpers;
@@ -458,6 +459,19 @@ namespace Ranalo.Services
             device.LockType = "unlocked";
             device.NextLockDate = TimestampHelper.FormatDateOnly(millis);
             device.NextLockDateIsoFormat = TimestampHelper.FormatRelockTimestamp(millis);
+        }
+
+        // Pre-enrols a Transsion enrolment PayTrigger never took, with the
+        // dealer's device group as at enrolment.
+        public async Task<WorkflowResult> SendToTranssionAsync(Guid enrolmentId, User actor)
+        {
+            var enrolment = await _enrolmentRepository.GetByEnrolmentIdAsync(enrolmentId);
+            if (enrolment == null)
+            {
+                return new WorkflowResult(false, "Enrolment not found.");
+            }
+
+            return await _transsionWorkflow.SendAgainAsync(enrolmentId, actor, await DeviceGroupForDealerAsync(enrolment.DealerId));
         }
 
         public async Task<Enrolment> UpdateEnrolmentasync(Enrolment newEnrolment)

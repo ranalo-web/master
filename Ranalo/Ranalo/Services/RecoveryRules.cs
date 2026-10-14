@@ -1,4 +1,5 @@
 using Ranalo.Models;
+using Ranalo.Services.DeviceLock;
 
 namespace Ranalo.Services
 {
@@ -18,16 +19,42 @@ namespace Ranalo.Services
     //   3. Check it in Knox; lock it (locks when it next connects).
     //   4. Once the lock works, Move to Knox: Devices.LockGroup = 2 and an
     //      Enrolments row, so the daily lock jobs use Knox from then on.
+    //
+    // itel/TECNO/Infinix -> Transsion PayTrigger (agreed 2026-10-14). These
+    // phones are assumed hacked or flashed, so Nuovo is left on them and
+    // Transsion is added as the lock that's relied on:
+    //   1. Send to Transsion: pre-enrol the IMEI, locked as soon as it's
+    //      active.
+    //   2. Check in Transsion; once Transsion says it's active (lockState
+    //      3000) it's moved to Transsion straight away: Devices.LockGroup = 3
+    //      and an Enrolments row, so the daily lock jobs manage it from then
+    //      on. (Move to Transsion by hand if that didn't happen.)
+    //   3. Lock now / Unlock through updateRepayInfo (lock date now / a day
+    //      ahead), any time after it's sent. Before it's active the status
+    //      stays "Sent to Transsion".
     // A phone that can't be caught is marked Not catchable and stays with
-    // its old locker. Other brands are tracked with notes only for now.
+    // its old locker. Other brands are tracked with notes only.
     public static class RecoveryRules
     {
         public const int KnoxLockGroup = 2;
+        public const int TranssionLockGroup = 3;
+
+        // PayTrigger lockState: 3000 active, 5000 removed.
+        public const int TranssionActiveState = 3000;
+        public const int TranssionRemovedState = 5000;
 
         public static bool IsSamsung(string? make) => string.Equals(make?.Trim(), "samsung", StringComparison.OrdinalIgnoreCase);
 
+        // Nuovo's makes come in any case ("INFINIX", "ITEL", "TECNO").
+        public static bool IsTranssion(string? make) => TranssionBrand(make) != null;
+
+        // The brand as the rest of the app spells it (DeviceLockRules).
+        public static string? TranssionBrand(string? make) =>
+            make == null ? null : new[] { DeviceLockRules.Itel, DeviceLockRules.Tecno, DeviceLockRules.Infinix }
+                .FirstOrDefault(b => string.Equals(b, make.Trim(), StringComparison.OrdinalIgnoreCase));
+
         public static bool IsOpen(string status) =>
-            status is not (RecoveryStatus.MovedToKnox or RecoveryStatus.NotCatchable or RecoveryStatus.Closed);
+            !RecoveryStatus.IsMoved(status) && status is not (RecoveryStatus.NotCatchable or RecoveryStatus.Closed);
 
         public static IReadOnlySet<RecoveryAction> AllowedActions(LockRecovery r)
         {
@@ -42,6 +69,12 @@ namespace Ranalo.Services
                 return actions;
             }
 
+            if (r.Status == RecoveryStatus.MovedToTranssion)
+            {
+                actions.Add(RecoveryAction.TranssionCheck);
+                return actions;
+            }
+
             if (!IsOpen(r.Status))
             {
                 actions.Add(RecoveryAction.Reopen);
@@ -50,6 +83,23 @@ namespace Ranalo.Services
 
             actions.Add(RecoveryAction.NotCatchable);
             actions.Add(RecoveryAction.Close);
+            if (IsTranssion(r.Make))
+            {
+                actions.Add(RecoveryAction.TranssionSend);
+                actions.Add(RecoveryAction.TranssionCheck);
+                // Once sent, the lock date can be set straight away (as with
+                // Knox): Transsion holds it until the phone checks in.
+                if (r.Status is RecoveryStatus.UploadSent or RecoveryStatus.Approved or RecoveryStatus.LockSent)
+                {
+                    actions.Add(RecoveryAction.Lock);
+                    actions.Add(RecoveryAction.Unlock);
+                }
+                if (r.Status is RecoveryStatus.Approved or RecoveryStatus.LockSent)
+                {
+                    actions.Add(RecoveryAction.MoveToTranssion);
+                }
+                return actions;
+            }
             if (!samsung)
             {
                 return actions;
@@ -82,6 +132,8 @@ namespace Ranalo.Services
                 RecoveryAction.Lock => RecoveryStatus.LockSent,
                 RecoveryAction.Unlock when current == RecoveryStatus.LockSent => RecoveryStatus.Approved,
                 RecoveryAction.MoveToKnox => RecoveryStatus.MovedToKnox,
+                RecoveryAction.TranssionSend when current == RecoveryStatus.Investigating => RecoveryStatus.UploadSent,
+                RecoveryAction.MoveToTranssion => RecoveryStatus.MovedToTranssion,
                 RecoveryAction.NotCatchable => RecoveryStatus.NotCatchable,
                 RecoveryAction.Close => RecoveryStatus.Closed,
                 RecoveryAction.Reopen => RecoveryStatus.Investigating,
@@ -104,6 +156,41 @@ namespace Ranalo.Services
                 return "The phone is on Transsion PayTrigger.";
             return null;
         }
+
+        // A Transsion check that finds the phone active makes a sent phone
+        // "Active in Transsion"; it never moves a phone back.
+        // Lock/Unlock on a Transsion phone that isn't active yet only sets the
+        // lock date Transsion holds for it; it stays "Sent to Transsion".
+        public static string StatusAfterTranssionLock(RecoveryAction action, bool success, string current) =>
+            current == RecoveryStatus.UploadSent ? current : StatusAfter(action, success, current);
+
+        public static string StatusAfterTranssionCheck(string current, int? lockState) =>
+            lockState == TranssionActiveState && current is RecoveryStatus.Investigating or RecoveryStatus.UploadSent
+                ? RecoveryStatus.Approved
+                : current;
+
+        // Same conditions as Knox: only once Transsion has the phone active,
+        // and nothing else already enrols the account.
+        public static string? CannotMoveToTranssion(LockRecovery r, bool accountHasEnrolment)
+        {
+            if (!AllowedActions(r).Contains(RecoveryAction.MoveToTranssion))
+                return "Check the phone in Transsion first: it must be active there.";
+            if (accountHasEnrolment)
+                return $"Account {r.AccountNo} already has an enrolment; it needs sorting out by hand first.";
+            if (r.CurrentLockGroup is KnoxLockGroup)
+                return "The phone is on Knox.";
+            return null;
+        }
+
+        public static string TranssionStateName(int lockState) => lockState switch
+        {
+            0 => "unregistered",
+            1000 => "registered",
+            2000 => "ready to activate",
+            TranssionActiveState => "active",
+            TranssionRemovedState => "removed",
+            _ => lockState.ToString(),
+        };
 
         public static string LockGroupName(int? lockGroup) => lockGroup switch
         {

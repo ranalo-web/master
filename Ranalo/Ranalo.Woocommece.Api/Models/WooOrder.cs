@@ -23,6 +23,9 @@
         public string? CustEmail { get; set; }
         public decimal? DailySalePrice { get; set; }
         public decimal? DeviceAmount { get; set; }
+        // Repayment Period (null = 12 months) and quoted deposit -- see RepaymentTerms.
+        public decimal? TermInMonths { get; set; }
+        public decimal? DepositAmount { get; set; }
 
         public DateTime DateSynced { get; set; }
         public string? MpesaDepositRef { get; set; }

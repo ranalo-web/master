@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using Ranalo.DataStore;
 using Ranalo.Models;
+using Ranalo.PayTrigger.Models;
 using Ranalo.Services;
 using Ranalo.SumsungKnox;
 using Ranalo.SumsungKnox.Models;
@@ -23,8 +24,75 @@ namespace Ranolo.Web.Tests
         [Test]
         public void OtherBrandsAreTrackedOnly()
         {
-            var actions = RecoveryRules.AllowedActions(Phone(make: "TECNO"));
+            var actions = RecoveryRules.AllowedActions(Phone(make: "Xiaomi"));
             Assert.That(actions, Is.EquivalentTo(new[] { RecoveryAction.Note, RecoveryAction.NotCatchable, RecoveryAction.Close }));
+        }
+
+        [TestCase("TECNO")]
+        [TestCase("itel")]
+        [TestCase("Infinix")]
+        [TestCase("INFINIX")]   // as Nuovo has them
+        [TestCase("ITEL")]
+        [TestCase(" Tecno ")]
+        public void TranssionStepsOpenUpInOrder(string make)
+        {
+            var fresh = RecoveryRules.AllowedActions(Phone(make: make));
+            Assert.That(fresh, Is.SupersetOf(new[] { RecoveryAction.TranssionSend, RecoveryAction.TranssionCheck }));
+            Assert.That(fresh, Does.Not.Contain(RecoveryAction.Lock));
+            Assert.That(fresh, Does.Not.Contain(RecoveryAction.Upload), "no Knox steps for Transsion phones");
+
+            var sent = RecoveryRules.AllowedActions(Phone(RecoveryStatus.UploadSent, make));
+            Assert.That(sent, Is.SupersetOf(new[] { RecoveryAction.Lock, RecoveryAction.Unlock }), "the lock date can be set once sent");
+            Assert.That(sent, Does.Not.Contain(RecoveryAction.MoveToTranssion), "not until it's active");
+
+            var active = RecoveryRules.AllowedActions(Phone(RecoveryStatus.Approved, make));
+            Assert.That(active, Is.SupersetOf(new[] { RecoveryAction.Lock, RecoveryAction.Unlock, RecoveryAction.MoveToTranssion }));
+            Assert.That(active, Does.Not.Contain(RecoveryAction.MoveToKnox));
+        }
+
+        [Test]
+        public void SamsungDoesntGetTranssionSteps()
+        {
+            var actions = RecoveryRules.AllowedActions(Phone(RecoveryStatus.Approved, trans: "tx1"));
+            Assert.That(actions, Does.Not.Contain(RecoveryAction.TranssionSend));
+            Assert.That(actions, Does.Not.Contain(RecoveryAction.MoveToTranssion));
+        }
+
+        [Test]
+        public void MovedToTranssionOnlyAllowsChecksAndNotes()
+        {
+            var r = Phone(RecoveryStatus.MovedToTranssion, "TECNO");
+            Assert.That(RecoveryRules.AllowedActions(r), Is.EquivalentTo(new[] { RecoveryAction.Note, RecoveryAction.TranssionCheck }));
+            Assert.That(RecoveryRules.IsOpen(r.Status), Is.False);
+        }
+
+        [TestCase(RecoveryStatus.UploadSent, 3000, RecoveryStatus.Approved)]
+        [TestCase(RecoveryStatus.Investigating, 3000, RecoveryStatus.Approved)]
+        [TestCase(RecoveryStatus.UploadSent, 1000, RecoveryStatus.UploadSent)]
+        [TestCase(RecoveryStatus.LockSent, 3000, RecoveryStatus.LockSent)]
+        [TestCase(RecoveryStatus.Approved, 5000, RecoveryStatus.Approved)]
+        public void TranssionCheckMakesASentPhoneActiveOnly(string current, int lockState, string expected)
+        {
+            Assert.That(RecoveryRules.StatusAfterTranssionCheck(current, lockState), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void LastReplySummaryIsTheFirstLineShortened()
+        {
+            var r = new LockRecovery { LastReply = "HTTP 403 " + new string('x', 200) + "\nsecond line" };
+            Assert.That(r.LastReplySummary, Does.StartWith("HTTP 403"));
+            Assert.That(r.LastReplySummary!.Length, Is.EqualTo(91));
+            Assert.That(r.LastReplySummary, Does.Not.Contain("second line"));
+            Assert.That(new LockRecovery().LastReplySummary, Is.Null);
+        }
+
+        [Test]
+        public void StatusLabelsFollowTheLocker()
+        {
+            Assert.That(RecoveryStatus.Label(RecoveryStatus.UploadSent, "TECNO"), Is.EqualTo("Sent to Transsion"));
+            Assert.That(RecoveryStatus.Label(RecoveryStatus.UploadSent, "samsung"), Is.EqualTo("Sent to Knox"));
+            Assert.That(RecoveryStatus.Label(RecoveryStatus.Approved, "itel"), Is.EqualTo("Active in Transsion"));
+            Assert.That(RecoveryStatus.Label(RecoveryStatus.MovedToTranssion), Is.EqualTo("Moved to Transsion"));
         }
 
         [Test]
@@ -79,6 +147,8 @@ namespace Ranolo.Web.Tests
         private InterfaceFake<IVeritechApiClient> _veritech = null!;
         private InterfaceFake<IKnoxGuardClient> _knox = null!;
         private HttpStatusCode _knoxStatus;
+        private FakePayTrigger _payTrigger = null!;
+        private FakeTime _time = null!;
         private RecoveryService _service = null!;
 
         [SetUp]
@@ -108,11 +178,12 @@ namespace Ranolo.Web.Tests
             (knox, _knox) = InterfaceFake<IKnoxGuardClient>.Create(new()
             {
                 ["ApproveDeviceAsync"] = Reply,
-                ["LockDeviceAsync"] = Reply,
-                ["UnlockDeviceAsync"] = Reply,
+                ["ExecuteDeviceActionsAsync"] = Reply,
             });
 
-            _service = new RecoveryService(_repo, _enrolments, veritech, knox, NullLogger<RecoveryService>.Instance);
+            _payTrigger = new FakePayTrigger();
+            _time = new FakeTime();
+            _service = new RecoveryService(_repo, _enrolments, veritech, knox, _payTrigger, _time, NullLogger<RecoveryService>.Instance);
         }
 
         [Test]
@@ -152,6 +223,57 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
+        public async Task ReopeningIsRefusedWhileAnotherRecoveryForTheAccountIsOpen()
+        {
+            // 8478363: recovery 5 closed, recovery 7 opened since.
+            _repo.Items[1].Status = RecoveryStatus.Closed;
+            _repo.Items[2] = new LockRecovery { Id = 2, AccountNo = 8680519, Imei = "355132188643698", Make = "samsung", Status = RecoveryStatus.Investigating };
+
+            var result = await _service.RunAsync(1, RecoveryAction.Reopen, null, 7);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Does.Contain("already has an open recovery (2)"));
+            Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.Closed));
+            Assert.That(_repo.Log, Is.Empty);
+        }
+
+        [Test]
+        public async Task KnoxLockSendsARelockTimestampOfNow()
+        {
+            // Knox's lock call needs LockDevice, which our account lacks (403).
+            _repo.Items[1].Status = RecoveryStatus.Approved;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+
+            var result = await _service.RunAsync(1, RecoveryAction.Lock, null, 7);
+
+            Assert.That(result.Success, Is.True, result.Message);
+            var call = _knox.Calls.Single();
+            Assert.That(call.Method, Is.EqualTo("ExecuteDeviceActionsAsync"));
+            var request = (DeviceActionsRequest)call.Args![0]!;
+            Assert.That(request.DeviceUid, Is.EqualTo("355132188643698"));
+            Assert.That(request.ApproveId, Is.EqualTo("vkdp-123"));
+            // Knox: "PAYG Actions must be two sets of arrays" -- unLock, then lock.
+            Assert.That(request.Actions.Select(a => a.Action), Is.EqualTo(new[] { "unLock", "lock" }));
+            Assert.That(request.Actions[1].Timestamp, Is.EqualTo(_time.Now.ToUnixTimeMilliseconds()));
+            Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.LockSent));
+        }
+
+        [Test]
+        public async Task KnoxUnlockSendsAnUnlockAction()
+        {
+            _repo.Items[1].Status = RecoveryStatus.LockSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+
+            var result = await _service.RunAsync(1, RecoveryAction.Unlock, null, 7);
+
+            Assert.That(result.Success, Is.True, result.Message);
+            var request = (DeviceActionsRequest)_knox.Calls.Single().Args![0]!;
+            Assert.That(request.Actions.Select(a => a.Action), Is.EqualTo(new[] { "unLock", "lock" }));
+            Assert.That(request.Actions[1].Timestamp, Is.EqualTo(_time.Now.AddDays(1).ToUnixTimeMilliseconds()), "relocks a day ahead");
+            Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.Approved));
+        }
+
+        [Test]
         public async Task MovingToKnoxHandsThePhoneToTheDailyJobs()
         {
             _repo.Items[1].Status = RecoveryStatus.LockSent;
@@ -182,6 +304,258 @@ namespace Ranolo.Web.Tests
             Assert.That(_enrolments.Items, Has.Count.EqualTo(1));
             Assert.That(_repo.LockGroupSet, Is.Null);
             Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.Approved));
+        }
+
+        // ---- Transsion (account 8478363, a repossessed TECNO on Nuovo) ----
+
+        private LockRecovery TranssionPhone(string status = RecoveryStatus.Investigating)
+        {
+            var r = new LockRecovery
+            {
+                Id = 2, AccountNo = 8478363, Imei = "352367242606595", Make = "TECNO", Model = "TECNO KM5",
+                CustomerName = "Test", Status = status, CurrentLockGroup = 1,
+            };
+            _repo.Items[2] = r;
+            return r;
+        }
+
+        [Test]
+        public async Task SendingToTranssionPreEnrolsLockedOnSwitchOn()
+        {
+            TranssionPhone();
+
+            var result = await _service.RunAsync(2, RecoveryAction.TranssionSend, null, 7);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(_payTrigger.PreEnrolCalls.Single().Items.Single().Imei, Is.EqualTo("352367242606595"));
+                Assert.That(_payTrigger.PreEnrolCalls.Single().PreLock, Is.True, "a Recovery phone is assumed hacked: lock it as soon as it's active");
+                Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent));
+                Assert.That(_repo.Log.Single().Step, Is.EqualTo("TranssionSend"));
+                Assert.That(_knox.Calls, Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task TranssionRefusingTheImeiIsLoggedAndChangesNothing()
+        {
+            TranssionPhone();
+            _payTrigger.PreEnrolResponse = new PreEnrollImeiResponse
+            {
+                Code = 200, Message = "Success",
+                Data = new List<PreEnrollImeiResultItem> { new() { Imei = "352367242606595", Message = "IMEI not supported", ErrCode = 7 } },
+            };
+
+            var result = await _service.RunAsync(2, RecoveryAction.TranssionSend, null, 7);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Does.Contain("IMEI not supported"));
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.Investigating));
+            Assert.That(_repo.Log.Single().Success, Is.False);
+        }
+
+        [Test]
+        public async Task CheckingAnActivePhoneHandsItToTheDailyJobs()
+        {
+            TranssionPhone(RecoveryStatus.UploadSent);
+            _payTrigger.FindResponse = new FindLockStateResponse
+            {
+                Code = 200, Message = "Success",
+                Data = new FindLockStateData { Imei = "352367242606595", LockState = 3000, MobileStatus = 2000, LastConnectTime = 1791900000, Model = "KM5" },
+            };
+
+            var result = await _service.RunAsync(2, RecoveryAction.TranssionCheck, null, 7);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Message, Does.Contain("active"));
+                Assert.That(result.Message, Does.Contain("moved from Nuovo to Transsion"));
+                Assert.That(_payTrigger.FindCalls.Single().Imei, Is.EqualTo("352367242606595"));
+                Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.MovedToTranssion));
+                Assert.That(_enrolments.Items.Single().IMEI, Is.EqualTo("352367242606595"));
+                Assert.That(_repo.LockGroupSet, Is.EqualTo((8478363L, 3, (bool?)null)));
+                Assert.That(_repo.Log.Select(l => l.Step), Is.EqualTo(new[] { "TranssionCheck", "MoveToTranssion" }));
+            });
+        }
+
+        [Test]
+        public async Task CheckingAnActivePhoneThatCantMoveStaysActive()
+        {
+            TranssionPhone(RecoveryStatus.UploadSent);
+            _enrolments.Items.Add(new Enrolment { AccountId = 8478363, IMEI = "999" });
+            _payTrigger.FindResponse = new FindLockStateResponse
+            {
+                Code = 200, Message = "Success",
+                Data = new FindLockStateData { Imei = "352367242606595", LockState = 3000, MobileStatus = 1000 },
+            };
+
+            var result = await _service.RunAsync(2, RecoveryAction.TranssionCheck, null, 7);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Message, Does.Contain("Not moved"));
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.Approved), "Move to Transsion by hand once sorted");
+            Assert.That(_repo.LockGroupSet, Is.Null);
+        }
+
+        [Test]
+        public async Task CheckingAPhoneTranssionDoesntKnowFailsAndChangesNothing()
+        {
+            // What Transsion says for 352367242606595 today (2026-10-14).
+            TranssionPhone(RecoveryStatus.UploadSent);
+
+            var result = await _service.RunAsync(2, RecoveryAction.TranssionCheck, null, 7);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Does.Contain("device-lock not exist"));
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent));
+        }
+
+        [Test]
+        public async Task CheckingAPhoneThatHasntConnectedSaysSo()
+        {
+            // Transsion's reply for 352367242606595 just after Send (2026-10-14).
+            TranssionPhone(RecoveryStatus.UploadSent);
+            _payTrigger.FindResponse = new FindLockStateResponse
+            {
+                Code = 200, Message = "Success",
+                Data = new FindLockStateData { Imei = "352367242606595", LockState = 0, MobileStatus = 2000, ServerState = 500, ServerLockStatus = 2000 },
+            };
+
+            var result = await _service.RunAsync(2, RecoveryAction.TranssionCheck, null, 7);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Message, Does.Contain("hasn't contacted Transsion yet"));
+            Assert.That(result.Message, Does.Not.Contain("unlocked"));
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent));
+        }
+
+        [Test]
+        public async Task LockingInTranssionSetsTheLockDateToNow()
+        {
+            TranssionPhone(RecoveryStatus.Approved);
+
+            var result = await _service.RunAsync(2, RecoveryAction.Lock, null, 7);
+
+            Assert.That(result.Success, Is.True, result.Message);
+            Assert.That(_payTrigger.RepayCalls.Single().Imei, Is.EqualTo("352367242606595"));
+            Assert.That(_payTrigger.RepayCalls.Single().NextRepayTime, Is.EqualTo(_time.Now.ToUnixTimeSeconds()));
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.LockSent));
+            Assert.That(_knox.Calls, Is.Empty, "Transsion phones never go to Knox");
+        }
+
+        [Test]
+        public async Task LockingASentPhoneBeforeItsActiveKeepsItSent()
+        {
+            // 7043758 / 7087695: online, but Transsion hasn't heard from them yet.
+            TranssionPhone(RecoveryStatus.UploadSent);
+
+            var result = await _service.RunAsync(2, RecoveryAction.Lock, null, 7);
+
+            Assert.That(result.Success, Is.True, result.Message);
+            Assert.That(_payTrigger.RepayCalls.Single().NextRepayTime, Is.EqualTo(_time.Now.ToUnixTimeSeconds()));
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent), "not active yet");
+        }
+
+        [Test]
+        public async Task ActiveCheckAfterAnEarlyLockStillHandsItOver()
+        {
+            TranssionPhone(RecoveryStatus.UploadSent);
+            await _service.RunAsync(2, RecoveryAction.Lock, null, 7);
+            _payTrigger.FindResponse = new FindLockStateResponse
+            {
+                Code = 200, Message = "Success",
+                Data = new FindLockStateData { Imei = "352367242606595", LockState = 3000, MobileStatus = 1000 },
+            };
+
+            await _service.RunAsync(2, RecoveryAction.TranssionCheck, null, 7);
+
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.MovedToTranssion));
+        }
+
+        [Test]
+        public async Task UnlockingInTranssionMovesTheLockDateADayAhead()
+        {
+            TranssionPhone(RecoveryStatus.LockSent);
+
+            var result = await _service.RunAsync(2, RecoveryAction.Unlock, null, 7);
+
+            Assert.That(result.Success, Is.True, result.Message);
+            Assert.That(_payTrigger.RepayCalls.Single().NextRepayTime, Is.EqualTo(_time.Now.AddDays(1).ToUnixTimeSeconds()));
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.Approved));
+        }
+
+        [Test]
+        public async Task MovingToTranssionHandsThePhoneToTheDailyJobs()
+        {
+            TranssionPhone(RecoveryStatus.LockSent);
+
+            var result = await _service.RunAsync(2, RecoveryAction.MoveToTranssion, null, 7);
+
+            Assert.That(result.Success, Is.True, result.Message);
+            var enrolment = _enrolments.Items.Single();
+            Assert.Multiple(() =>
+            {
+                Assert.That(enrolment.AccountId, Is.EqualTo(8478363));
+                Assert.That(enrolment.IMEI, Is.EqualTo("352367242606595"), "LockDevicesPayTrigger reads the IMEI from here");
+                Assert.That(enrolment.DeviceBrand, Is.EqualTo("TECNO"));
+                Assert.That(enrolment.UpdatedBy, Is.EqualTo("RECOVERY"));
+                Assert.That(enrolment.Status, Is.EqualTo(EnrolmentStatus.Approved));
+                Assert.That(Ranalo.Services.DeviceLock.DeviceLockRules.NeedsSendingToTranssion(enrolment), Is.False);
+                Assert.That(Ranalo.Services.DeviceLock.DeviceLockRules.ReadyToUnlock(enrolment), Is.False, "no Retry unlock button");
+                Assert.That(_repo.LockGroupSet, Is.EqualTo((8478363L, 3, (bool?)true)));
+                Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.MovedToTranssion));
+            });
+        }
+
+        [Test]
+        public async Task MovingAnUpperCaseInfinixStoresTheBrandTheAppKnows()
+        {
+            TranssionPhone(RecoveryStatus.Approved).Make = "INFINIX";
+
+            await _service.RunAsync(2, RecoveryAction.MoveToTranssion, null, 7);
+
+            Assert.That(_enrolments.Items.Single().DeviceBrand, Is.EqualTo("Infinix"));
+            Assert.That(Ranalo.Services.DeviceLock.DeviceLockRules.IsTranssion(_enrolments.Items.Single().DeviceBrand), Is.True);
+        }
+
+        [Test]
+        public async Task MovingToTranssionIsRefusedBeforeItsActive()
+        {
+            TranssionPhone(RecoveryStatus.UploadSent);
+
+            var result = await _service.RunAsync(2, RecoveryAction.MoveToTranssion, null, 7);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(_enrolments.Items, Is.Empty);
+            Assert.That(_repo.LockGroupSet, Is.Null);
+        }
+
+        [Test]
+        public async Task MovingToTranssionIsRefusedWhenTheAccountHasAnEnrolment()
+        {
+            TranssionPhone(RecoveryStatus.Approved);
+            _enrolments.Items.Add(new Enrolment { AccountId = 8478363, IMEI = "999" });
+
+            var result = await _service.RunAsync(2, RecoveryAction.MoveToTranssion, null, 7);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Does.Contain("already has an enrolment"));
+            Assert.That(_repo.LockGroupSet, Is.Null);
+        }
+
+        [Test]
+        public async Task TranssionUnreachableIsLoggedAsAFailure()
+        {
+            TranssionPhone();
+            _payTrigger.Throw = new HttpRequestException("timeout");
+
+            var result = await _service.RunAsync(2, RecoveryAction.TranssionSend, null, 7);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Does.Contain("timeout"));
+            Assert.That(_repo.Log.Single().Success, Is.False);
         }
 
         [Test]
@@ -243,7 +617,7 @@ namespace Ranolo.Web.Tests
             }
 
             public Task SetLockGroupAsync(long accountNo, int lockGroup, bool? locked) { LockGroupSet = (accountNo, lockGroup, locked); return Task.CompletedTask; }
-            public Task MarkMovedToKnoxAsync(int id) { Items[id].Status = RecoveryStatus.MovedToKnox; return Task.CompletedTask; }
+            public Task MarkMovedAsync(int id, string movedStatus) { Items[id].Status = movedStatus; return Task.CompletedTask; }
         }
     }
 }

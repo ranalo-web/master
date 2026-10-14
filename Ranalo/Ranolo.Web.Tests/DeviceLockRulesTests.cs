@@ -14,6 +14,8 @@ namespace Ranolo.Web.Tests
             EnrolledByUserId = enrolledBy,
             EnrolledByRole = (int)enrolledRole,
             Status = EnrolmentStatus.PendingActivation,
+            // As PreEnrolAsync leaves it: Transsion has the phone.
+            PayTriggerResponse = "Pre-enrolled. Waiting for the customer to switch the phone on and connect to the internet.",
             DeviceBrand = DeviceLockRules.Tecno
         };
 
