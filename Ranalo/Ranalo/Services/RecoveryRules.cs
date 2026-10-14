@@ -43,7 +43,11 @@ namespace Ranalo.Services
         public const int TranssionActiveState = 3000;
         public const int TranssionRemovedState = 5000;
 
-        public static bool IsSamsung(string? make) => string.Equals(make?.Trim(), "samsung", StringComparison.OrdinalIgnoreCase);
+        // Some Knox devices have no make, only a Samsung model ("SM-A165F/DS",
+        // account 41109528).
+        public static bool IsSamsung(string? make, string? model = null) =>
+            string.Equals(make?.Trim(), "samsung", StringComparison.OrdinalIgnoreCase)
+            || (string.IsNullOrWhiteSpace(make) && model?.Trim().StartsWith("SM-", StringComparison.OrdinalIgnoreCase) == true);
 
         // Nuovo's makes come in any case ("INFINIX", "ITEL", "TECNO").
         public static bool IsTranssion(string? make) => TranssionBrand(make) != null;
@@ -59,7 +63,7 @@ namespace Ranalo.Services
         public static IReadOnlySet<RecoveryAction> AllowedActions(LockRecovery r)
         {
             var actions = new HashSet<RecoveryAction> { RecoveryAction.Note };
-            var samsung = IsSamsung(r.Make);
+            var samsung = IsSamsung(r.Make, r.Model);
             var hasTransaction = !string.IsNullOrWhiteSpace(r.VeritechTransId);
 
             if (r.Status == RecoveryStatus.MovedToKnox)
@@ -100,6 +104,19 @@ namespace Ranalo.Services
             }
             if (!samsung)
             {
+                return actions;
+            }
+
+            // Already on Knox (enrolled there): no upload or approval, just
+            // lock and unlock it with its enrolment's approve id.
+            if (r.CurrentLockGroup == KnoxLockGroup)
+            {
+                actions.Add(RecoveryAction.KnoxCheck);
+                if (hasTransaction)
+                {
+                    actions.Add(RecoveryAction.Lock);
+                    actions.Add(RecoveryAction.Unlock);
+                }
                 return actions;
             }
 

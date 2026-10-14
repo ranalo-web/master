@@ -5,7 +5,7 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
     var r = Model.Recovery;
     bool Can(RecoveryAction a) => Model.Actions.Contains(a);
-    var samsung = RecoveryRules.IsSamsung(r.Make);
+    var samsung = RecoveryRules.IsSamsung(r.Make, r.Model);
     var transsion = RecoveryRules.IsTranssion(r.Make);
     // Knox steps in order, with what each one does.
     var knoxSteps = new (RecoveryAction Action, string Label, string Help, string Css, string? Confirm)[]

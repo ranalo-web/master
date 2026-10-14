@@ -51,6 +51,34 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
+        public void SamsungWithNoMakeIsKnownByItsModel()
+        {
+            // 41109528: Knox device with no make, model SM-A165F/DS.
+            Assert.That(RecoveryRules.IsSamsung(null, "SM-A165F/DS"), Is.True);
+            Assert.That(RecoveryRules.IsSamsung("", " sm-a055f"), Is.True);
+            Assert.That(RecoveryRules.IsSamsung("TECNO", "SM-A165F"), Is.False, "a make wins over the model");
+            Assert.That(RecoveryRules.IsSamsung(null, "KM5"), Is.False);
+        }
+
+        [Test]
+        public void PhoneAlreadyOnKnoxJustLocksAndUnlocks()
+        {
+            var r = Phone(trans: "vkdp465096utid");
+            r.Make = null;
+            r.Model = "SM-A165F/DS";
+            r.CurrentLockGroup = 2;
+
+            Assert.That(RecoveryRules.AllowedActions(r), Is.EquivalentTo(new[]
+            {
+                RecoveryAction.Note, RecoveryAction.NotCatchable, RecoveryAction.Close,
+                RecoveryAction.KnoxCheck, RecoveryAction.Lock, RecoveryAction.Unlock,
+            }));
+
+            r.VeritechTransId = null;
+            Assert.That(RecoveryRules.AllowedActions(r), Does.Not.Contain(RecoveryAction.Lock), "no approve id to give Knox");
+        }
+
+        [Test]
         public void SamsungDoesntGetTranssionSteps()
         {
             var actions = RecoveryRules.AllowedActions(Phone(RecoveryStatus.Approved, trans: "tx1"));
@@ -514,6 +542,82 @@ namespace Ranolo.Web.Tests
             Assert.That(result.Success, Is.False);
             Assert.That(result.Message, Does.Contain("already has an enrolment"));
             Assert.That(_repo.LockGroupSet, Is.Null);
+        }
+
+        // ---- Automatic Transsion checks (hourly job + webhook) ----
+
+        private void TranssionSays(int lockState) => _payTrigger.FindResponse = new FindLockStateResponse
+        {
+            Code = 200, Message = "Success",
+            Data = new FindLockStateData { Imei = "352367242606595", LockState = lockState, MobileStatus = 1000 },
+        };
+
+        [Test]
+        public async Task SweepMovesAPhoneTranssionNowHasActive()
+        {
+            TranssionPhone(RecoveryStatus.UploadSent);
+            TranssionSays(3000);
+
+            var moved = await _service.SweepTranssionAsync();
+
+            Assert.That(moved, Is.EqualTo(1));
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.MovedToTranssion));
+            Assert.That(_repo.Log.First().Response, Does.StartWith("Automatic check"));
+        }
+
+        [Test]
+        public async Task SweepLeavesWaitingPhonesAloneAndUnlogged()
+        {
+            TranssionPhone(RecoveryStatus.UploadSent);
+            TranssionSays(0);
+
+            var moved = await _service.SweepTranssionAsync();
+
+            Assert.That(moved, Is.EqualTo(0));
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent));
+            Assert.That(_repo.Log, Is.Empty, "no log line every hour for a phone still waiting");
+        }
+
+        [Test]
+        public async Task SweepOnlyAsksAboutTranssionPhonesThatWereSent()
+        {
+            TranssionPhone(RecoveryStatus.Investigating);   // not sent yet
+            TranssionSays(3000);
+
+            await _service.SweepTranssionAsync();
+
+            Assert.That(_payTrigger.FindCalls, Is.Empty, "Samsung (recovery 1) and unsent phones aren't asked about");
+        }
+
+        [Test]
+        public async Task SweepCarriesOnPastAFailure()
+        {
+            TranssionPhone(RecoveryStatus.UploadSent);
+            _payTrigger.Throw = new HttpRequestException("timeout");
+
+            Assert.That(await _service.SweepTranssionAsync(), Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task WebhookActivationMovesTheRecoveryWaitingOnThatImei()
+        {
+            TranssionPhone(RecoveryStatus.UploadSent);
+            TranssionSays(3000);
+
+            await _service.OnTranssionActivatedAsync("352367242606595");
+
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.MovedToTranssion));
+        }
+
+        [Test]
+        public async Task WebhookActivationOfAnotherImeiDoesNothing()
+        {
+            TranssionPhone(RecoveryStatus.UploadSent);
+
+            await _service.OnTranssionActivatedAsync("111111111111111");
+
+            Assert.That(_payTrigger.FindCalls, Is.Empty);
+            Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent));
         }
 
         [Test]

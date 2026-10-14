@@ -191,11 +191,16 @@ namespace Ranolo.Web.Tests
             public Task<Ranalo.Services.DeviceLock.WorkflowResult> SendAgainAsync(Guid enrolmentId, Ranalo.DataStore.DataModels.User actor, int? deviceGroupId) => throw new NotImplementedException();
         }
 
-        private static PayTriggerWebhookController CreateController(FakeRepo repo, string body, string? sign, FakeWorkflow? workflow = null)
+        private static PayTriggerWebhookController CreateController(FakeRepo repo, string body, string? sign, FakeWorkflow? workflow = null,
+            Ranalo.Services.IRecoveryService? recoveries = null)
         {
             var controller = new PayTriggerWebhookController(
                 repo,
                 workflow ?? new FakeWorkflow(),
+                recoveries ?? InterfaceFake<Ranalo.Services.IRecoveryService>.Create(new()
+                {
+                    ["OnTranssionActivatedAsync"] = _ => Task.CompletedTask,
+                }).Instance,
                 Options.Create(new PayTriggerSettings { ApiKey = "secret", BaseUrl = "https://x/" }),
                 NullLogger<PayTriggerWebhookController>.Instance);
 
@@ -255,6 +260,37 @@ namespace Ranolo.Web.Tests
             Assert.That(StatusOf(result), Is.EqualTo(200));
             Assert.That(workflow.Activated, Is.EqualTo(new[] { "123" }));
             Assert.That(repo.Updated!.Status, Is.EqualTo("pending_activation"), "webhook doesn't move it into the lock jobs");
+        }
+
+        [Test]
+        public async Task ActivationCallback_ChecksAnyRecoveryWaitingOnTheImei()
+        {
+            var repo = new FakeRepo { Device = new Device { ImeiNo = "123" } };
+            var (recoveries, fake) = InterfaceFake<Ranalo.Services.IRecoveryService>.Create(new()
+            {
+                ["OnTranssionActivatedAsync"] = _ => Task.CompletedTask,
+            });
+            const string body = "{\"imei\":\"123\",\"mobileStatus\":1000,\"state\":3000,\"notifyType\":1000}";
+
+            await CreateController(repo, body, PayTriggerSigner.SignJson(body, "secret"), null, recoveries).DeviceStatusCallback();
+
+            Assert.That(fake.Calls.Single().Method, Is.EqualTo("OnTranssionActivatedAsync"));
+            Assert.That(fake.Calls.Single().Args![0], Is.EqualTo("123"));
+        }
+
+        [Test]
+        public async Task ActivationCallback_RecoveryFailureStillAcknowledges()
+        {
+            var repo = new FakeRepo { Device = new Device { ImeiNo = "123" } };
+            var (recoveries, _) = InterfaceFake<Ranalo.Services.IRecoveryService>.Create(new()
+            {
+                ["OnTranssionActivatedAsync"] = _ => throw new InvalidOperationException("db down"),
+            });
+            const string body = "{\"imei\":\"123\",\"mobileStatus\":1000,\"state\":3000,\"notifyType\":1000}";
+
+            var result = await CreateController(repo, body, PayTriggerSigner.SignJson(body, "secret"), null, recoveries).DeviceStatusCallback();
+
+            Assert.That(StatusOf(result), Is.EqualTo(200), "the hourly check picks it up instead");
         }
 
         [TestCase("{\"imei\":\"123\",\"mobileStatus\":1000,\"state\":1000,\"notifyType\":1000}")]

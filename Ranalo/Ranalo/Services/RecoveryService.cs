@@ -18,6 +18,8 @@ namespace Ranalo.Services
         Task<RecoveryDeviceLookup?> LookupAsync(long accountNo);
         Task<(int? Id, string? Error)> AddAsync(long accountNo, string reason, string? notes, int userId);
         Task<RecoveryActionResult> RunAsync(int id, RecoveryAction action, string? note, int userId);
+        Task<int> SweepTranssionAsync();
+        Task OnTranssionActivatedAsync(string imei);
     }
 
     // Runs one recovery step at a time (RecoveryRules) against Veritech and
@@ -196,6 +198,57 @@ namespace Ranalo.Services
                 return new(false, $"{Describe(action, transsion)} failed: {ex.Message}");
             }
         }
+
+        // Automatic checks run as no user (the log's By is blank).
+        public const int SystemUserId = 0;
+
+        // Recovery phones waiting as "Sent to Transsion" (ScheduledRecovery-
+        // TranssionCheck, hourly): asks Transsion about each and runs Check
+        // in Transsion only for the ones now active -- which moves them to
+        // Transsion -- so waiting phones don't fill the log. Returns how
+        // many moved.
+        public async Task<int> SweepTranssionAsync()
+        {
+            var moved = 0;
+            foreach (var r in await WaitingForTranssionAsync())
+            {
+                try
+                {
+                    var state = await _payTrigger.FindLockStateAsync(new FindLockStateRequest { Imei = r.Imei });
+                    if (!state.IsSuccess || state.Data?.LockState != RecoveryRules.TranssionActiveState)
+                    {
+                        continue;
+                    }
+
+                    await RunAsync(r.Id, RecoveryAction.TranssionCheck, "Automatic check: Transsion has the phone active.", SystemUserId);
+                    if ((await _repository.GetAsync(r.Id))?.Status == RecoveryStatus.MovedToTranssion)
+                    {
+                        moved++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Recovery {Id}: automatic Transsion check failed", r.Id);
+                }
+            }
+            return moved;
+        }
+
+        // PayTrigger's webhook says this IMEI just activated: check (and so
+        // move) its recovery straight away, if one is waiting on it.
+        public async Task OnTranssionActivatedAsync(string imei)
+        {
+            var r = (await WaitingForTranssionAsync()).FirstOrDefault(x => x.Imei == imei);
+            if (r != null)
+            {
+                await RunAsync(r.Id, RecoveryAction.TranssionCheck, "Transsion reported the phone active.", SystemUserId);
+            }
+        }
+
+        private async Task<List<LockRecovery>> WaitingForTranssionAsync() =>
+            (await _repository.GetListAsync("open"))
+                .Where(r => RecoveryRules.IsTranssion(r.Make) && r.Status == RecoveryStatus.UploadSent)
+                .ToList();
 
         private async Task<(bool, string?, string?)> UploadAsync(LockRecovery r)
         {

@@ -31,7 +31,9 @@ namespace Ranalo.DataStore
 
         private const string SelectSql = @"
             SELECT r.Id, r.AccountNo, r.Imei, r.Make, r.Model, r.CustomerName, r.DealerName, r.OriginalLockGroup,
-                   r.Reason, r.Status, r.VeritechTransId, r.Notes, r.CreatedByUserId,
+                   r.Reason, r.Status, r.Notes, r.CreatedByUserId,
+                   -- A phone already on Knox uses its enrolment's approve id.
+                   COALESCE(r.VeritechTransId, CASE WHEN d.LockGroup = 2 THEN ke.VeriTechTransId END) AS VeritechTransId,
                    LTRIM(RTRIM(ISNULL(u.[Name], '') + ' ' + ISNULL(u.[LastName], ''))) AS CreatedByName,
                    r.CreatedAtUtc, r.UpdatedAtUtc, r.MovedToKnoxAtUtc,
                    d.LockGroup AS CurrentLockGroup, d.Locked, d.NextLockDate, d.LastConnectedAt,
@@ -39,6 +41,10 @@ namespace Ranalo.DataStore
             FROM LockRecoveries r
             LEFT JOIN Users u ON u.UserId = r.CreatedByUserId
             LEFT JOIN Devices d ON d.Id = r.AccountNo
+            OUTER APPLY (SELECT TOP 1 e.VeriTechTransId
+                         FROM Enrolments e
+                         WHERE e.AccountId = r.AccountNo AND e.VeriTechTransId IS NOT NULL
+                         ORDER BY e.Created DESC) ke
             OUTER APPLY (SELECT TOP 1 a.Step, a.Success, a.AtUtc, LEFT(a.Response, 400) AS Response
                          FROM LockRecoveryAttempts a
                          WHERE a.RecoveryId = r.Id
