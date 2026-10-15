@@ -160,6 +160,9 @@ namespace Ranolo.Web.Tests
             Assert.That(DeviceLockRules.RequiredDeposit(10000m, null), Is.EqualTo(3525m));
             // sales price: total - daily * 365
             Assert.That(DeviceLockRules.RequiredDeposit(20000m, 40m), Is.EqualTo(5400m));
+            // The website's quoted deposit wins (order 19832: 5,287.50).
+            Assert.That(DeviceLockRules.RequiredDeposit(50870.25m, 124.88m, 5287.5m), Is.EqualTo(5287.5m));
+            Assert.That(DeviceLockRules.RequiredDeposit(20000m, 40m, 0m), Is.EqualTo(5400m), "no quoted deposit: as before");
         }
 
         [Test]
