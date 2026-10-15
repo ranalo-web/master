@@ -14,5 +14,8 @@
         public decimal? DailySalePrice { get; set; }
         public decimal? DeviceAmount { get; set; }
         public decimal? BuyingPrice { get; set; }
+        // Repayment Period (12/14 months) and quoted deposit -- see RepaymentTerms.
+        public decimal? TermInMonths { get; set; }
+        public decimal? DepositAmount { get; set; }
     }
 }

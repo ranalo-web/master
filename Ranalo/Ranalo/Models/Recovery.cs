@@ -2,6 +2,8 @@ namespace Ranalo.Models
 {
     // Recovery (admin only): phones we're trying to get back under a lock.
     // See Services/RecoveryRules.cs and Database/Recovery/001.
+    // Samsung goes to Knox, itel/TECNO/Infinix to Transsion; both use the
+    // same statuses, labelled for the phone's locker.
 
     public static class RecoveryStatus
     {
@@ -10,23 +12,45 @@ namespace Ranalo.Models
         public const string Approved = "Approved";
         public const string LockSent = "LockSent";
         public const string MovedToKnox = "MovedToKnox";
+        public const string MovedToTranssion = "MovedToTranssion";
         public const string NotCatchable = "NotCatchable";
         public const string Closed = "Closed";
 
-        public static string Label(string status) => status switch
+        public static bool IsMoved(string status) => status is MovedToKnox or MovedToTranssion;
+
+        public static string Label(string status, string? make = null)
         {
-            UploadSent => "Sent to Knox",
-            Approved => "Approved in Knox",
-            LockSent => "Lock sent",
-            MovedToKnox => "Moved to Knox",
-            NotCatchable => "Not catchable",
-            _ => status,
-        };
+            var transsion = Ranalo.Services.RecoveryRules.IsTranssion(make);
+            return status switch
+            {
+                UploadSent => transsion ? "Sent to Transsion" : "Sent to Knox",
+                Approved => transsion ? "Active in Transsion" : "Approved in Knox",
+                LockSent => "Lock sent",
+                MovedToKnox => "Moved to Knox",
+                MovedToTranssion => "Moved to Transsion",
+                NotCatchable => "Not catchable",
+                _ => status,
+            };
+        }
     }
 
     public static class RecoveryReason
     {
-        public static readonly string[] All = { "Fraud", "Collections", "Other" };
+        // Opened by the daily locker check: Knox/Transsion no longer has a
+        // phone with an open contract.
+        public const string LockLost = "Lock lost";
+
+        public static readonly string[] All = { "Fraud", "Collections", LockLost, "Other" };
+    }
+
+    // A phone the app locks through Knox (2) or Transsion (3), with an open
+    // contract -- what the daily locker check verifies.
+    public class LockerDevice
+    {
+        public long AccountNo { get; set; }
+        public string Imei { get; set; } = "";
+        public string? Imei2 { get; set; }
+        public int LockGroup { get; set; }
     }
 
     public enum RecoveryAction
@@ -38,6 +62,9 @@ namespace Ranalo.Models
         Lock,          // Knox lock now
         Unlock,        // Knox unlock
         MoveToKnox,    // Devices.LockGroup = 2 + Enrolments row: daily jobs take over
+        TranssionSend,     // PayTrigger pre-enrol (imei/input), no lock on switch-on
+        TranssionCheck,    // PayTrigger findLockState
+        MoveToTranssion,   // Devices.LockGroup = 3 + Enrolments row: daily jobs take over
         NotCatchable,
         Close,
         Reopen,
@@ -62,13 +89,29 @@ namespace Ranalo.Models
         public string? CreatedByName { get; set; }
         public DateTime CreatedAtUtc { get; set; }
         public DateTime UpdatedAtUtc { get; set; }
-        public DateTime? MovedToKnoxAtUtc { get; set; }
+        public DateTime? MovedToKnoxAtUtc { get; set; }   // when moved to Knox or Transsion
 
         // Live from Devices.
         public int? CurrentLockGroup { get; set; }
         public bool? Locked { get; set; }
         public string? NextLockDate { get; set; }
         public string? LastConnectedAt { get; set; }
+
+        // The latest logged step (LockRecoveryAttempts), for the list.
+        public string? LastStep { get; set; }
+        public bool? LastStepSuccess { get; set; }
+        public DateTime? LastStepAtUtc { get; set; }
+        public string? LastReply { get; set; }
+
+        // First line of the latest reply, shortened for a table cell.
+        public string? LastReplySummary
+        {
+            get
+            {
+                var line = (LastReply ?? "").Split('\n')[0].Trim();
+                return line.Length == 0 ? null : line.Length > 90 ? line[..90] + "…" : line;
+            }
+        }
     }
 
     public class LockRecoveryAttempt

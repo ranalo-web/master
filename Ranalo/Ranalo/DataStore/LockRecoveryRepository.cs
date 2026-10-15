@@ -16,7 +16,8 @@ namespace Ranalo.DataStore
         Task SetNotesAsync(int id, string? notes);
         Task LogAsync(int recoveryId, string step, bool success, string? response, int? userId);
         Task SetLockGroupAsync(long accountNo, int lockGroup, bool? locked);
-        Task MarkMovedToKnoxAsync(int id);
+        Task MarkMovedAsync(int id, string movedStatus);
+        Task<List<LockerDevice>> GetLockerDevicesAsync();
     }
 
     // LockRecoveries / LockRecoveryAttempts (Database/Recovery/001).
@@ -31,22 +32,33 @@ namespace Ranalo.DataStore
 
         private const string SelectSql = @"
             SELECT r.Id, r.AccountNo, r.Imei, r.Make, r.Model, r.CustomerName, r.DealerName, r.OriginalLockGroup,
-                   r.Reason, r.Status, r.VeritechTransId, r.Notes, r.CreatedByUserId,
+                   r.Reason, r.Status, r.Notes, r.CreatedByUserId,
+                   -- A phone already on Knox uses its enrolment's approve id.
+                   COALESCE(r.VeritechTransId, CASE WHEN d.LockGroup = 2 THEN ke.VeriTechTransId END) AS VeritechTransId,
                    LTRIM(RTRIM(ISNULL(u.[Name], '') + ' ' + ISNULL(u.[LastName], ''))) AS CreatedByName,
                    r.CreatedAtUtc, r.UpdatedAtUtc, r.MovedToKnoxAtUtc,
-                   d.LockGroup AS CurrentLockGroup, d.Locked, d.NextLockDate, d.LastConnectedAt
+                   d.LockGroup AS CurrentLockGroup, d.Locked, d.NextLockDate, d.LastConnectedAt,
+                   la.Step AS LastStep, la.Success AS LastStepSuccess, la.AtUtc AS LastStepAtUtc, la.Response AS LastReply
             FROM LockRecoveries r
             LEFT JOIN Users u ON u.UserId = r.CreatedByUserId
-            LEFT JOIN Devices d ON d.Id = r.AccountNo";
+            LEFT JOIN Devices d ON d.Id = r.AccountNo
+            OUTER APPLY (SELECT TOP 1 e.VeriTechTransId
+                         FROM Enrolments e
+                         WHERE e.AccountId = r.AccountNo AND e.VeriTechTransId IS NOT NULL
+                         ORDER BY e.Created DESC) ke
+            OUTER APPLY (SELECT TOP 1 a.Step, a.Success, a.AtUtc, LEFT(a.Response, 400) AS Response
+                         FROM LockRecoveryAttempts a
+                         WHERE a.RecoveryId = r.Id
+                         ORDER BY a.AtUtc DESC, a.Id DESC) la";
 
         public async Task<List<LockRecovery>> GetListAsync(string status)
         {
             var where = status switch
             {
-                "moved" => "WHERE r.Status = 'MovedToKnox'",
+                "moved" => "WHERE r.Status IN ('MovedToKnox', 'MovedToTranssion')",
                 "ended" => "WHERE r.Status IN ('NotCatchable', 'Closed')",
                 "all" => "",
-                _ => "WHERE r.Status NOT IN ('MovedToKnox', 'NotCatchable', 'Closed')",
+                _ => "WHERE r.Status NOT IN ('MovedToKnox', 'MovedToTranssion', 'NotCatchable', 'Closed')",
             };
             return (await _db.QueryAsync<LockRecovery>($"{SelectSql} {where} ORDER BY r.UpdatedAtUtc DESC")).ToList();
         }
@@ -83,7 +95,7 @@ namespace Ranalo.DataStore
         public async Task<int?> GetOpenIdForAccountAsync(long accountNo) =>
             await _db.QueryFirstOrDefaultAsync<int?>(@"
                 SELECT TOP 1 Id FROM LockRecoveries
-                WHERE AccountNo = @AccountNo AND Status NOT IN ('MovedToKnox', 'NotCatchable', 'Closed')",
+                WHERE AccountNo = @AccountNo AND Status NOT IN ('MovedToKnox', 'MovedToTranssion', 'NotCatchable', 'Closed')",
                 new { AccountNo = accountNo });
 
         public async Task<int> CreateAsync(LockRecovery r)
@@ -120,10 +132,22 @@ namespace Ranalo.DataStore
                     LastUpdatedDate = GETDATE()
                 WHERE Id = @AccountNo", new { AccountNo = accountNo, LockGroup = lockGroup, Locked = locked });
 
-        public async Task MarkMovedToKnoxAsync(int id) =>
+        // MovedToKnox or MovedToTranssion; MovedToKnoxAtUtc holds when it moved.
+        public async Task MarkMovedAsync(int id, string movedStatus) =>
             await _db.ExecuteAsync(@"
                 UPDATE LockRecoveries
-                SET Status = 'MovedToKnox', MovedToKnoxAtUtc = SYSUTCDATETIME(), UpdatedAtUtc = SYSUTCDATETIME()
-                WHERE Id = @Id", new { Id = id });
+                SET Status = @Status, MovedToKnoxAtUtc = SYSUTCDATETIME(), UpdatedAtUtc = SYSUTCDATETIME()
+                WHERE Id = @Id", new { Id = id, Status = movedStatus });
+
+        // Knox and Transsion phones the lock jobs manage, with an open contract.
+        public async Task<List<LockerDevice>> GetLockerDevicesAsync() =>
+            (await _db.QueryAsync<LockerDevice>(@"
+                SELECT d.Id AS AccountNo, LTRIM(RTRIM(d.ImeiNo)) AS Imei, NULLIF(LTRIM(RTRIM(d.ImeiNo2)), '') AS Imei2, d.LockGroup
+                FROM Devices d
+                WHERE d.LockGroup IN (2, 3)
+                  AND d.Status = 'enrolled'
+                  AND ISNULL(d.EnrollmentStatus, '') <> 'Removed'
+                  AND ISNULL(d.ImeiNo, '') <> ''
+                  AND EXISTS (SELECT 1 FROM Contract_Info c WHERE c.ID = d.Id AND c.EndDate IS NULL)")).ToList();
     }
 }

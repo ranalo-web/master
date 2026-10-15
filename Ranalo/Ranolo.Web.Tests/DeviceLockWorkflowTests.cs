@@ -155,6 +155,183 @@ namespace Ranolo.Web.Tests
             Assert.That(_devices.ById[30111222].Status, Is.EqualTo("pending_activation"));
         }
 
+        [Test]
+        public async Task PreEnrol_ImeiStillLiveOnAnotherAccount_ErrorWithoutCallingTranssion()
+        {
+            // Account 8478363: a repossessed Nuovo phone re-sold as Transsion.
+            _devices.ById[8478363] = new Device { Id = 8478363, ImeiNo = "356938035643809", Make = "TECNO", Status = "enrolled", LockGroup = 1 };
+            var e = await PreEnrolledAsync();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(e.Status, Is.EqualTo(EnrolmentStatus.Error));
+                Assert.That(e.PayTriggerResponse, Does.Contain("8478363"));
+                Assert.That(_payTrigger.PreEnrolCalls, Is.Empty);
+                Assert.That(_devices.ById.ContainsKey(e.AccountId), Is.False, "no second device row for the IMEI");
+            });
+        }
+
+        [Test]
+        public async Task PreEnrol_ImeiOnAnotherAccountRemoved_GoesAhead()
+        {
+            _devices.ById[8478363] = new Device { Id = 8478363, ImeiNo = "356938035643809", Status = "enrolled", EnrollmentStatus = "Removed" };
+            var e = await PreEnrolledAsync();
+
+            Assert.That(e.Status, Is.EqualTo(EnrolmentStatus.PendingActivation));
+            Assert.That(_payTrigger.PreEnrolCalls, Has.Count.EqualTo(1));
+        }
+
+        // ---- Never sent to Transsion (account 22800359) ----
+
+        // Made before the Transsion workflow (2026-10-07), then call-approved:
+        // "waiting for the customer to switch on", but PayTrigger never had it.
+        private Enrolment NeverSentButCallApproved()
+        {
+            var e = NewEnrolment();
+            e.Status = EnrolmentStatus.PendingActivation;
+            e.CallApprovedAt = _time.GetUtcNow().UtcDateTime;
+            e.CallApprovedByUserId = Admin.UserId;
+            return e;
+        }
+
+        [Test]
+        public void NeverSent_IsSpotted()
+        {
+            Assert.Multiple(() =>
+            {
+                Assert.That(DeviceLockRules.NeedsSendingToTranssion(NeverSentButCallApproved()), Is.True);
+                Assert.That(DeviceLockRules.NeedsSendingToTranssion(NewEnrolment()), Is.True);
+            });
+        }
+
+        [Test]
+        public async Task NeverSent_SaysSoInsteadOfWaitingForSwitchOn()
+        {
+            Assert.That(DeviceLockRules.StatusText(NeverSentButCallApproved()), Is.EqualTo("Approved – not sent to Transsion yet"));
+            Assert.That(DeviceLockRules.StatusText(NewEnrolment()), Is.EqualTo("Not sent to Transsion yet"));
+
+            var e = await PreEnrolledAsync();
+            Assert.That(DeviceLockRules.StatusText(e), Is.EqualTo("Waiting for customer to switch on"));
+        }
+
+        [Test]
+        public async Task PreEnrolled_DoesNotNeedSending()
+        {
+            var e = await PreEnrolledAsync();
+            Assert.That(DeviceLockRules.NeedsSendingToTranssion(e), Is.False);
+        }
+
+        [Test]
+        public void NeverSent_SamsungIsNotTranssions()
+        {
+            var e = NewEnrolment();
+            e.DeviceBrand = "Samsung";
+            Assert.That(DeviceLockRules.NeedsSendingToTranssion(e), Is.False);
+        }
+
+        [Test]
+        public async Task NeverSent_CallCantBeApprovedUntilSent()
+        {
+            var e = NewEnrolment();
+
+            var decision = DeviceLockRules.CanApproveEnrolment(UserRole.Approver, Approver.UserId, e);
+            var result = await _workflow.ApproveCallAsync(e.Id, Approver);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(decision.Allowed, Is.False);
+                Assert.That(decision.Reason, Does.Contain("Send it to Transsion"));
+                Assert.That(result.Success, Is.False);
+                Assert.That(e.CallApprovedAt, Is.Null);
+            });
+        }
+
+        [Test]
+        public async Task SendAgain_PreEnrols_KeepsTheCallApproval_ThenUnlocksOnActivation()
+        {
+            var e = NeverSentButCallApproved();
+
+            var result = await _workflow.SendAgainAsync(e.Id, Admin, deviceGroupId: 1234);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Message, Does.Contain("already approved"));
+                Assert.That(_payTrigger.PreEnrolCalls, Has.Count.EqualTo(1));
+                Assert.That(_payTrigger.PreEnrolCalls[0].PreLock, Is.True);
+                Assert.That(e.Status, Is.EqualTo(EnrolmentStatus.PendingActivation));
+                Assert.That(e.CallApprovedAt, Is.Not.Null);
+                Assert.That(_devices.ById[e.AccountId].LockGroup, Is.EqualTo(3));
+                Assert.That(DeviceLockRules.NeedsSendingToTranssion(e), Is.False);
+            });
+
+            await _workflow.OnActivatedAsync(e.IMEI);
+            AssertUnlocked(e, null);
+        }
+
+        [Test]
+        public async Task SendAgain_AfterTranssionRefused_RetriesAndCanSucceed()
+        {
+            _payTrigger.PreEnrolResponse = new PreEnrollImeiResponse { Code = 40000, Message = "Sign error" };
+            var e = await PreEnrolledAsync();
+            Assert.That(DeviceLockRules.NeedsSendingToTranssion(e), Is.True);
+
+            _payTrigger.PreEnrolResponse = new PreEnrollImeiResponse { Code = 200, Message = "Success" };
+            var result = await _workflow.SendAgainAsync(e.Id, Approver, 1234);
+
+            Assert.That(result.Success, Is.True, result.Message);
+            Assert.That(e.Status, Is.EqualTo(EnrolmentStatus.PendingActivation));
+        }
+
+        [Test]
+        public async Task SendAgain_StillRefused_ReportsTranssionsReason()
+        {
+            _payTrigger.PreEnrolResponse = new PreEnrollImeiResponse { Code = 40000, Message = "Sign error" };
+            var e = NewEnrolment();
+
+            var result = await _workflow.SendAgainAsync(e.Id, Admin, 1234);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Does.Contain("Sign error"));
+            Assert.That(e.Status, Is.EqualTo(EnrolmentStatus.Error));
+        }
+
+        [Test]
+        public async Task NeverSent_ActivationOfTheSameImeiElsewhere_DoesNotUnlock()
+        {
+            // 22800359 holds the IMEI Recovery sent to Transsion on 8478363.
+            var e = NeverSentButCallApproved();
+
+            await _workflow.OnActivatedAsync(e.IMEI);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(_payTrigger.RepayCalls, Is.Empty, "never unlock for an enrolment we didn't send");
+                Assert.That(e.ActivatedAt, Is.Null);
+                Assert.That(e.UnlockedAt, Is.Null);
+            });
+        }
+
+        [Test]
+        public async Task SendAgain_DealerCant()
+        {
+            var e = NewEnrolment();
+            var result = await _workflow.SendAgainAsync(e.Id, Dealer, 1234);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(_payTrigger.PreEnrolCalls, Is.Empty);
+        }
+
+        [Test]
+        public async Task SendAgain_AlreadyWithTranssion_Refused()
+        {
+            var e = await PreEnrolledAsync();
+            var result = await _workflow.SendAgainAsync(e.Id, Admin, 1234);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(_payTrigger.PreEnrolCalls, Has.Count.EqualTo(1), "not sent twice");
+        }
+
         // ---- Activation then approval ----
 
         [Test]
@@ -1175,6 +1352,32 @@ namespace Ranolo.Web.Tests
             _devices.ById[3] = new Device { Id = 3, ImeiNo = "356938035643809", Status = "enrolled", Locked = true, NextLockDate = "10/10/2026" };
             _devices.ById[2] = new Device { Id = 2, ImeiNo = "352222222222222", Status = "enrolled", Locked = true, NextLockDate = "10/10/2026" };
             _enrolments.Items.Add(new Enrolment { AccountId = 2, IMEI = "352222222222222", VeriTechTransId = "vk1" });
+        }
+
+        [Test]
+        public async Task KnoxDailyLock_KnoxRefuses_RecordsItAndLeavesOurRowAlone()
+        {
+            // 41109528: gone from Knox; every daily lock failed unseen.
+            _knox.Status = System.Net.HttpStatusCode.NotFound;
+            _knox.Body = "{\"result\":\"FAIL\",\"error\":{\"code\":4040300,\"message\":\"DEVICE_NOT_FOUND\"}}";
+            var devices = new List<LockTransaction> { new() { AccountId = 2, AutoLockDate = new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc) } };
+
+            await _service.LockDevicesKnox(devices);
+
+            Assert.That(devices.Single().Result, Does.StartWith("Knox HTTP 404").And.Contain("DEVICE_NOT_FOUND"));
+            Assert.That(_devices.ById[2].NextLockDate, Is.EqualTo("10/10/2026"), "no lock date Knox never took");
+            Assert.That(_devices.Updated, Is.Empty);
+        }
+
+        [Test]
+        public async Task KnoxDailyLock_KnoxAccepts_UpdatesOurRow()
+        {
+            var devices = new List<LockTransaction> { new() { AccountId = 2, AutoLockDate = new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc) } };
+
+            await _service.LockDevicesKnox(devices);
+
+            Assert.That(devices.Single().Result, Is.Null);
+            Assert.That(_devices.ById[2].NextLockDate, Is.EqualTo("20/10/2026"));
         }
 
         [Test]

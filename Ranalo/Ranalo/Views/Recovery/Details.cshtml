@@ -5,7 +5,8 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
     var r = Model.Recovery;
     bool Can(RecoveryAction a) => Model.Actions.Contains(a);
-    var samsung = RecoveryRules.IsSamsung(r.Make);
+    var samsung = RecoveryRules.IsSamsung(r.Make, r.Model);
+    var transsion = RecoveryRules.IsTranssion(r.Make);
     // Knox steps in order, with what each one does.
     var knoxSteps = new (RecoveryAction Action, string Label, string Help, string Css, string? Confirm)[]
     {
@@ -15,12 +16,25 @@
         (RecoveryAction.Approve, "2. Approve in Knox", "Approves the phone in Knox Guard with the Veritech transaction id.", "btn-outline-primary",
             $"Approve IMEI {r.Imei} in Knox?"),
         (RecoveryAction.KnoxCheck, "Check in Knox", "Looks the phone up in Knox: status, last seen, relock date.", "btn-outline-light", null),
-        (RecoveryAction.Lock, "3. Lock now", "Locks the phone in Knox. It locks the next time it connects.", "btn-danger",
+        (RecoveryAction.Lock, "3. Lock now", "Sets the Knox relock date to now. It locks the next time it connects.", "btn-danger",
             $"Lock {r.CustomerName}'s phone (account {r.AccountNo}) now?"),
-        (RecoveryAction.Unlock, "Unlock", "Undoes the lock.", "btn-outline-warning",
+        (RecoveryAction.Unlock, "Unlock", "Unlocks it and moves the Knox relock date a day ahead.", "btn-outline-warning",
             $"Unlock account {r.AccountNo} in Knox?"),
         (RecoveryAction.MoveToKnox, "4. Move to Knox", "Makes Knox this phone's locker: the daily lock jobs use Knox from now on. Only once the lock has worked.", "btn-success",
             $"Move account {r.AccountNo} from {RecoveryRules.LockGroupName(r.CurrentLockGroup)} to Knox? The daily lock jobs will use Knox for this phone from now on."),
+    };
+    // Transsion (itel/TECNO/Infinix) steps in order.
+    var transsionSteps = new (RecoveryAction Action, string Label, string Help, string Css, string? Confirm)[]
+    {
+        (RecoveryAction.TranssionSend, "1. Send to Transsion", "Pre-enrols the IMEI with Transsion PayTrigger. It locks as soon as the phone connects. Nuovo stays on the phone.", "btn-outline-primary",
+            $"Send IMEI {r.Imei} to Transsion? It locks as soon as the phone connects."),
+        (RecoveryAction.TranssionCheck, "2. Check in Transsion", "Looks the phone up in Transsion. Once it's active there, the daily lock jobs take it over (moved to Transsion).", "btn-outline-light", null),
+        (RecoveryAction.Lock, "3. Lock now", "Sets the Transsion lock date to now. Only once the phone is active in Transsion; a sent phone locks on activation by itself.", "btn-danger",
+            $"Lock {r.CustomerName}'s phone (account {r.AccountNo}) now?"),
+        (RecoveryAction.Unlock, "Unlock", "Moves the Transsion lock date a day ahead.", "btn-outline-warning",
+            $"Unlock account {r.AccountNo} in Transsion?"),
+        (RecoveryAction.MoveToTranssion, "Move to Transsion", "Done by Check in Transsion once the phone is active; use this only if that didn't move it.", "btn-outline-success",
+            $"Move account {r.AccountNo} from {RecoveryRules.LockGroupName(r.CurrentLockGroup)} to Transsion? The daily lock jobs will use Transsion for this phone from now on."),
     };
 }
 
@@ -62,7 +76,7 @@
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="text-soft small">Status</div>
-                        <div class="fs-5 fw-bold mb-2">@RecoveryStatus.Label(r.Status)</div>
+                        <div class="fs-5 fw-bold mb-2">@RecoveryStatus.Label(r.Status, r.Make)</div>
                         <div class="small"><span class="text-soft">Locker now:</span> @RecoveryRules.LockGroupName(r.CurrentLockGroup) @(r.Locked == true ? "(locked)" : r.Locked == false ? "(unlocked)" : "")</div>
                         <div class="small"><span class="text-soft">Locker when added:</span> @RecoveryRules.LockGroupName(r.OriginalLockGroup)</div>
                         <div class="small"><span class="text-soft">Lock date:</span> @(r.NextLockDate ?? "—")</div>
@@ -72,7 +86,7 @@
                         <div class="small"><span class="text-soft">Added:</span> @r.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy") @(r.CreatedByName is { Length: > 0 } ? "by " + r.CreatedByName : "")</div>
                         @if (r.MovedToKnoxAtUtc.HasValue)
                         {
-                            <div class="small"><span class="text-soft">Moved to Knox:</span> @r.MovedToKnoxAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                            <div class="small"><span class="text-soft">Moved to @(r.Status == RecoveryStatus.MovedToTranssion ? "Transsion" : "Knox"):</span> @r.MovedToKnoxAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
                         }
                         @if (!string.IsNullOrWhiteSpace(r.Notes))
                         {
@@ -102,10 +116,25 @@
                                 </div>
                             </form>
                         }
-                        else if (!samsung)
+                        else if (transsion && (RecoveryRules.IsOpen(r.Status) || r.Status == RecoveryStatus.MovedToTranssion))
+                        {
+                            <h6 class="title mb-1">Transsion steps</h6>
+                            <p class="text-soft small">Send it to Transsion, then check it: it locks as soon as it connects, and once Transsion shows it active the daily lock jobs manage it through Transsion. Nuovo is left on the phone. Every call and reply is logged below.</p>
+                            <form method="post" action="/recovery/@r.Id/action">
+                                <input type="text" name="note" maxlength="1000" class="form-control form-control-sm mb-2" placeholder="Note (optional)" />
+                                <div class="d-flex flex-wrap" style="gap:6px;">
+                                    @foreach (var s in transsionSteps)
+                                    {
+                                        <button type="submit" name="step" value="@s.Action" class="btn btn-sm @s.Css" title="@s.Help" disabled="@(!Can(s.Action))"
+                                                onclick="@(s.Confirm != null ? $"return confirm({System.Text.Json.JsonSerializer.Serialize(s.Confirm)});" : "")">@s.Label</button>
+                                    }
+                                </div>
+                            </form>
+                        }
+                        else if (!samsung && !transsion)
                         {
                             <h6 class="title mb-1">Tracking only</h6>
-                            <p class="text-soft small">Only Samsung phones can be moved to Knox. For @(r.Make ?? "this brand"), keep notes here and mark it not catchable or closed when done.</p>
+                            <p class="text-soft small">Samsung phones can be moved to Knox and itel, TECNO and Infinix phones to Transsion. For @(r.Make ?? "this brand"), keep notes here and mark it not catchable or closed when done.</p>
                         }
 
                         <form method="post" action="/recovery/@r.Id/action" class="mt-3 border-top pt-3">
@@ -145,8 +174,8 @@
                                 <th class="wl-th">When</th>
                                 <th class="wl-th">Step</th>
                                 <th class="wl-th">Result</th>
-                                <th class="wl-th">By</th>
-                                <th class="wl-th">Reply / note</th>
+                                <th class="wl-th d-none d-sm-table-cell">By</th>
+                                <th class="wl-th d-none d-md-table-cell">Reply / note</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -154,10 +183,14 @@
                             {
                                 <tr>
                                     <td style="white-space:nowrap;">@a.AtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                                    <td style="white-space:nowrap;">@a.Step</td>
+                                    <td>
+                                        <span style="white-space:nowrap;">@a.Step</span>
+                                        @* On a phone the reply goes under the step. *@
+                                        <div class="small text-soft d-md-none" style="max-height:120px; overflow:auto; white-space:pre-wrap; word-break:break-word;">@a.Response</div>
+                                    </td>
                                     <td>@(a.Success ? "OK" : "Failed")</td>
-                                    <td style="white-space:nowrap;">@a.ByName</td>
-                                    <td class="small"><div style="max-width:720px; max-height:160px; overflow:auto; white-space:pre-wrap; word-break:break-all;">@a.Response</div></td>
+                                    <td class="d-none d-sm-table-cell" style="white-space:nowrap;">@a.ByName</td>
+                                    <td class="small d-none d-md-table-cell"><div style="max-width:720px; max-height:160px; overflow:auto; white-space:pre-wrap; word-break:break-all;">@a.Response</div></td>
                                 </tr>
                             }
                         </tbody>

@@ -225,12 +225,29 @@ namespace Ranalo.Services.DeviceLock
                 return ApprovalDecision.No("This enrolment can't be approved in its current state.");
             }
 
+            if (NeedsSendingToTranssion(enrolment))
+            {
+                return ApprovalDecision.No("Transsion doesn't have this phone yet. Send it to Transsion first.");
+            }
+
             return ApprovalDecision.Yes;
         }
 
         public static bool CanDecideRemovals(UserRole role) => role == UserRole.Admin;
 
         // ---- Transsion enrolment state -------------------------------------
+
+        // A Transsion enrolment PayTrigger never took: made before the
+        // Transsion workflow (2026-10-07), the pre-enrol call threw, or
+        // Transsion refused it (Error). Every successful pre-enrol leaves a
+        // PayTriggerResponse, so an empty one means it was never sent.
+        // Approving such a phone used to leave it "waiting for the customer
+        // to switch on" for ever (account 22800359).
+        public static bool NeedsSendingToTranssion(Enrolment enrolment) =>
+            IsTranssion(enrolment.DeviceBrand) &&
+            !enrolment.ActivatedAt.HasValue &&
+            !enrolment.UnlockedAt.HasValue &&
+            (enrolment.Status == EnrolmentStatus.Error || string.IsNullOrEmpty(enrolment.PayTriggerResponse));
 
         public static bool ReadyToUnlock(Enrolment enrolment) =>
             enrolment.ActivatedAt.HasValue &&
@@ -243,6 +260,10 @@ namespace Ranalo.Services.DeviceLock
 
         public static string StatusText(Enrolment enrolment) => enrolment.Status switch
         {
+            // Never reached Transsion: it can't be waiting for a switch-on.
+            not EnrolmentStatus.Error when NeedsSendingToTranssion(enrolment) => enrolment.CallApprovedAt.HasValue
+                ? "Approved – not sent to Transsion yet"
+                : "Not sent to Transsion yet",
             EnrolmentStatus.New => "New",
             EnrolmentStatus.Pending => "Pending",
             EnrolmentStatus.PendingActivation => enrolment.CallApprovedAt.HasValue

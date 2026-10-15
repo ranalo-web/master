@@ -81,7 +81,7 @@ namespace Ranalo.Woocommece.Api.Services
                         {
                             // Honour Assign Payments over the typed account.
                             account.AccountNo = await _wooOrderRepository.GetPaymentAccountNoAsync(order.MpesaDepositRef) ?? account.AccountNo;
-                            await DoCreateContractInfo(order, account, 12);
+                            await DoCreateContractInfo(order, account, RepaymentTerms.TermOrDefault(order.TermInMonths));
                         }
                     }
                     
@@ -138,7 +138,7 @@ namespace Ranalo.Woocommece.Api.Services
             if (order.DailySalePrice != null)
             {
                 dailyRate = (decimal)order.DailySalePrice;
-                deposit = _calculatorService.CalculateSalesDeposit(order.TotalAmount, (decimal)order.DailySalePrice);
+                deposit = RepaymentTerms.SalesDeposit(order.TotalAmount, dailyRate, order.DepositAmount);
             }
             else
             {
@@ -158,6 +158,7 @@ namespace Ranalo.Woocommece.Api.Services
                 TotalCost = _calculatorService.CalculateTotalCost(dailyRate, deposit, termsInMonths),
                 TotalLoan = _calculatorService.CalculateTotalLoan(dailyRate, termsInMonths),
                 FirstName = order.FirstName ?? "",
+                TermInMonths = termsInMonths,
                 BuyingPrice = order.Products.FirstOrDefault(p => p.BuyingPrice != null)?.BuyingPrice
             };
 
@@ -197,7 +198,7 @@ namespace Ranalo.Woocommece.Api.Services
             if (order.DailySalePrice != null)
             {
                 dailyRate = (decimal)order.DailySalePrice;
-                deposit = _calculatorService.CalculateSalesDeposit(order.TotalAmount, (decimal)order.DailySalePrice);
+                deposit = RepaymentTerms.SalesDeposit(order.TotalAmount, dailyRate, order.DepositAmount);
             }
             else 
             {
@@ -851,7 +852,9 @@ namespace Ranalo.Woocommece.Api.Services
                 NextOfKin2 = ExtractNextKin2(value["id"]?.Value<int?>() ?? 0, value["meta_data"].ToString()),
                 MetaData = ExtractAllMetadata(value),
                 DailySalePrice = products.Select(p => p.DailySalePrice).FirstOrDefault(p => p.HasValue),
-                DeviceAmount = products.Select(p => p.DeviceAmount).FirstOrDefault(p => p.HasValue)
+                DeviceAmount = products.Select(p => p.DeviceAmount).FirstOrDefault(p => p.HasValue),
+                TermInMonths = products.Select(p => p.TermInMonths).FirstOrDefault(p => p.HasValue),
+                DepositAmount = products.Select(p => p.DepositAmount).FirstOrDefault(p => p.HasValue)
             };
         }
 
@@ -1124,7 +1127,7 @@ namespace Ranalo.Woocommece.Api.Services
             return Math.Round(quantity > 1 ? lineCost / quantity : lineCost, 2);
         }
 
-        private List<OrderProduct> MapOrderProducts(JToken value)
+        internal static List<OrderProduct> MapOrderProducts(JToken value)
         {
             var products = new List<OrderProduct>();
             var jarray = value["line_items"] as JArray ?? new JArray(); ;
@@ -1141,10 +1144,15 @@ namespace Ranalo.Woocommece.Api.Services
                     Quantity = item["quantity"]?.Value<int?>() ?? 0,
                     ProductId = item["product_id"]?.Value<long?>() ?? 0,
                     Sku = item["sku"]?.Value<string?>() ?? "",
-                    BuyingPrice = ReadCostOfGoods(item)
+                    BuyingPrice = ReadCostOfGoods(item),
+                    TermInMonths = RepaymentTerms.ReadTerm(item),
+                    DepositAmount = RepaymentTerms.ReadDecimalMeta(item, "_rc_deposit")
                 };
 
-                if(productToAdd.ProductColor == null)
+                // WooCommerce's figures always come first (agreed 2026-10-14):
+                // the contract takes the daily rate, deposit and total the
+                // website quoted. The deposit formula is only a fallback for
+                // old orders the website didn't price.
                 {
                     var checkSaleDaily = item["meta_data"]?.FirstOrDefault(x => x["display_key"]?.ToString() == "_rc_daily")?["display_value"]?.Value<decimal>();
                     var deviceAmount = item["meta_data"]?.FirstOrDefault(x => x["display_key"]?.ToString() == "_rc_line_total")?["display_value"]?.Value<decimal>();

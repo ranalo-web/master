@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Ranalo.PayTrigger;
 using Ranalo.PayTrigger.Models;
+using Ranalo.Services;
 using Ranalo.Services.DeviceLock;
 using Ranalo.Services.Helpers;
 using Ranalo.Woocommece.Api.DataStore;
@@ -28,17 +29,20 @@ namespace Ranalo.Controllers
     {
         private readonly IKosePaymentsRepository _kosePaymentsRepository;
         private readonly ITranssionEnrolmentWorkflow _workflow;
+        private readonly IRecoveryService _recoveries;
         private readonly PayTriggerSettings _settings;
         private readonly ILogger<PayTriggerWebhookController> _logger;
 
         public PayTriggerWebhookController(
             IKosePaymentsRepository kosePaymentsRepository,
             ITranssionEnrolmentWorkflow workflow,
+            IRecoveryService recoveries,
             IOptions<PayTriggerSettings> options,
             ILogger<PayTriggerWebhookController> logger)
         {
             _kosePaymentsRepository = kosePaymentsRepository;
             _workflow = workflow;
+            _recoveries = recoveries;
             _settings = options.Value;
             _logger = logger;
         }
@@ -143,6 +147,19 @@ namespace Ranalo.Controllers
                 if (callback.NotifyType != 2000 && callback.State == 3000)
                 {
                     await _workflow.OnActivatedAsync(callback.Imei);
+
+                    // A Recovery phone sent to Transsion: hand it to the lock
+                    // jobs now. Not retried through PayTrigger if it fails --
+                    // the daily check (ScheduledRecoveryTranssionCheck) is
+                    // the fallback.
+                    try
+                    {
+                        await _recoveries.OnTranssionActivatedAsync(callback.Imei);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "PayTrigger webhook: recovery check failed for imei={Imei}", callback.Imei);
+                    }
                 }
 
                 return Ok(new { code = 200, message = "Success" });

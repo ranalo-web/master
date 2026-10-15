@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Vml.Office;
 using iText.Kernel.Pdf;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Ranalo.DataStore;
+using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.Services.DeviceLock;
 using Ranalo.Services.Helpers;
@@ -300,9 +301,17 @@ namespace Ranalo.Services
                 }
                 };
 
-                await _knoxGuardClient.ExecuteDeviceActionsAsync(request);
+                // Knox's reply used to be ignored: 41109528 was gone from Knox
+                // from June to October and every lock failed unseen. Record
+                // the failure and keep our row as it was -- the daily locker
+                // check (RecoveryService.CheckLockersAsync) opens a Recovery.
+                var response = await _knoxGuardClient.ExecuteDeviceActionsAsync(request);
+                if (!response.IsSuccessStatusCode)
+                {
+                    device.Result = $"Knox HTTP {(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}";
+                    continue;
+                }
 
-                //TODO:If this succeds we need to update the devices table
                 var existingDevice = await _kosePaymentsRepository.GetDeviceByAccountId(device.AccountId);
 
                 if(existingDevice != null)
@@ -458,6 +467,19 @@ namespace Ranalo.Services
             device.LockType = "unlocked";
             device.NextLockDate = TimestampHelper.FormatDateOnly(millis);
             device.NextLockDateIsoFormat = TimestampHelper.FormatRelockTimestamp(millis);
+        }
+
+        // Pre-enrols a Transsion enrolment PayTrigger never took, with the
+        // dealer's device group as at enrolment.
+        public async Task<WorkflowResult> SendToTranssionAsync(Guid enrolmentId, User actor)
+        {
+            var enrolment = await _enrolmentRepository.GetByEnrolmentIdAsync(enrolmentId);
+            if (enrolment == null)
+            {
+                return new WorkflowResult(false, "Enrolment not found.");
+            }
+
+            return await _transsionWorkflow.SendAgainAsync(enrolmentId, actor, await DeviceGroupForDealerAsync(enrolment.DealerId));
         }
 
         public async Task<Enrolment> UpdateEnrolmentasync(Enrolment newEnrolment)

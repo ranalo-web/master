@@ -697,7 +697,7 @@ WHERE kp.AccountNoBigint IS NULL
                                                ,[LockType] = @LockType
                                                ,[NextLockDate] = @NextLockDate
                                                ,[NextLockDateIsoFormat] = @NextLockDateIsoFormat
-                                               ,[LastConnectedAt] = @LastConnectedAt
+                                               ,[LastConnectedAt] = COALESCE(@LastConnectedAt, [LastConnectedAt])
                                                ,[EnrollmentStatus] = @EnrollmentStatus
                                                ,[LastUpdatedDate] = GETDATE()
                                           WHERE [ImeiNo] = @ImeiNo";

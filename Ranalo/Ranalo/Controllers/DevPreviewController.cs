@@ -429,5 +429,151 @@ namespace Ranalo.Controllers
 
             return View("~/Views/AccountCommissions/Index.cshtml", model);
         }
+
+        // Enrolments list as an admin sees it, one Transsion row per state
+        // (incl. the never-sent 22800359) plus Samsung/Nuovo rows.
+        [HttpGet]
+        [Route("dev-preview/enrolments")]
+        public IActionResult Enrolments()
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            ViewBag.PageSize = 10;
+            var now = DateTime.UtcNow;
+            Enrolment Row(long account, string name, string brand, EnrolmentStatus status, string? payTrigger = null,
+                bool callApproved = false, bool activated = false, bool unlocked = false) => new()
+            {
+                Id = Guid.NewGuid(), AccountId = account, OrderId = 19795, FirstName = name, LastName = "Preview",
+                IMEI = "352367242606595", DeviceBrand = brand, ProductName = brand + " Spark 50", Status = status,
+                Created = now.AddDays(-account % 30), Updated = now, PayTriggerResponse = payTrigger,
+                CallApprovedAt = callApproved ? now : null, ActivatedAt = activated ? now : null, UnlockedAt = unlocked ? now : null,
+                EnrolledByUserId = 10, EnrolledByRole = (int)Ranalo.DataStore.DataModels.UserRole.Dealer,
+            };
+            var rows = new List<Enrolment>
+            {
+                Row(22800359, "Eddie", "TECNO", EnrolmentStatus.PendingActivation, callApproved: true),
+                Row(22800360, "Jane", "TECNO", EnrolmentStatus.PendingActivation, "Pre-enrolled. Waiting for the customer to switch the phone on and connect to the internet."),
+                Row(22800361, "Peter", "itel", EnrolmentStatus.Enrolled, "Pre-enrolled.", activated: true),
+                Row(22800362, "Mary", "Infinix", EnrolmentStatus.Error, "Transsion refused the IMEI: IMEI exists (code 123)"),
+                Row(22800363, "John", "TECNO", EnrolmentStatus.Approved, "Unlocked.", true, true, true),
+                Row(22800364, "Grace", "Samsung", EnrolmentStatus.Pending),
+                Row(22800365, "Moses", "Samsung", EnrolmentStatus.Approved),
+            };
+            var admin = new Ranalo.DataStore.DataModels.User { UserId = 1, RoleId = Ranalo.DataStore.DataModels.UserRole.Admin, Name = "Preview Admin" };
+            var model = new EnrolmentViewModel
+            {
+                Enrolments = rows, CurrentPage = 1, PageSize = 10, TotalCount = rows.Count, IsAdmin = true,
+                CanApprove = e => Ranalo.Services.DeviceLock.DeviceLockRules.CanApproveEnrolment(admin.RoleId, admin.UserId, e),
+                LockGroups = rows.ToDictionary(e => e.AccountId, e => (int?)(e.DeviceBrand == "Samsung" ? 2 : e.UnlockedAt.HasValue ? 3 : 1)),
+            };
+            return View("~/Views/Enrolments/Index.cshtml", model);
+        }
+
+        // A real recovery from the database, read-only, as the Recovery page
+        // shows it -- for checking what an admin sees without logging in.
+        [HttpGet]
+        [Route("dev-preview/recovery-live/{id:int}")]
+        public async Task<IActionResult> RecoveryLive(int id, [FromServices] Ranalo.Services.IRecoveryService recoveries)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var model = await recoveries.GetDetailAsync(id);
+            if (model == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            return View("~/Views/Recovery/Details.cshtml", model);
+        }
+
+        // Knox device list search, read-only -- what Knox holds for an IMEI,
+        // second IMEI or serial.
+        [HttpGet]
+        [Route("dev-preview/knox-search/{term}")]
+        public async Task<IActionResult> KnoxSearch(string term, [FromServices] Ranalo.SumsungKnox.IKnoxGuardClient knox)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var list = await knox.ListDevicesAsync(new Ranalo.SumsungKnox.Models.ListDevicesRequest
+            {
+                PageNum = 0, PageSize = 20, SortBy = "updateTime", SortOrder = "descending", Search = term,
+            });
+            return Json(list);
+        }
+
+        // Knox device detail by objectId, read-only (raw reply).
+        [HttpGet]
+        [Route("dev-preview/knox-device/{objectId}")]
+        public async Task<IActionResult> KnoxDevice(string objectId, [FromServices] Ranalo.SumsungKnox.IKnoxGuardClient knox)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var response = await knox.GetDeviceInfoAsync(objectId);
+            return Content(await response.Content.ReadAsStringAsync(), "application/json");
+        }
+
+        // The real Recovery list, read-only.
+        [HttpGet]
+        [Route("dev-preview/recovery-list-live")]
+        public async Task<IActionResult> RecoveryListLive([FromServices] Ranalo.Services.IRecoveryService recoveries, string status = "all")
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            return View("~/Views/Recovery/Index.cshtml", await recoveries.GetListAsync(status));
+        }
+
+        // Recovery details for a Transsion (status = step reached) or Samsung phone.
+        [HttpGet]
+        [Route("dev-preview/recovery/{brand}")]
+        public IActionResult Recovery(string brand, string status = RecoveryStatus.Investigating)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            var r = new LockRecovery
+            {
+                Id = 5, AccountNo = 8478363, Imei = "352367242606595", Make = brand, Model = brand == "samsung" ? "SM-A065F" : "TECNO KM5",
+                CustomerName = "Preview Customer", DealerName = "Preview Dealer", OriginalLockGroup = 1, CurrentLockGroup = 1,
+                Reason = "Collections", Status = status, CreatedAtUtc = DateTime.UtcNow.AddDays(-3), UpdatedAtUtc = DateTime.UtcNow,
+                NextLockDate = "28/05/2026", LastConnectedAt = "12-10-26 08:14:00 UTC", Notes = "Repossessed; test phone.",
+            };
+            var model = new RecoveryDetailViewModel
+            {
+                Recovery = r,
+                Actions = Ranalo.Services.RecoveryRules.AllowedActions(r),
+                Attempts = new List<LockRecoveryAttempt>
+                {
+                    new() { Step = "Added", Success = true, ByName = "Preview Admin", AtUtc = DateTime.UtcNow.AddDays(-3), Response = "On Nuovo, TECNO TECNO KM5, IMEI 352367242606595." },
+                    new() { Step = "TranssionCheck", Success = false, ByName = "Preview Admin", AtUtc = DateTime.UtcNow.AddHours(-2),
+                        Response = "Not found in Transsion: The device-lock not exist (code 50071)\n{\"code\":50071,\"message\":\"The device-lock not exist\",\"data\":null}" },
+                },
+            };
+            return View("~/Views/Recovery/Details.cshtml", model);
+        }
     }
 }

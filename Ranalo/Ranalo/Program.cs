@@ -196,6 +196,8 @@ if (!builder.Environment.IsDevelopment())
         // safe to enable even where the migration hasn't landed yet.
         builder.Services.AddHostedService<ScheduledDashboardRollup>();
         builder.Services.AddHostedService<ScheduledWriteOffCheck>();
+        builder.Services.AddHostedService<ScheduledRecoveryTranssionCheck>();
+        builder.Services.AddHostedService<ScheduledLockerCheck>();
     }
 }
 

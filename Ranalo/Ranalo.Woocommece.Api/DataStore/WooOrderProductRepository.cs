@@ -293,6 +293,8 @@ namespace Ranalo.Woocommece.Api.DataStore
                         	   wo.TotalAmount,
 	                           wo.FirstName,
                                wo.DailySalePrice,
+                               COALESCE(wo.TermInMonths, 12) AS TermInMonths,
+                               wo.DepositAmount,
                                (SELECT TOP 1 wop.BuyingPrice
                                 FROM Woo_OrderProduct wop
                                 WHERE wop.OrderId = wo.Id AND wop.BuyingPrice IS NOT NULL) AS BuyingPrice
