@@ -146,10 +146,14 @@ namespace Ranalo.Services.DeviceLock
         // Same as the contract (SyncService.CreateContractSingle): pricing is
         // set in WooCommerce -- deposit = total - WooCommerce daily price x
         // 365. Old orders without a daily price used the 23.5% formula.
-        public static decimal RequiredDeposit(decimal totalAmount, decimal? dailySalePrice) =>
-            dailySalePrice.HasValue
-                ? totalAmount - (dailySalePrice.Value * 365)
-                : Math.Round((Math.Round(totalAmount, 2) + 5000m) * 0.235m, 2);
+        // The website's quoted deposit comes first (WooCommerce figures first,
+        // 2026-10-14); the old working-out only for orders without one.
+        public static decimal RequiredDeposit(decimal totalAmount, decimal? dailySalePrice, decimal? wooDeposit = null) =>
+            wooDeposit is > 0
+                ? Math.Round(wooDeposit.Value, 2)
+                : dailySalePrice.HasValue
+                    ? totalAmount - (dailySalePrice.Value * 365)
+                    : Math.Round((Math.Round(totalAmount, 2) + 5000m) * 0.235m, 2);
 
         // accountNo null: the deposit may be on any account (Nuovo phones pay
         // to Nuovo's device number, not the national ID).
