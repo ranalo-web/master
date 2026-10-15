@@ -20,6 +20,7 @@ namespace Ranalo.DataStore
         Task<List<DepositPayment>> GetPaymentsByMpesaCodeAsync(string mpesaCode);
         Task<List<string>> GetOrderProductNamesAsync(long orderId);
         Task<decimal?> GetOrderDailySalePriceAsync(long orderId);
+        Task<decimal?> GetOrderDepositAmountAsync(long orderId);
         Task<int?> GetDealerIdByReferenceAsync(string dealerReference);
 
         // IMEI of a phone still on this account (Devices.Id = account), if any.
@@ -84,12 +85,27 @@ namespace Ranalo.DataStore
             return rows.ToList();
         }
 
+        // orderId is the WooCommerce order number (Woo_Orders.OrderID);
+        // Woo_OrderProduct.OrderId holds Woo_Orders.Id, our own key. Matching
+        // the order number against it found nothing, so no order had a brand
+        // and every enrolment from 2026-10-07 to 10-15 was blocked.
         public async Task<List<string>> GetOrderProductNamesAsync(long orderId)
         {
-            var rows = await _db.QueryAsync<string>(
-                "SELECT ProductName FROM dbo.Woo_OrderProduct WHERE OrderID = @OrderId AND ProductName IS NOT NULL",
+            var rows = await _db.QueryAsync<string>(@"
+                SELECT p.ProductName
+                FROM dbo.Woo_OrderProduct p
+                INNER JOIN dbo.Woo_Orders wo ON wo.Id = p.OrderId
+                WHERE wo.OrderID = @OrderId AND p.ProductName IS NOT NULL",
                 new { OrderId = orderId });
             return rows.ToList();
+        }
+
+        // The deposit the website quoted (_rc_deposit), if the order has one.
+        public async Task<decimal?> GetOrderDepositAmountAsync(long orderId)
+        {
+            return await _db.QueryFirstOrDefaultAsync<decimal?>(
+                "SELECT TOP 1 DepositAmount FROM dbo.Woo_Orders WHERE OrderID = @OrderId",
+                new { OrderId = orderId });
         }
 
         public async Task<decimal?> GetOrderDailySalePriceAsync(long orderId)

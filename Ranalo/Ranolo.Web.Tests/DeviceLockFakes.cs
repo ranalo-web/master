@@ -174,6 +174,8 @@ namespace Ranolo.Web.Tests
             Task.FromResult(Products.GetValueOrDefault(orderId) ?? new List<string>());
 
         public Task<decimal?> GetOrderDailySalePriceAsync(long orderId) => Task.FromResult(DailySalePrices.GetValueOrDefault(orderId));
+        public Dictionary<long, decimal?> Deposits { get; } = new();
+        public Task<decimal?> GetOrderDepositAmountAsync(long orderId) => Task.FromResult(Deposits.GetValueOrDefault(orderId));
 
         public Task<int?> GetDealerIdByReferenceAsync(string dealerReference) =>
             Task.FromResult(Dealers.TryGetValue(dealerReference.Trim(), out var id) ? id : (int?)null);

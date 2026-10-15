@@ -135,7 +135,8 @@ namespace Ranalo.Services.DeviceLock
         private async Task CheckDepositAsync(EnrolmentCheckOutcome outcome, Enrolment enrolment, CustomerDetails order, string? accountNo)
         {
             var dailySalePrice = await _repository.GetOrderDailySalePriceAsync(order.OrderID);
-            var required = DeviceLockRules.RequiredDeposit(order.TotalAmount, dailySalePrice);
+            var wooDeposit = await _repository.GetOrderDepositAmountAsync(order.OrderID);
+            var required = DeviceLockRules.RequiredDeposit(order.TotalAmount, dailySalePrice, wooDeposit);
 
             var payments = string.IsNullOrWhiteSpace(order.MpesaDepositRef)
                 ? new List<DepositPayment>()
