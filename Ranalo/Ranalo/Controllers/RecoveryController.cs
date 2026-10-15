@@ -108,11 +108,11 @@ namespace Ranalo.Controllers
             return RedirectToAction("Details", new { id });
         }
 
-        // Bulk Send to Knox / Send to Transsion for the ticked phones.
+        // Bulk Send / Lock now / Check & move for the ticked phones.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Route("recovery/send-many")]
-        public async Task<IActionResult> SendMany(List<int> ids, string status = "open")
+        [Route("recovery/bulk")]
+        public async Task<IActionResult> Bulk(List<int> ids, RecoveryBulkAction act, string status = "open")
         {
             if (!IsAdmin(out var redirect))
             {
@@ -125,10 +125,16 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", new { status });
             }
 
-            var (sent, skipped, messages) = await _recoveryService.SendManyAsync(ids, UserId);
-            var text = $"{sent} phone{(sent == 1 ? "" : "s")} sent to Knox / Transsion."
-                + (skipped > 0 ? $" {skipped} not sent: {string.Join(" ", messages.Take(10))}{(messages.Count > 10 ? " …" : "")}" : "");
-            TempData[sent == 0 && skipped > 0 ? "RecoveryError" : "RecoveryResult"] = text;
+            var (done, skipped, messages) = await _recoveryService.RunManyAsync(ids, act, UserId);
+            var did = act switch
+            {
+                RecoveryBulkAction.Lock => "locked",
+                RecoveryBulkAction.CheckAndMove => "confirmed active and moved",
+                _ => "sent to Knox / Transsion",
+            };
+            var text = $"{done} phone{(done == 1 ? "" : "s")} {did}."
+                + (skipped > 0 ? $" {skipped} not: {string.Join(" ", messages.Take(10))}{(messages.Count > 10 ? " …" : "")}" : "");
+            TempData[done == 0 && skipped > 0 ? "RecoveryError" : "RecoveryResult"] = text;
             return RedirectToAction("Index", new { status });
         }
 

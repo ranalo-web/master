@@ -169,6 +169,14 @@ namespace Ranalo.Services
             return null;
         }
 
+        // Knox statuses once the phone has activated -- only then can a lock
+        // reach it and the phone move to Knox. "Accepted" / "Activating" mean
+        // approved but not yet switched on and connected (41109528, 19832).
+        public static readonly string[] KnoxActiveStatuses = { "Enrolled", "Active", "Locked", "Blinking" };
+
+        public static bool KnoxIsActive(string? status) =>
+            KnoxActiveStatuses.Any(s => string.Equals(s, status?.Trim(), StringComparison.OrdinalIgnoreCase));
+
         // The first step for a phone still being investigated: Send to Knox
         // (Samsung) or Send to Transsion (itel/TECNO/Infinix); null for other
         // brands or a phone already past that step. Used by the list's bulk send.

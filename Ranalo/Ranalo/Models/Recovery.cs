@@ -71,6 +71,14 @@ namespace Ranalo.Models
         Note,
     }
 
+    // What the list's tick boxes can do to several phones at once.
+    public enum RecoveryBulkAction
+    {
+        Send,          // Send to Knox / Send to Transsion (first step)
+        Lock,          // Lock now
+        CheckAndMove,  // check with Knox/Transsion; move the ones confirmed active
+    }
+
     public class LockRecovery
     {
         public int Id { get; set; }

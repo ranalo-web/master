@@ -3,9 +3,8 @@ using Ranalo.Services;
 namespace Ranalo.ScheduledServices
 {
     // Daily: Samsung recoveries sent to Knox that Knox now has are approved,
-    // so no one has to press Approve in Knox on each (e.g. the phones sent
-    // to Recovery from Lock check). Lock now is still pressed by hand. See
-    // RecoveryService.SweepKnoxApprovalsAsync.
+    // and ones whose lock was sent and that Knox reports active are moved to
+    // Knox (so the daily lock jobs manage them). See RecoveryService.SweepKnoxAsync.
     public class ScheduledRecoveryKnoxApproval : BackgroundService
     {
         // 5:05 AM UTC (8:05 AM in Kenya), between the Transsion check (5:00)
@@ -47,8 +46,8 @@ namespace Ranalo.ScheduledServices
                 {
                     using var scope = _scopeFactory.CreateScope();
                     var recoveries = scope.ServiceProvider.GetRequiredService<IRecoveryService>();
-                    var approved = await recoveries.SweepKnoxApprovalsAsync();
-                    _logger.LogInformation("Recovery Knox approval completed: {approved} phone(s) approved in Knox", approved);
+                    var (approved, moved) = await recoveries.SweepKnoxAsync();
+                    _logger.LogInformation("Recovery Knox approval completed: {approved} approved in Knox, {moved} moved to Knox", approved, moved);
                 }
                 catch (Exception ex)
                 {

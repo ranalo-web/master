@@ -3,7 +3,7 @@
 @model RecoveryListViewModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
-    var tabs = new[] { ("open", "In progress"), ("moved", "Moved to Knox / Transsion"), ("ended", "Not catchable / closed"), ("all", "All") };
+    var tabs = new[] { ("open", "In progress"), ("moved", "Moved: locking on Knox / Transsion"), ("ended", "Not catchable / closed"), ("all", "All") };
     string BrandOf(LockRecovery r) => RecoveryRules.IsSamsung(r.Make, r.Model) ? "samsung" : RecoveryRules.IsTranssion(r.Make) ? "transsion" : "other";
     string ResultOf(LockRecovery r) => r.LastStep == null ? "none" : r.LastStepSuccess == true ? "ok" : "failed";
     var statusOptions = Model.Recoveries.Select(r => RecoveryStatus.Label(r.Status, r.Make)).Distinct().OrderBy(s => s).ToList();
@@ -125,21 +125,27 @@
                     </div>
                     <div class="small text-soft pb-1" id="fCount"></div>
                 </div>
-                <form method="post" action="/recovery/send-many" id="sendForm">
+                <form method="post" action="/recovery/bulk" id="sendForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="status" value="@Model.Status" />
                 <div class="card-inner border-top py-2 d-flex flex-wrap align-items-center" style="gap:8px;">
                     <span class="small text-soft" id="selCount">0 ticked</span>
-                    <button type="submit" class="btn btn-sm btn-primary"
-                            onclick="return confirmSend();"
-                            title="Samsung: Send to Knox (Veritech upload). itel/TECNO/Infinix: Send to Transsion. Only phones still being investigated can be ticked.">Send to Knox / Transsion</button>
-                    <span class="small text-soft">Only phones still "Investigating" can be ticked. Knox phones are approved by the daily job once they reach Knox.</span>
+                    <button type="submit" name="act" value="@RecoveryBulkAction.Send" class="btn btn-sm btn-primary"
+                            onclick="return confirmBulk('Send the ticked phones to Knox / Transsion?');"
+                            title="Samsung: Send to Knox (Veritech upload). itel/TECNO/Infinix: Send to Transsion. Only phones still being investigated.">Send to Knox / Transsion</button>
+                    <button type="submit" name="act" value="@RecoveryBulkAction.Lock" class="btn btn-sm btn-danger"
+                            onclick="return confirmBulk('Lock the ticked phones now?');"
+                            title="Knox: relock now (approved phones). Transsion: lock date now (active phones). They lock the next time they connect.">Lock now</button>
+                    <button type="submit" name="act" value="@RecoveryBulkAction.CheckAndMove" class="btn btn-sm btn-success"
+                            onclick="return confirmBulk('Check the ticked phones with Knox / Transsion and move the ones confirmed active?');"
+                            title="Asks Knox / Transsion about each phone; only phones confirmed active move over to the daily lock jobs (Moved tab).">Check &amp; move</button>
+                    <span class="small text-soft">Each phone gets the step that fits it; the rest are skipped with a reason. Knox phones are approved, and moved once active, by the daily job.</span>
                 </div>
                 <div class="table-responsive border-top">
                     <table class="table mb-0" style="white-space:nowrap;" id="recoveries">
                         <thead>
                             <tr>
-                                <th class="wl-th" style="width:32px;"><input type="checkbox" id="pickAll" title="Tick every phone shown that can be sent" /></th>
+                                <th class="wl-th" style="width:32px;"><input type="checkbox" id="pickAll" title="Tick every phone shown" /></th>
                                 @* Narrow screens keep account, status and the last update. *@
                                 <th class="wl-th">Account</th>
                                 <th class="wl-th d-none d-md-table-cell">Phone</th>
@@ -164,9 +170,9 @@
                                     data-status="@RecoveryStatus.Label(r.Status, r.Make)" data-brand="@BrandOf(r)" data-reason="@r.Reason"
                                     data-step="@(r.LastStep ?? "")" data-result="@ResultOf(r)">
                                     <td>
-                                        @if (RecoveryRules.FirstSendStep(r) is { } firstStep)
+                                        @if (RecoveryRules.IsOpen(r.Status))
                                         {
-                                            <input type="checkbox" name="ids" value="@r.Id" class="pick" title="@(firstStep == RecoveryAction.TranssionSend ? "Send to Transsion" : "Send to Knox")" />
+                                            <input type="checkbox" name="ids" value="@r.Id" class="pick" />
                                         }
                                     </td>
                                     <td>
@@ -238,10 +244,10 @@
             var out = document.getElementById('selCount');
             if (out) out.textContent = picked() + ' ticked';
         }
-        window.confirmSend = function () {
+        window.confirmBulk = function (message) {
             var n = picked();
             if (n === 0) { alert('Tick at least one phone first.'); return false; }
-            return confirm('Send ' + n + ' phone' + (n === 1 ? '' : 's') + ' to Knox / Transsion?');
+            return confirm(message + ' (' + n + ' phone' + (n === 1 ? '' : 's') + ')');
         };
         var all = document.getElementById('pickAll');
         if (all) all.addEventListener('change', function () {

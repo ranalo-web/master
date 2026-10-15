@@ -19,8 +19,8 @@ namespace Ranalo.Services
         Task<(int? Id, string? Error)> AddAsync(long accountNo, string reason, string? notes, int userId);
         Task<RecoveryActionResult> RunAsync(int id, RecoveryAction action, string? note, int userId);
         Task<int> SweepTranssionAsync();
-        Task<int> SweepKnoxApprovalsAsync();
-        Task<(int Sent, int Skipped, List<string> Messages)> SendManyAsync(IEnumerable<int> ids, int userId);
+        Task<(int Approved, int Moved)> SweepKnoxAsync();
+        Task<(int Done, int Skipped, List<string> Messages)> RunManyAsync(IEnumerable<int> ids, RecoveryBulkAction action, int userId);
         Task<List<string>> CheckLockersAsync();
         Task OnTranssionActivatedAsync(string imei);
     }
@@ -253,64 +253,91 @@ namespace Ranalo.Services
             return moved;
         }
 
-        // Bulk first step from the list: Send to Knox / Send to Transsion for
-        // each ticked phone still being investigated (RecoveryRules.FirstSendStep).
-        public async Task<(int Sent, int Skipped, List<string> Messages)> SendManyAsync(IEnumerable<int> ids, int userId)
+        // Bulk actions from the list's tick boxes. Each phone gets the step
+        // that fits its brand and status; the rest are skipped with a reason.
+        //   Send:         Send to Knox / Send to Transsion (still investigating)
+        //   Lock:         Lock now (wherever Lock is available)
+        //   CheckAndMove: Samsung -> Move to Knox, which first checks Knox has
+        //                 it active; Transsion -> Check in Transsion, which
+        //                 moves it once Transsion reports it active.
+        public async Task<(int Done, int Skipped, List<string> Messages)> RunManyAsync(IEnumerable<int> ids, RecoveryBulkAction action, int userId)
         {
-            int sent = 0, skipped = 0;
+            int done = 0, skipped = 0;
             var messages = new List<string>();
             foreach (var id in ids.Distinct())
             {
                 var r = await _repository.GetAsync(id);
-                var step = r == null ? null : RecoveryRules.FirstSendStep(r);
-                if (r == null || step == null)
+                if (r == null)
                 {
                     skipped++;
-                    if (r != null) messages.Add($"{r.AccountNo}: {(r.Status == RecoveryStatus.Investigating ? $"no Knox/Transsion for {r.Make}" : "already past this step")}.");
                     continue;
                 }
 
-                var result = await RunAsync(id, step.Value, "Sent from the Recovery list.", userId);
-                if (result.Success) sent++;
+                var allowed = RecoveryRules.AllowedActions(r);
+                var transsion = RecoveryRules.IsTranssion(r.Make);
+                RecoveryAction? step = action switch
+                {
+                    RecoveryBulkAction.Send => RecoveryRules.FirstSendStep(r),
+                    RecoveryBulkAction.Lock => allowed.Contains(RecoveryAction.Lock) ? RecoveryAction.Lock : null,
+                    RecoveryBulkAction.CheckAndMove when transsion && allowed.Contains(RecoveryAction.TranssionCheck) && RecoveryRules.IsOpen(r.Status) => RecoveryAction.TranssionCheck,
+                    RecoveryBulkAction.CheckAndMove when allowed.Contains(RecoveryAction.MoveToKnox) => RecoveryAction.MoveToKnox,
+                    _ => null,
+                };
+                if (step == null)
+                {
+                    skipped++;
+                    messages.Add($"{r.AccountNo}: {RecoveryStatus.Label(r.Status, r.Make)}, nothing to {(action == RecoveryBulkAction.CheckAndMove ? "move yet" : action.ToString().ToLowerInvariant())}.");
+                    continue;
+                }
+
+                var before = r.Status;
+                var result = await RunAsync(id, step.Value, "From the Recovery list.", userId);
+                var after = (await _repository.GetAsync(id))?.Status;
+                var ok = action == RecoveryBulkAction.CheckAndMove
+                    ? after != null && RecoveryStatus.IsMoved(after) && !RecoveryStatus.IsMoved(before)
+                    : result.Success;
+                if (ok) done++;
                 else { skipped++; messages.Add($"{r.AccountNo}: {result.Message}"); }
             }
-            return (sent, skipped, messages);
+            return (done, skipped, messages);
         }
 
-        // Samsung recoveries sent to Knox ("Sent to Knox", with the Veritech
-        // transaction id): approve the ones Knox now has (ScheduledRecovery-
-        // KnoxApproval, daily). The phone only reaches Knox a while after the
-        // upload, so approving straight away fails; this saves pressing
-        // Approve on each. Phones not in Knox yet are left alone and unlogged.
-        // Returns how many were approved.
-        public async Task<int> SweepKnoxApprovalsAsync()
+        // Daily Knox sweep (ScheduledRecoveryKnoxApproval):
+        //  1. Samsung recoveries "Sent to Knox" that Knox now has are
+        //     approved -- the phone only reaches Knox a while after the upload.
+        //  2. Samsung recoveries whose lock was sent and that Knox reports
+        //     active (KnoxIsActive) are moved to Knox, so the daily lock jobs
+        //     manage them and they leave "In progress".
+        // Phones still waiting are left alone and unlogged.
+        public async Task<(int Approved, int Moved)> SweepKnoxAsync()
         {
-            var approved = 0;
-            var waiting = (await _repository.GetListAsync("open"))
-                .Where(r => RecoveryRules.IsSamsung(r.Make, r.Model) && r.Status == RecoveryStatus.UploadSent
-                            && !string.IsNullOrWhiteSpace(r.VeritechTransId))
+            int approved = 0, moved = 0;
+            var samsung = (await _repository.GetListAsync("open"))
+                .Where(r => RecoveryRules.IsSamsung(r.Make, r.Model))
                 .ToList();
-            foreach (var r in waiting)
+            foreach (var r in samsung)
             {
                 try
                 {
-                    if (await InKnoxAsync(r.Imei) != true)
+                    if (r.Status == RecoveryStatus.UploadSent && !string.IsNullOrWhiteSpace(r.VeritechTransId))
                     {
-                        continue;
+                        if (await InKnoxAsync(r.Imei) != true) continue;
+                        var result = await RunAsync(r.Id, RecoveryAction.Approve, "Automatic approval: Knox has the phone.", SystemUserId);
+                        if (result.Success) approved++;
                     }
-
-                    var result = await RunAsync(r.Id, RecoveryAction.Approve, "Automatic approval: Knox has the phone.", SystemUserId);
-                    if (result.Success)
+                    else if (r.Status == RecoveryStatus.LockSent && RecoveryRules.AllowedActions(r).Contains(RecoveryAction.MoveToKnox))
                     {
-                        approved++;
+                        if (!RecoveryRules.KnoxIsActive((await FindKnoxDeviceAsync(r.Imei))?.Status)) continue;
+                        await RunAsync(r.Id, RecoveryAction.MoveToKnox, "Automatic move: Knox reports the phone active.", SystemUserId);
+                        if ((await _repository.GetAsync(r.Id))?.Status == RecoveryStatus.MovedToKnox) moved++;
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Recovery {Id}: automatic Knox approval failed", r.Id);
+                    _logger.LogWarning(ex, "Recovery {Id}: automatic Knox step failed", r.Id);
                 }
             }
-            return approved;
+            return (approved, moved);
         }
 
         // PayTrigger's webhook says this IMEI just activated: check (and so
@@ -460,20 +487,21 @@ namespace Ranalo.Services
             return (response.IsSuccessStatusCode, $"HTTP {(int)response.StatusCode} {body}", null);
         }
 
-        private async Task<(bool, string?, string?)> KnoxCheckAsync(LockRecovery r)
+        private async Task<DeviceDto?> FindKnoxDeviceAsync(string imei)
         {
             var list = await _knox.ListDevicesAsync(new ListDevicesRequest
             {
-                PageNum = 0,
-                PageSize = 20,
-                SortBy = "updateTime",
-                SortOrder = "descending",
-                Search = r.Imei,
+                PageNum = 0, PageSize = 20, SortBy = "updateTime", SortOrder = "descending", Search = imei,
             });
-            var device = list?.DeviceList?.FirstOrDefault(d => d.Imei == r.Imei || d.Imei2 == r.Imei || d.DeviceUid == r.Imei);
+            return list?.DeviceList?.FirstOrDefault(d => d.Imei == imei || d.Imei2 == imei || d.DeviceUid == imei);
+        }
+
+        private async Task<(bool, string?, string?)> KnoxCheckAsync(LockRecovery r)
+        {
+            var device = await FindKnoxDeviceAsync(r.Imei);
             if (device == null)
             {
-                return (false, "Not found in Knox. " + Json(list), null);
+                return (false, "Not found in Knox.", null);
             }
 
             static string When(long ms) => ms > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime.ToString("dd/MM/yyyy HH:mm 'UTC'") : "never";
@@ -491,6 +519,15 @@ namespace Ranalo.Services
             if (reason != null)
             {
                 return (false, reason, null);
+            }
+
+            // Only once Knox has the phone active -- before that a lock can't
+            // reach it, and the daily jobs would be managing a phone Knox
+            // doesn't control yet.
+            var knoxStatus = (await FindKnoxDeviceAsync(r.Imei))?.Status;
+            if (!RecoveryRules.KnoxIsActive(knoxStatus))
+            {
+                return (false, $"Knox shows the phone as {knoxStatus ?? "not found"}. It moves once Knox has it active ({string.Join(", ", RecoveryRules.KnoxActiveStatuses)}), after the phone connects.", null);
             }
 
             var device = await _repository.LookupDeviceAsync(r.AccountNo);
