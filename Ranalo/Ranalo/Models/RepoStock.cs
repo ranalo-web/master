@@ -68,6 +68,7 @@ namespace Ranalo.Models
         public long AccountNo { get; set; }
         public int? ContractId { get; set; }
         public string? CustomerName { get; set; }
+        public DateTime? ContractEndedOn { get; set; }   // already ended elsewhere: kept as it is
         public string? Imei { get; set; }
         public string? Make { get; set; }
         public string? Model { get; set; }

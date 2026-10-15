@@ -29,14 +29,19 @@ namespace Ranalo.DataStore
         public async Task<RepoStockLookup?> LookupAsync(long accountNo) =>
             await _db.QueryFirstOrDefaultAsync<RepoStockLookup>(@"
                 SELECT d.Id AS AccountNo, CAST(d.ImeiNo AS VARCHAR(20)) AS Imei, d.Make, d.Model, d.LockGroup, d.DeviceGroupId,
-                       c.ContractID AS ContractId, c.First_Name AS CustomerName,
+                       c.ContractID AS ContractId, c.First_Name AS CustomerName, c.EndDate AS ContractEndedOn,
                        dl.CompanyName AS DealerName,
                        (SELECT TOP 1 cc.Id FROM CollectionCases cc WHERE cc.AccountNo = d.Id AND cc.Status = 'Open') AS OpenCollectionsCaseId,
                        (SELECT COUNT(*) FROM RepoStock rs WHERE rs.AccountNo = d.Id) AS TimesInStockBefore,
                        CAST(CASE WHEN EXISTS (SELECT 1 FROM RepoStock rs WHERE rs.AccountNo = d.Id AND rs.Status = 'InStock') THEN 1 ELSE 0 END AS BIT) AS InStockNow
                 FROM Devices d
-                OUTER APPLY (SELECT TOP 1 ci.ContractID, ci.First_Name FROM Contract_Info ci
-                             WHERE ci.ID = d.Id AND ci.EndDate IS NULL ORDER BY ci.ContractID DESC) c
+                -- The account's latest contract: open, or already ended
+                -- elsewhere (e.g. 8478363, ended before repo stock existed).
+                -- Not one that has been through repo stock already.
+                OUTER APPLY (SELECT TOP 1 ci.ContractID, ci.First_Name, ci.EndDate FROM Contract_Info ci
+                             WHERE ci.ID = d.Id
+                               AND ci.ContractID = (SELECT MAX(x.ContractID) FROM Contract_Info x WHERE x.ID = d.Id)
+                               AND ci.PaymentAccount IS NULL) c
                 LEFT JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
                 WHERE d.Id = @AccountNo", new { AccountNo = accountNo });
 
@@ -85,12 +90,12 @@ namespace Ranalo.DataStore
 
             var ended = await _db.ExecuteAsync(@"
                 UPDATE Contract_Info
-                SET EndDate = GETDATE(), PaymentAccount = @PaymentAccount, DealerReference = COALESCE(DealerReference, @DeviceGroupId)
-                WHERE ContractID = @ContractId AND ID = @AccountNo AND EndDate IS NULL",
+                SET EndDate = COALESCE(EndDate, GETDATE()), PaymentAccount = @PaymentAccount, DealerReference = COALESCE(DealerReference, @DeviceGroupId)
+                WHERE ContractID = @ContractId AND ID = @AccountNo AND PaymentAccount IS NULL",
                 new { PaymentAccount = paymentAccount, account.DeviceGroupId, account.ContractId, account.AccountNo }, tx);
             if (ended != 1)
             {
-                throw new InvalidOperationException($"Contract {account.ContractId} is no longer open on account {account.AccountNo}.");
+                throw new InvalidOperationException($"Contract {account.ContractId} on account {account.AccountNo} has changed -- reload and try again.");
             }
 
             await _db.ExecuteAsync("UPDATE KosePayments SET AccountNo = @PaymentAccount WHERE AccountNoBigint = @AccountNo",

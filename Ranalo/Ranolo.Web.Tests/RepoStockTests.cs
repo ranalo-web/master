@@ -36,13 +36,22 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
+        public void AnAccountWhoseContractAlreadyEndedCanBeAdded()
+        {
+            // 8478363: contract 704 ended on 14/10 before repo stock existed.
+            var account = Account();
+            account.ContractEndedOn = new DateTime(2026, 10, 14);
+            Assert.That(RepoStockRules.CannotAdd(account, RepoStockReason.Repossessed), Is.Null);
+        }
+
+        [Test]
         public void AddingIsRefusedWhenItCantBeDoneCleanly()
         {
             Assert.Multiple(() =>
             {
                 Assert.That(RepoStockRules.CannotAdd(null, RepoStockReason.Repossessed), Does.Contain("No device"));
                 Assert.That(RepoStockRules.CannotAdd(Account(inStock: true), RepoStockReason.Repossessed), Does.Contain("already in repo stock"));
-                Assert.That(RepoStockRules.CannotAdd(Account(contractId: null), RepoStockReason.Repossessed), Does.Contain("no open contract"));
+                Assert.That(RepoStockRules.CannotAdd(Account(contractId: null), RepoStockReason.Repossessed), Does.Contain("no contract"));
                 Assert.That(RepoStockRules.CannotAdd(Account(openCase: 338), RepoStockReason.Repossessed), Does.Contain("collections case (338)"));
                 Assert.That(RepoStockRules.CannotAdd(Account(), "Stolen"), Does.Contain("Choose why"));
             });

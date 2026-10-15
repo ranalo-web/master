@@ -63,7 +63,10 @@ namespace Ranalo.Services
                 var id = await _repository.AddAsync(account, suffix, reason, string.IsNullOrWhiteSpace(condition) ? null : condition.Trim(), userId);
                 _logger.LogInformation("Repo stock {Id}: account {Account} added by user {UserId} ({Reason}); contract {Contract} ended, payments now {Suffix}",
                     id, accountNo, userId, reason, account.ContractId, suffix);
-                return new(true, $"Account {accountNo} is in repo stock. Contract {account.ContractId} ended today and "
+                var ended = account.ContractEndedOn.HasValue
+                    ? $"Contract {account.ContractId} (already ended {account.ContractEndedOn:dd/MM/yyyy}) is linked"
+                    : $"Contract {account.ContractId} ended today";
+                return new(true, $"Account {accountNo} is in repo stock. {ended}, and "
                     + $"{account.CustomerName}'s payments are now under {accountNo}{suffix}.", id);
             }
             catch (Exception ex)

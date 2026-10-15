@@ -144,7 +144,8 @@
                             + ', ' + (d.customerName || 'no name') + (d.dealerName ? ' (' + d.dealerName + ')' : '')
                             + ', on ' + (lockers[d.lockGroup] || 'Nuovo') + '.';
                         if (d.inStockNow) text += ' Already in repo stock.';
-                        else if (!d.contractId) text += ' No open contract.';
+                        else if (!d.contractId) text += ' No contract to take it back from.';
+                        else if (d.contractEndedOn) text += ' Contract ' + d.contractId + ' already ended on ' + new Date(d.contractEndedOn).toLocaleDateString('en-GB') + '; its payments move to _R.';
                         else text += ' Contract ' + d.contractId + ' will end today.';
                         if (d.openCollectionsCaseId) text += ' Open collections case ' + d.openCollectionsCaseId + ': return it first.';
                         if (d.timesInStockBefore > 0) text += ' Been in repo stock ' + d.timesInStockBefore + ' time(s) before.';

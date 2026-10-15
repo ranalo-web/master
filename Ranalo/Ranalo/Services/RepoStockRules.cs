@@ -6,7 +6,8 @@ namespace Ranalo.Services
     // I/O so they can be unit tested; see Database/RepoStock/001.
     //
     // A phone taken back (repossessed, or handed back by the customer) goes
-    // into repo stock: its contract ends that day and the old customer's
+    // into repo stock: its contract ends that day (or keeps the end date it
+    // already has, if it was ended elsewhere) and the old customer's
     // payments are renamed "<account>_R" -- "_R2", "_R3"... if the account
     // has been through repo stock before -- so they stay with that contract.
     // The phone keeps its account number: for Nuovo phones the account is
@@ -29,7 +30,7 @@ namespace Ranalo.Services
             if (account.InStockNow)
                 return $"Account {account.AccountNo} is already in repo stock.";
             if (account.ContractId == null)
-                return $"Account {account.AccountNo} has no open contract to end.";
+                return $"Account {account.AccountNo} has no contract to take the phone back from (or its last contract is already in repo stock).";
             if (account.OpenCollectionsCaseId.HasValue)
                 return $"Account {account.AccountNo} has an open collections case ({account.OpenCollectionsCaseId}). Return it in Collections Admin first.";
             if (!RepoStockReason.All.Contains(reason))
