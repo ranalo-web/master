@@ -18,7 +18,7 @@
     {
         LockCheckStage.NeedsNewLocker => "Unlocked on Nuovo and a bad customer by the Collections rule: in arrears with no payment for the days set below (90 by default), and not on a restructure. Samsung can go to Knox and itel/TECNO/Infinix to Transsion: tick them and send them to Recovery.",
         LockCheckStage.NuovoOnly => "Unlocked on Nuovo and a bad customer by the Collections rule, and only Nuovo can lock this brand. Tick them and send a Nuovo lock; they move to Lock sent until Nuovo reports them locked.",
-        LockCheckStage.Restructured => "Unlocked, but on an agreed restructure: their arrears follow the restructured plan, so they're not treated as bad customers here. Shown for information only.",
+        LockCheckStage.Restructured => "Unlocked, but keeping to an agreed restructure (arrears are on the restructured plan, not the original contract). Shown for information only. A restructured customer who breaches it -- behind on the restructure with no payment for the days set -- appears under the action stages, marked 'breached restructure'.",
         LockCheckStage.LockSent => "A Nuovo lock was sent from here but Nuovo still reports the phone unlocked: it's probably offline or flashed. Send again, or chase it through Collections.",
         LockCheckStage.InRecovery => "Already in Recovery. Open the recovery to carry on.",
         LockCheckStage.LostFromNuovo => "Nuovo no longer has the phone (un_registered) while money is still owed. Samsung and itel/TECNO/Infinix can go to Recovery; others can only be sent a Nuovo lock, or repossessed.",
@@ -173,7 +173,11 @@
                                             else
                                             {
                                                 <span class="fw-medium">@r.DaysSinceLastPayment days</span>
-                                                <div class="small text-soft">@r.Arrears.ToString("N0") in arrears</div>
+                                                <div class="small text-soft">@r.Arrears.ToString("N0") in arrears@(r.Restructured ? " on restructure" : "")</div>
+                                                @if (r.BreachedRestructure)
+                                                {
+                                                    <span class="badge badge-dim bg-danger">breached restructure</span>
+                                                }
                                             }
                                         </td>
                                         <td class="d-none d-sm-table-cell">@(r.LastPaid?.ToString("dd/MM/yyyy") ?? "never")</td>

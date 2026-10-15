@@ -12,7 +12,7 @@ namespace Ranalo.Models
         InRecovery,       // already in Recovery
         LostFromNuovo,    // Nuovo no longer has it (un_registered) and money is owed
         FullyPaidOpen,    // paid off, contract still open: close and release
-        Restructured,     // unlocked but on an agreed restructure: not a bad customer, no action
+        Restructured,     // unlocked but keeping to an agreed restructure: not a bad customer, no action
     }
 
     public enum LockCheckBrand
@@ -59,6 +59,9 @@ namespace Ranalo.Models
         public DateTime? LastActionAt { get; set; }
         public string? LastActionResult { get; set; }
         public bool Restructured { get; set; }   // has an agreed restructure (RestructuredRecords)
+        public DateTime? RestructureAgreed { get; set; }
+        public decimal? RestructureDaily { get; set; }   // Amount_Res: what they agreed to pay a day
+        public decimal PaidSinceRestructure { get; set; }
 
         // Worked out by LockCheckRules.
         public LockCheckBrand Brand { get; set; }
@@ -66,6 +69,7 @@ namespace Ranalo.Models
         public decimal Arrears { get; set; }       // what's owed to date, 0 if up to date
         public int DaysBehind { get; set; }
         public int DaysSinceLastPayment { get; set; }   // since the last payment, or the start if never paid
+        public bool BreachedRestructure { get; set; }   // on a restructure but behind on it too
         public bool FullyPaid { get; set; }
         public LockCheckStage Stage { get; set; }
     }

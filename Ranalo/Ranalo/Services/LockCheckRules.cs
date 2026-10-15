@@ -10,10 +10,12 @@ namespace Ranalo.Services
     // locked them (phone offline, or the Nuovo app stripped without Nuovo
     // noticing). A phone only counts as a bad customer by the Collections
     // rule (CollectionsRules.IsEligible): in arrears and no payment for 90
-    // days -- not merely a few days behind -- and never while on an agreed
-    // restructure (its arrears run on the restructured plan, not the
-    // original contract). Each Nuovo phone with an open contract falls into
-    // one stage, checked in this order:
+    // days -- not merely a few days behind. On an agreed restructure the
+    // arrears are on the restructured plan instead of the original contract
+    // (daily amount agreed x days since the agreement, less what's been paid
+    // since -- as the Restructured page works it out): a customer keeping
+    // to it isn't a bad customer, one who breaches it is. Each Nuovo phone
+    // with an open contract falls into one stage, checked in this order:
     //   1. Fully paid, contract open: close it -- ending it on the date it
     //      was paid off -- and release the phone (a shilling short counts as
     //      paid -- 7004982, 7098295).
@@ -21,7 +23,7 @@ namespace Ranalo.Services
     //   3. Lost from Nuovo: Nuovo reports it un_registered and money is
     //      owed (when it's paid off, un_registered is normal: Nuovo releases
     //      paid-off phones).
-    //   4. On a restructure and unlocked: shown, no action.
+    //   4. Keeping to a restructure and unlocked: shown, no action.
     //   5. Unlocked, in arrears and no payment for N+ days (default 90):
     //      - Samsung, itel/TECNO/Infinix: needs a new locker -> Recovery
     //        (Knox / Transsion steps there);
@@ -63,13 +65,33 @@ namespace Ranalo.Services
             r.DaysBehind = perDay > 0 ? (int)Math.Floor(r.Arrears / perDay) : 0;
             var since = r.LastPaid ?? r.StartDate;
             r.DaysSinceLastPayment = since == null ? 0 : Math.Max(0, (today.Date - since.Value.Date).Days);
+            if (r.Restructured)
+            {
+                // Arrears on the restructured plan, which replaces the contract's.
+                r.Arrears = RestructureArrears(r, today);
+                r.DaysBehind = r.RestructureDaily is > 0 ? (int)Math.Floor(r.Arrears / r.RestructureDaily.Value) : 0;
+                r.BreachedRestructure = r.Arrears > 0 && r.DaysSinceLastPayment >= minDaysWithoutPayment;
+            }
             r.Stage = StageOf(r, minDaysWithoutPayment);
         }
 
+        // What's owed on the restructured plan: the agreed daily amount for
+        // each day since it was agreed (capped at the term, as CalculateTotalDue
+        // does), less what's been paid since. Never negative.
+        public static decimal RestructureArrears(LockCheckRow r, DateTime today)
+        {
+            if (r.RestructureAgreed == null || r.RestructureDaily is not > 0) return 0;
+            var days = Math.Max(0, (today.Date - r.RestructureAgreed.Value.Date).Days);
+            days = (int)Math.Min(days, r.TermInMonths * 30);
+            return Math.Max(0, Math.Round(r.RestructureDaily.Value * days - r.PaidSinceRestructure, 2));
+        }
+
         // Bad customer: in arrears and no payment for N days (the Collections
-        // pool rule at the default 90), and not on a restructure.
+        // pool rule at the default 90). On a restructure, the arrears are on
+        // the restructured plan -- so it's a bad customer only if it has
+        // breached the restructure too.
         public static bool IsBadCustomer(LockCheckRow r, int minDaysWithoutPayment) =>
-            !r.Restructured && r.Arrears > 0 && r.DaysSinceLastPayment >= minDaysWithoutPayment;
+            r.Arrears > 0 && r.DaysSinceLastPayment >= minDaysWithoutPayment;
 
         public static LockCheckStage StageOf(LockCheckRow r, int minDaysWithoutPayment)
         {
@@ -77,8 +99,7 @@ namespace Ranalo.Services
             if (r.RecoveryId.HasValue) return LockCheckStage.InRecovery;
             if (string.Equals(r.NuovoStatus, "un_registered", StringComparison.OrdinalIgnoreCase)) return LockCheckStage.LostFromNuovo;
             if (r.Locked == true) return LockCheckStage.None;
-            if (r.Restructured) return LockCheckStage.Restructured;
-            if (!IsBadCustomer(r, minDaysWithoutPayment)) return LockCheckStage.None;
+            if (!IsBadCustomer(r, minDaysWithoutPayment)) return r.Restructured ? LockCheckStage.Restructured : LockCheckStage.None;
             if (r.Brand != LockCheckBrand.Other) return LockCheckStage.NeedsNewLocker;
             return r.LastAction == LockCheckAction.NuovoLock && r.LastActionSuccess == true
                 ? LockCheckStage.LockSent

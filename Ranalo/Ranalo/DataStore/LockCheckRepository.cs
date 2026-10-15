@@ -38,7 +38,9 @@ namespace Ranalo.DataStore
                        ISNULL(p.Paid, 0) AS Paid, p.LastPaid,
                        r.Id AS RecoveryId, r.Status AS RecoveryStatus,
                        la.Action AS LastAction, la.Success AS LastActionSuccess, la.AtUtc AS LastActionAt, la.Result AS LastActionResult,
-                       CAST(CASE WHEN EXISTS (SELECT 1 FROM RestructuredRecords rr WHERE rr.AccountNo = d.Id) THEN 1 ELSE 0 END AS BIT) AS Restructured
+                       CAST(CASE WHEN rs.Date_Agreed IS NOT NULL THEN 1 ELSE 0 END AS BIT) AS Restructured,
+                       rs.Date_Agreed AS RestructureAgreed, rs.Amount_Res AS RestructureDaily,
+                       ISNULL(rp.PaidSinceAgreed, 0) AS PaidSinceRestructure
                 FROM Devices d
                 INNER JOIN Contract_Info c ON c.ID = d.Id AND c.EndDate IS NULL
                 LEFT JOIN Payments p ON p.AccountNo = d.Id
@@ -48,6 +50,16 @@ namespace Ranalo.DataStore
                              ORDER BY lr.Id DESC) r
                 OUTER APPLY (SELECT TOP 1 a.Action, a.Success, a.AtUtc, a.Result FROM LockCheckActions a
                              WHERE a.AccountNo = d.Id ORDER BY a.AtUtc DESC, a.Id DESC) la
+                -- The agreed restructure, and what's been paid since it was
+                -- agreed (as the Restructured page works it out).
+                OUTER APPLY (SELECT TOP 1 rr.Date_Agreed, rr.Amount_Res FROM RestructuredRecords rr
+                             WHERE rr.AccountNo = d.Id ORDER BY rr.Date_Agreed DESC) rs
+                OUTER APPLY (SELECT SUM(kp.AmountValue) AS PaidSinceAgreed
+                             FROM KosePayments kp
+                             LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
+                             WHERE rs.Date_Agreed IS NOT NULL
+                               AND COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = d.Id
+                               AND kp.PaymentDateValue > rs.Date_Agreed) rp
                 WHERE ISNULL(d.LockGroup, 1) = 1", commandTimeout: 120)).ToList();
 
         public async Task LogAsync(long accountNo, string action, bool success, string? result, int? userId) =>

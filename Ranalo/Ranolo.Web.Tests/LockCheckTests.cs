@@ -54,12 +54,54 @@ namespace Ranolo.Web.Tests
             Assert.That(Evaluated(Phone(paid: 2000 + 100 * 100)).Stage, Is.EqualTo(LockCheckStage.None));
         }
 
-        [Test]
-        public void OnARestructure_IsShownButNotTreatedAsBad()
+        // Restructure agreed 100 days ago at 50 a day: 5,000 due on it since.
+        private static LockCheckRow Restructured(decimal paidSince, int? lastPaidDaysAgo, bool locked = false)
         {
-            Assert.That(Evaluated(Phone(restructured: true)).Stage, Is.EqualTo(LockCheckStage.Restructured));
-            Assert.That(Evaluated(Phone(restructured: true, locked: true)).Stage, Is.EqualTo(LockCheckStage.None));
-            Assert.That(LockCheckRules.IsBadCustomer(Evaluated(Phone(restructured: true)), 90), Is.False);
+            var r = Phone(restructured: true, lastPaidDaysAgo: lastPaidDaysAgo, locked: locked);
+            r.RestructureAgreed = Today.AddDays(-100);
+            r.RestructureDaily = 50;
+            r.PaidSinceRestructure = paidSince;
+            return r;
+        }
+
+        [Test]
+        public void KeepingToARestructure_IsShownButNotTreatedAsBad()
+        {
+            var r = Evaluated(Restructured(paidSince: 5000, lastPaidDaysAgo: 2));
+            Assert.That(r.Arrears, Is.EqualTo(0m), "arrears are on the restructured plan, not the contract");
+            Assert.That(r.Stage, Is.EqualTo(LockCheckStage.Restructured));
+            Assert.That(Evaluated(Restructured(5000, 2, locked: true)).Stage, Is.EqualTo(LockCheckStage.None));
+        }
+
+        [Test]
+        public void BehindOnARestructureButStillPaying_IsNotBad()
+        {
+            var r = Evaluated(Restructured(paidSince: 3000, lastPaidDaysAgo: 20));
+            Assert.That(r.Arrears, Is.EqualTo(2000m));
+            Assert.That(r.BreachedRestructure, Is.False);
+            Assert.That(r.Stage, Is.EqualTo(LockCheckStage.Restructured));
+        }
+
+        [Test]
+        public void BreachedRestructure_IsABadCustomerAgain()
+        {
+            // Behind on the restructure and nothing paid for 90+ days.
+            var r = Evaluated(Restructured(paidSince: 500, lastPaidDaysAgo: 95));
+            Assert.Multiple(() =>
+            {
+                Assert.That(r.Arrears, Is.EqualTo(4500m));
+                Assert.That(r.DaysBehind, Is.EqualTo(90), "4,500 at 50 a day");
+                Assert.That(r.BreachedRestructure, Is.True);
+                Assert.That(r.Stage, Is.EqualTo(LockCheckStage.NeedsNewLocker));
+            });
+        }
+
+        [Test]
+        public void RestructureArrearsStopAtTheTerm()
+        {
+            var r = Restructured(paidSince: 0, lastPaidDaysAgo: null);
+            r.RestructureAgreed = Today.AddDays(-1000);   // longer ago than the 12-month term
+            Assert.That(LockCheckRules.RestructureArrears(r, Today), Is.EqualTo(50m * 360));
         }
 
         [TestCase("TECNO", LockCheckStage.NeedsNewLocker)]
