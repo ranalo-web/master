@@ -113,6 +113,8 @@ builder.Services.AddScoped<IRecoveryService, RecoveryService>();
 builder.Services.AddScoped<ILockRecoveryRepository, LockRecoveryRepository>();
 builder.Services.AddScoped<IRepoStockService, RepoStockService>();
 builder.Services.AddScoped<IRepoStockRepository, RepoStockRepository>();
+builder.Services.AddScoped<ILockCheckService, LockCheckService>();
+builder.Services.AddScoped<ILockCheckRepository, LockCheckRepository>();
 builder.Services.AddScoped<ICommissionPayoutService, CommissionPayoutService>();
 builder.Services.AddScoped<ICommissionPayoutRepository, CommissionPayoutRepository>();
 builder.Services.AddScoped<IDealerAllocationRepository, DealerAllocationRepository>();
@@ -199,6 +201,7 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService<ScheduledDashboardRollup>();
         builder.Services.AddHostedService<ScheduledWriteOffCheck>();
         builder.Services.AddHostedService<ScheduledRecoveryTranssionCheck>();
+        builder.Services.AddHostedService<ScheduledRecoveryKnoxApproval>();
         builder.Services.AddHostedService<ScheduledLockerCheck>();
     }
 }

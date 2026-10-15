@@ -3,7 +3,12 @@
 @model RecoveryListViewModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
-    var tabs = new[] { ("open", "In progress"), ("moved", "Moved to Knox / Transsion"), ("ended", "Not catchable / closed"), ("all", "All") };
+    var tabs = new[] { ("open", "In progress"), ("moved", "Moved: locking on Knox / Transsion"), ("ended", "Not catchable / closed"), ("all", "All") };
+    string BrandOf(LockRecovery r) => RecoveryRules.IsSamsung(r.Make, r.Model) ? "samsung" : RecoveryRules.IsTranssion(r.Make) ? "transsion" : "other";
+    string ResultOf(LockRecovery r) => r.LastStep == null ? "none" : r.LastStepSuccess == true ? "ok" : "failed";
+    var statusOptions = Model.Recoveries.Select(r => RecoveryStatus.Label(r.Status, r.Make)).Distinct().OrderBy(s => s).ToList();
+    var reasonOptions = Model.Recoveries.Select(r => r.Reason).Distinct().OrderBy(s => s).ToList();
+    var stepOptions = Model.Recoveries.Where(r => r.LastStep != null).Select(r => r.LastStep!).Distinct().OrderBy(s => s).ToList();
 }
 
 <link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
@@ -73,10 +78,74 @@
                 </ul>
             </div>
             <div class="card-inner p-0 border-top">
-                <div class="table-responsive">
-                    <table class="table mb-0" style="white-space:nowrap;">
+                @* Column filters: narrow the list without reloading. *@
+                <div class="card-inner py-2 d-flex flex-wrap align-items-end" style="gap:8px;" id="filters">
+                    <div style="flex:1; min-width:160px;">
+                        <label class="form-label small mb-1" for="fSearch">Search</label>
+                        <input type="search" id="fSearch" class="form-control form-control-sm" placeholder="Account, IMEI, customer or dealer" />
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="fStatus">Status</label>
+                        <select id="fStatus" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All</option>
+                            @foreach (var s in statusOptions) { <option value="@s">@s</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="fBrand">Phone</label>
+                        <select id="fBrand" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All</option>
+                            <option value="samsung">Samsung (Knox)</option>
+                            <option value="transsion">itel / TECNO / Infinix (Transsion)</option>
+                            <option value="other">Other brands</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="fReason">Reason</label>
+                        <select id="fReason" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All</option>
+                            @foreach (var s in reasonOptions) { <option value="@s">@s</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="fStep">Last step</label>
+                        <select id="fStep" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All</option>
+                            @foreach (var s in stepOptions) { <option value="@s">@s</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="fResult">Result</label>
+                        <select id="fResult" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All</option>
+                            <option value="ok">OK</option>
+                            <option value="failed">Failed</option>
+                            <option value="none">No steps yet</option>
+                        </select>
+                    </div>
+                    <div class="small text-soft pb-1" id="fCount"></div>
+                </div>
+                <form method="post" action="/recovery/bulk" id="sendForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="status" value="@Model.Status" />
+                <div class="card-inner border-top py-2 d-flex flex-wrap align-items-center" style="gap:8px;">
+                    <span class="small text-soft" id="selCount">0 ticked</span>
+                    <button type="submit" name="act" value="@RecoveryBulkAction.Send" class="btn btn-sm btn-primary"
+                            onclick="return confirmBulk('Send the ticked phones to Knox / Transsion?');"
+                            title="Samsung: Send to Knox (Veritech upload). itel/TECNO/Infinix: Send to Transsion. Only phones still being investigated.">Send to Knox / Transsion</button>
+                    <button type="submit" name="act" value="@RecoveryBulkAction.Lock" class="btn btn-sm btn-danger"
+                            onclick="return confirmBulk('Lock the ticked phones now?');"
+                            title="Knox: relock now (approved phones). Transsion: lock date now (active phones). They lock the next time they connect.">Lock now</button>
+                    <button type="submit" name="act" value="@RecoveryBulkAction.CheckAndMove" class="btn btn-sm btn-success"
+                            onclick="return confirmBulk('Check the ticked phones with Knox / Transsion and move the ones confirmed active?');"
+                            title="Asks Knox / Transsion about each phone; only phones confirmed active move over to the daily lock jobs (Moved tab).">Check &amp; move</button>
+                    <span class="small text-soft">Each phone gets the step that fits it; the rest are skipped with a reason. Knox phones are approved, and moved once active, by the daily job.</span>
+                </div>
+                <div class="table-responsive border-top">
+                    <table class="table mb-0" style="white-space:nowrap;" id="recoveries">
                         <thead>
                             <tr>
+                                <th class="wl-th" style="width:32px;"><input type="checkbox" id="pickAll" title="Tick every phone shown" /></th>
                                 @* Narrow screens keep account, status and the last update. *@
                                 <th class="wl-th">Account</th>
                                 <th class="wl-th d-none d-md-table-cell">Phone</th>
@@ -92,11 +161,20 @@
                         <tbody>
                             @if (Model.Recoveries.Count == 0)
                             {
-                                <tr><td colspan="9" class="text-center text-soft py-4">No phones here.</td></tr>
+                                <tr><td colspan="10" class="text-center text-soft py-4">No phones here.</td></tr>
                             }
                             @foreach (var r in Model.Recoveries)
                             {
-                                <tr>
+                                <tr class="rec-row"
+                                    data-search="@($"{r.AccountNo} {r.Imei} {r.CustomerName} {r.DealerName}".ToLowerInvariant())"
+                                    data-status="@RecoveryStatus.Label(r.Status, r.Make)" data-brand="@BrandOf(r)" data-reason="@r.Reason"
+                                    data-step="@(r.LastStep ?? "")" data-result="@ResultOf(r)">
+                                    <td>
+                                        @if (RecoveryRules.IsOpen(r.Status))
+                                        {
+                                            <input type="checkbox" name="ids" value="@r.Id" class="pick" />
+                                        }
+                                    </td>
                                     <td>
                                         <a href="/recovery/@r.Id" class="fw-medium">@r.AccountNo</a>
                                         <div class="small text-soft d-md-none">@r.Make @r.Model</div>
@@ -129,12 +207,64 @@
                         </tbody>
                     </table>
                 </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // Column filters: every filter must match; the count shows how many are left.
+    (function () {
+        var ids = { search: 'fSearch', status: 'fStatus', brand: 'fBrand', reason: 'fReason', step: 'fStep', result: 'fResult' };
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#recoveries .rec-row'));
+        var count = document.getElementById('fCount');
+        function value(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+        function apply() {
+            var q = value(ids.search).toLowerCase(), shown = 0;
+            rows.forEach(function (tr) {
+                var ok = (!q || tr.dataset.search.indexOf(q) >= 0)
+                    && (!value(ids.status) || tr.dataset.status === value(ids.status))
+                    && (!value(ids.brand) || tr.dataset.brand === value(ids.brand))
+                    && (!value(ids.reason) || tr.dataset.reason === value(ids.reason))
+                    && (!value(ids.step) || tr.dataset.step === value(ids.step))
+                    && (!value(ids.result) || tr.dataset.result === value(ids.result));
+                tr.style.display = ok ? '' : 'none';
+                if (ok) shown++;
+            });
+            if (count) count.textContent = shown + ' of ' + rows.length + ' shown';
+            // A filtered-out phone is never sent.
+            rows.forEach(function (tr) {
+                if (tr.style.display === 'none') { var c = tr.querySelector('.pick'); if (c) c.checked = false; }
+            });
+            updatePicked();
+        }
+        function picked() { return document.querySelectorAll('#recoveries .pick:checked').length; }
+        function updatePicked() {
+            var out = document.getElementById('selCount');
+            if (out) out.textContent = picked() + ' ticked';
+        }
+        window.confirmBulk = function (message) {
+            var n = picked();
+            if (n === 0) { alert('Tick at least one phone first.'); return false; }
+            return confirm(message + ' (' + n + ' phone' + (n === 1 ? '' : 's') + ')');
+        };
+        var all = document.getElementById('pickAll');
+        if (all) all.addEventListener('change', function () {
+            rows.forEach(function (tr) {
+                var c = tr.querySelector('.pick');
+                if (c) c.checked = all.checked && tr.style.display !== 'none';
+            });
+            updatePicked();
+        });
+        document.querySelectorAll('#recoveries .pick').forEach(function (c) { c.addEventListener('change', updatePicked); });
+        Object.keys(ids).forEach(function (k) {
+            var el = document.getElementById(ids[k]);
+            if (el) el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', apply);
+        });
+        apply();
+    })();
+
     (function () {
         var input = document.getElementById('accountNo');
         var out = document.getElementById('lookup');

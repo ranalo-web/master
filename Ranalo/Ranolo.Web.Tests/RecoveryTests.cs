@@ -81,6 +81,22 @@ namespace Ranolo.Web.Tests
             Assert.That(RecoveryRules.AllowedActions(r), Does.Not.Contain(RecoveryAction.Lock), "no approve id to give Knox");
         }
 
+        [TestCase("samsung", RecoveryAction.Upload)]
+        [TestCase("TECNO", RecoveryAction.TranssionSend)]
+        [TestCase("INFINIX", RecoveryAction.TranssionSend)]
+        public void FirstSendStepFollowsTheBrand(string make, RecoveryAction step)
+        {
+            Assert.That(RecoveryRules.FirstSendStep(Phone(make: make)), Is.EqualTo(step));
+        }
+
+        [Test]
+        public void FirstSendStepOnlyWhileInvestigating()
+        {
+            Assert.That(RecoveryRules.FirstSendStep(Phone(RecoveryStatus.UploadSent, trans: "tx1")), Is.Null, "never uploaded twice");
+            Assert.That(RecoveryRules.FirstSendStep(Phone(make: "Xiaomi")), Is.Null, "no Knox/Transsion for this brand");
+            Assert.That(RecoveryRules.FirstSendStep(Phone(RecoveryStatus.Closed)), Is.Null);
+        }
+
         [Test]
         public void SamsungDoesntGetTranssionSteps()
         {
@@ -181,6 +197,7 @@ namespace Ranolo.Web.Tests
         private FakePayTrigger _payTrigger = null!;
         private HashSet<string> _knoxHas = null!;
         private string _knoxListResult = "SUCCESS";
+        private string _knoxDeviceStatus = "Enrolled";
         private FakeTime _time = null!;
         private RecoveryService _service = null!;
 
@@ -212,6 +229,7 @@ namespace Ranolo.Web.Tests
 
             _knoxHas = new HashSet<string>();
             _knoxListResult = "SUCCESS";
+            _knoxDeviceStatus = "Enrolled";
             Task<HttpResponseMessage> Reply(object?[]? _) =>
                 Task.FromResult(new HttpResponseMessage(_knoxStatus) { Content = new StringContent("{\"result\":\"x\"}", Encoding.UTF8, "application/json") });
             IKnoxGuardClient knox;
@@ -225,7 +243,7 @@ namespace Ranolo.Web.Tests
                     return Task.FromResult(new ListDevicesResponse
                     {
                         Result = _knoxListResult,
-                        DeviceList = _knoxHas.Contains(search!) ? new List<DeviceDto> { new() { Imei = search } } : null,
+                        DeviceList = _knoxHas.Contains(search!) ? new List<DeviceDto> { new() { Imei = search, Status = _knoxDeviceStatus } } : null,
                     });
                 },
             });
@@ -370,6 +388,7 @@ namespace Ranolo.Web.Tests
         {
             _repo.Items[1].Status = RecoveryStatus.LockSent;
             _repo.Items[1].VeritechTransId = "vkdp-123";
+            _knoxHas.Add("355132188643698");   // Knox reports it Enrolled
 
             var result = await _service.RunAsync(1, RecoveryAction.MoveToKnox, null, 7);
 
@@ -682,6 +701,175 @@ namespace Ranolo.Web.Tests
 
             Assert.That(_payTrigger.FindCalls, Is.Empty);
             Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent));
+        }
+
+        // ---- Bulk send from the list ----
+
+        [Test]
+        public async Task SendMany_SendsEachPhoneToItsLocker()
+        {
+            TranssionPhone();   // Recovery 2, TECNO, Investigating; Recovery 1 is a Samsung, Investigating
+
+            var (sent, skipped, _) = await _service.RunManyAsync(new[] { 1, 2 }, RecoveryBulkAction.Send, 7);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(sent, Is.EqualTo(2));
+                Assert.That(skipped, Is.EqualTo(0));
+                Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.UploadSent), "Samsung uploaded to Knox via Veritech");
+                Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent), "TECNO sent to Transsion");
+                Assert.That(_payTrigger.PreEnrolCalls, Has.Count.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public async Task SendMany_SkipsPhonesAlreadySentOrWithoutALocker()
+        {
+            _repo.Items[1].Status = RecoveryStatus.UploadSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+            _repo.Items[3] = new LockRecovery { Id = 3, AccountNo = 5555555, Imei = "111", Make = "Xiaomi", Status = RecoveryStatus.Investigating };
+
+            var (sent, skipped, messages) = await _service.RunManyAsync(new[] { 1, 3, 99 }, RecoveryBulkAction.Send, 7);
+
+            Assert.That(sent, Is.EqualTo(0));
+            Assert.That(skipped, Is.EqualTo(3));
+            Assert.That(messages, Has.Some.Contains("355132188643698").Or.Some.Contains("8680519: Sent to Knox, nothing to send"));
+            Assert.That(messages, Has.Some.Contains("5555555: Investigating, nothing to send"), "no Knox/Transsion for Xiaomi");
+            Assert.That(_repo.Log, Is.Empty);
+        }
+
+        // ---- Knox must have the phone active before it moves ----
+
+        [TestCase("Accepted")]
+        [TestCase("Activating")]
+        public async Task MovingToKnoxIsRefusedUntilKnoxHasItActive(string knoxStatus)
+        {
+            _repo.Items[1].Status = RecoveryStatus.LockSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+            _knoxHas.Add("355132188643698");
+            _knoxDeviceStatus = knoxStatus;
+
+            var result = await _service.RunAsync(1, RecoveryAction.MoveToKnox, null, 7);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Does.Contain(knoxStatus));
+            Assert.That(_enrolments.Items, Is.Empty);
+            Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.LockSent));
+        }
+
+        [TestCase("Enrolled", true)]
+        [TestCase("locked", true)]
+        [TestCase("Accepted", false)]
+        [TestCase(null, false)]
+        public void KnoxActiveStatuses(string? status, bool active)
+        {
+            Assert.That(RecoveryRules.KnoxIsActive(status), Is.EqualTo(active));
+        }
+
+        [Test]
+        public async Task KnoxSweep_MovesALockedPhoneKnoxReportsActive()
+        {
+            _repo.Items[1].Status = RecoveryStatus.LockSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+            _knoxHas.Add("355132188643698");
+
+            var (approved, moved) = await _service.SweepKnoxAsync();
+
+            Assert.That((approved, moved), Is.EqualTo((0, 1)));
+            Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.MovedToKnox));
+        }
+
+        [Test]
+        public async Task KnoxSweep_LeavesALockedPhoneStillActivating()
+        {
+            _repo.Items[1].Status = RecoveryStatus.LockSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+            _knoxHas.Add("355132188643698");
+            _knoxDeviceStatus = "Accepted";
+
+            Assert.That(await _service.SweepKnoxAsync(), Is.EqualTo((0, 0)));
+            Assert.That(_repo.Log, Is.Empty, "nothing logged while waiting");
+        }
+
+        // ---- Bulk lock and check & move ----
+
+        [Test]
+        public async Task BulkLock_LocksOnlyPhonesThatCanBeLocked()
+        {
+            _repo.Items[1].Status = RecoveryStatus.Approved;      // Samsung, approved
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+            TranssionPhone(RecoveryStatus.UploadSent);            // TECNO, not active: can't lock yet
+
+            var (done, skipped, messages) = await _service.RunManyAsync(new[] { 1, 2 }, RecoveryBulkAction.Lock, 7);
+
+            Assert.That((done, skipped), Is.EqualTo((1, 1)));
+            Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.LockSent));
+            Assert.That(messages.Single(), Does.Contain("8478363"));
+            Assert.That(_payTrigger.RepayCalls, Is.Empty);
+        }
+
+        [Test]
+        public async Task CheckAndMove_MovesOnlyPhonesConfirmedActive()
+        {
+            // Samsung with lock sent but Knox still activating; TECNO now active in Transsion.
+            _repo.Items[1].Status = RecoveryStatus.LockSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+            _knoxHas.Add("355132188643698");
+            _knoxDeviceStatus = "Activating";
+            TranssionPhone(RecoveryStatus.UploadSent);
+            TranssionSays(3000);
+
+            var (done, skipped, _) = await _service.RunManyAsync(new[] { 1, 2 }, RecoveryBulkAction.CheckAndMove, 7);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That((done, skipped), Is.EqualTo((1, 1)));
+                Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.LockSent), "Knox not active yet: stays");
+                Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.MovedToTranssion));
+            });
+        }
+
+        // ---- Daily Knox approval ----
+
+        [Test]
+        public async Task KnoxApproval_ApprovesASentPhoneKnoxNowHas()
+        {
+            _repo.Items[1].Status = RecoveryStatus.UploadSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+            _knoxHas.Add("355132188643698");
+
+            var approved = (await _service.SweepKnoxAsync()).Approved;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(approved, Is.EqualTo(1));
+                Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.Approved));
+                Assert.That(_knox.Calls.Count(c => c.Method == "ApproveDeviceAsync"), Is.EqualTo(1));
+                Assert.That(_repo.Log.Single().Response, Does.StartWith("Automatic approval"));
+            });
+        }
+
+        [Test]
+        public async Task KnoxApproval_LeavesPhonesNotInKnoxYetAloneAndUnlogged()
+        {
+            _repo.Items[1].Status = RecoveryStatus.UploadSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+
+            Assert.That((await _service.SweepKnoxAsync()).Approved, Is.EqualTo(0));
+            Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.UploadSent));
+            Assert.That(_repo.Log, Is.Empty);
+            Assert.That(_knox.Calls.Any(c => c.Method == "ApproveDeviceAsync"), Is.False);
+        }
+
+        [Test]
+        public async Task KnoxApproval_SkipsPhonesNotSentOrNotSamsung()
+        {
+            _knoxHas.Add("355132188643698");
+            _repo.Items[1].Status = RecoveryStatus.Investigating;   // not sent yet
+            TranssionPhone(RecoveryStatus.UploadSent);              // a TECNO
+
+            Assert.That((await _service.SweepKnoxAsync()).Approved, Is.EqualTo(0));
+            Assert.That(_knox.Calls.Any(c => c.Method == "ApproveDeviceAsync"), Is.False);
         }
 
         // ---- Daily locker check (after 41109528 dropped out of Knox) ----

@@ -363,6 +363,49 @@ namespace Ranalo.Controllers
         // Account Commissions with sample accounts run through the real
         // CommissionCalculator. ?agent=1 shows the agent's view; ?expand=1
         // renders the first rows' detail panels open (for screenshots).
+        // Lock check page with sample data (no database).
+        [HttpGet]
+        [Route("dev-preview/lock-check")]
+        public IActionResult LockCheck(LockCheckStage stage = LockCheckStage.NeedsNewLocker)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            var today = DateTime.UtcNow.Date;
+            LockCheckRow Row(long acc, string name, string make, string model, decimal paid, int startDaysAgo, string status = "enrolled",
+                bool locked = false, int? recovery = null, string? action = null) => new()
+            {
+                AccountNo = acc, ContractId = (int)(acc % 1000), CustomerName = name, Make = make, Model = model, NuovoStatus = status, Locked = locked,
+                Deposit = 2000, Daily = 100, TermInMonths = 12, StartDate = today.AddDays(-startDaysAgo), Paid = paid,
+                LastPaid = today.AddDays(-20), LastConnectedAt = "02-09-26 10:11:12 UTC", DealerName = "Nicholas Lunch (Lucky)",
+                RecoveryId = recovery, RecoveryStatus = recovery.HasValue ? RecoveryStatus.UploadSent : null,
+                LastAction = action, LastActionSuccess = action != null ? true : null, LastActionAt = action != null ? DateTime.UtcNow.AddHours(-3) : null,
+                LastActionResult = action != null ? "Nuovo: sent" : null,
+            };
+            var rows = new List<LockCheckRow>
+            {
+                Row(7097395, "Esther", "samsung", "SM-A065F", 9000, 160),
+                Row(7060213, "Nahason", "samsung", "SM-A057F", 12000, 200),
+                Row(7087695, "Patrick", "INFINIX", "Infinix X6850", 6000, 120),
+                Row(5871723, "Joyce", "OPPO", "A18", 8000, 150),
+                Row(1894069, "Aggrey", "Ulefone", "Note 14", 3000, 90, action: LockCheckAction.NuovoLock),
+                Row(8143984, "Customer", "samsung", "SM-A055F", 9000, 160, recovery: 4),
+                Row(3516628, "Nyanya", "motorola", "moto e30", 4430, 300, status: "un_registered", locked: true),
+                Row(7004982, "Centrilla", "samsung", "SM-A055F", 37999, 400, status: "un_registered"),
+            };
+            foreach (var r in rows) Ranalo.Services.LockCheckRules.Evaluate(r, today, Ranalo.Services.LockCheckRules.DefaultMinDaysWithoutPayment);
+            return View("~/Views/LockCheck/Index.cshtml", new LockCheckViewModel
+            {
+                Stage = stage,
+                Counts = rows.Where(r => r.Stage != LockCheckStage.None).GroupBy(r => r.Stage).ToDictionary(g => g.Key, g => g.Count()),
+                Rows = rows.Where(r => r.Stage == stage).ToList(),
+            });
+        }
+
         // Repo stock pages with sample data (no database).
         private static List<RepoStockItem> RepoSamples() => new()
         {
