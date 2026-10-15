@@ -395,9 +395,11 @@ namespace Ranalo.DataStore
         // the plan -- which is why it broke only for some period filters.
         private const string DevicePaymentFilter = @"(
                     EXISTS (SELECT 1 FROM Devices d WHERE d.Id = kp.AccountNoBigint)
-                    OR (kp.AccountNo LIKE '%\_R' ESCAPE '\'
+                    OR ((kp.AccountNo LIKE '%\_R' ESCAPE '\' OR kp.AccountNo LIKE '%\_R[0-9]' ESCAPE '\' OR kp.AccountNo LIKE '%\_R[0-9][0-9]' ESCAPE '\')
                         AND EXISTS (SELECT 1 FROM Devices rd
-                                    WHERE rd.Id = TRY_CAST(NULLIF(LEFT(kp.AccountNo, IIF(LEN(kp.AccountNo) > 2, LEN(kp.AccountNo) - 2, 0)), '') AS BIGINT)))
+                                    -- the account before _R (_R2... after
+                                    -- later repossessions, repo stock).
+                                    WHERE rd.Id = TRY_CAST(NULLIF(LEFT(kp.AccountNo, IIF(CHARINDEX('_R', kp.AccountNo) > 1, CHARINDEX('_R', kp.AccountNo) - 1, 0)), '') AS BIGINT)))
                     OR EXISTS (SELECT 1 FROM OrphanedPayments op
                                INNER JOIN Devices ad ON ad.Id = op.AccountNoBigint
                                WHERE op.MpesaCode = kp.MpesaCode))";
@@ -770,7 +772,9 @@ namespace Ranalo.DataStore
             // a plan rather than truly delinquent.
             const string sql = @"
                 ;WITH ValidPayments AS (
-                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue, kp.PaymentDateValue
+                    SELECT CASE WHEN op.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(op.AccountNo))
+                                 WHEN op.MpesaCode IS NULL AND kp.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(kp.AccountNo))
+                                 ELSE CAST(COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS NVARCHAR(30)) END AS AccountNo, kp.AmountValue, kp.PaymentDateValue
                     FROM KosePayments kp
                     LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
                 ),
@@ -793,18 +797,18 @@ namespace Ranalo.DataStore
                         + ci.Monthly * (DaysAccrued.Days / 30.0)
                     ) AS Arrears,
                     d.NextLockDateIsoFormat AS LockDate,
-                    CASE WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) >= CAST(ci.Term_in_Months * 30 AS INT)
+                    CASE WHEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END) >= CAST(ci.Term_in_Months * 30 AS INT)
                          THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsFullTermElapsed,
                     ISNULL(ptm.PaidThisMonth, 0) AS PaidThisMonth
                 FROM Contract_Info ci
                 INNER JOIN Devices d ON d.Id = ci.ID
-                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
-                LEFT JOIN PaymentTotalsThisMonth ptm ON ptm.AccountNo = ci.ID
+                INNER JOIN Dealers dl ON dl.DealerReference = COALESCE(ci.DealerReference, d.DeviceGroupId)
+                LEFT JOIN PaymentTotals pt ON pt.AccountNo = ISNULL(ci.PaymentAccount, CAST(ci.ID AS NVARCHAR(30)))
+                LEFT JOIN PaymentTotalsThisMonth ptm ON ptm.AccountNo = ISNULL(ci.PaymentAccount, CAST(ci.ID AS NVARCHAR(30)))
                 CROSS APPLY (
                     SELECT CASE
-                        WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) < CAST(ci.Term_in_Months * 30 AS INT)
-                            THEN DATEDIFF(DAY, ci.StartDate, GETDATE())
+                        WHEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END) < CAST(ci.Term_in_Months * 30 AS INT)
+                            THEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END)
                         ELSE CAST(ci.Term_in_Months * 30 AS INT)
                     END AS Days
                 ) DaysAccrued
@@ -957,7 +961,9 @@ namespace Ranalo.DataStore
             // C# via ClassifyLock, same as everywhere else in this file.
             const string sql = @"
                 ;WITH ValidPayments AS (
-                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue, kp.PaymentDateValue
+                    SELECT CASE WHEN op.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(op.AccountNo))
+                                 WHEN op.MpesaCode IS NULL AND kp.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(kp.AccountNo))
+                                 ELSE CAST(COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS NVARCHAR(30)) END AS AccountNo, kp.AmountValue, kp.PaymentDateValue
                     FROM KosePayments kp
                     LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
                 ),
@@ -997,13 +1003,13 @@ namespace Ranalo.DataStore
                          THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsManuallyRestructured
                 FROM Contract_Info ci
                 INNER JOIN Devices d ON d.Id = ci.ID
-                INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                INNER JOIN Dealers dl ON dl.DealerReference = COALESCE(ci.DealerReference, d.DeviceGroupId)
                 LEFT JOIN Users agentUser ON agentUser.UserId = ci.AssignedAgentId
-                LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
+                LEFT JOIN PaymentTotals pt ON pt.AccountNo = ISNULL(ci.PaymentAccount, CAST(ci.ID AS NVARCHAR(30)))
                 CROSS APPLY (
                     SELECT CASE
-                        WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) < CAST(ci.Term_in_Months * 30 AS INT)
-                            THEN DATEDIFF(DAY, ci.StartDate, GETDATE())
+                        WHEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END) < CAST(ci.Term_in_Months * 30 AS INT)
+                            THEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END)
                         ELSE CAST(ci.Term_in_Months * 30 AS INT)
                     END AS Days
                 ) DaysAccrued
@@ -1125,7 +1131,9 @@ namespace Ranalo.DataStore
             const string sql = @"
                 ;WITH ValidPayments AS (
                     SELECT
-                        COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
+                        CASE WHEN op.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(op.AccountNo))
+                                 WHEN op.MpesaCode IS NULL AND kp.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(kp.AccountNo))
+                                 ELSE CAST(COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS NVARCHAR(30)) END AS AccountNo,
                         kp.AmountValue,
                         kp.PaymentDateValue
                     FROM KosePayments kp
@@ -1155,12 +1163,12 @@ namespace Ranalo.DataStore
                         (ci.Daily + (ci.Weekly / 7.0) + (ci.Monthly / 30.0)) AS DailyBlendedRate
                     FROM Contract_Info ci
                     INNER JOIN Devices d ON d.Id = ci.ID
-                    INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
+                    INNER JOIN Dealers dl ON dl.DealerReference = COALESCE(ci.DealerReference, d.DeviceGroupId)
+                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ISNULL(ci.PaymentAccount, CAST(ci.ID AS NVARCHAR(30)))
                     CROSS APPLY (
                         SELECT CASE
-                            WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) < CAST(ci.Term_in_Months * 30 AS INT)
-                                THEN DATEDIFF(DAY, ci.StartDate, GETDATE())
+                            WHEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END) < CAST(ci.Term_in_Months * 30 AS INT)
+                                THEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END)
                             ELSE CAST(ci.Term_in_Months * 30 AS INT)
                         END AS Days
                     ) DaysAccrued
@@ -1185,8 +1193,8 @@ namespace Ranalo.DataStore
                               ) AS Arrears
                     FROM Contract_Info ci
                     INNER JOIN Devices d ON d.Id = ci.ID
-                    INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                    LEFT JOIN PaymentTotalsAsOfLastMonth pt ON pt.AccountNo = ci.ID
+                    INNER JOIN Dealers dl ON dl.DealerReference = COALESCE(ci.DealerReference, d.DeviceGroupId)
+                    LEFT JOIN PaymentTotalsAsOfLastMonth pt ON pt.AccountNo = ISNULL(ci.PaymentAccount, CAST(ci.ID AS NVARCHAR(30)))
                     CROSS APPLY (
                         SELECT CASE
                             WHEN DATEDIFF(DAY, ci.StartDate, DATEADD(MONTH, -1, GETDATE())) < CAST(ci.Term_in_Months * 30 AS INT)
@@ -1376,7 +1384,9 @@ namespace Ranalo.DataStore
                 DELETE FROM DashboardCompletedContract;
 
                 ;WITH ValidPayments AS (
-                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue, kp.PaymentDateValue
+                    SELECT CASE WHEN op.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(op.AccountNo))
+                                 WHEN op.MpesaCode IS NULL AND kp.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(kp.AccountNo))
+                                 ELSE CAST(COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS NVARCHAR(30)) END AS AccountNo, kp.AmountValue, kp.PaymentDateValue
                     FROM KosePayments kp
                     LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
                 ),
@@ -1398,8 +1408,8 @@ namespace Ranalo.DataStore
                         (ci.Deposit + ci.Daily * 30 * ci.Term_in_Months + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months + ci.Monthly * ci.Term_in_Months) AS FullContractValue
                     FROM Contract_Info ci
                     INNER JOIN Devices d ON d.Id = ci.ID
-                    INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
+                    INNER JOIN Dealers dl ON dl.DealerReference = COALESCE(ci.DealerReference, d.DeviceGroupId)
+                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ISNULL(ci.PaymentAccount, CAST(ci.ID AS NVARCHAR(30)))
                     WHERE ci.StartDate IS NOT NULL
                 ),
                 Tiered AS (
@@ -1468,7 +1478,9 @@ namespace Ranalo.DataStore
                 DELETE FROM DashboardDeviceStock;
 
                 ;WITH ValidPayments AS (
-                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue
+                    SELECT CASE WHEN op.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(op.AccountNo))
+                                 WHEN op.MpesaCode IS NULL AND kp.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(kp.AccountNo))
+                                 ELSE CAST(COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS NVARCHAR(30)) END AS AccountNo, kp.AmountValue
                     FROM KosePayments kp
                     LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
                 ),
@@ -1492,12 +1504,12 @@ namespace Ranalo.DataStore
                         (ci.Daily + (ci.Weekly / 7.0) + (ci.Monthly / 30.0)) AS DailyBlendedRate
                     FROM Contract_Info ci
                     INNER JOIN Devices d ON d.Id = ci.ID
-                    INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
-                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
+                    INNER JOIN Dealers dl ON dl.DealerReference = COALESCE(ci.DealerReference, d.DeviceGroupId)
+                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ISNULL(ci.PaymentAccount, CAST(ci.ID AS NVARCHAR(30)))
                     CROSS APPLY (
                         SELECT CASE
-                            WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) < CAST(ci.Term_in_Months * 30 AS INT)
-                                THEN DATEDIFF(DAY, ci.StartDate, GETDATE())
+                            WHEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END) < CAST(ci.Term_in_Months * 30 AS INT)
+                                THEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END)
                             ELSE CAST(ci.Term_in_Months * 30 AS INT)
                         END AS Days
                     ) DaysAccrued
@@ -1598,7 +1610,9 @@ namespace Ranalo.DataStore
         {
             const string sql = @"
                 ;WITH ValidPayments AS (
-                    SELECT COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo, kp.AmountValue
+                    SELECT CASE WHEN op.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(op.AccountNo))
+                                 WHEN op.MpesaCode IS NULL AND kp.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(kp.AccountNo))
+                                 ELSE CAST(COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS NVARCHAR(30)) END AS AccountNo, kp.AmountValue
                     FROM KosePayments kp
                     LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
                 ),
@@ -1640,16 +1654,16 @@ namespace Ranalo.DataStore
                                 + ci.Monthly * (DaysAccrued.Days / 30.0)
                               ) AS Arrears,
                         d.NextLockDateIsoFormat AS LockDate,
-                        DATEDIFF(DAY, ci.StartDate, GETDATE()) AS DaysSinceStart
+                        DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END) AS DaysSinceStart
                     FROM Contract_Info ci
                     INNER JOIN Devices d ON d.Id = ci.ID
-                    INNER JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                    INNER JOIN Dealers dl ON dl.DealerReference = COALESCE(ci.DealerReference, d.DeviceGroupId)
                     LEFT JOIN Users au ON au.UserId = ci.AssignedAgentId
-                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ci.ID
+                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ISNULL(ci.PaymentAccount, CAST(ci.ID AS NVARCHAR(30)))
                     CROSS APPLY (
                         SELECT CASE
-                            WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) < CAST(ci.Term_in_Months * 30 AS INT)
-                                THEN DATEDIFF(DAY, ci.StartDate, GETDATE())
+                            WHEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END) < CAST(ci.Term_in_Months * 30 AS INT)
+                                THEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END)
                             ELSE CAST(ci.Term_in_Months * 30 AS INT)
                         END AS Days
                     ) DaysAccrued

@@ -156,7 +156,24 @@ namespace Ranalo.DataStore
                 WHERE (@CollectorUserId IS NULL OR a.CollectorUserId = @CollectorUserId)
                   AND (@CaseId IS NULL OR a.CaseId = @CaseId);
 
-                SELECT DISTINCT AccountNo, CAST(AccountNo AS VARCHAR(30)) + '_R' AS Renamed INTO #Dev FROM #P;
+                SELECT DISTINCT AccountNo INTO #Dev FROM #P;
+
+                -- Payments renamed <account>_R, _R2, _R3... (repossessed and
+                -- resold). Found once and keyed by the account before _R:
+                -- matching each account with LIKE scanned every payment per
+                -- account and timed out (Collections Admin, 2026-10-15).
+                SELECT kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue,
+                       TRY_CAST(NULLIF(LEFT(kp.AccountNo, IIF(CHARINDEX('_R', kp.AccountNo) > 1, CHARINDEX('_R', kp.AccountNo) - 1, 0)), '') AS BIGINT) AS BaseAccount
+                INTO #RenPay
+                FROM KosePayments kp
+                WHERE kp.AccountNo LIKE '%\_R%' ESCAPE '\' AND CHARINDEX('_R', kp.AccountNo) > 1;
+
+                SELECT kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue,
+                       TRY_CAST(NULLIF(LEFT(op.AccountNo, IIF(CHARINDEX('_R', op.AccountNo) > 1, CHARINDEX('_R', op.AccountNo) - 1, 0)), '') AS BIGINT) AS BaseAccount
+                INTO #RenOrph
+                FROM OrphanedPayments op
+                INNER JOIN KosePayments kp ON kp.MpesaCode = op.MpesaCode
+                WHERE op.AccountNo LIKE '%\_R%' ESCAPE '\' AND CHARINDEX('_R', op.AccountNo) > 1;
 
                 SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
                 INTO #DevPay
@@ -166,19 +183,18 @@ namespace Ranalo.DataStore
                                   WHERE op.MpesaCode = kp.MpesaCode
                                     AND op.AccountNoBigint IS NOT NULL AND op.AccountNoBigint <> dv.AccountNo)
                 UNION
-                SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+                SELECT dv.AccountNo, r.MpesaCode, r.AmountValue, r.PaymentDateValue
                 FROM #Dev dv
-                INNER JOIN KosePayments kp ON kp.AccountNo = dv.Renamed
+                INNER JOIN #RenPay r ON r.BaseAccount = dv.AccountNo
                 UNION
                 SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
                 FROM #Dev dv
                 INNER JOIN OrphanedPayments op ON op.AccountNoBigint = dv.AccountNo
                 INNER JOIN KosePayments kp ON kp.MpesaCode = op.MpesaCode
                 UNION
-                SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+                SELECT dv.AccountNo, r.MpesaCode, r.AmountValue, r.PaymentDateValue
                 FROM #Dev dv
-                INNER JOIN OrphanedPayments op ON op.AccountNo = dv.Renamed
-                INNER JOIN KosePayments kp ON kp.MpesaCode = op.MpesaCode;
+                INNER JOIN #RenOrph r ON r.BaseAccount = dv.AccountNo;
 
                 SELECT
                     p.AssignmentId, p.CaseId, p.CollectorUserId, p.CollectorName, p.StartAt, p.EndAt,
