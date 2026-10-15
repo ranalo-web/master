@@ -4,6 +4,11 @@
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
     var tabs = new[] { ("open", "In progress"), ("moved", "Moved to Knox / Transsion"), ("ended", "Not catchable / closed"), ("all", "All") };
+    string BrandOf(LockRecovery r) => RecoveryRules.IsSamsung(r.Make, r.Model) ? "samsung" : RecoveryRules.IsTranssion(r.Make) ? "transsion" : "other";
+    string ResultOf(LockRecovery r) => r.LastStep == null ? "none" : r.LastStepSuccess == true ? "ok" : "failed";
+    var statusOptions = Model.Recoveries.Select(r => RecoveryStatus.Label(r.Status, r.Make)).Distinct().OrderBy(s => s).ToList();
+    var reasonOptions = Model.Recoveries.Select(r => r.Reason).Distinct().OrderBy(s => s).ToList();
+    var stepOptions = Model.Recoveries.Where(r => r.LastStep != null).Select(r => r.LastStep!).Distinct().OrderBy(s => s).ToList();
 }
 
 <link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
@@ -73,8 +78,55 @@
                 </ul>
             </div>
             <div class="card-inner p-0 border-top">
-                <div class="table-responsive">
-                    <table class="table mb-0" style="white-space:nowrap;">
+                @* Column filters: narrow the list without reloading. *@
+                <div class="card-inner py-2 d-flex flex-wrap align-items-end" style="gap:8px;" id="filters">
+                    <div style="flex:1; min-width:160px;">
+                        <label class="form-label small mb-1" for="fSearch">Search</label>
+                        <input type="search" id="fSearch" class="form-control form-control-sm" placeholder="Account, IMEI, customer or dealer" />
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="fStatus">Status</label>
+                        <select id="fStatus" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All</option>
+                            @foreach (var s in statusOptions) { <option value="@s">@s</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="fBrand">Phone</label>
+                        <select id="fBrand" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All</option>
+                            <option value="samsung">Samsung (Knox)</option>
+                            <option value="transsion">itel / TECNO / Infinix (Transsion)</option>
+                            <option value="other">Other brands</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="fReason">Reason</label>
+                        <select id="fReason" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All</option>
+                            @foreach (var s in reasonOptions) { <option value="@s">@s</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="fStep">Last step</label>
+                        <select id="fStep" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All</option>
+                            @foreach (var s in stepOptions) { <option value="@s">@s</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="fResult">Result</label>
+                        <select id="fResult" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All</option>
+                            <option value="ok">OK</option>
+                            <option value="failed">Failed</option>
+                            <option value="none">No steps yet</option>
+                        </select>
+                    </div>
+                    <div class="small text-soft pb-1" id="fCount"></div>
+                </div>
+                <div class="table-responsive border-top">
+                    <table class="table mb-0" style="white-space:nowrap;" id="recoveries">
                         <thead>
                             <tr>
                                 @* Narrow screens keep account, status and the last update. *@
@@ -96,7 +148,10 @@
                             }
                             @foreach (var r in Model.Recoveries)
                             {
-                                <tr>
+                                <tr class="rec-row"
+                                    data-search="@($"{r.AccountNo} {r.Imei} {r.CustomerName} {r.DealerName}".ToLowerInvariant())"
+                                    data-status="@RecoveryStatus.Label(r.Status, r.Make)" data-brand="@BrandOf(r)" data-reason="@r.Reason"
+                                    data-step="@(r.LastStep ?? "")" data-result="@ResultOf(r)">
                                     <td>
                                         <a href="/recovery/@r.Id" class="fw-medium">@r.AccountNo</a>
                                         <div class="small text-soft d-md-none">@r.Make @r.Model</div>
@@ -135,6 +190,33 @@
 </div>
 
 <script>
+    // Column filters: every filter must match; the count shows how many are left.
+    (function () {
+        var ids = { search: 'fSearch', status: 'fStatus', brand: 'fBrand', reason: 'fReason', step: 'fStep', result: 'fResult' };
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#recoveries .rec-row'));
+        var count = document.getElementById('fCount');
+        function value(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+        function apply() {
+            var q = value(ids.search).toLowerCase(), shown = 0;
+            rows.forEach(function (tr) {
+                var ok = (!q || tr.dataset.search.indexOf(q) >= 0)
+                    && (!value(ids.status) || tr.dataset.status === value(ids.status))
+                    && (!value(ids.brand) || tr.dataset.brand === value(ids.brand))
+                    && (!value(ids.reason) || tr.dataset.reason === value(ids.reason))
+                    && (!value(ids.step) || tr.dataset.step === value(ids.step))
+                    && (!value(ids.result) || tr.dataset.result === value(ids.result));
+                tr.style.display = ok ? '' : 'none';
+                if (ok) shown++;
+            });
+            if (count) count.textContent = shown + ' of ' + rows.length + ' shown';
+        }
+        Object.keys(ids).forEach(function (k) {
+            var el = document.getElementById(ids[k]);
+            if (el) el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', apply);
+        });
+        apply();
+    })();
+
     (function () {
         var input = document.getElementById('accountNo');
         var out = document.getElementById('lookup');

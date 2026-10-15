@@ -684,6 +684,49 @@ namespace Ranolo.Web.Tests
             Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent));
         }
 
+        // ---- Daily Knox approval ----
+
+        [Test]
+        public async Task KnoxApproval_ApprovesASentPhoneKnoxNowHas()
+        {
+            _repo.Items[1].Status = RecoveryStatus.UploadSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+            _knoxHas.Add("355132188643698");
+
+            var approved = await _service.SweepKnoxApprovalsAsync();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(approved, Is.EqualTo(1));
+                Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.Approved));
+                Assert.That(_knox.Calls.Count(c => c.Method == "ApproveDeviceAsync"), Is.EqualTo(1));
+                Assert.That(_repo.Log.Single().Response, Does.StartWith("Automatic approval"));
+            });
+        }
+
+        [Test]
+        public async Task KnoxApproval_LeavesPhonesNotInKnoxYetAloneAndUnlogged()
+        {
+            _repo.Items[1].Status = RecoveryStatus.UploadSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+
+            Assert.That(await _service.SweepKnoxApprovalsAsync(), Is.EqualTo(0));
+            Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.UploadSent));
+            Assert.That(_repo.Log, Is.Empty);
+            Assert.That(_knox.Calls.Any(c => c.Method == "ApproveDeviceAsync"), Is.False);
+        }
+
+        [Test]
+        public async Task KnoxApproval_SkipsPhonesNotSentOrNotSamsung()
+        {
+            _knoxHas.Add("355132188643698");
+            _repo.Items[1].Status = RecoveryStatus.Investigating;   // not sent yet
+            TranssionPhone(RecoveryStatus.UploadSent);              // a TECNO
+
+            Assert.That(await _service.SweepKnoxApprovalsAsync(), Is.EqualTo(0));
+            Assert.That(_knox.Calls.Any(c => c.Method == "ApproveDeviceAsync"), Is.False);
+        }
+
         // ---- Daily locker check (after 41109528 dropped out of Knox) ----
 
         private void OnKnox(long account, string imei, string? imei2 = null)

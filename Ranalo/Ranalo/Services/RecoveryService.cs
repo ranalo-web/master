@@ -19,6 +19,7 @@ namespace Ranalo.Services
         Task<(int? Id, string? Error)> AddAsync(long accountNo, string reason, string? notes, int userId);
         Task<RecoveryActionResult> RunAsync(int id, RecoveryAction action, string? note, int userId);
         Task<int> SweepTranssionAsync();
+        Task<int> SweepKnoxApprovalsAsync();
         Task<List<string>> CheckLockersAsync();
         Task OnTranssionActivatedAsync(string imei);
     }
@@ -249,6 +250,42 @@ namespace Ranalo.Services
                 }
             }
             return moved;
+        }
+
+        // Samsung recoveries sent to Knox ("Sent to Knox", with the Veritech
+        // transaction id): approve the ones Knox now has (ScheduledRecovery-
+        // KnoxApproval, daily). The phone only reaches Knox a while after the
+        // upload, so approving straight away fails; this saves pressing
+        // Approve on each. Phones not in Knox yet are left alone and unlogged.
+        // Returns how many were approved.
+        public async Task<int> SweepKnoxApprovalsAsync()
+        {
+            var approved = 0;
+            var waiting = (await _repository.GetListAsync("open"))
+                .Where(r => RecoveryRules.IsSamsung(r.Make, r.Model) && r.Status == RecoveryStatus.UploadSent
+                            && !string.IsNullOrWhiteSpace(r.VeritechTransId))
+                .ToList();
+            foreach (var r in waiting)
+            {
+                try
+                {
+                    if (await InKnoxAsync(r.Imei) != true)
+                    {
+                        continue;
+                    }
+
+                    var result = await RunAsync(r.Id, RecoveryAction.Approve, "Automatic approval: Knox has the phone.", SystemUserId);
+                    if (result.Success)
+                    {
+                        approved++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Recovery {Id}: automatic Knox approval failed", r.Id);
+                }
+            }
+            return approved;
         }
 
         // PayTrigger's webhook says this IMEI just activated: check (and so
