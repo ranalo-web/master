@@ -113,6 +113,8 @@ builder.Services.AddScoped<IRecoveryService, RecoveryService>();
 builder.Services.AddScoped<ILockRecoveryRepository, LockRecoveryRepository>();
 builder.Services.AddScoped<IRepoStockService, RepoStockService>();
 builder.Services.AddScoped<IRepoStockRepository, RepoStockRepository>();
+builder.Services.AddScoped<ILockCheckService, LockCheckService>();
+builder.Services.AddScoped<ILockCheckRepository, LockCheckRepository>();
 builder.Services.AddScoped<ICommissionPayoutService, CommissionPayoutService>();
 builder.Services.AddScoped<ICommissionPayoutRepository, CommissionPayoutRepository>();
 builder.Services.AddScoped<IDealerAllocationRepository, DealerAllocationRepository>();

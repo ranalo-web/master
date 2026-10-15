@@ -1,0 +1,232 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model LockCheckViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var stages = new[]
+    {
+        LockCheckStage.NeedsNewLocker, LockCheckStage.NuovoOnly, LockCheckStage.LockSent,
+        LockCheckStage.InRecovery, LockCheckStage.LostFromNuovo, LockCheckStage.FullyPaidOpen,
+    };
+    var brands = new[] { ("all", "All brands"), ("samsung", "Samsung"), ("transsion", "itel / TECNO / Infinix"), ("other", "Other brands") };
+    string Url(LockCheckStage s, string b) => $"/lock-check?stage={s}&brand={b}&days={Model.MinDaysBehind}";
+    var canRecovery = LockCheckRules.CanSendToRecovery(Model.Stage);
+    var canLock = LockCheckRules.CanSendNuovoLock(Model.Stage);
+    var canClose = LockCheckRules.CanCloseAndRelease(Model.Stage);
+    var hasActions = canRecovery || canLock || canClose;
+    var help = Model.Stage switch
+    {
+        LockCheckStage.NeedsNewLocker => "Unlocked on Nuovo while the customer is behind. Samsung can go to Knox and itel/TECNO/Infinix to Transsion: tick them and send them to Recovery, where the Knox or Transsion steps take over.",
+        LockCheckStage.NuovoOnly => "Unlocked on Nuovo while the customer is behind, and only Nuovo can lock this brand. Tick them and send a Nuovo lock; they move to Lock sent until Nuovo reports them locked.",
+        LockCheckStage.LockSent => "A Nuovo lock was sent from here but Nuovo still reports the phone unlocked: it's probably offline or flashed. Send again, or chase it through Collections.",
+        LockCheckStage.InRecovery => "Already in Recovery. Open the recovery to carry on.",
+        LockCheckStage.LostFromNuovo => "Nuovo no longer has the phone (un_registered) while money is still owed. Samsung and itel/TECNO/Infinix can go to Recovery; others can only be sent a Nuovo lock, or repossessed.",
+        LockCheckStage.FullyPaidOpen => "Paid off (a shilling short counts as paid) but the contract is still open. Close and release ends the contract today and queues the phone's release in Pending Tasks, unless Nuovo has already released it.",
+        _ => "",
+    };
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-head-content">
+            <h3 class="nk-block-title page-title">Lock check</h3>
+            <div class="nk-block-des text-soft">
+                <p>Nuovo phones that need attention: unlocked while the customer is behind, lost from Nuovo, or paid off with the contract still open.</p>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["LockCheckResult"] is string result)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em> @result
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["LockCheckError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @* Stage filters: one card per stage with its count. *@
+    <div class="nk-block">
+        <div class="row g-2">
+            @foreach (var s in stages)
+            {
+                var count = Model.Counts.TryGetValue(s, out var c) ? c : 0;
+                var active = s == Model.Stage;
+                <div class="col-6 col-md-4 col-xl-2">
+                    <a href="@Url(s, Model.Brand)" class="card card-bordered h-100 text-decoration-none @(active ? "border-primary" : "")" style="@(active ? "border-width:2px;" : "")">
+                        <div class="card-inner p-3">
+                            <div class="small @(active ? "text-primary fw-bold" : "text-soft")">@LockCheckRules.Label(s)</div>
+                            <div class="fs-4 fw-bold @(count == 0 ? "text-soft" : "")">@count</div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md">
+                <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap:8px;">
+                    <ul class="nav nav-tabs nav-tabs-s2 mb-0" style="border:0;">
+                        @foreach (var (key, label) in brands)
+                        {
+                            <li class="nav-item"><a class="nav-link @(Model.Brand == key ? "active" : "")" href="@Url(Model.Stage, key)">@label</a></li>
+                        }
+                    </ul>
+                    <form method="get" action="/lock-check" class="d-flex align-items-center" style="gap:6px;">
+                        <input type="hidden" name="stage" value="@Model.Stage" />
+                        <input type="hidden" name="brand" value="@Model.Brand" />
+                        <label class="small text-soft mb-0" for="days">Behind at least</label>
+                        <input type="number" id="days" name="days" min="1" max="365" value="@Model.MinDaysBehind" class="form-control form-control-sm" style="width:80px;" />
+                        <span class="small text-soft">days</span>
+                        <button type="submit" class="btn btn-sm btn-outline-light">Apply</button>
+                    </form>
+                </div>
+                <p class="text-soft small mt-2 mb-0">@help</p>
+            </div>
+
+            <form method="post" action="/lock-check/act" id="actForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="stage" value="@Model.Stage" />
+                <input type="hidden" name="brand" value="@Model.Brand" />
+                <input type="hidden" name="days" value="@Model.MinDaysBehind" />
+
+                @if (hasActions && Model.Rows.Count > 0)
+                {
+                    <div class="card-inner border-top py-2 d-flex flex-wrap align-items-center" style="gap:8px;">
+                        <span class="small text-soft" id="selCount">0 ticked</span>
+                        @if (canRecovery)
+                        {
+                            <button type="submit" name="act" value="@LockCheckAction.ToRecovery" class="btn btn-sm btn-primary"
+                                    onclick="return confirmAct('Send the ticked phones to Recovery?');">Send to Recovery</button>
+                        }
+                        @if (canLock)
+                        {
+                            <button type="submit" name="act" value="@LockCheckAction.NuovoLock" class="btn btn-sm btn-danger"
+                                    onclick="return confirmAct('Send a Nuovo lock to the ticked phones now?');">Send Nuovo lock</button>
+                        }
+                        @if (canClose)
+                        {
+                            <button type="submit" name="act" value="@LockCheckAction.CloseRelease" class="btn btn-sm btn-success"
+                                    onclick="return confirmAct('Close the ticked contracts and release the phones? They are fully paid.');">Close and release</button>
+                        }
+                    </div>
+                }
+
+                <div class="card-inner p-0 border-top">
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;">
+                            <thead>
+                                <tr>
+                                    @if (hasActions)
+                                    {
+                                        <th class="wl-th" style="width:32px;"><input type="checkbox" id="all" title="Tick all" /></th>
+                                    }
+                                    <th class="wl-th">Account</th>
+                                    <th class="wl-th d-none d-md-table-cell">Phone</th>
+                                    <th class="wl-th d-none d-lg-table-cell">Dealer</th>
+                                    <th class="wl-th text-end">@(Model.Stage == LockCheckStage.FullyPaidOpen ? "Paid" : "Behind")</th>
+                                    <th class="wl-th d-none d-sm-table-cell">Last paid</th>
+                                    <th class="wl-th d-none d-lg-table-cell">Nuovo</th>
+                                    <th class="wl-th d-none d-xl-table-cell">Last seen</th>
+                                    <th class="wl-th">Last action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Rows.Count == 0)
+                                {
+                                    <tr><td colspan="9" class="text-center text-soft py-4">No phones at this stage.</td></tr>
+                                }
+                                @foreach (var r in Model.Rows)
+                                {
+                                    <tr>
+                                        @if (hasActions)
+                                        {
+                                            <td><input type="checkbox" name="accounts" value="@r.AccountNo" class="pick" /></td>
+                                        }
+                                        <td>
+                                            <a href="/account-details/@r.AccountNo" class="fw-medium">@r.AccountNo</a>
+                                            <div class="small text-soft">@r.CustomerName</div>
+                                            <div class="small text-soft d-md-none">@r.Make @r.Model</div>
+                                        </td>
+                                        <td class="d-none d-md-table-cell">
+                                            @r.Make @r.Model
+                                            <div class="small text-soft">@LockCheckRules.BrandLabel(r.Brand)</div>
+                                        </td>
+                                        <td class="d-none d-lg-table-cell">@r.DealerName</td>
+                                        <td class="text-end">
+                                            @if (Model.Stage == LockCheckStage.FullyPaidOpen)
+                                            {
+                                                <span>@r.Paid.ToString("N0")</span>
+                                                <div class="small text-soft">of @r.ContractValue.ToString("N0")</div>
+                                            }
+                                            else
+                                            {
+                                                <span class="fw-medium">@r.DaysBehind days</span>
+                                                <div class="small text-soft">@r.Arrears.ToString("N0")</div>
+                                            }
+                                        </td>
+                                        <td class="d-none d-sm-table-cell">@(r.LastPaid?.ToString("dd/MM/yyyy") ?? "never")</td>
+                                        <td class="d-none d-lg-table-cell">
+                                            @r.NuovoStatus
+                                            <div class="small text-soft">@(r.Locked == true ? "locked" : "unlocked")</div>
+                                        </td>
+                                        <td class="d-none d-xl-table-cell small">@r.LastConnectedAt</td>
+                                        <td style="white-space:normal; min-width:140px; max-width:300px;">
+                                            @if (r.RecoveryId.HasValue)
+                                            {
+                                                <a href="/recovery/@r.RecoveryId" class="small">Recovery @r.RecoveryId · @RecoveryStatus.Label(r.RecoveryStatus ?? "", r.Make)</a>
+                                            }
+                                            else if (r.LastAction != null)
+                                            {
+                                                <div class="small">
+                                                    @(r.LastAction switch { LockCheckAction.NuovoLock => "Nuovo lock", LockCheckAction.ToRecovery => "To Recovery", LockCheckAction.CloseRelease => "Close and release", _ => r.LastAction })
+                                                    <span class="badge badge-dim @(r.LastActionSuccess == true ? "bg-success" : "bg-danger")">@(r.LastActionSuccess == true ? "OK" : "Failed")</span>
+                                                    <span class="text-soft">@r.LastActionAt?.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                                                </div>
+                                                <div class="small text-soft" style="overflow-wrap:anywhere;">@r.LastActionResult</div>
+                                            }
+                                            else
+                                            {
+                                                <span class="small text-soft">—</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function confirmAct(message) {
+        var n = document.querySelectorAll('.pick:checked').length;
+        if (n === 0) { alert('Tick at least one phone first.'); return false; }
+        return confirm(message + ' (' + n + ' phone' + (n === 1 ? '' : 's') + ')');
+    }
+    (function () {
+        var all = document.getElementById('all');
+        var out = document.getElementById('selCount');
+        function update() {
+            if (out) out.textContent = document.querySelectorAll('.pick:checked').length + ' ticked';
+        }
+        if (all) all.addEventListener('change', function () {
+            document.querySelectorAll('.pick').forEach(function (c) { c.checked = all.checked; });
+            update();
+        });
+        document.querySelectorAll('.pick').forEach(function (c) { c.addEventListener('change', update); });
+    })();
+</script>
