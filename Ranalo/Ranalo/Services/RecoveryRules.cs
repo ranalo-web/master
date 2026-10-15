@@ -169,6 +169,18 @@ namespace Ranalo.Services
             return null;
         }
 
+        // The first step for a phone still being investigated: Send to Knox
+        // (Samsung) or Send to Transsion (itel/TECNO/Infinix); null for other
+        // brands or a phone already past that step. Used by the list's bulk send.
+        public static RecoveryAction? FirstSendStep(LockRecovery r)
+        {
+            if (r.Status != RecoveryStatus.Investigating) return null;
+            var step = IsTranssion(r.Make) ? RecoveryAction.TranssionSend
+                : IsSamsung(r.Make, r.Model) ? RecoveryAction.Upload
+                : (RecoveryAction?)null;
+            return step != null && AllowedActions(r).Contains(step.Value) ? step : null;
+        }
+
         // A Transsion check that finds the phone active makes a sent phone
         // "Active in Transsion"; it never moves a phone back.
         public static string StatusAfterTranssionCheck(string current, int? lockState) =>

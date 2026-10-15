@@ -81,6 +81,22 @@ namespace Ranolo.Web.Tests
             Assert.That(RecoveryRules.AllowedActions(r), Does.Not.Contain(RecoveryAction.Lock), "no approve id to give Knox");
         }
 
+        [TestCase("samsung", RecoveryAction.Upload)]
+        [TestCase("TECNO", RecoveryAction.TranssionSend)]
+        [TestCase("INFINIX", RecoveryAction.TranssionSend)]
+        public void FirstSendStepFollowsTheBrand(string make, RecoveryAction step)
+        {
+            Assert.That(RecoveryRules.FirstSendStep(Phone(make: make)), Is.EqualTo(step));
+        }
+
+        [Test]
+        public void FirstSendStepOnlyWhileInvestigating()
+        {
+            Assert.That(RecoveryRules.FirstSendStep(Phone(RecoveryStatus.UploadSent, trans: "tx1")), Is.Null, "never uploaded twice");
+            Assert.That(RecoveryRules.FirstSendStep(Phone(make: "Xiaomi")), Is.Null, "no Knox/Transsion for this brand");
+            Assert.That(RecoveryRules.FirstSendStep(Phone(RecoveryStatus.Closed)), Is.Null);
+        }
+
         [Test]
         public void SamsungDoesntGetTranssionSteps()
         {
@@ -682,6 +698,41 @@ namespace Ranolo.Web.Tests
 
             Assert.That(_payTrigger.FindCalls, Is.Empty);
             Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent));
+        }
+
+        // ---- Bulk send from the list ----
+
+        [Test]
+        public async Task SendMany_SendsEachPhoneToItsLocker()
+        {
+            TranssionPhone();   // Recovery 2, TECNO, Investigating; Recovery 1 is a Samsung, Investigating
+
+            var (sent, skipped, _) = await _service.SendManyAsync(new[] { 1, 2 }, 7);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(sent, Is.EqualTo(2));
+                Assert.That(skipped, Is.EqualTo(0));
+                Assert.That(_repo.Items[1].Status, Is.EqualTo(RecoveryStatus.UploadSent), "Samsung uploaded to Knox via Veritech");
+                Assert.That(_repo.Items[2].Status, Is.EqualTo(RecoveryStatus.UploadSent), "TECNO sent to Transsion");
+                Assert.That(_payTrigger.PreEnrolCalls, Has.Count.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public async Task SendMany_SkipsPhonesAlreadySentOrWithoutALocker()
+        {
+            _repo.Items[1].Status = RecoveryStatus.UploadSent;
+            _repo.Items[1].VeritechTransId = "vkdp-123";
+            _repo.Items[3] = new LockRecovery { Id = 3, AccountNo = 5555555, Imei = "111", Make = "Xiaomi", Status = RecoveryStatus.Investigating };
+
+            var (sent, skipped, messages) = await _service.SendManyAsync(new[] { 1, 3, 99 }, 7);
+
+            Assert.That(sent, Is.EqualTo(0));
+            Assert.That(skipped, Is.EqualTo(3));
+            Assert.That(messages, Has.Some.Contains("already past this step"));
+            Assert.That(messages, Has.Some.Contains("no Knox/Transsion for Xiaomi"));
+            Assert.That(_repo.Log, Is.Empty);
         }
 
         // ---- Daily Knox approval ----

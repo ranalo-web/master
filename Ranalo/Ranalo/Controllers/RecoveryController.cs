@@ -108,6 +108,30 @@ namespace Ranalo.Controllers
             return RedirectToAction("Details", new { id });
         }
 
+        // Bulk Send to Knox / Send to Transsion for the ticked phones.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("recovery/send-many")]
+        public async Task<IActionResult> SendMany(List<int> ids, string status = "open")
+        {
+            if (!IsAdmin(out var redirect))
+            {
+                return redirect!;
+            }
+
+            if (ids == null || ids.Count == 0)
+            {
+                TempData["RecoveryError"] = "Tick at least one phone first.";
+                return RedirectToAction("Index", new { status });
+            }
+
+            var (sent, skipped, messages) = await _recoveryService.SendManyAsync(ids, UserId);
+            var text = $"{sent} phone{(sent == 1 ? "" : "s")} sent to Knox / Transsion."
+                + (skipped > 0 ? $" {skipped} not sent: {string.Join(" ", messages.Take(10))}{(messages.Count > 10 ? " …" : "")}" : "");
+            TempData[sent == 0 && skipped > 0 ? "RecoveryError" : "RecoveryResult"] = text;
+            return RedirectToAction("Index", new { status });
+        }
+
         private int UserId => ((User)HttpContext.Items["UserSettings"]!).UserId;
 
         private bool IsAdmin(out IActionResult? redirect)

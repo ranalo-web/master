@@ -20,6 +20,7 @@ namespace Ranalo.Services
         Task<RecoveryActionResult> RunAsync(int id, RecoveryAction action, string? note, int userId);
         Task<int> SweepTranssionAsync();
         Task<int> SweepKnoxApprovalsAsync();
+        Task<(int Sent, int Skipped, List<string> Messages)> SendManyAsync(IEnumerable<int> ids, int userId);
         Task<List<string>> CheckLockersAsync();
         Task OnTranssionActivatedAsync(string imei);
     }
@@ -250,6 +251,30 @@ namespace Ranalo.Services
                 }
             }
             return moved;
+        }
+
+        // Bulk first step from the list: Send to Knox / Send to Transsion for
+        // each ticked phone still being investigated (RecoveryRules.FirstSendStep).
+        public async Task<(int Sent, int Skipped, List<string> Messages)> SendManyAsync(IEnumerable<int> ids, int userId)
+        {
+            int sent = 0, skipped = 0;
+            var messages = new List<string>();
+            foreach (var id in ids.Distinct())
+            {
+                var r = await _repository.GetAsync(id);
+                var step = r == null ? null : RecoveryRules.FirstSendStep(r);
+                if (r == null || step == null)
+                {
+                    skipped++;
+                    if (r != null) messages.Add($"{r.AccountNo}: {(r.Status == RecoveryStatus.Investigating ? $"no Knox/Transsion for {r.Make}" : "already past this step")}.");
+                    continue;
+                }
+
+                var result = await RunAsync(id, step.Value, "Sent from the Recovery list.", userId);
+                if (result.Success) sent++;
+                else { skipped++; messages.Add($"{r.AccountNo}: {result.Message}"); }
+            }
+            return (sent, skipped, messages);
         }
 
         // Samsung recoveries sent to Knox ("Sent to Knox", with the Veritech
