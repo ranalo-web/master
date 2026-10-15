@@ -132,7 +132,8 @@ namespace Ranolo.Web.Tests
         public Task<HttpResponseMessage> CompleteDeviceAsync(CompleteDeviceRequest request) { CompleteCalls.Add(request); return Task.FromResult(Response()); }
         public Task<HttpResponseMessage> ExecuteDeviceActionsAsync(DeviceActionsRequest request) { ActionCalls.Add(request); return Task.FromResult(Response()); }
 
-        public Task<HttpResponseMessage> ApproveDeviceAsync(ApproveDeviceRequest request) => throw new NotImplementedException();
+        public List<ApproveDeviceRequest> ApproveCalls { get; } = new();
+        public Task<HttpResponseMessage> ApproveDeviceAsync(ApproveDeviceRequest request) { ApproveCalls.Add(request); return Task.FromResult(Response()); }
         public Task<HttpResponseMessage> SetBlinkingReminderAsync(SetBlinkingReminderRequest request) => throw new NotImplementedException();
         public Task<HttpResponseMessage> DeleteDeviceAsync(DeleteDeviceRequest request) => throw new NotImplementedException();
         public Task<HttpResponseMessage> LockDeviceAsync(LockDeviceRequest request) => throw new NotImplementedException();

@@ -83,41 +83,13 @@ namespace Ranalo.Services
 
             await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
 
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    // Call Knox and approve the device.
-                    var deviceToApprove = new ApproveDeviceRequest()
-                    {
-                        DeviceUid = newEnrolment.IMEI,
-                        ApproveId = enroll.Data.Transaction_Id, //"vkdp302411utid",
-                        ApproveComment = $"Approval for Order - {newEnrolment.OrderId}"
-                    };
-
-                    var approvedDevice = await _knoxGuardClient.ApproveDeviceAsync(deviceToApprove);
-
-                    var responseContent = await approvedDevice.Content.ReadAsStringAsync();
-                    //Now update Enrolment to Approved
-                    newEnrolment.Status = EnrolmentStatus.Approved;
-                    newEnrolment.Updated = DateTime.UtcNow;
-                    newEnrolment.UpdatedBy = "KNOX";
-                    newEnrolment.KnoxResponse = responseContent;
-                    await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
-
-                    await CreateDeviceFromKnox(newEnrolment);
-
-                }
-                catch (Exception ex)
-                {
-                    newEnrolment.Status = EnrolmentStatus.Error;
-                    newEnrolment.Updated = DateTime.UtcNow;
-                    newEnrolment.UpdatedBy = "KNOX";
-                    newEnrolment.KnoxResponse = ex.Message;
-                    await _enrolmentRepository.UpdateEnrolmentAsync(newEnrolment);
-                }
-            }
-            );
+            // Knox: enrol, then approve (agreed 2026-10-15). The phone only
+            // reaches Knox a while after the Veritech upload, so it stays
+            // Pending here; an approver/admin approves it from the Enrolments
+            // page (ApproveEnrolment), and it's Approved only once Knox
+            // accepts. This used to approve straight away in the background
+            // and mark it Approved whatever Knox replied -- bypassing the
+            // approval step and the short-deposit rule.
 
             // The contract is created by ScheduledTaskCreateContractOrders,
             // from the WooCommerce order (its pricing) and the account the
@@ -229,35 +201,52 @@ namespace Ranalo.Services
             return await _enrolmentRepository.GetByImeiNumberAsync(imei);
         }
 
-        public async Task ApproveEnrolment(Enrolment existingEnrolment)
+        // Approves the phone in Knox; Approved only when Knox accepts. If
+        // Knox refuses (usually: the phone hasn't reached Knox from Veritech
+        // yet) it stays Pending with Knox's reply, to approve again later.
+        public async Task<bool> ApproveEnrolment(Enrolment existingEnrolment)
         {
-            // Call Knox and approve the device.
             var deviceToApprove = new ApproveDeviceRequest()
             {
                 DeviceUid = existingEnrolment.IMEI,
-                ApproveId = existingEnrolment.VeriTechTransId, //"vkdp302411utid",
+                ApproveId = existingEnrolment.VeriTechTransId,
                 ApproveComment = $"Approval for Order - {existingEnrolment.OrderId}"
             };
 
-           // var foo = await _veriTechClient.GetDevicesAsync();
-
+            string reply;
+            bool accepted;
             try
             {
                 var approvedDevice = await _knoxGuardClient.ApproveDeviceAsync(deviceToApprove);
-
-                var responseContent = await approvedDevice.Content.ReadAsStringAsync();
-                //Now update Enrolment to Approved
-                existingEnrolment.Status = EnrolmentStatus.Approved;
-                existingEnrolment.Updated = DateTime.UtcNow;
-                existingEnrolment.UpdatedBy = "KNOX";
-                existingEnrolment.ApprovedDate = DateTime.UtcNow;
-                existingEnrolment.KnoxResponse = responseContent;
-                await _enrolmentRepository.UpdateEnrolmentAsync(existingEnrolment);
+                reply = await approvedDevice.Content.ReadAsStringAsync();
+                accepted = approvedDevice.IsSuccessStatusCode;
+                if (!accepted)
+                {
+                    reply = $"HTTP {(int)approvedDevice.StatusCode} {reply}";
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                reply = ex.Message;
+                accepted = false;
             }
+
+            existingEnrolment.Updated = DateTime.UtcNow;
+            existingEnrolment.UpdatedBy = "KNOX";
+            existingEnrolment.KnoxResponse = reply;
+            if (accepted)
+            {
+                existingEnrolment.Status = EnrolmentStatus.Approved;
+                existingEnrolment.ApprovedDate = DateTime.UtcNow;
+            }
+            else
+            {
+                // Not approved: the approval call doesn't count yet.
+                existingEnrolment.CallApprovedAt = null;
+                existingEnrolment.CallApprovedByUserId = null;
+            }
+            await _enrolmentRepository.UpdateEnrolmentAsync(existingEnrolment);
+            return accepted;
         }
 
         public async Task<Enrolment> GetByEnrolmentIdNumberAsync(Guid enrolmentId)

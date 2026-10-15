@@ -1380,6 +1380,75 @@ namespace Ranolo.Web.Tests
             Assert.That(_devices.ById[2].NextLockDate, Is.EqualTo("20/10/2026"));
         }
 
+        // ---- Knox: enrol, then approve (2026-10-15) ----
+
+        private Enrolment PendingSamsung()
+        {
+            var e = new Enrolment
+            {
+                Id = Guid.NewGuid(), AccountId = 36637211, OrderId = 19832, IMEI = "350522366526910",
+                DeviceBrand = "Samsung", Status = EnrolmentStatus.Pending, VeriTechTransId = "vkdp1",
+                CallApprovedAt = DateTime.UtcNow, CallApprovedByUserId = 1,
+            };
+            _enrolments.Items.Add(e);
+            return e;
+        }
+
+        [Test]
+        public async Task KnoxApproval_KnoxAccepts_Approved()
+        {
+            var e = PendingSamsung();
+
+            var accepted = await _service.ApproveEnrolment(e);
+
+            Assert.That(accepted, Is.True);
+            Assert.That(e.Status, Is.EqualTo(EnrolmentStatus.Approved));
+            Assert.That(_knox.ApproveCalls.Single().ApproveId, Is.EqualTo("vkdp1"));
+        }
+
+        [Test]
+        public async Task KnoxApproval_NotInKnoxYet_StaysPendingToTryAgain()
+        {
+            var e = PendingSamsung();
+            _knox.Status = System.Net.HttpStatusCode.NotFound;
+            _knox.Body = "{\"result\":\"FAIL\",\"error\":{\"message\":\"DEVICE_NOT_FOUND\"}}";
+
+            var accepted = await _service.ApproveEnrolment(e);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(accepted, Is.False);
+                Assert.That(e.Status, Is.EqualTo(EnrolmentStatus.Pending), "used to be marked Approved anyway");
+                Assert.That(e.KnoxResponse, Does.StartWith("HTTP 404").And.Contain("DEVICE_NOT_FOUND"));
+                Assert.That(e.CallApprovedAt, Is.Null, "the approval doesn't count until Knox accepts");
+            });
+        }
+
+        [Test]
+        public async Task KnoxEnrol_SendsToVeritech_StaysPending_NoKnoxApproval()
+        {
+            var (veritech, _) = InterfaceFake<Ranalo.VeriTechClient.IVeritechApiClient>.Create(new()
+            {
+                ["UploadDevicesAsync"] = _ => Task.FromResult(new Ranalo.VeriTechClient.Models.CreateDeviceResponse
+                {
+                    Data = new Ranalo.VeriTechClient.Models.UploadDeviceResultModel { Transaction_Id = "vkdp9", Status = "Progress" },
+                }),
+            });
+            var (sync, _) = InterfaceFake<Ranalo.Woocommece.Api.Services.ISyncService>.Create(new());
+            var (dealers, _) = InterfaceFake<Ranalo.DataStore.IRepository>.Create(new());
+            var (workflow, _) = InterfaceFake<ITranssionEnrolmentWorkflow>.Create(new());
+            var service = new EnrolmentService(_enrolments, veritech, _knox, _payTrigger, _devices, sync, dealers, workflow);
+            var e = new Enrolment { Id = Guid.NewGuid(), AccountId = 36637211, OrderId = 19832, IMEI = "350522366526910", DeviceBrand = "Samsung" };
+            _enrolments.Items.Add(e);
+
+            var result = await service.StartEnrolmentasync(e, null);
+            await Task.Delay(50);   // the old background approval would have run by now
+
+            Assert.That(result.Status, Is.EqualTo(EnrolmentStatus.Pending));
+            Assert.That(result.VeriTechTransId, Is.EqualTo("vkdp9"));
+            Assert.That(_knox.ApproveCalls, Is.Empty, "approval is a separate step");
+        }
+
         [Test]
         public async Task Transsion_Pushes9999_AndRecordsIt()
         {
