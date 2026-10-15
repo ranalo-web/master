@@ -11,7 +11,7 @@ namespace Ranalo.DataStore
         Task<RepoStockItem?> GetAsync(int id);
         Task<int> AddAsync(RepoStockLookup account, string paymentSuffix, string reason, string? condition, int userId);
         Task<RepoOldContract?> GetOldContractAsync(int contractId, string paymentAccount);
-        Task<List<RepoPayment>> GetPaymentsAsync(string paymentAccount);
+        Task<(List<RepoPayment> Page, int Total)> GetPaymentsAsync(string paymentAccount, int page, int pageSize);
         Task<int> SellAsync(RepoStockItem item, RepoSale sale, RepoOldContract old, decimal writeOff, int userId);
     }
 
@@ -125,11 +125,19 @@ namespace Ranalo.DataStore
                 ) p
                 WHERE ci.ContractID = @ContractId", new { ContractId = contractId, PaymentAccount = paymentAccount });
 
-        public async Task<List<RepoPayment>> GetPaymentsAsync(string paymentAccount) =>
-            (await _db.QueryAsync<RepoPayment>(@"
+        // Newest first, one page at a time.
+        public async Task<(List<RepoPayment> Page, int Total)> GetPaymentsAsync(string paymentAccount, int page, int pageSize)
+        {
+            using var multi = await _db.QueryMultipleAsync(@"
+                SELECT COUNT(*) FROM (" + PaymentsOnSql + @") x;
                 SELECT x.MpesaCode, x.AmountValue AS Amount, x.PaymentDateValue AS PaymentDate
                 FROM (" + PaymentsOnSql + @") x
-                ORDER BY x.PaymentDateValue DESC", new { PaymentAccount = paymentAccount })).ToList();
+                ORDER BY x.PaymentDateValue DESC, x.MpesaCode
+                OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY;",
+                new { PaymentAccount = paymentAccount, Skip = (Math.Max(page, 1) - 1) * pageSize, Take = pageSize });
+            var total = await multi.ReadSingleAsync<int>();
+            return ((await multi.ReadAsync<RepoPayment>()).ToList(), total);
+        }
 
         // Payments on a renamed account: typed to it, or assigned to it.
         private const string PaymentsOnSql = @"

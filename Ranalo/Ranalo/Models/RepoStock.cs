@@ -120,7 +120,11 @@ namespace Ranalo.Models
     {
         public RepoStockItem Item { get; set; } = null!;
         public RepoOldContract? OldContract { get; set; }
-        public List<RepoPayment> PreviousPayments { get; set; } = new();
+        public List<RepoPayment> PreviousPayments { get; set; } = new();   // one page, newest first
+        public int PaymentsPage { get; set; } = 1;
+        public int PaymentsPageSize { get; set; } = 10;
+        public int PaymentsTotal { get; set; }
+        public int PaymentsPages => Math.Max(1, (int)Math.Ceiling(PaymentsTotal / (double)PaymentsPageSize));
         public List<Ranalo.DataStore.Dealer> Dealers { get; set; } = new();
     }
 

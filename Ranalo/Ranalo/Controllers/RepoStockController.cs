@@ -78,14 +78,14 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("repo-stock/{id:int}")]
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(int id, int page = 1)
         {
             if (!IsAdmin(out var redirect))
             {
                 return redirect!;
             }
 
-            var model = await _service.GetDetailAsync(id);
+            var model = await _service.GetDetailAsync(id, page);
             if (model == null)
             {
                 return RedirectToAction("Index");

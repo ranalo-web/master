@@ -406,12 +406,12 @@ namespace Ranalo.Controllers
             {
                 Item = item,
                 OldContract = new RepoOldContract { ContractId = item.OldContractId, ContractValue = 47800m, TotalPaid = 11630m, LastPaymentDate = DateTime.UtcNow.AddDays(-40), BuyingPrice = 14500m },
-                PreviousPayments = new List<RepoPayment>
+                PreviousPayments = Enumerable.Range(0, 10).Select(n => new RepoPayment
                 {
-                    new() { MpesaCode = "UJE1ABC123", Amount = 500m, PaymentDate = DateTime.UtcNow.AddDays(-40) },
-                    new() { MpesaCode = "UJA2DEF456", Amount = 1130m, PaymentDate = DateTime.UtcNow.AddDays(-75) },
-                    new() { MpesaCode = "TKB3GHI789", Amount = 10000m, PaymentDate = DateTime.UtcNow.AddDays(-300) },
-                },
+                    MpesaCode = $"UJE{n}ABC12{n}", Amount = 100m + n * 10, PaymentDate = DateTime.UtcNow.AddDays(-40 - n * 7),
+                }).ToList(),
+                PaymentsPage = 1,
+                PaymentsTotal = 38,
                 Dealers = new List<Ranalo.DataStore.Dealer>
                 {
                     new() { DealerReference = "0000", CompanyName = "Renalo" },

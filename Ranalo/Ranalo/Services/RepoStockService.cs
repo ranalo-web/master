@@ -6,7 +6,7 @@ namespace Ranalo.Services
     public interface IRepoStockService
     {
         Task<RepoStockListViewModel> GetListAsync(string status);
-        Task<RepoStockDetailViewModel?> GetDetailAsync(int id);
+        Task<RepoStockDetailViewModel?> GetDetailAsync(int id, int paymentsPage = 1);
         Task<RepoStockLookup?> LookupAsync(long accountNo);
         Task<RepoStockResult> AddAsync(long accountNo, string reason, string? condition, int userId);
         Task<RepoStockResult> SellAsync(int id, RepoSale sale, int userId);
@@ -33,15 +33,22 @@ namespace Ranalo.Services
             Items = await _repository.GetListAsync(status),
         };
 
-        public async Task<RepoStockDetailViewModel?> GetDetailAsync(int id)
+        public const int PaymentsPageSize = 10;
+
+        public async Task<RepoStockDetailViewModel?> GetDetailAsync(int id, int paymentsPage = 1)
         {
             var item = await _repository.GetAsync(id);
             if (item == null) return null;
+            paymentsPage = Math.Max(1, paymentsPage);
+            var (payments, total) = await _repository.GetPaymentsAsync(item.OldPaymentAccount, paymentsPage, PaymentsPageSize);
             return new RepoStockDetailViewModel
             {
                 Item = item,
                 OldContract = await _repository.GetOldContractAsync(item.OldContractId, item.OldPaymentAccount),
-                PreviousPayments = await _repository.GetPaymentsAsync(item.OldPaymentAccount),
+                PreviousPayments = payments,
+                PaymentsPage = paymentsPage,
+                PaymentsPageSize = PaymentsPageSize,
+                PaymentsTotal = total,
                 Dealers = (await _dealers.GetAllDealersAsync()).OrderBy(d => d.CompanyName).ToList(),
             };
         }
