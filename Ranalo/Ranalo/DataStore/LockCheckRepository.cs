@@ -59,10 +59,28 @@ namespace Ranalo.DataStore
                     Result = result is { Length: > 1000 } ? result[..1000] : result, UserId = userId,
                 });
 
-        // Fully paid: the contract ends today.
+        // Fully paid: the contract ends on the date of the payment that paid
+        // it off (running total reaches the contract value, less the 1-shilling
+        // tolerance) -- not the day it's closed. Today if that can't be found.
         public async Task<bool> EndContractAsync(int contractId, long accountNo) =>
-            await _db.ExecuteAsync(
-                "UPDATE Contract_Info SET EndDate = GETDATE() WHERE ContractID = @ContractId AND ID = @AccountNo AND EndDate IS NULL",
-                new { ContractId = contractId, AccountNo = accountNo }) == 1;
+            await _db.ExecuteAsync(@"
+                UPDATE ci SET EndDate = COALESCE(po.PaidOffAt, GETDATE())
+                FROM Contract_Info ci
+                OUTER APPLY (
+                    SELECT TOP 1 x.PaymentDateValue AS PaidOffAt
+                    FROM (
+                        SELECT p.PaymentDateValue,
+                               SUM(p.AmountValue) OVER (ORDER BY p.PaymentDateValue, p.MpesaCode ROWS UNBOUNDED PRECEDING) AS RunningPaid
+                        FROM (SELECT kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+                              FROM KosePayments kp
+                              LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
+                              WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = ci.ID) p
+                    ) x
+                    WHERE x.RunningPaid >= ci.Deposit + ci.Daily * 30 * ci.Term_in_Months
+                                           + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months + ci.Monthly * ci.Term_in_Months - @Tolerance
+                    ORDER BY x.PaymentDateValue
+                ) po
+                WHERE ci.ContractID = @ContractId AND ci.ID = @AccountNo AND ci.EndDate IS NULL",
+                new { ContractId = contractId, AccountNo = accountNo, Tolerance = Ranalo.Services.LockCheckRules.PaidTolerance }) == 1;
     }
 }

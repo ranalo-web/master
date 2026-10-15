@@ -21,7 +21,7 @@
         LockCheckStage.LockSent => "A Nuovo lock was sent from here but Nuovo still reports the phone unlocked: it's probably offline or flashed. Send again, or chase it through Collections.",
         LockCheckStage.InRecovery => "Already in Recovery. Open the recovery to carry on.",
         LockCheckStage.LostFromNuovo => "Nuovo no longer has the phone (un_registered) while money is still owed. Samsung and itel/TECNO/Infinix can go to Recovery; others can only be sent a Nuovo lock, or repossessed.",
-        LockCheckStage.FullyPaidOpen => "Paid off (a shilling short counts as paid) but the contract is still open. Close and release ends the contract today and queues the phone's release in Pending Tasks, unless Nuovo has already released it.",
+        LockCheckStage.FullyPaidOpen => "Paid off (a shilling short counts as paid) but the contract is still open. Close and release ends the contract on the date it was paid off and queues the phone's release in Pending Tasks, unless Nuovo has already released it.",
         _ => "",
     };
 }

@@ -112,7 +112,7 @@ namespace Ranalo.Services
             return new(done, failed, messages);
         }
 
-        // Ends the paid-off contract today and queues the phone for release
+        // Ends the paid-off contract (dated when it was paid off) and queues the phone for release
         // in Pending Tasks (admin-approved, as for every fully paid phone),
         // unless Nuovo has already released it (un_registered).
         public async Task<LockCheckResult> CloseAndReleaseAsync(IEnumerable<long> accounts, int userId)

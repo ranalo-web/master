@@ -10,8 +10,9 @@ namespace Ranalo.Services
     // Nuovo should have locked them (phone offline, or the Nuovo app
     // stripped without Nuovo noticing). Each Nuovo phone with an open
     // contract falls into one stage, checked in this order:
-    //   1. Fully paid, contract open: close it and release the phone (a
-    //      shilling short counts as paid -- 7004982, 7098295).
+    //   1. Fully paid, contract open: close it -- ending it on the date it
+    //      was paid off -- and release the phone (a shilling short counts as
+    //      paid -- 7004982, 7098295).
     //   2. Already in Recovery.
     //   3. Lost from Nuovo: Nuovo reports it un_registered and money is
     //      owed (when it's paid off, un_registered is normal: Nuovo releases
