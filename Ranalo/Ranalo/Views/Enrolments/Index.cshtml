@@ -208,21 +208,29 @@
         }
         else if (Model.CanApprove != null)
         {
-            <ul class="nk-tb-actions gx-2 justify-content-md-end">
-                @if (decision?.Allowed == true && enrolment.Status == EnrolmentStatus.Pending)
+            @* Knox: enrol, then approve. The Approve icon used to be hidden
+               until hover (nk-tb-action-hidden), which these table rows never
+               trigger -- so nobody could see it. *@
+            var pending = enrolment.Status == EnrolmentStatus.Pending;
+            if (pending && decision is { Allowed: false })
+            {
+                <div class="small text-soft" style="white-space:normal">@decision.Reason</div>
+            }
+            <ul class="nk-tb-actions gx-2 justify-content-md-end align-items-center">
+                @if (pending && decision?.Allowed == true)
                 {
-                    <li class="nk-tb-action-hidden">
-                        <a href="/approve-enrolment/@enrolment.IMEI" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Approve">
-                            <em class="icon ni ni-file-check-fill"></em>
-                        </a>
+                    <li>
+                        <a href="/approve-enrolment/@enrolment.IMEI" class="btn btn-sm btn-primary"
+                           title="Approves the phone in Knox. If it hasn't reached Knox yet, try again in a few minutes."
+                           onclick="return confirm('Approve phone @enrolment.IMEI in Knox?');">Approve</a>
                     </li>
                 }
-                <li class="nk-tb-action-hidden">
+                <li>
                     <a href="/create-device/@enrolment.IMEI" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="+ Device">
                         <em class="icon ni ni-mobile"></em>
                     </a>
                 </li>
-                <li class="nk-tb-action-hidden">
+                <li>
                     <a href="#" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="Suspend">
                         <em class="icon ni ni-user-cross-fill"></em>
                     </a>
