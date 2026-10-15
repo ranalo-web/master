@@ -438,6 +438,24 @@ namespace Ranalo.DataStore
             return rows.ToDictionary(r => r.Id, r => r.LockGroup);
         }
 
+        // Knox phones (LockGroup 2): true once Knox reports the phone Enrolled
+        // (ScheduledTaskKnoxDevicesPull sets EnrollmentStatus 'Completed'),
+        // false while it's still activating.
+        public async Task<Dictionary<long, bool>> GetKnoxActiveAsync(IEnumerable<long> accountIds)
+        {
+            var ids = accountIds.Distinct().ToList();
+            if (ids.Count == 0)
+            {
+                return new Dictionary<long, bool>();
+            }
+
+            var rows = await _db.QueryAsync<(long Id, bool Active)>(@"
+                SELECT CAST(Id AS BIGINT) AS Id,
+                       CAST(CASE WHEN EnrollmentStatus = 'Completed' THEN 1 ELSE 0 END AS BIT) AS Active
+                FROM Devices WHERE Id IN @Ids AND LockGroup = 2", new { Ids = ids });
+            return rows.ToDictionary(r => r.Id, r => r.Active);
+        }
+
         public async Task<Device?> GetDeviceByAccountId(long accountId)
         {
             var sql = @"SELECT * FROM Devices

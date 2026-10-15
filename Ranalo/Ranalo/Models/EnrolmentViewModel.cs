@@ -21,6 +21,8 @@ namespace Ranalo.Models
 
         // Devices.LockGroup per enrolment account; missing = no device yet.
         public Dictionary<long, int?> LockGroups { get; set; } = new();
+        // Knox phones: active in Knox (Enrolled) or still activating.
+        public Dictionary<long, bool> KnoxActive { get; set; } = new();
         public IEnumerable<Ranalo.DataStore.Dealer>? Dealers { get; set; }
     }
 

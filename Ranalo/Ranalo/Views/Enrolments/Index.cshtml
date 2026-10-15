@@ -288,7 +288,12 @@
                                 <td class="d-none d-lg-table-cell">@enrolment.Created.ToString("dd MMM yyyy")</td>
                                 <td class="d-none d-xxl-table-cell">@enrolment.Updated.ToString("dd MMM yyyy")</td>
                                 <td style="white-space:normal; min-width:140px; max-width:260px;">
-                                    <span class="@SetStatusBadge(enrolment.Status)" title="@enrolment.PayTriggerResponse">@DeviceLockRules.StatusText(enrolment)</span>
+                                    @{
+                                        bool? knoxActive = Model.KnoxActive.TryGetValue(enrolment.AccountId, out var active) ? active : null;
+                                        var activating = enrolment.Status == EnrolmentStatus.Approved && knoxActive == false;
+                                    }
+                                    <span class="@(activating ? "tb-status text-warning" : SetStatusBadge(enrolment.Status))"
+                                          title="@(activating ? "Knox has approved it; it activates once the phone connects to the internet. Locks only reach it after that." : enrolment.PayTriggerResponse)">@DeviceLockRules.StatusText(enrolment, knoxActive)</span>
                                     @if (enrolment.DepositShort)
                                     {
                                         <span class="badge badge-dim bg-danger" title="Paid @enrolment.DepositPaid?.ToString("N2") of @enrolment.RequiredDeposit?.ToString("N2")">Deposit short – admin only</span>

@@ -25,5 +25,6 @@ namespace Ranalo.DataStore
         // Devices.LockGroup (1 Nuovo, 2 Knox, 3 Transsion/PayTrigger) by
         // account. Accounts with no device row are left out.
         Task<Dictionary<long, int?>> GetLockGroupsAsync(IEnumerable<long> accountIds);
+        Task<Dictionary<long, bool>> GetKnoxActiveAsync(IEnumerable<long> accountIds);
     }
 }

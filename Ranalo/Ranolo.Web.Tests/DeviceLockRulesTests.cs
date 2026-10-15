@@ -247,6 +247,17 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
+        public void KnoxStatus_ApprovedButStillActivating_SaysSo()
+        {
+            // 19832: approved in Knox, Knox shows "Activating" until the phone connects.
+            var e = new Enrolment { IMEI = "350522366526910", DeviceBrand = "Samsung", Status = EnrolmentStatus.Approved };
+
+            Assert.That(DeviceLockRules.StatusText(e, knoxActive: false), Is.EqualTo("Approved – activating in Knox"));
+            Assert.That(DeviceLockRules.StatusText(e, knoxActive: true), Is.EqualTo("Approved – active in Knox"));
+            Assert.That(DeviceLockRules.StatusText(e), Is.EqualTo("Approved"), "no Knox device: as before");
+        }
+
+        [Test]
         public void CanApprove_ApproverOnDealerEnrolment_Allowed()
         {
             Assert.That(DeviceLockRules.CanApproveEnrolment(UserRole.Approver, 20, NewEnrolment()).Allowed, Is.True);

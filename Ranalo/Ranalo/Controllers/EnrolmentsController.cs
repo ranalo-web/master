@@ -64,6 +64,7 @@ namespace Ranalo.Controllers
                     CanApprove = e => DeviceLockRules.CanApproveEnrolment(settings.RoleId, settings.UserId, e),
                 };
                 response.LockGroups = await _devices.GetLockGroupsAsync(response.Enrolments.Select(e => e.AccountId));
+                response.KnoxActive = await _devices.GetKnoxActiveAsync(response.Enrolments.Select(e => e.AccountId));
                 AddFlash(response);
 
                 return View(response);
@@ -86,6 +87,7 @@ namespace Ranalo.Controllers
                 SearchTerm = searchTerm.Trim(),
             };
             dealerResponse.LockGroups = await _devices.GetLockGroupsAsync(dealerResponse.Enrolments.Select(e => e.AccountId));
+            dealerResponse.KnoxActive = await _devices.GetKnoxActiveAsync(dealerResponse.Enrolments.Select(e => e.AccountId));
             AddFlash(dealerResponse);
 
             return View(dealerResponse);

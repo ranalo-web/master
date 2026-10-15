@@ -463,6 +463,7 @@ namespace Ranalo.Controllers
                 Row(22800363, "John", "TECNO", EnrolmentStatus.Approved, "Unlocked.", true, true, true),
                 Row(22800364, "Grace", "Samsung", EnrolmentStatus.Pending),
                 Row(22800365, "Moses", "Samsung", EnrolmentStatus.Approved),
+                Row(36637211, "Alice", "Samsung", EnrolmentStatus.Approved),
             };
             var admin = new Ranalo.DataStore.DataModels.User { UserId = 1, RoleId = Ranalo.DataStore.DataModels.UserRole.Admin, Name = "Preview Admin" };
             var model = new EnrolmentViewModel
@@ -470,6 +471,7 @@ namespace Ranalo.Controllers
                 Enrolments = rows, CurrentPage = 1, PageSize = 10, TotalCount = rows.Count, IsAdmin = true,
                 CanApprove = e => Ranalo.Services.DeviceLock.DeviceLockRules.CanApproveEnrolment(admin.RoleId, admin.UserId, e),
                 LockGroups = rows.ToDictionary(e => e.AccountId, e => (int?)(e.DeviceBrand == "Samsung" ? 2 : e.UnlockedAt.HasValue ? 3 : 1)),
+                KnoxActive = new Dictionary<long, bool> { [22800364] = false, [22800365] = true, [36637211] = false },
             };
             return View("~/Views/Enrolments/Index.cshtml", model);
         }
