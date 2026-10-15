@@ -22,7 +22,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("lock-check")]
-        public async Task<IActionResult> Index(LockCheckStage stage = LockCheckStage.NeedsNewLocker, string brand = "all", int days = LockCheckRules.DefaultMinDaysBehind)
+        public async Task<IActionResult> Index(LockCheckStage stage = LockCheckStage.NeedsNewLocker, string brand = "all", int days = LockCheckRules.DefaultMinDaysWithoutPayment)
         {
             if (!IsAdmin(out var redirect))
             {
@@ -38,7 +38,7 @@ namespace Ranalo.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("lock-check/act")]
-        public async Task<IActionResult> Act(string act, List<long> accounts, LockCheckStage stage, string brand = "all", int days = LockCheckRules.DefaultMinDaysBehind)
+        public async Task<IActionResult> Act(string act, List<long> accounts, LockCheckStage stage, string brand = "all", int days = LockCheckRules.DefaultMinDaysWithoutPayment)
         {
             if (!IsAdmin(out var redirect))
             {

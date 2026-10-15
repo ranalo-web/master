@@ -10,30 +10,56 @@ namespace Ranolo.Web.Tests
 
         // A 12-month Nuovo phone at 100 a day that started 100 days ago.
         private static LockCheckRow Phone(string make = "samsung", string? model = "SM-A055F", decimal paid = 2000 + 100 * 90,
-            bool locked = false, string status = "enrolled", int? recoveryId = null, string? lastAction = null, bool? lastOk = null) => new()
+            bool locked = false, string status = "enrolled", int? recoveryId = null, string? lastAction = null, bool? lastOk = null,
+            int? lastPaidDaysAgo = null, bool restructured = false) => new()
         {
             AccountNo = 7004982, ContractId = 600, Make = make, Model = model, NuovoStatus = status, Locked = locked,
             Deposit = 2000, Daily = 100, TermInMonths = 12, StartDate = Today.AddDays(-100), Paid = paid,
-            RecoveryId = recoveryId, LastAction = lastAction, LastActionSuccess = lastOk,
+            LastPaid = lastPaidDaysAgo.HasValue ? Today.AddDays(-lastPaidDaysAgo.Value) : null,
+            RecoveryId = recoveryId, LastAction = lastAction, LastActionSuccess = lastOk, Restructured = restructured,
         };
 
-        private static LockCheckRow Evaluated(LockCheckRow r, int minDays = 7)
+        private static LockCheckRow Evaluated(LockCheckRow r, int minDays = LockCheckRules.DefaultMinDaysWithoutPayment)
         {
             LockCheckRules.Evaluate(r, Today, minDays);
             return r;
         }
 
         [Test]
-        public void TenDaysBehindAndUnlocked_SamsungNeedsANewLocker()
+        public void InArrearsAndNoPaymentFor90Days_SamsungNeedsANewLocker()
         {
-            var r = Evaluated(Phone());
+            // The Collections pool rule: in arrears and no payment for 90 days.
+            var r = Evaluated(Phone());   // never paid since it started 100 days ago
             Assert.Multiple(() =>
             {
-                Assert.That(r.DaysBehind, Is.EqualTo(10));
+                Assert.That(r.DaysSinceLastPayment, Is.EqualTo(100));
                 Assert.That(r.Arrears, Is.EqualTo(1000m));
                 Assert.That(r.Brand, Is.EqualTo(LockCheckBrand.Samsung));
                 Assert.That(r.Stage, Is.EqualTo(LockCheckStage.NeedsNewLocker));
             });
+        }
+
+        [Test]
+        public void PaidRecently_IsNotABadCustomerEvenIfBehind()
+        {
+            var r = Evaluated(Phone(lastPaidDaysAgo: 10));   // behind, but paying
+            Assert.That(r.Arrears, Is.GreaterThan(0));
+            Assert.That(r.Stage, Is.EqualTo(LockCheckStage.None));
+            Assert.That(Evaluated(Phone(lastPaidDaysAgo: 10), minDays: 7).Stage, Is.EqualTo(LockCheckStage.NeedsNewLocker), "the days are adjustable");
+        }
+
+        [Test]
+        public void UpToDate_IsNotABadCustomer()
+        {
+            Assert.That(Evaluated(Phone(paid: 2000 + 100 * 100)).Stage, Is.EqualTo(LockCheckStage.None));
+        }
+
+        [Test]
+        public void OnARestructure_IsShownButNotTreatedAsBad()
+        {
+            Assert.That(Evaluated(Phone(restructured: true)).Stage, Is.EqualTo(LockCheckStage.Restructured));
+            Assert.That(Evaluated(Phone(restructured: true, locked: true)).Stage, Is.EqualTo(LockCheckStage.None));
+            Assert.That(LockCheckRules.IsBadCustomer(Evaluated(Phone(restructured: true)), 90), Is.False);
         }
 
         [TestCase("TECNO", LockCheckStage.NeedsNewLocker)]
@@ -50,14 +76,6 @@ namespace Ranolo.Web.Tests
         public void SamsungWithNoMakeIsKnownByItsModel()
         {
             Assert.That(Evaluated(Phone(make: "", model: "SM-A165F/DS")).Brand, Is.EqualTo(LockCheckBrand.Samsung));
-        }
-
-        [Test]
-        public void LessBehindThanTheThreshold_NothingToDo()
-        {
-            var r = Phone(paid: 2000 + 100 * 95);   // 5 days behind
-            Assert.That(Evaluated(r).Stage, Is.EqualTo(LockCheckStage.None));
-            Assert.That(Evaluated(Phone(paid: 2000 + 100 * 95), minDays: 3).Stage, Is.EqualTo(LockCheckStage.NeedsNewLocker), "the threshold is adjustable");
         }
 
         [Test]

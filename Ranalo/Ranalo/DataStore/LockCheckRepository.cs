@@ -37,7 +37,8 @@ namespace Ranalo.DataStore
                        c.Deposit, c.Daily, c.Weekly, c.Monthly, c.Term_in_Months AS TermInMonths, c.StartDate,
                        ISNULL(p.Paid, 0) AS Paid, p.LastPaid,
                        r.Id AS RecoveryId, r.Status AS RecoveryStatus,
-                       la.Action AS LastAction, la.Success AS LastActionSuccess, la.AtUtc AS LastActionAt, la.Result AS LastActionResult
+                       la.Action AS LastAction, la.Success AS LastActionSuccess, la.AtUtc AS LastActionAt, la.Result AS LastActionResult,
+                       CAST(CASE WHEN EXISTS (SELECT 1 FROM RestructuredRecords rr WHERE rr.AccountNo = d.Id) THEN 1 ELSE 0 END AS BIT) AS Restructured
                 FROM Devices d
                 INNER JOIN Contract_Info c ON c.ID = d.Id AND c.EndDate IS NULL
                 LEFT JOIN Payments p ON p.AccountNo = d.Id

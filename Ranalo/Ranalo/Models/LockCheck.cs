@@ -6,12 +6,13 @@ namespace Ranalo.Models
     public enum LockCheckStage
     {
         None,             // nothing to do
-        NeedsNewLocker,   // unlocked and behind; Samsung or itel/TECNO/Infinix: send to Recovery
-        NuovoOnly,        // unlocked and behind; other brands: send a Nuovo lock
+        NeedsNewLocker,   // unlocked, a collections case (in arrears, no payment for 90+ days); Samsung or itel/TECNO/Infinix: send to Recovery
+        NuovoOnly,        // same, other brands: send a Nuovo lock
         LockSent,         // a Nuovo lock was sent from here; still unlocked
         InRecovery,       // already in Recovery
         LostFromNuovo,    // Nuovo no longer has it (un_registered) and money is owed
         FullyPaidOpen,    // paid off, contract still open: close and release
+        Restructured,     // unlocked but on an agreed restructure: not a bad customer, no action
     }
 
     public enum LockCheckBrand
@@ -57,12 +58,14 @@ namespace Ranalo.Models
         public bool? LastActionSuccess { get; set; }
         public DateTime? LastActionAt { get; set; }
         public string? LastActionResult { get; set; }
+        public bool Restructured { get; set; }   // has an agreed restructure (RestructuredRecords)
 
         // Worked out by LockCheckRules.
         public LockCheckBrand Brand { get; set; }
         public decimal ContractValue { get; set; }
         public decimal Arrears { get; set; }       // what's owed to date, 0 if up to date
         public int DaysBehind { get; set; }
+        public int DaysSinceLastPayment { get; set; }   // since the last payment, or the start if never paid
         public bool FullyPaid { get; set; }
         public LockCheckStage Stage { get; set; }
     }
@@ -71,7 +74,7 @@ namespace Ranalo.Models
     {
         public LockCheckStage Stage { get; set; } = LockCheckStage.NeedsNewLocker;
         public string Brand { get; set; } = "all";   // all | samsung | transsion | other
-        public int MinDaysBehind { get; set; } = 7;
+        public int MinDaysWithoutPayment { get; set; } = 90;
         public Dictionary<LockCheckStage, int> Counts { get; set; } = new();
         public List<LockCheckRow> Rows { get; set; } = new();
     }

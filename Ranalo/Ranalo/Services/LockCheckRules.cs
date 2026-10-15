@@ -5,11 +5,15 @@ namespace Ranalo.Services
     // Lock check rules (agreed with the business 2026-10-15). Kept free of
     // I/O so they can be unit tested; see Database/LockCheck/001.
     //
-    // On 2026-10-15, of 611 open contracts 599 phones were on Nuovo, and 257
-    // of those were unlocked although the customer was 7+ days behind --
-    // Nuovo should have locked them (phone offline, or the Nuovo app
-    // stripped without Nuovo noticing). Each Nuovo phone with an open
-    // contract falls into one stage, checked in this order:
+    // On 2026-10-15, of 611 open contracts 599 phones were on Nuovo, and many
+    // were unlocked although the customer was behind -- Nuovo should have
+    // locked them (phone offline, or the Nuovo app stripped without Nuovo
+    // noticing). A phone only counts as a bad customer by the Collections
+    // rule (CollectionsRules.IsEligible): in arrears and no payment for 90
+    // days -- not merely a few days behind -- and never while on an agreed
+    // restructure (its arrears run on the restructured plan, not the
+    // original contract). Each Nuovo phone with an open contract falls into
+    // one stage, checked in this order:
     //   1. Fully paid, contract open: close it -- ending it on the date it
     //      was paid off -- and release the phone (a shilling short counts as
     //      paid -- 7004982, 7098295).
@@ -17,7 +21,8 @@ namespace Ranalo.Services
     //   3. Lost from Nuovo: Nuovo reports it un_registered and money is
     //      owed (when it's paid off, un_registered is normal: Nuovo releases
     //      paid-off phones).
-    //   4. Unlocked and N+ days behind (default 7):
+    //   4. On a restructure and unlocked: shown, no action.
+    //   5. Unlocked, in arrears and no payment for N+ days (default 90):
     //      - Samsung, itel/TECNO/Infinix: needs a new locker -> Recovery
     //        (Knox / Transsion steps there);
     //      - other brands: only Nuovo can lock them -> send a Nuovo lock;
@@ -25,7 +30,7 @@ namespace Ranalo.Services
     //   Anything else needs nothing.
     public static class LockCheckRules
     {
-        public const int DefaultMinDaysBehind = 7;
+        public const int DefaultMinDaysWithoutPayment = CollectionsRules.EligibleDaysWithoutPayment;
 
         // A balance this small is a rounding difference, not money owed.
         public const decimal PaidTolerance = 1m;
@@ -48,7 +53,7 @@ namespace Ranalo.Services
             return r.Deposit + r.Daily * days + r.Weekly * (days / 7m) + r.Monthly * (days / 30m);
         }
 
-        public static void Evaluate(LockCheckRow r, DateTime today, int minDaysBehind)
+        public static void Evaluate(LockCheckRow r, DateTime today, int minDaysWithoutPayment)
         {
             r.Brand = Brand(r.Make, r.Model);
             r.ContractValue = Math.Round(ContractValue(r), 2);
@@ -56,15 +61,24 @@ namespace Ranalo.Services
             r.Arrears = Math.Max(0, Math.Round(DueToDate(r, today) - r.Paid, 2));
             var perDay = r.Daily + r.Weekly / 7m + r.Monthly / 30m;
             r.DaysBehind = perDay > 0 ? (int)Math.Floor(r.Arrears / perDay) : 0;
-            r.Stage = StageOf(r, minDaysBehind);
+            var since = r.LastPaid ?? r.StartDate;
+            r.DaysSinceLastPayment = since == null ? 0 : Math.Max(0, (today.Date - since.Value.Date).Days);
+            r.Stage = StageOf(r, minDaysWithoutPayment);
         }
 
-        public static LockCheckStage StageOf(LockCheckRow r, int minDaysBehind)
+        // Bad customer: in arrears and no payment for N days (the Collections
+        // pool rule at the default 90), and not on a restructure.
+        public static bool IsBadCustomer(LockCheckRow r, int minDaysWithoutPayment) =>
+            !r.Restructured && r.Arrears > 0 && r.DaysSinceLastPayment >= minDaysWithoutPayment;
+
+        public static LockCheckStage StageOf(LockCheckRow r, int minDaysWithoutPayment)
         {
             if (r.FullyPaid) return LockCheckStage.FullyPaidOpen;
             if (r.RecoveryId.HasValue) return LockCheckStage.InRecovery;
             if (string.Equals(r.NuovoStatus, "un_registered", StringComparison.OrdinalIgnoreCase)) return LockCheckStage.LostFromNuovo;
-            if (r.Locked == true || r.DaysBehind < minDaysBehind) return LockCheckStage.None;
+            if (r.Locked == true) return LockCheckStage.None;
+            if (r.Restructured) return LockCheckStage.Restructured;
+            if (!IsBadCustomer(r, minDaysWithoutPayment)) return LockCheckStage.None;
             if (r.Brand != LockCheckBrand.Other) return LockCheckStage.NeedsNewLocker;
             return r.LastAction == LockCheckAction.NuovoLock && r.LastActionSuccess == true
                 ? LockCheckStage.LockSent
@@ -84,6 +98,7 @@ namespace Ranalo.Services
             LockCheckStage.InRecovery => "In Recovery",
             LockCheckStage.LostFromNuovo => "Lost from Nuovo",
             LockCheckStage.FullyPaidOpen => "Fully paid, still open",
+            LockCheckStage.Restructured => "On a restructure",
             _ => "OK",
         };
 

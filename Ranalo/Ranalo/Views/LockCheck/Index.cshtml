@@ -6,18 +6,19 @@
     var stages = new[]
     {
         LockCheckStage.NeedsNewLocker, LockCheckStage.NuovoOnly, LockCheckStage.LockSent,
-        LockCheckStage.InRecovery, LockCheckStage.LostFromNuovo, LockCheckStage.FullyPaidOpen,
+        LockCheckStage.InRecovery, LockCheckStage.LostFromNuovo, LockCheckStage.FullyPaidOpen, LockCheckStage.Restructured,
     };
     var brands = new[] { ("all", "All brands"), ("samsung", "Samsung"), ("transsion", "itel / TECNO / Infinix"), ("other", "Other brands") };
-    string Url(LockCheckStage s, string b) => $"/lock-check?stage={s}&brand={b}&days={Model.MinDaysBehind}";
+    string Url(LockCheckStage s, string b) => $"/lock-check?stage={s}&brand={b}&days={Model.MinDaysWithoutPayment}";
     var canRecovery = LockCheckRules.CanSendToRecovery(Model.Stage);
     var canLock = LockCheckRules.CanSendNuovoLock(Model.Stage);
     var canClose = LockCheckRules.CanCloseAndRelease(Model.Stage);
     var hasActions = canRecovery || canLock || canClose;
     var help = Model.Stage switch
     {
-        LockCheckStage.NeedsNewLocker => "Unlocked on Nuovo while the customer is behind. Samsung can go to Knox and itel/TECNO/Infinix to Transsion: tick them and send them to Recovery, where the Knox or Transsion steps take over.",
-        LockCheckStage.NuovoOnly => "Unlocked on Nuovo while the customer is behind, and only Nuovo can lock this brand. Tick them and send a Nuovo lock; they move to Lock sent until Nuovo reports them locked.",
+        LockCheckStage.NeedsNewLocker => "Unlocked on Nuovo and a bad customer by the Collections rule: in arrears with no payment for the days set below (90 by default), and not on a restructure. Samsung can go to Knox and itel/TECNO/Infinix to Transsion: tick them and send them to Recovery.",
+        LockCheckStage.NuovoOnly => "Unlocked on Nuovo and a bad customer by the Collections rule, and only Nuovo can lock this brand. Tick them and send a Nuovo lock; they move to Lock sent until Nuovo reports them locked.",
+        LockCheckStage.Restructured => "Unlocked, but on an agreed restructure: their arrears follow the restructured plan, so they're not treated as bad customers here. Shown for information only.",
         LockCheckStage.LockSent => "A Nuovo lock was sent from here but Nuovo still reports the phone unlocked: it's probably offline or flashed. Send again, or chase it through Collections.",
         LockCheckStage.InRecovery => "Already in Recovery. Open the recovery to carry on.",
         LockCheckStage.LostFromNuovo => "Nuovo no longer has the phone (un_registered) while money is still owed. Samsung and itel/TECNO/Infinix can go to Recovery; others can only be sent a Nuovo lock, or repossessed.",
@@ -60,7 +61,7 @@
             {
                 var count = Model.Counts.TryGetValue(s, out var c) ? c : 0;
                 var active = s == Model.Stage;
-                <div class="col-6 col-md-4 col-xl-2">
+                <div class="col-6 col-md-3 col-xxl">
                     <a href="@Url(s, Model.Brand)" class="card card-bordered h-100 text-decoration-none @(active ? "border-primary" : "")" style="@(active ? "border-width:2px;" : "")">
                         <div class="card-inner p-3">
                             <div class="small @(active ? "text-primary fw-bold" : "text-soft")">@LockCheckRules.Label(s)</div>
@@ -85,8 +86,8 @@
                     <form method="get" action="/lock-check" class="d-flex align-items-center" style="gap:6px;">
                         <input type="hidden" name="stage" value="@Model.Stage" />
                         <input type="hidden" name="brand" value="@Model.Brand" />
-                        <label class="small text-soft mb-0" for="days">Behind at least</label>
-                        <input type="number" id="days" name="days" min="1" max="365" value="@Model.MinDaysBehind" class="form-control form-control-sm" style="width:80px;" />
+                        <label class="small text-soft mb-0" for="days">No payment for at least</label>
+                        <input type="number" id="days" name="days" min="1" max="365" value="@Model.MinDaysWithoutPayment" class="form-control form-control-sm" style="width:80px;" />
                         <span class="small text-soft">days</span>
                         <button type="submit" class="btn btn-sm btn-outline-light">Apply</button>
                     </form>
@@ -98,7 +99,7 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="stage" value="@Model.Stage" />
                 <input type="hidden" name="brand" value="@Model.Brand" />
-                <input type="hidden" name="days" value="@Model.MinDaysBehind" />
+                <input type="hidden" name="days" value="@Model.MinDaysWithoutPayment" />
 
                 @if (hasActions && Model.Rows.Count > 0)
                 {
@@ -134,7 +135,7 @@
                                     <th class="wl-th">Account</th>
                                     <th class="wl-th d-none d-md-table-cell">Phone</th>
                                     <th class="wl-th d-none d-lg-table-cell">Dealer</th>
-                                    <th class="wl-th text-end">@(Model.Stage == LockCheckStage.FullyPaidOpen ? "Paid" : "Behind")</th>
+                                    <th class="wl-th text-end">@(Model.Stage == LockCheckStage.FullyPaidOpen ? "Paid" : "No payment for")</th>
                                     <th class="wl-th d-none d-sm-table-cell">Last paid</th>
                                     <th class="wl-th d-none d-lg-table-cell">Nuovo</th>
                                     <th class="wl-th d-none d-xl-table-cell">Last seen</th>
@@ -171,8 +172,8 @@
                                             }
                                             else
                                             {
-                                                <span class="fw-medium">@r.DaysBehind days</span>
-                                                <div class="small text-soft">@r.Arrears.ToString("N0")</div>
+                                                <span class="fw-medium">@r.DaysSinceLastPayment days</span>
+                                                <div class="small text-soft">@r.Arrears.ToString("N0") in arrears</div>
                                             }
                                         </td>
                                         <td class="d-none d-sm-table-cell">@(r.LastPaid?.ToString("dd/MM/yyyy") ?? "never")</td>

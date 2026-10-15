@@ -6,9 +6,9 @@ namespace Ranalo.Services
 {
     public interface ILockCheckService
     {
-        Task<LockCheckViewModel> GetAsync(LockCheckStage stage, string brand, int minDaysBehind);
-        Task<LockCheckResult> SendToRecoveryAsync(IEnumerable<long> accounts, int minDaysBehind, int userId);
-        Task<LockCheckResult> SendNuovoLockAsync(IEnumerable<long> accounts, int minDaysBehind, int userId);
+        Task<LockCheckViewModel> GetAsync(LockCheckStage stage, string brand, int minDaysWithoutPayment);
+        Task<LockCheckResult> SendToRecoveryAsync(IEnumerable<long> accounts, int minDaysWithoutPayment, int userId);
+        Task<LockCheckResult> SendNuovoLockAsync(IEnumerable<long> accounts, int minDaysWithoutPayment, int userId);
         Task<LockCheckResult> CloseAndReleaseAsync(IEnumerable<long> accounts, int userId);
     }
 
@@ -37,43 +37,43 @@ namespace Ranalo.Services
 
         private DateTime Today => _time.GetUtcNow().AddHours(3).Date;   // Kenya's date, as payments are dated
 
-        private async Task<List<LockCheckRow>> EvaluatedRowsAsync(int minDaysBehind)
+        private async Task<List<LockCheckRow>> EvaluatedRowsAsync(int minDaysWithoutPayment)
         {
             var rows = await _repository.GetNuovoRowsAsync();
             foreach (var r in rows)
             {
-                LockCheckRules.Evaluate(r, Today, minDaysBehind);
+                LockCheckRules.Evaluate(r, Today, minDaysWithoutPayment);
             }
             return rows;
         }
 
-        public async Task<LockCheckViewModel> GetAsync(LockCheckStage stage, string brand, int minDaysBehind)
+        public async Task<LockCheckViewModel> GetAsync(LockCheckStage stage, string brand, int minDaysWithoutPayment)
         {
-            minDaysBehind = Math.Clamp(minDaysBehind, 1, 365);
-            var rows = await EvaluatedRowsAsync(minDaysBehind);
+            minDaysWithoutPayment = Math.Clamp(minDaysWithoutPayment, 1, 365);
+            var rows = await EvaluatedRowsAsync(minDaysWithoutPayment);
             var branded = rows.Where(r => LockCheckRules.MatchesBrand(r, brand)).ToList();
             return new LockCheckViewModel
             {
                 Stage = stage,
                 Brand = brand,
-                MinDaysBehind = minDaysBehind,
+                MinDaysWithoutPayment = minDaysWithoutPayment,
                 Counts = branded.Where(r => r.Stage != LockCheckStage.None)
                     .GroupBy(r => r.Stage).ToDictionary(g => g.Key, g => g.Count()),
                 Rows = branded.Where(r => r.Stage == stage)
-                    .OrderByDescending(r => r.DaysBehind).ThenByDescending(r => r.Arrears).ToList(),
+                    .OrderByDescending(r => r.DaysSinceLastPayment).ThenByDescending(r => r.Arrears).ToList(),
             };
         }
 
-        private async Task<List<LockCheckRow>> PickAsync(IEnumerable<long> accounts, int minDaysBehind)
+        private async Task<List<LockCheckRow>> PickAsync(IEnumerable<long> accounts, int minDaysWithoutPayment)
         {
             var wanted = accounts.ToHashSet();
-            return (await EvaluatedRowsAsync(minDaysBehind)).Where(r => wanted.Contains(r.AccountNo)).ToList();
+            return (await EvaluatedRowsAsync(minDaysWithoutPayment)).Where(r => wanted.Contains(r.AccountNo)).ToList();
         }
 
-        public async Task<LockCheckResult> SendToRecoveryAsync(IEnumerable<long> accounts, int minDaysBehind, int userId)
+        public async Task<LockCheckResult> SendToRecoveryAsync(IEnumerable<long> accounts, int minDaysWithoutPayment, int userId)
         {
             var done = 0; var failed = 0; var messages = new List<string>();
-            foreach (var r in await PickAsync(accounts, minDaysBehind))
+            foreach (var r in await PickAsync(accounts, minDaysWithoutPayment))
             {
                 if (!LockCheckRules.CanSendToRecovery(r.Stage))
                 {
@@ -84,7 +84,7 @@ namespace Ranalo.Services
                 var reason = r.Stage == LockCheckStage.LostFromNuovo ? RecoveryReason.LockLost : "Collections";
                 var note = r.Stage == LockCheckStage.LostFromNuovo
                     ? $"From Lock check: Nuovo lost the phone (un_registered), {r.Arrears:N0} owed."
-                    : $"From Lock check: unlocked on Nuovo, {r.DaysBehind} days behind ({r.Arrears:N0}).";
+                    : $"From Lock check: unlocked on Nuovo, no payment for {r.DaysSinceLastPayment} days, {r.Arrears:N0} in arrears.";
                 var (id, error) = await _recoveries.AddAsync(r.AccountNo, reason, note, userId);
                 var ok = id.HasValue && error == null;
                 await _repository.LogAsync(r.AccountNo, LockCheckAction.ToRecovery, ok, ok ? $"Recovery {id}" : error, userId);
@@ -93,10 +93,10 @@ namespace Ranalo.Services
             return new(done, failed, messages);
         }
 
-        public async Task<LockCheckResult> SendNuovoLockAsync(IEnumerable<long> accounts, int minDaysBehind, int userId)
+        public async Task<LockCheckResult> SendNuovoLockAsync(IEnumerable<long> accounts, int minDaysWithoutPayment, int userId)
         {
             var done = 0; var failed = 0; var messages = new List<string>();
-            foreach (var r in await PickAsync(accounts, minDaysBehind))
+            foreach (var r in await PickAsync(accounts, minDaysWithoutPayment))
             {
                 if (!LockCheckRules.CanSendNuovoLock(r.Stage))
                 {
@@ -118,7 +118,7 @@ namespace Ranalo.Services
         public async Task<LockCheckResult> CloseAndReleaseAsync(IEnumerable<long> accounts, int userId)
         {
             var done = 0; var failed = 0; var messages = new List<string>();
-            foreach (var r in await PickAsync(accounts, LockCheckRules.DefaultMinDaysBehind))
+            foreach (var r in await PickAsync(accounts, LockCheckRules.DefaultMinDaysWithoutPayment))
             {
                 if (!LockCheckRules.CanCloseAndRelease(r.Stage))
                 {

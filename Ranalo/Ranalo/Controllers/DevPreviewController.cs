@@ -397,7 +397,7 @@ namespace Ranalo.Controllers
                 Row(3516628, "Nyanya", "motorola", "moto e30", 4430, 300, status: "un_registered", locked: true),
                 Row(7004982, "Centrilla", "samsung", "SM-A055F", 37999, 400, status: "un_registered"),
             };
-            foreach (var r in rows) Ranalo.Services.LockCheckRules.Evaluate(r, today, Ranalo.Services.LockCheckRules.DefaultMinDaysBehind);
+            foreach (var r in rows) Ranalo.Services.LockCheckRules.Evaluate(r, today, Ranalo.Services.LockCheckRules.DefaultMinDaysWithoutPayment);
             return View("~/Views/LockCheck/Index.cshtml", new LockCheckViewModel
             {
                 Stage = stage,
