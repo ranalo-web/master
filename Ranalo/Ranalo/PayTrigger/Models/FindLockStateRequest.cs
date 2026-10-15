@@ -60,11 +60,13 @@ namespace Ranalo.PayTrigger.Models
         [JsonPropertyName("model")]
         public string? Model { get; set; }
 
+        // Sent as text ("8", "256" -- GB), not numbers: reading them as int
+        // broke every check once a phone activated (352367242606595).
         [JsonPropertyName("ram")]
-        public int? Ram { get; set; }
+        public string? Ram { get; set; }
 
         [JsonPropertyName("rom")]
-        public int? Rom { get; set; }
+        public string? Rom { get; set; }
 
         [JsonPropertyName("frameworkVersion")]
         public string? FrameworkVersion { get; set; }

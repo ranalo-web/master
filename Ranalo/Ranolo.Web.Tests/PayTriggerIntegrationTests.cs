@@ -123,6 +123,35 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
+        public async Task FindLockState_ReadsAnActivePhonesFullReply()
+        {
+            // Transsion's real reply for 352367242606595 once active
+            // (2026-10-15): ram/rom come as text, which used to fail.
+            var (client, handler) = CreateClient();
+            handler.ResponseJson = "{\"code\":200,\"message\":\"Success\",\"data\":{\"orderNum\":\"8478363\",\"lockState\":3000,"
+                + "\"mobileStatus\":1000,\"serverState\":3000,\"activeTime\":1792063523,"
+                + "\"lockTypeSwitch\":\"[{\\\"lockFlag\\\":true,\\\"lockType\\\":\\\"WATERMARK_LOCK\\\"}]\","
+                + "\"lockCreateTime\":1792063523,\"lockCompleteTime\":1792063523,\"lastConnectTime\":1792064420,"
+                + "\"expiration\":1792063521,\"serverLockStatus\":1000,\"lockRuleNum\":0,\"clientRemoveTime\":null,"
+                + "\"deviceTag\":\"B7RVEQGC\",\"imei\":\"352367242606595\",\"frameworkVersion\":\"2.3.9.9\","
+                + "\"apkVersion\":\"2.5.2.017\",\"model\":\"TECNO KM5\",\"ram\":\"8\",\"rom\":\"256\","
+                + "\"buildNumber\":\"KM5-15.1.2.155SP01(OP001PF001AZ)\",\"antiCrackingVer\":\"P8\",\"partnersPkgState\":\"TYPE_PKG_NULL\"}}";
+
+            var result = await client.FindLockStateAsync(new FindLockStateRequest { Imei = "352367242606595" });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.IsSuccess, Is.True);
+                Assert.That(result.Data!.LockState, Is.EqualTo(3000));
+                Assert.That(result.Data.MobileStatus, Is.EqualTo(1000));
+                Assert.That(result.Data.Ram, Is.EqualTo("8"));
+                Assert.That(result.Data.Rom, Is.EqualTo("256"));
+                Assert.That(result.Data.Model, Is.EqualTo("TECNO KM5"));
+                Assert.That(result.Data.LastConnectTime, Is.EqualTo(1792064420));
+            });
+        }
+
+        [Test]
         public async Task PreEnrollImei_SendsImeiInfoAsJsonString()
         {
             var (client, handler) = CreateClient();

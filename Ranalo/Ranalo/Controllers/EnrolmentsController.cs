@@ -64,6 +64,7 @@ namespace Ranalo.Controllers
                     CanApprove = e => DeviceLockRules.CanApproveEnrolment(settings.RoleId, settings.UserId, e),
                 };
                 response.LockGroups = await _devices.GetLockGroupsAsync(response.Enrolments.Select(e => e.AccountId));
+                response.KnoxActive = await _devices.GetKnoxActiveAsync(response.Enrolments.Select(e => e.AccountId));
                 AddFlash(response);
 
                 return View(response);
@@ -86,6 +87,7 @@ namespace Ranalo.Controllers
                 SearchTerm = searchTerm.Trim(),
             };
             dealerResponse.LockGroups = await _devices.GetLockGroupsAsync(dealerResponse.Enrolments.Select(e => e.AccountId));
+            dealerResponse.KnoxActive = await _devices.GetKnoxActiveAsync(dealerResponse.Enrolments.Select(e => e.AccountId));
             AddFlash(dealerResponse);
 
             return View(dealerResponse);
@@ -154,7 +156,15 @@ namespace Ranalo.Controllers
             {
                 existingEnrolment.CallApprovedByUserId = settings.UserId;
                 existingEnrolment.CallApprovedAt = DateTime.UtcNow;
-                await _enrolmentService.ApproveEnrolment(existingEnrolment);
+                if (await _enrolmentService.ApproveEnrolment(existingEnrolment))
+                {
+                    TempData["EnrolmentMessage"] = $"Phone {imei} approved in Knox.";
+                }
+                else
+                {
+                    TempData["EnrolmentError"] = $"Knox hasn't accepted phone {imei} yet: {existingEnrolment.KnoxResponse}. "
+                        + "It usually reaches Knox a few minutes after enrolling -- try Approve again shortly.";
+                }
             }
 
             var updatedEnrolment = await _enrolmentService.GetByImeiNumberAsync(imei);
@@ -437,6 +447,11 @@ namespace Ranalo.Controllers
                     $"{enrolment.DeviceBrand} phone {enrolment.IMEI} pre-enrolled. Ask the customer to switch it on and connect to the internet. " +
                     "It stays locked until an approver has called the customer and approved it." +
                     (enrolment.DepositShort ? " The deposit is short, so only an admin can approve it." : "");
+            }
+            else if (enrolment.Status == EnrolmentStatus.Pending)
+            {
+                TempData["EnrolmentMessage"] = $"Phone {enrolment.IMEI} enrolled and sent to Knox. An approver approves it on this page once it reaches Knox (usually a few minutes)."
+                    + (enrolment.DepositShort ? " The deposit is short, so only an admin can approve it." : "");
             }
             else if (enrolment.DepositShort)
             {

@@ -262,8 +262,13 @@ namespace Ranalo.Services.DeviceLock
         public static EnrolmentStatus WaitingStatus(Enrolment enrolment) =>
             enrolment.ActivatedAt.HasValue ? EnrolmentStatus.Enrolled : EnrolmentStatus.PendingActivation;
 
-        public static string StatusText(Enrolment enrolment) => enrolment.Status switch
+        // knoxActive: for a Knox phone, whether Knox reports it Enrolled yet.
+        // "Approved" alone was misleading -- Knox shows "Activating" until
+        // the phone connects, and only then can a lock reach it (19832).
+        public static string StatusText(Enrolment enrolment, bool? knoxActive = null) => enrolment.Status switch
         {
+            EnrolmentStatus.Approved when knoxActive == false => "Approved – activating in Knox",
+            EnrolmentStatus.Approved when knoxActive == true => "Approved – active in Knox",
             // Never reached Transsion: it can't be waiting for a switch-on.
             not EnrolmentStatus.Error when NeedsSendingToTranssion(enrolment) => enrolment.CallApprovedAt.HasValue
                 ? "Approved – not sent to Transsion yet"
