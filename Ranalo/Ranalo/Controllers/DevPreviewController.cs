@@ -363,6 +363,63 @@ namespace Ranalo.Controllers
         // Account Commissions with sample accounts run through the real
         // CommissionCalculator. ?agent=1 shows the agent's view; ?expand=1
         // renders the first rows' detail panels open (for screenshots).
+        // Repo stock pages with sample data (no database).
+        private static List<RepoStockItem> RepoSamples() => new()
+        {
+            new() { Id = 1, AccountNo = 8478363, Imei = "352367242606595", Make = "TECNO", Model = "TECNO KM5", LockGroup = 1, CurrentLockGroup = 3,
+                    OldContractId = 704, OldCustomerName = "Sammy", PaymentSuffix = "_R", Reason = RepoStockReason.Repossessed,
+                    Condition = "Factory reset, screen fine, no charger", Status = RepoStockStatus.InStock, IntakeDate = DateTime.UtcNow.AddDays(-3), IntakeByName = "Preview Admin" },
+            new() { Id = 2, AccountNo = 41109528, Imei = "352801608547712", Make = "samsung", Model = "SM-A165F/DS", LockGroup = 2, CurrentLockGroup = 2,
+                    OldContractId = 749, OldCustomerName = "Dorothy", PaymentSuffix = "_R", Reason = RepoStockReason.Returned,
+                    Condition = "Cracked back glass", Status = RepoStockStatus.Sold, IntakeDate = DateTime.UtcNow.AddDays(-20), SoldDate = DateTime.UtcNow.AddDays(-2),
+                    NewCustomerName = "Grace W.", NewCustomerPhone = "0712 000000", NewContractId = 780, SoldDealerName = "Renalo", WriteOffAmount = 12450.50m },
+        };
+
+        [HttpGet]
+        [Route("dev-preview/repo-stock")]
+        public IActionResult RepoStock(string status = "all")
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            var items = RepoSamples().Where(i => status == "all" || (status == "sold") == (i.Status == RepoStockStatus.Sold)).ToList();
+            return View("~/Views/RepoStock/Index.cshtml", new RepoStockListViewModel { Status = status, Items = items });
+        }
+
+        [HttpGet]
+        [Route("dev-preview/repo-stock/{id:int}")]
+        public IActionResult RepoStockDetail(int id)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            var item = RepoSamples().First(i => i.Id == id);
+            return View("~/Views/RepoStock/Details.cshtml", new RepoStockDetailViewModel
+            {
+                Item = item,
+                OldContract = new RepoOldContract { ContractId = item.OldContractId, ContractValue = 47800m, TotalPaid = 11630m, LastPaymentDate = DateTime.UtcNow.AddDays(-40), BuyingPrice = 14500m },
+                PreviousPayments = new List<RepoPayment>
+                {
+                    new() { MpesaCode = "UJE1ABC123", Amount = 500m, PaymentDate = DateTime.UtcNow.AddDays(-40) },
+                    new() { MpesaCode = "UJA2DEF456", Amount = 1130m, PaymentDate = DateTime.UtcNow.AddDays(-75) },
+                    new() { MpesaCode = "TKB3GHI789", Amount = 10000m, PaymentDate = DateTime.UtcNow.AddDays(-300) },
+                },
+                Dealers = new List<Ranalo.DataStore.Dealer>
+                {
+                    new() { DealerReference = "0000", CompanyName = "Renalo" },
+                    new() { DealerReference = "1234", CompanyName = "Newway Mobile" },
+                },
+            });
+        }
+
         [HttpGet]
         [Route("dev-preview/account-commissions")]
         public IActionResult AccountCommissions(bool agent = false, bool expand = false)

@@ -1,0 +1,157 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model RepoStockListViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var tabs = new[] { ("instock", "In stock"), ("sold", "Sold"), ("all", "All") };
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-head-content">
+            <h3 class="nk-block-title page-title">Repo stock</h3>
+            <div class="nk-block-des text-soft">
+                <p>Phones taken back, repossessed or handed back by the customer, waiting to be sold again. Adding a phone ends its contract today and moves the old customer's payments to the account with "_R" on the end, so they stay with that contract. When a buyer comes, set their terms here: a new contract starts that day on the same account, and the old contract's unpaid balance goes to Write-offs for approval.</p>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["RepoResult"] is string result)
+    {
+        <div class="alert alert-success alert-icon alert-dismissible">
+            <em class="icon ni ni-check-circle"></em> @result
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["RepoError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon alert-dismissible">
+            <em class="icon ni ni-cross-circle"></em> @error
+            <button class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md">
+                <h6 class="title mb-2">Add a phone</h6>
+                <form action="/repo-stock/add" method="post" class="d-flex flex-wrap align-items-end" style="gap:8px;"
+                      onsubmit="return confirm('Add this phone to repo stock? Its contract ends today and the customer\'s payments move to the _R account.');">
+                    @Html.AntiForgeryToken()
+                    <div>
+                        <label class="form-label small mb-1" for="accountNo">Account</label>
+                        <input type="number" id="accountNo" name="accountNo" required class="form-control form-control-sm" style="width:160px;" placeholder="e.g. 8478363" />
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="reason">Why it came back</label>
+                        <select id="reason" name="reason" class="form-select form-select-sm" style="width:auto;">
+                            @foreach (var reason in RepoStockReason.All)
+                            {
+                                <option value="@reason">@RepoStockReason.Label(reason)</option>
+                            }
+                        </select>
+                    </div>
+                    <div style="flex:1; min-width:200px;">
+                        <label class="form-label small mb-1" for="condition">Condition</label>
+                        <input type="text" id="condition" name="condition" maxlength="500" class="form-control form-control-sm" placeholder="e.g. cracked screen, battery fine, no charger" />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">Add to stock</button>
+                </form>
+                <div id="lookup" class="small text-soft mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md">
+                <ul class="nav nav-tabs nav-tabs-s2" style="border:0;">
+                    @foreach (var (key, label) in tabs)
+                    {
+                        <li class="nav-item"><a class="nav-link @(Model.Status == key ? "active" : "")" href="/repo-stock?status=@key">@label</a></li>
+                    }
+                </ul>
+            </div>
+            <div class="card-inner p-0 border-top">
+                <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;">
+                        <thead>
+                            <tr>
+                                <th class="wl-th">Account</th>
+                                <th class="wl-th d-none d-md-table-cell">Phone</th>
+                                <th class="wl-th d-none d-lg-table-cell">Previous customer</th>
+                                <th class="wl-th d-none d-lg-table-cell">Why</th>
+                                <th class="wl-th d-none d-xl-table-cell">Condition</th>
+                                <th class="wl-th d-none d-md-table-cell">Lock</th>
+                                <th class="wl-th">Status</th>
+                                <th class="wl-th d-none d-sm-table-cell">Days</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Items.Count == 0)
+                            {
+                                <tr><td colspan="8" class="text-center text-soft py-4">No phones here.</td></tr>
+                            }
+                            @foreach (var r in Model.Items)
+                            {
+                                <tr>
+                                    <td>
+                                        <a href="/repo-stock/@r.Id" class="fw-medium">@r.AccountNo</a>
+                                        <div class="small text-soft d-md-none">@r.Make @r.Model</div>
+                                    </td>
+                                    <td class="d-none d-md-table-cell">@r.Make @r.Model</td>
+                                    <td class="d-none d-lg-table-cell">@r.OldCustomerName</td>
+                                    <td class="d-none d-lg-table-cell">@RepoStockReason.Label(r.Reason)</td>
+                                    <td class="d-none d-xl-table-cell" style="white-space:normal; max-width:260px;">@r.Condition</td>
+                                    <td class="d-none d-md-table-cell">@RecoveryRules.LockGroupName(r.CurrentLockGroup)</td>
+                                    <td>
+                                        <span class="badge @(r.Status == RepoStockStatus.Sold ? "bg-success" : "bg-light text-dark")">@RepoStockStatus.Label(r.Status)</span>
+                                        @if (r.Status == RepoStockStatus.Sold)
+                                        {
+                                            <div class="small text-soft">to @r.NewCustomerName</div>
+                                        }
+                                    </td>
+                                    <td class="d-none d-sm-table-cell">@r.DaysInStock</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var input = document.getElementById('accountNo');
+        var out = document.getElementById('lookup');
+        var timer;
+        input.addEventListener('input', function () {
+            clearTimeout(timer);
+            var value = input.value.trim();
+            if (value.length < 5) { out.textContent = ''; return; }
+            timer = setTimeout(function () {
+                fetch('/repo-stock/lookup?accountNo=' + encodeURIComponent(value))
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (d) {
+                        if (input.value.trim() !== value) return;
+                        if (!d) { out.textContent = 'No device on account ' + value + '.'; return; }
+                        var lockers = { 2: 'Knox', 3: 'Transsion' };
+                        var text = [d.make, d.model].filter(Boolean).join(' ') + ', IMEI ' + (d.imei || '?')
+                            + ', ' + (d.customerName || 'no name') + (d.dealerName ? ' (' + d.dealerName + ')' : '')
+                            + ', on ' + (lockers[d.lockGroup] || 'Nuovo') + '.';
+                        if (d.inStockNow) text += ' Already in repo stock.';
+                        else if (!d.contractId) text += ' No open contract.';
+                        else text += ' Contract ' + d.contractId + ' will end today.';
+                        if (d.openCollectionsCaseId) text += ' Open collections case ' + d.openCollectionsCaseId + ': return it first.';
+                        if (d.timesInStockBefore > 0) text += ' Been in repo stock ' + d.timesInStockBefore + ' time(s) before.';
+                        out.textContent = text;
+                    })
+                    .catch(function () { out.textContent = ''; });
+            }, 300);
+        });
+    })();
+</script>

@@ -288,10 +288,11 @@ namespace Ranalo.DataStore
                 ),
                 device_payments AS (
                     SELECT DISTINCT MpesaCode, AmountValue, PaymentDateValue,
-                        CASE WHEN RawAccount LIKE '%\_R' ESCAPE '\'
-                             THEN TRY_CAST(LEFT(RawAccount, LEN(RawAccount) - 2) AS BIGINT)
+                        -- _R, or _R2, _R3... after later repossessions.
+                        CASE WHEN RawAccount LIKE '%\_R' ESCAPE '\' OR RawAccount LIKE '%\_R[0-9]' ESCAPE '\' OR RawAccount LIKE '%\_R[0-9][0-9]' ESCAPE '\'
+                             THEN TRY_CAST(NULLIF(LEFT(RawAccount, IIF(CHARINDEX('_R', RawAccount) > 1, CHARINDEX('_R', RawAccount) - 1, 0)), '') AS BIGINT)
                              ELSE AccountBig END AS AccountNo,
-                        CASE WHEN RawAccount LIKE '%\_R' ESCAPE '\' THEN 1 ELSE 0 END AS IsRenamed
+                        CASE WHEN RawAccount LIKE '%\_R' ESCAPE '\' OR RawAccount LIKE '%\_R[0-9]' ESCAPE '\' OR RawAccount LIKE '%\_R[0-9][0-9]' ESCAPE '\' THEN 1 ELSE 0 END AS IsRenamed
                     FROM raw_payments
                 ),
                 contracts AS (

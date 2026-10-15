@@ -168,7 +168,8 @@ namespace Ranalo.DataStore
                 UNION
                 SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
                 FROM #Dev dv
-                INNER JOIN KosePayments kp ON kp.AccountNo = dv.Renamed
+                -- _R, or _R2, _R3... after later repossessions (repo stock).
+                INNER JOIN KosePayments kp ON (kp.AccountNo = dv.Renamed OR kp.AccountNo LIKE dv.Renamed + '[0-9]' OR kp.AccountNo LIKE dv.Renamed + '[0-9][0-9]')
                 UNION
                 SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
                 FROM #Dev dv
@@ -177,7 +178,7 @@ namespace Ranalo.DataStore
                 UNION
                 SELECT dv.AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
                 FROM #Dev dv
-                INNER JOIN OrphanedPayments op ON op.AccountNo = dv.Renamed
+                INNER JOIN OrphanedPayments op ON (op.AccountNo = dv.Renamed OR op.AccountNo LIKE dv.Renamed + '[0-9]' OR op.AccountNo LIKE dv.Renamed + '[0-9][0-9]')
                 INNER JOIN KosePayments kp ON kp.MpesaCode = op.MpesaCode;
 
                 SELECT
