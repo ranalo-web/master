@@ -406,6 +406,52 @@ namespace Ranalo.Controllers
             });
         }
 
+        // Completed contracts from the database (read only), as an admin sees
+        // them: /dev-preview/completed-contracts and .../{contractId}.
+        [HttpGet]
+        [Route("dev-preview/completed-contracts")]
+        public async Task<IActionResult> CompletedContracts([FromServices] DataStore.ICompletedContractRepository repository,
+            string filter = CompletedFilter.PaidOff, string? q = null, int page = 1)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            return View("~/Views/CompletedContracts/Index.cshtml",
+                Ranalo.Services.CompletedContractRules.Build(await repository.GetClosedAsync(), filter, q, page));
+        }
+
+        [HttpGet]
+        [Route("dev-preview/completed-contracts/{id:int}")]
+        public async Task<IActionResult> CompletedContract([FromServices] DataStore.ICompletedContractRepository repository, int id, int page = 1)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var contract = await repository.GetAsync(id);
+            if (contract == null)
+            {
+                return NotFound();
+            }
+
+            Ranalo.Services.CompletedContractRules.Evaluate(contract);
+            var (payments, total) = await repository.GetPaymentsAsync(id, page, Ranalo.Services.CompletedContractRules.PageSize);
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            return View("~/Views/CompletedContracts/Details.cshtml", new CompletedContractDetailViewModel
+            {
+                Contract = contract,
+                Payments = payments,
+                PaymentsPage = Math.Max(page, 1),
+                PaymentsPages = Math.Max(1, (int)Math.Ceiling(total / (double)Ranalo.Services.CompletedContractRules.PageSize)),
+            });
+        }
+
         // Repo stock pages with sample data (no database).
         private static List<RepoStockItem> RepoSamples() => new()
         {

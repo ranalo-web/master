@@ -1,0 +1,138 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model CompletedContractDetailViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var c = Model.Contract;
+    var paidOff = c.Outcome == CompletedOutcome.PaidOff;
+    var owed = CompletedContractRules.Owed(c);
+    var over = CompletedContractRules.Overpaid(c);
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Account @c.AccountNo · @c.CustomerName</h3>
+                <div class="nk-block-des text-soft">
+                    <p>
+                        Contract @c.ContractId ·
+                        <span class="badge badge-dim @(paidOff ? "bg-success" : "bg-warning")">@CompletedContractRules.OutcomeLabel(c.Outcome)</span>
+                        on @c.EndDate.ToString("dd/MM/yyyy")
+                    </p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/completed-contracts" class="btn btn-outline-light"><em class="icon ni ni-arrow-left"></em><span>Completed Contracts</span></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-md-6 col-xl-4">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-2">Contract</h6>
+                        <div class="small"><span class="text-soft">Started:</span> @(c.StartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                        <div class="small"><span class="text-soft">Ended:</span> @c.EndDate.ToString("dd/MM/yyyy")</div>
+                        <div class="small"><span class="text-soft">Term:</span> @c.TermInMonths.ToString("0.##") months (@CompletedContractRules.TermDays(c) days)</div>
+                        <div class="small">
+                            <span class="text-soft">Took:</span>
+                            @(c.DaysTaken.HasValue ? $"{c.DaysTaken} days" : "—")
+                            <span class="@(CompletedContractRules.IsLate(c) ? "text-warning" : "text-soft")">@(c.DaysTaken.HasValue ? "· " + CompletedContractRules.Timing(c) : "")</span>
+                        </div>
+                        <div class="small mt-2"><span class="text-soft">Deposit:</span> @c.Deposit.ToString("N2")</div>
+                        @if (c.Daily > 0) { <div class="small"><span class="text-soft">Daily:</span> @c.Daily.ToString("N2")</div> }
+                        @if (c.Weekly > 0) { <div class="small"><span class="text-soft">Weekly:</span> @c.Weekly.ToString("N2")</div> }
+                        @if (c.Monthly > 0) { <div class="small"><span class="text-soft">Monthly:</span> @c.Monthly.ToString("N2")</div> }
+                        @if (c.BuyingPrice.HasValue) { <div class="small"><span class="text-soft">Cost of the phone:</span> @c.BuyingPrice.Value.ToString("N2")</div> }
+                        @if (c.PaymentAccount != null) { <div class="small"><span class="text-soft">Payments under:</span> @c.PaymentAccount</div> }
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-2">Payments</h6>
+                        <div class="row g-2 small">
+                            <div class="col-6"><div class="text-soft">Contract value</div><div class="fw-bold">@c.ContractValue.ToString("N2")</div></div>
+                            <div class="col-6"><div class="text-soft">Paid</div><div class="fw-bold">@c.Paid.ToString("N2")</div></div>
+                            <div class="col-6">
+                                <div class="text-soft">@(over > 0 ? "Overpaid" : "Still owed")</div>
+                                <div class="fw-bold @(owed > LockCheckRules.PaidTolerance ? "text-warning" : "")">@((over > 0 ? over : owed).ToString("N2"))</div>
+                            </div>
+                            <div class="col-6"><div class="text-soft">Payments</div><div class="fw-bold">@c.PaymentCount</div></div>
+                            <div class="col-6"><div class="text-soft">First paid</div><div class="fw-bold">@(c.FirstPaid?.ToString("dd/MM/yyyy") ?? "—")</div></div>
+                            <div class="col-6"><div class="text-soft">Last paid</div><div class="fw-bold">@(c.LastPaid?.ToString("dd/MM/yyyy") ?? "—")</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-12 col-xl-4">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-2">Phone</h6>
+                        <div class="small"><span class="text-soft">Phone:</span> @c.Make @c.Model</div>
+                        <div class="small"><span class="text-soft">IMEI:</span> @(c.Imei ?? "—")</div>
+                        <div class="small"><span class="text-soft">Locker:</span> @RecoveryRules.LockGroupName(c.LockGroup)@((c.LockGroup ?? 1) == 1 && c.NuovoStatus != null ? " · " + c.NuovoStatus : "")</div>
+                        <div class="small">
+                            <span class="text-soft">Released:</span> @CompletedContractRules.ReleaseLabel(c)
+                            @if (c.ReleaseCompletedAt.HasValue) { <span class="text-soft">on @c.ReleaseCompletedAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</span> }
+                        </div>
+                        <div class="small mt-2"><span class="text-soft">Dealer:</span> @(c.DealerName ?? "—")</div>
+                        <div class="small"><span class="text-soft">Agent:</span> @(c.AgentName ?? "—")</div>
+                        <div class="mt-2 small"><a href="/account-details/@c.AccountNo">Account details</a></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md"><h6 class="title mb-0">Payments to this contract, newest first</h6></div>
+            <div class="card-inner p-0 border-top">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th class="wl-th">Date</th>
+                            <th class="wl-th">M-Pesa code</th>
+                            <th class="wl-th text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Payments.Count == 0)
+                        {
+                            <tr><td colspan="3" class="text-center text-soft py-3">No payments.</td></tr>
+                        }
+                        @foreach (var p in Model.Payments)
+                        {
+                            <tr>
+                                <td>@p.PaymentDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@p.MpesaCode</td>
+                                <td class="text-end">@p.Amount.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (Model.PaymentsPages > 1)
+            {
+                var current = Model.PaymentsPage;
+                <div class="card-inner d-flex justify-content-center">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(current <= 1 ? "disabled" : "")"><a class="page-link" href="?page=@(current - 1)">Prev</a></li>
+                        @for (var i = Math.Max(1, current - 2); i <= Math.Min(Model.PaymentsPages, current + 2); i++)
+                        {
+                            <li class="page-item @(i == current ? "active" : "")"><a class="page-link" href="?page=@i">@i</a></li>
+                        }
+                        <li class="page-item @(current >= Model.PaymentsPages ? "disabled" : "")"><a class="page-link" href="?page=@(current + 1)">Next</a></li>
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+</div>
