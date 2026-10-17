@@ -1,0 +1,134 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model CompletedContractsViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var filters = new[]
+    {
+        (CompletedFilter.PaidOff, "Paid off"), (CompletedFilter.ClosedShort, "Closed short"), (CompletedFilter.All, "All closed"),
+    };
+    string Url(string f, int p = 1) => $"/completed-contracts?filter={f}&page={p}" + (string.IsNullOrEmpty(Model.Search) ? "" : "&q=" + Uri.EscapeDataString(Model.Search));
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-head-content">
+            <h3 class="nk-block-title page-title">Completed Contracts</h3>
+            <div class="nk-block-des text-soft">
+                <p>Closed contracts, most recently ended first. Tap one for its details and payments.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-2">
+            @foreach (var (key, label) in filters)
+            {
+                var count = Model.Counts.TryGetValue(key, out var c) ? c : 0;
+                var active = key == Model.Filter;
+                <div class="col-4">
+                    <a href="@Url(key)" class="card card-bordered h-100 text-decoration-none @(active ? "border-primary" : "")" style="@(active ? "border-width:2px;" : "")">
+                        <div class="card-inner p-3">
+                            <div class="small @(active ? "text-primary fw-bold" : "text-soft")">@label</div>
+                            <div class="fs-4 fw-bold @(count == 0 ? "text-soft" : "")">@count</div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md">
+                <form method="get" action="/completed-contracts" class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                    <input type="hidden" name="filter" value="@Model.Filter" />
+                    <input type="search" name="q" value="@Model.Search" placeholder="Account, name, phone, IMEI or dealer" class="form-control form-control-sm" style="max-width:320px;" />
+                    <button type="submit" class="btn btn-sm btn-outline-light">Search</button>
+                    @if (!string.IsNullOrEmpty(Model.Search))
+                    {
+                        <a href="/completed-contracts?filter=@Model.Filter" class="small">Clear</a>
+                    }
+                </form>
+                <p class="text-soft small mt-2 mb-0">
+                    @(Model.Filter switch
+                    {
+                        CompletedFilter.PaidOff => "Paid the full contract value (a shilling short counts as paid). The end date is the day it was paid off.",
+                        CompletedFilter.ClosedShort => "Closed with money still owed: written off, repossessed or ended by hand.",
+                        _ => "Every closed contract.",
+                    })
+                </p>
+            </div>
+
+            <div class="card-inner p-0 border-top">
+                <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;">
+                        <thead>
+                            <tr>
+                                <th class="wl-th">Account</th>
+                                <th class="wl-th d-none d-md-table-cell">Phone</th>
+                                <th class="wl-th d-none d-lg-table-cell">Dealer</th>
+                                <th class="wl-th">Ended</th>
+                                <th class="wl-th text-end">Paid</th>
+                                <th class="wl-th d-none d-sm-table-cell">Took</th>
+                                <th class="wl-th d-none d-lg-table-cell">Phone released</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Rows.Count == 0)
+                            {
+                                <tr><td colspan="7" class="text-center text-soft py-4">No contracts found.</td></tr>
+                            }
+                            @foreach (var r in Model.Rows)
+                            {
+                                <tr style="cursor:pointer;" onclick="location.href='/completed-contracts/@r.ContractId'">
+                                    <td>
+                                        <a href="/completed-contracts/@r.ContractId" class="fw-medium">@r.AccountNo</a>
+                                        <div class="small text-soft">@r.CustomerName</div>
+                                        <div class="small text-soft d-md-none">@r.Make @r.Model</div>
+                                    </td>
+                                    <td class="d-none d-md-table-cell">
+                                        @r.Make @r.Model
+                                        <div class="small text-soft">@RecoveryRules.LockGroupName(r.LockGroup)</div>
+                                    </td>
+                                    <td class="d-none d-lg-table-cell">@r.DealerName</td>
+                                    <td>
+                                        @r.EndDate.ToString("dd/MM/yyyy")
+                                        @if (Model.Filter == CompletedFilter.All)
+                                        {
+                                            <div><span class="badge badge-dim @(r.Outcome == CompletedOutcome.PaidOff ? "bg-success" : "bg-warning")">@CompletedContractRules.OutcomeLabel(r.Outcome)</span></div>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        @r.Paid.ToString("N0")
+                                        <div class="small text-soft">of @r.ContractValue.ToString("N0")</div>
+                                    </td>
+                                    <td class="d-none d-sm-table-cell">
+                                        @(r.DaysTaken.HasValue ? $"{r.DaysTaken} days" : "—")
+                                        <div class="small @(CompletedContractRules.IsLate(r) ? "text-warning" : "text-soft")">@CompletedContractRules.Timing(r)</div>
+                                    </td>
+                                    <td class="d-none d-lg-table-cell small">@CompletedContractRules.ReleaseLabel(r)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @if (Model.Pages > 1)
+            {
+                <div class="card-inner d-flex justify-content-center border-top">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(Model.Page <= 1 ? "disabled" : "")"><a class="page-link" href="@Url(Model.Filter, Model.Page - 1)">Prev</a></li>
+                        @for (var i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.Pages, Model.Page + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.Page ? "active" : "")"><a class="page-link" href="@Url(Model.Filter, i)">@i</a></li>
+                        }
+                        <li class="page-item @(Model.Page >= Model.Pages ? "disabled" : "")"><a class="page-link" href="@Url(Model.Filter, Model.Page + 1)">Next</a></li>
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+</div>
