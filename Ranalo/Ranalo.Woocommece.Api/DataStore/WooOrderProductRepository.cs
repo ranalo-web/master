@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Ranalo.Woocommece.Api.Models;
 using System.Data;
 using System.Reflection.Metadata;
@@ -278,16 +278,23 @@ namespace Ranalo.Woocommece.Api.DataStore
             
         }
 
-        public async Task<List<ContractCreateDto>> GetContractEligibleOrders()
-        {
-            // The contract goes on the account the deposit belongs to: where
-            // it was assigned (Assign Payments) if it was, else the account
-            // the customer typed on M-Pesa. Knox/PayTrigger accounts are the
-            // national ID, Nuovo accounts the Nuovo device number, so a Nuovo
-            // customer who paid to their ID number needs the deposit assigned
-            // first. An order only qualifies once a device exists on that
-            // account -- no contract before its device.
-            var sql = @"SELECT wo.OrderId, 
+        public async Task<List<ContractCreateDto>> GetContractEligibleOrders() =>
+            (await _db.QueryAsync<ContractCreateDto>(ContractEligibleSql + ";")).ToList();
+
+        // One order, as soon as its enrolment is approved (2026-10-19). Null
+        // when it doesn't qualify yet -- the scheduled run picks it up later.
+        public async Task<ContractCreateDto?> GetContractEligibleOrder(long orderId) =>
+            await _db.QueryFirstOrDefaultAsync<ContractCreateDto>(
+                ContractEligibleSql + " AND wo.OrderID = @OrderId;", new { OrderId = orderId });
+
+        // The contract goes on the account the deposit belongs to: where
+        // it was assigned (Assign Payments) if it was, else the account
+        // the customer typed on M-Pesa. Knox/PayTrigger accounts are the
+        // national ID, Nuovo accounts the Nuovo device number, so a Nuovo
+        // customer who paid to their ID number needs the deposit assigned
+        // first. An order only qualifies once a device exists on that
+        // account -- no contract before its device.
+        private const string ContractEligibleSql = @"SELECT wo.OrderId, 
                         	   wo.MpesaDepositRef, 
                         	   COALESCE(op.AccountNo, kp.AccountNo) AS AccountNo, 
                         	   wo.TotalAmount,
@@ -308,12 +315,7 @@ namespace Ranalo.Woocommece.Api.DataStore
                         INNER JOIN Devices d
                             ON d.Id = COALESCE(op.AccountNoBigint, kp.AccountNoBigint)
                         WHERE wo.[Status] IN ('approved', 'approval-waiting')
-                          AND wo.ContractId IS NULL;";
-
-            var records = await _db.QueryAsync<ContractCreateDto>(sql);
-
-            return records.ToList();
-        }
+                          AND wo.ContractId IS NULL";
 
 
     }

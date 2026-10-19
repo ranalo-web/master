@@ -14,5 +14,6 @@ namespace Ranalo.Woocommece.Api.DataStore
         Task InsertNextOfKinAsync(Contact nextOfKin);
         Task InsertNextOfKin2Async(Contact nextOfKin);
         Task<List<ContractCreateDto>> GetContractEligibleOrders();
+        Task<ContractCreateDto?> GetContractEligibleOrder(long orderId);
     }
 }

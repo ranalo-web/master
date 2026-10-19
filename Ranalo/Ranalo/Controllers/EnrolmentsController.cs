@@ -22,6 +22,7 @@ namespace Ranalo.Controllers
         private readonly IDevicesRepository _devices;
         private readonly IStockPhoneService _stock;
         private readonly IDeviceService _deviceService;
+        private readonly IOrderContractService _contracts;
         public EnrolmentsController(IUserService userService, 
             IEnrolmentService enrolmentService, 
             IApplicationReportService applicationReportService,
@@ -30,9 +31,11 @@ namespace Ranalo.Controllers
             ITranssionEnrolmentWorkflow transsion,
             IDevicesRepository devices,
             IStockPhoneService stock,
-            IDeviceService deviceService)
+            IDeviceService deviceService,
+            IOrderContractService contracts)
         {
             _devices = devices;
+            _contracts = contracts;
             _deviceService = deviceService;
             _stock = stock;
             _userService = userService;
@@ -183,6 +186,7 @@ namespace Ranalo.Controllers
             if (updatedEnrolment != null && updatedEnrolment.Status == EnrolmentStatus.Approved)
             {
                 await _enrolmentService.CreateDeviceFromKnox(updatedEnrolment);
+                await _contracts.TryCreateAsync(updatedEnrolment.OrderId);
             }
 
 
@@ -262,6 +266,7 @@ namespace Ranalo.Controllers
                 settings.RoleId is UserRole.Admin or UserRole.Approver)
             {
                 await _enrolmentService.CreateDeviceFromKnox(existingEnrolment);
+                await _contracts.TryCreateAsync(existingEnrolment.OrderId);
             }
 
 
@@ -505,6 +510,7 @@ namespace Ranalo.Controllers
                     enrolment.Updated = DateTime.UtcNow;
                     enrolment.UpdatedBy = "NOUVAPAY";
                     await _enrolmentService.UpdateEnrolmentasync(enrolment);
+                    await _contracts.TryCreateAsync(enrolment.OrderId);
                 }
             }
             catch (Exception)

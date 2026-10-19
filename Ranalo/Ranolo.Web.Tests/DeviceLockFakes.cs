@@ -276,3 +276,18 @@ namespace Ranolo.Web.Tests
         }
     }
 }
+
+namespace Ranolo.Web.Tests
+{
+    // Records the orders whose contract was asked for on approval.
+    public class FakeOrderContracts : Ranalo.Services.IOrderContractService
+    {
+        public List<long> Orders { get; } = new();
+
+        public Task<bool> TryCreateAsync(long orderId)
+        {
+            Orders.Add(orderId);
+            return Task.FromResult(true);
+        }
+    }
+}

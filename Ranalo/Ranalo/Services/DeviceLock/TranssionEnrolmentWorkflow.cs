@@ -59,8 +59,10 @@ namespace Ranalo.Services.DeviceLock
             IPayTriggerClient payTrigger,
             IDeviceLockRepository deviceLock,
             TimeProvider time,
-            ILogger<TranssionEnrolmentWorkflow> logger)
+            ILogger<TranssionEnrolmentWorkflow> logger,
+            IOrderContractService? contracts = null)
         {
+            _contracts = contracts;
             _enrolments = enrolments;
             _devices = devices;
             _payTrigger = payTrigger;
@@ -68,6 +70,8 @@ namespace Ranalo.Services.DeviceLock
             _time = time;
             _logger = logger;
         }
+
+        private readonly IOrderContractService? _contracts;
 
         private DateTime UtcNow => _time.GetUtcNow().UtcDateTime;
 
@@ -382,6 +386,12 @@ namespace Ranalo.Services.DeviceLock
             enrolment.Updated = UtcNow;
             enrolment.PayTriggerResponse = "Unlocked.";
             await _enrolments.UpdateEnrolmentAsync(enrolment);
+
+            // Approved and unlocked: the contract now, not at the next scheduled run.
+            if (_contracts != null)
+            {
+                await _contracts.TryCreateAsync(enrolment.OrderId);
+            }
         }
 
         private async Task<Enrolment> FailAsync(Enrolment enrolment, string message)
