@@ -180,6 +180,39 @@ namespace Ranalo.Services.DeviceLock
 
         // accountNo null: the deposit may be on any account (Nuovo phones pay
         // to Nuovo's device number, not the national ID).
+        // Dealers can give the deposit's M-Pesa code at enrolment when the
+        // order came through WooCommerce without one (2026-10-19). CheckDeposit
+        // then confirms it like any other: received, paid to this account,
+        // enough. A code already on an order can't be changed here -- that's
+        // the admin fix on Missing M-Pesa.
+        public static string? NormaliseMpesaCode(string? code) =>
+            string.IsNullOrWhiteSpace(code) ? null : code.Trim().ToUpperInvariant();
+
+        public static bool IsMpesaCodeFormat(string code) =>
+            code.Length == 10 && code.All(char.IsAsciiLetterOrDigit);
+
+        public static string? CheckEnteredDepositCode(string? orderRef, string? entered, bool onAnotherOrder)
+        {
+            if (entered == null)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(orderRef))
+            {
+                return string.Equals(orderRef.Trim(), entered, StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : $"This order already has the deposit M-Pesa code {orderRef.Trim()}. Leave the M-Pesa box empty.";
+            }
+
+            if (!IsMpesaCodeFormat(entered))
+            {
+                return $"{entered} isn't an M-Pesa code: it should be 10 letters and numbers, like UJEJ79VIED.";
+            }
+
+            return onAnotherOrder ? $"M-Pesa code {entered} is already the deposit on another order." : null;
+        }
+
         public static DepositCheckResult CheckDeposit(
             string? mpesaDepositRef,
             string? accountNo,
@@ -189,7 +222,7 @@ namespace Ranalo.Services.DeviceLock
             if (string.IsNullOrWhiteSpace(mpesaDepositRef))
             {
                 return new DepositCheckResult(DepositCheck.MissingRef, 0, requiredDeposit,
-                    "This order has no M-Pesa deposit reference.");
+                    "This order has no M-Pesa deposit reference. Enter the deposit's M-Pesa code in the M-Pesa box.");
             }
 
             var payments = paymentsWithRef

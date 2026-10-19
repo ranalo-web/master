@@ -21,6 +21,7 @@ namespace Ranalo.Controllers
         private readonly ITranssionEnrolmentWorkflow _transsion;
         private readonly IDevicesRepository _devices;
         private readonly IStockPhoneService _stock;
+        private readonly IDeviceService _deviceService;
         public EnrolmentsController(IUserService userService, 
             IEnrolmentService enrolmentService, 
             IApplicationReportService applicationReportService,
@@ -28,9 +29,11 @@ namespace Ranalo.Controllers
             IEnrolmentCheckService checks,
             ITranssionEnrolmentWorkflow transsion,
             IDevicesRepository devices,
-            IStockPhoneService stock)
+            IStockPhoneService stock,
+            IDeviceService deviceService)
         {
             _devices = devices;
+            _deviceService = deviceService;
             _stock = stock;
             _userService = userService;
             _enrolmentService = enrolmentService;
@@ -287,7 +290,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("addenrolment")]
-        public async Task<IActionResult> AddEnrolment(Enrolment enrolment, string? overrideBrand, int? selectedDealerId)
+        public async Task<IActionResult> AddEnrolment(Enrolment enrolment, string? overrideBrand, int? selectedDealerId, string? mpesaCode)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -326,6 +329,29 @@ namespace Ranalo.Controllers
             if (order?.IMEI != enrolment.IMEI)
             {
                 response.Errors.Add("There IMEI Number does not match the one on this order");
+            }
+
+            // The order came without the deposit's M-Pesa code: the dealer
+            // gives it here, the deposit check below confirms it, and it's
+            // saved to the order once the enrolment goes through.
+            var enteredCode = DeviceLockRules.NormaliseMpesaCode(mpesaCode);
+            ViewBag.MpesaCode = enteredCode;
+            string? newDepositCode = null;
+            if (order != null && enteredCode != null)
+            {
+                var orderHasCode = !string.IsNullOrWhiteSpace(order.MpesaDepositRef);
+                var onAnotherOrder = !orderHasCode && DeviceLockRules.IsMpesaCodeFormat(enteredCode)
+                    && await _devices.MpesaCodeIsAlreadyLinked(enteredCode);
+                var codeError = DeviceLockRules.CheckEnteredDepositCode(order.MpesaDepositRef, enteredCode, onAnotherOrder);
+                if (codeError != null)
+                {
+                    response.Errors.Add(codeError);
+                }
+                else if (!orderHasCode)
+                {
+                    order.MpesaDepositRef = enteredCode;
+                    newDepositCode = enteredCode;
+                }
             }
 
             if (IsValidImei(enrolment.IMEI) == false)
@@ -448,6 +474,8 @@ namespace Ranalo.Controllers
                         return await EnrolmentFormAsync(response, enrolment);
                     }
 
+                    await SaveDepositCodeAsync(enrolment.OrderId, newDepositCode);
+
                     TempData["EnrolmentMessage"] = $"Stock phone {stock.IMEI} sold on order {stock.OrderId}. "
                         + (DeviceLockRules.IsTranssion(stock.DeviceBrand)
                             ? "It unlocks once an approver has called the customer and approved it."
@@ -457,6 +485,7 @@ namespace Ranalo.Controllers
                 }
 
                 enrolment = await _enrolmentService.CreateEnrolmentasync(enrolment, order);
+                await SaveDepositCodeAsync(enrolment.OrderId, newDepositCode);
             }
             catch (Exception)
             {
@@ -507,6 +536,27 @@ namespace Ranalo.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        // As the admin fix on Missing M-Pesa: WooCommerce first, then the
+        // order here (which is what contract creation reads). If WooCommerce
+        // can't be reached the order here still gets it, and an admin is told.
+        private async Task SaveDepositCodeAsync(long orderId, string? code)
+        {
+            if (code == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await _deviceService.AssignMpesaToOrderAsync((int)orderId, code);
+            }
+            catch (Exception)
+            {
+                await _devices.UpdateMpesaForOrder(orderId, code);
+                TempData["EnrolmentError"] = $"The deposit code {code} was saved on order {orderId} here, but WooCommerce couldn't be updated. An admin should add it to the order in WooCommerce.";
+            }
         }
 
         private async Task<IActionResult> EnrolmentFormAsync(EnrolmentViewModel response, Enrolment enrolment)

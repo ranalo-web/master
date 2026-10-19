@@ -143,6 +143,25 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="mpesaCode">Deposit M-Pesa code</label>
+                                        <div class="form-control-wrap">
+                                            <div class="form-icon form-icon-left">
+                                                <em class="icon ni ni-wallet-fill"></em>
+                                            </div>
+                                            <input type="text"
+                                                   name="mpesaCode"
+                                                   class="form-control text-uppercase"
+                                                   id="mpesaCode"
+                                                   value="@ViewBag.MpesaCode"
+                                                   maxlength="10"
+                                                   autocomplete="off"
+                                                   placeholder="e.g. UJEJ79VIED">
+                                        </div>
+                                        <div class="form-note">Only if the order doesn't have it. The deposit must be paid to the customer's account.</div>
+                                    </div>
+                                </div>
 
                                 @if (Model.Dealers != null)
                                 {

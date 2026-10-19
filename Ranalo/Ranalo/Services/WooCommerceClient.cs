@@ -62,17 +62,19 @@ namespace Ranalo.Services
             var url = $"{_baseUrl}/orders/{orderId}" +
                       $"?consumer_key={_consumerKey}&consumer_secret={_consumerSecret}";
 
-            var updatePayload = new
+            // Updates the existing meta by its id; an order that came without
+            // the field gets it added (no id).
+            var meta = new Dictionary<string, object>
             {
-                meta_data = new[]
-                {
-                    new {
-                        id = metadataId, // existing meta ID if updating
-                        key = "mpesa_deposit_reference",
-                        value = newmpesaCode
-                    }
-                }
+                ["key"] = "mpesa_deposit_reference",
+                ["value"] = newmpesaCode,
             };
+            if (metadataId > 0)
+            {
+                meta["id"] = metadataId;
+            }
+
+            var updatePayload = new { meta_data = new[] { meta } };
 
             var payload = JsonSerializer.Serialize(updatePayload);
 
