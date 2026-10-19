@@ -96,6 +96,10 @@
                     <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu"><em class="icon ni ni-menu-alt-r"></em></a>
                     <div class="toggle-expand-content" data-content="pageMenu">
                         <ul class="nk-block-tools g-3">
+                            @if (Model.IsAdmin)
+                            {
+                                <li><a href="/enrolments/stock" class="btn btn-white btn-outline-light"><em class="icon ni ni-lock-alt"></em><span>Stock phones</span></a></li>
+                            }
                             <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
                             <li class="nk-block-tools-opt">
                                 <div class="drodown">

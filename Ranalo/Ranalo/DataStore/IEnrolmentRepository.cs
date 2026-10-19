@@ -20,5 +20,7 @@ namespace Ranalo.DataStore
         GetAllEnrolmentsAsync(int pageNumber, int pageSize, string? searchTerm = null);
 
         Task<bool> DeleteEnrolmentAsync(Enrolment enrolment);
+
+        Task<List<Enrolment>> GetStockAsync(bool unverifiedOnly, string? searchTerm = null);
     }
 }

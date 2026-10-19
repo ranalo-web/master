@@ -104,8 +104,10 @@ namespace Ranalo.DataStore
         {
             try
             {
+                // An unsold stock phone has no account (0) -- never let a
+                // lookup for account 0 find one and lock or release it.
                 return await _context.Enrolments
-                .FirstOrDefaultAsync(u => u.AccountId == accountId);
+                .FirstOrDefaultAsync(u => u.AccountId == accountId && u.Status != EnrolmentStatus.Stock);
             }
             catch (Exception)
             {
@@ -134,7 +136,8 @@ namespace Ranalo.DataStore
             if (pageNumber <= 0) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var query = ApplyEnrolmentSearch(_context.Enrolments.AsNoTracking(), searchTerm);
+            // Unsold stock phones have their own page (StockPhonesController).
+            var query = ApplyEnrolmentSearch(_context.Enrolments.AsNoTracking().Where(x => x.Status != EnrolmentStatus.Stock), searchTerm);
 
             var totalCount = await query.CountAsync();
 
@@ -154,7 +157,7 @@ namespace Ranalo.DataStore
             if (pageSize <= 0) pageSize = 10;
 
             var query = ApplyEnrolmentSearch(
-                _context.Enrolments.AsNoTracking().Where(x => x.DealerId == dealerId),
+                _context.Enrolments.AsNoTracking().Where(x => x.DealerId == dealerId && x.Status != EnrolmentStatus.Stock),
                 searchTerm);
 
             var totalCount = await query.CountAsync();
@@ -181,6 +184,23 @@ namespace Ranalo.DataStore
                 || (x.LastName != null && x.LastName.Contains(searchTerm))
                 || x.AccountId.ToString().Contains(searchTerm)
                 || x.OrderId.ToString().Contains(searchTerm));
+        }
+
+        // Stock phones, newest first; unverifiedOnly = not yet confirmed locked.
+        public async Task<List<Enrolment>> GetStockAsync(bool unverifiedOnly, string? searchTerm = null)
+        {
+            var query = _context.Enrolments.AsNoTracking().Where(x => x.Status == EnrolmentStatus.Stock);
+            if (unverifiedOnly)
+            {
+                query = query.Where(x => x.StockVerifiedAt == null);
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                query = query.Where(x => x.IMEI.Contains(searchTerm) || (x.DeviceBrand != null && x.DeviceBrand.Contains(searchTerm)));
+            }
+
+            return await query.OrderByDescending(x => x.StockLockedAt).ToListAsync();
         }
 
         public async Task<IEnumerable<Enrolment>> GetEnrolmentsByDealerIdAsync(int dealerId)

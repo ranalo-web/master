@@ -32,7 +32,7 @@ namespace Ranolo.Web.Tests
 
         public Task<Enrolment> CreateEnrolmentAsync(Enrolment newEnrolment) { Items.Add(newEnrolment); return Task.FromResult(newEnrolment); }
         public Task<IEnumerable<Enrolment>> GetAllEnrolmentsAsync() => Task.FromResult<IEnumerable<Enrolment>>(Items);
-        public Task<Enrolment?> GetByAccountIdAsync(long accountId) => Task.FromResult(Items.FirstOrDefault(e => e.AccountId == accountId));
+        public Task<Enrolment?> GetByAccountIdAsync(long accountId) => Task.FromResult(Items.FirstOrDefault(e => e.AccountId == accountId && e.Status != EnrolmentStatus.Stock));
         public Task<Enrolment> GetByEnrolmentIdAsync(Guid enrolmentId) => Task.FromResult(Items.FirstOrDefault(e => e.Id == enrolmentId)!);
         public Task<Enrolment?> GetByImeiNumberAsync(string imei) => Task.FromResult(Items.FirstOrDefault(e => e.IMEI == imei));
         public Task<IEnumerable<Enrolment>> GetEnrolmentsByDealerIdAsync(int dealerId) => Task.FromResult(Items.Where(e => e.DealerId == dealerId));
@@ -48,7 +48,9 @@ namespace Ranolo.Web.Tests
         public Task<Enrolment> UpdateEnrolmentPasswordAsync(int userId, string newPasswordHash) => throw new NotImplementedException();
         public Task<(IEnumerable<Enrolment> Items, int TotalCount)> GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null) => throw new NotImplementedException();
         public Task<(IEnumerable<Enrolment> Items, int TotalCount)> GetAllEnrolmentsAsync(int pageNumber, int pageSize, string? searchTerm = null) => throw new NotImplementedException();
-        public Task<bool> DeleteEnrolmentAsync(Enrolment enrolment) => throw new NotImplementedException();
+        public Task<bool> DeleteEnrolmentAsync(Enrolment enrolment) => Task.FromResult(Items.Remove(enrolment));
+        public Task<List<Enrolment>> GetStockAsync(bool unverifiedOnly, string? searchTerm = null) =>
+            Task.FromResult(Items.Where(e => e.Status == EnrolmentStatus.Stock && (!unverifiedOnly || e.StockVerifiedAt == null)).ToList());
     }
 
     public sealed class FakeDevices : IKosePaymentsRepository
@@ -139,7 +141,9 @@ namespace Ranolo.Web.Tests
         public Task<HttpResponseMessage> LockDeviceAsync(LockDeviceRequest request) => throw new NotImplementedException();
         public Task<HttpResponseMessage> SendMessageAsync(SendMessageRequest request) => throw new NotImplementedException();
         public Task<HttpResponseMessage> GetDeviceInfoAsync(string deviceId) => throw new NotImplementedException();
-        public Task<ListDevicesResponse> ListDevicesAsync(ListDevicesRequest request) => throw new NotImplementedException();
+        public ListDevicesResponse? ListResponse { get; set; }
+        public Task<ListDevicesResponse> ListDevicesAsync(ListDevicesRequest request) =>
+            ListResponse != null ? Task.FromResult(ListResponse) : throw new NotImplementedException();
         public Task<HttpResponseMessage> UnlockDeviceAsync(UnlockDeviceRequest request) => throw new NotImplementedException();
     }
 

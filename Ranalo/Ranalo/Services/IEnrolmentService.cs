@@ -16,6 +16,7 @@ namespace Ranalo.Services
         GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null);
 
         Task<Enrolment?> GetByImeiNumberAsync(string imei);
+        Task<string?> AttachStockSaleAsync(Enrolment stock, Enrolment sale);
         Task<bool> ApproveEnrolment(Enrolment existingEnrolment);
         Task<Enrolment> GetByEnrolmentIdNumberAsync(Guid enrolmentId);
         Task DeleteNewEnrolmentEnrolment(Enrolment existingEnrolment);

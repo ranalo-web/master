@@ -56,6 +56,21 @@ namespace Ranalo.Services
             return newEnrolment;
         }
 
+        // A stock phone is sold: the sale's details go onto it (it's already
+        // with Knox/Transsion). null = done, otherwise why not.
+        public async Task<string?> AttachStockSaleAsync(Enrolment stock, Enrolment sale)
+        {
+            StockPhoneRules.AttachSale(stock, sale, DateTime.UtcNow);
+            if (DeviceLockRules.IsTranssion(stock.DeviceBrand))
+            {
+                return await _transsionWorkflow.AttachStockSaleAsync(stock, await DeviceGroupForDealerAsync(stock.DealerId));
+            }
+
+            // Knox: the device row is made when it's approved (CreateDeviceFromKnox).
+            await _enrolmentRepository.UpdateEnrolmentAsync(stock);
+            return null;
+        }
+
         public async Task<Enrolment> StartEnrolmentasync(Enrolment newEnrolment, CustomerDetails? order)
         {
             if (DeviceLockRules.IsTranssion(newEnrolment.DeviceBrand))
