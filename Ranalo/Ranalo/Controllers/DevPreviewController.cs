@@ -763,5 +763,48 @@ namespace Ranalo.Controllers
             ViewBag.UserName = "Preview Admin";
             return View("~/Views/StockPhones/Index.cshtml", model);
         }
+
+        // Statement Uploads report with sample uploads (no database; the real
+        // page needs Database/StatementUploads/001): /dev-preview/statement-uploads.
+        [HttpGet]
+        [Route("dev-preview/statement-uploads")]
+        public IActionResult StatementUploads()
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            Ranalo.Models.StatementUpload Up(string from, string to, int rows, int added, int skipped, string uploaded, string? error = null) => new()
+            {
+                FileName = $"MPESA_{from.Replace("-", "")}_{to.Replace("-", "")}.xlsx",
+                UploadedAtUtc = DateTime.Parse(uploaded),
+                UploadedByName = "Eddie",
+                PeriodFrom = error == null ? DateTime.Parse(from).AddHours(0.2) : null,
+                PeriodTo = error == null ? DateTime.Parse(to).AddHours(23.5) : null,
+                RowsRead = rows, NewPayments = added, AlreadyRecorded = rows - added - skipped, Skipped = skipped, Error = error,
+            };
+
+            var uploads = new List<Ranalo.Models.StatementUpload>
+            {
+                Up("2026-05-01", "2026-05-31", 2410, 6, 2, "2026-06-03 07:10"),
+                Up("2026-06-01", "2026-06-30", 2588, 11, 0, "2026-07-04 06:00"),
+                Up("2026-07-01", "2026-07-20", 1702, 3, 1, "2026-07-22 08:45"),
+                Up("2026-08-01", "2026-08-31", 2650, 9, 4, "2026-09-02 10:30"),
+                Up("2026-09-01", "2026-09-30", 2711, 18, 0, "2026-10-01 05:30"),
+                Up("2026-10-01", "2026-10-12", 1130, 0, 0, "2026-10-13 07:00", "Header not found"),
+                Up("2026-10-01", "2026-10-12", 1130, 2, 0, "2026-10-13 07:05"),
+            };
+            var earlier = new List<Ranalo.Models.EarlierImport>
+            {
+                new() { ImportedOn = new DateTime(2026, 4, 28), Added = 33, FirstPayment = new DateTime(2026, 4, 7), LastPayment = new DateTime(2026, 4, 27) },
+                new() { ImportedOn = new DateTime(2026, 4, 7), Added = 244, FirstPayment = new DateTime(2025, 10, 19), LastPayment = new DateTime(2026, 4, 7) },
+            };
+
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            return View("~/Views/Payments/StatementUploads.cshtml",
+                Ranalo.Services.StatementUploadRules.Build(uploads, earlier, new DateTime(2026, 10, 19)));
+        }
     }
 }

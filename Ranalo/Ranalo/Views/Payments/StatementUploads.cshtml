@@ -1,0 +1,285 @@
+@using Ranalo.Models
+@model StatementUploadsViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    string D(DateTime d) => d.ToString("dd MMM yyyy");
+    string Span(DateSpan s) => s.From == s.To ? D(s.From) : $"{D(s.From)} – {D(s.To)}";
+    string Days(int n) => n == 1 ? "1 day" : $"{n:N0} days";
+    var gapDays = Model.Gaps.Sum(g => g.Days);
+    var behind = Model.CoveredTo.HasValue && Model.DaysSinceCovered > 1;
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+<style>
+    .su-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+    .su-month { border: 1px solid #e5e9f2; border-radius: 6px; padding: 6px 6px 8px; background: #fff; }
+    .su-month .su-label { font-size: 11px; color: #8094ae; white-space: nowrap; }
+    .su-month .su-bar { height: 8px; border-radius: 4px; background: #f5e6e6; margin-top: 6px; overflow: hidden; }
+    .su-month .su-fill { height: 100%; border-radius: 4px; }
+    .su-month .su-days { font-size: 11px; color: #526484; margin-top: 4px; }
+    .su-none .su-days { color: #e85347; }
+    .su-full .su-fill { background: #1ee0ac; }
+    .su-part .su-fill { background: #f4bd0e; }
+    .su-none { border-color: #f6c6c6; }
+    .su-key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 4px 0 10px; vertical-align: middle; }
+    .su-period { white-space: nowrap; }
+</style>
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between flex-wrap" style="gap:10px;">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Statement Uploads</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Which periods of the M-Pesa statement have been imported to catch missed payments, and the gaps still to check.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/allpayments" class="btn btn-outline-light"><em class="icon ni ni-arrow-left"></em><span>All Payments</span></a>
+                <a href="/allpayments#upload-payments" class="btn btn-primary"><em class="icon ni ni-upload-cloud"></em><span>Import a statement</span></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-2">
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100 @(behind ? "border-warning" : "")">
+                    <div class="card-inner p-3">
+                        <div class="small text-soft">Checked up to</div>
+                        <div class="fs-5 fw-bold">@(Model.CoveredTo.HasValue ? D(Model.CoveredTo.Value) : "—")</div>
+                        @if (behind)
+                        {
+                            <div class="small text-warning fw-medium">@Days(Model.DaysSinceCovered) not checked yet</div>
+                        }
+                        else if (Model.CoveredTo.HasValue)
+                        {
+                            <div class="small text-success fw-medium">Up to date</div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100 @(Model.Gaps.Any() ? "border-danger" : "")">
+                    <div class="card-inner p-3">
+                        <div class="small text-soft">Gaps</div>
+                        <div class="fs-5 fw-bold @(Model.Gaps.Any() ? "text-danger" : "text-soft")">@Model.Gaps.Count</div>
+                        <div class="small text-soft">@(Model.Gaps.Any() ? Days(gapDays) + " not covered" : "No gaps")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner p-3">
+                        <div class="small text-soft">Statements uploaded</div>
+                        <div class="fs-5 fw-bold">@Model.Uploads.Count</div>
+                        <div class="small text-soft">@(Model.Uploads.Any() ? "Last " + Model.Uploads[0].UploadedAtUtc.AddHours(3).ToString("dd MMM, HH:mm") : "None recorded yet")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner p-3">
+                        <div class="small text-soft">Missed payments found</div>
+                        <div class="fs-5 fw-bold @(Model.MissedFound > 0 ? "text-primary" : "text-soft")">@Model.MissedFound.ToString("N0")</div>
+                        <div class="small text-soft">Added by these uploads</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Months.Any())
+    {
+        <div class="nk-block">
+            <div class="card card-bordered">
+                <div class="card-inner">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:6px;">
+                        <h6 class="title mb-0">Coverage by month</h6>
+                        <div class="small text-soft">
+                            <span class="su-key" style="background:#1ee0ac;"></span>Covered
+                            <span class="su-key" style="background:#f4bd0e;"></span>Part
+                            <span class="su-key" style="background:#f5e6e6;border:1px solid #f6c6c6;"></span>Not covered
+                        </div>
+                    </div>
+                    <div class="su-strip">
+                        @foreach (var m in Model.Months)
+                        {
+                            var pct = m.DaysInMonth == 0 ? 0 : 100 * m.DaysCovered / m.DaysInMonth;
+                            <div class="su-month @(m.Full ? "su-full" : m.None ? "su-none" : "su-part")" title="@m.Month.ToString("MMMM yyyy"): @m.DaysCovered of @m.DaysInMonth days covered">
+                                <div class="su-label">@m.Month.ToString("MMM yy")</div>
+                                <div class="su-bar"><div class="su-fill" style="width:@pct%;"></div></div>
+                                <div class="su-days">@(m.Full ? "All" : m.None ? "None" : $"{m.DaysCovered}/{m.DaysInMonth}")</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nk-block">
+            <div class="row g-gs">
+                <div class="col-md-6">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <h6 class="title mb-1">Gaps to upload</h6>
+                            <p class="small text-soft mb-3">Days between uploaded statements. Download these periods from M-Pesa and import them.</p>
+                            @if (!Model.Gaps.Any() && !behind)
+                            {
+                                <div class="text-success small"><em class="icon ni ni-check-circle"></em> Nothing missing.</div>
+                            }
+                            <ul class="list-unstyled mb-0">
+                                @if (behind)
+                                {
+                                    <li class="d-flex justify-content-between py-2 border-bottom" style="gap:10px;">
+                                        <span class="su-period"><em class="icon ni ni-clock text-warning"></em> @D(Model.CoveredTo!.Value.AddDays(1)) – today</span>
+                                        <span class="badge bg-warning">@Days(Model.DaysSinceCovered)</span>
+                                    </li>
+                                }
+                                @foreach (var g in Model.Gaps)
+                                {
+                                    <li class="d-flex justify-content-between py-2 border-bottom" style="gap:10px;">
+                                        <span class="su-period"><em class="icon ni ni-alert-circle text-danger"></em> @Span(g)</span>
+                                        <span class="badge bg-danger">@Days(g.Days)</span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <h6 class="title mb-1">Covered</h6>
+                            <p class="small text-soft mb-3">Back-to-back statements are joined up.</p>
+                            <ul class="list-unstyled mb-0">
+                                @foreach (var c in Model.Covered)
+                                {
+                                    <li class="d-flex justify-content-between py-2 border-bottom" style="gap:10px;">
+                                        <span class="su-period"><em class="icon ni ni-check-circle text-success"></em> @Span(c)</span>
+                                        <span class="badge bg-light text-dark">@Days(c.Days)</span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner card-inner-md">
+                <h6 class="title mb-0">Uploads</h6>
+            </div>
+            <div class="card-inner p-0 border-top">
+                <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;">
+                        <thead>
+                            <tr>
+                                <th class="wl-th">Uploaded</th>
+                                <th class="wl-th">Period</th>
+                                <th class="wl-th text-end d-none d-sm-table-cell">Missed found</th>
+                                <th class="wl-th text-end d-none d-md-table-cell">Already in</th>
+                                <th class="wl-th text-end d-none d-md-table-cell">Skipped</th>
+                                <th class="wl-th d-none d-lg-table-cell">File</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Uploads.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-soft py-4">
+                                        No uploads recorded yet. Every statement imported on All Payments shows here from now on.
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var u in Model.Uploads)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="fw-medium">@u.UploadedAtUtc.AddHours(3).ToString("dd MMM yyyy, HH:mm")</span>
+                                        <div class="small text-soft">@u.UploadedByName</div>
+                                    </td>
+                                    <td>
+                                        @if (u.Error != null)
+                                        {
+                                            <span class="badge bg-danger">Failed</span>
+                                            <div class="small text-danger text-wrap" style="max-width:280px;">@u.Error</div>
+                                        }
+                                        else if (u.PeriodFrom.HasValue)
+                                        {
+                                            <span class="su-period">@D(u.PeriodFrom.Value) – @D(u.PeriodTo!.Value)</span>
+                                            <div class="small text-soft">
+                                                @u.RowsRead.ToString("N0") rows
+                                                <span class="d-sm-none">· <span class="@(u.NewPayments > 0 ? "text-primary fw-bold" : "")">@u.NewPayments missed found</span></span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-soft">No payments in the file</span>
+                                        }
+                                    </td>
+                                    @if (u.Error != null)
+                                    {
+                                        <td class="text-end d-none d-sm-table-cell text-soft">—</td>
+                                        <td class="text-end d-none d-md-table-cell text-soft">—</td>
+                                        <td class="text-end d-none d-md-table-cell text-soft">—</td>
+                                    }
+                                    else
+                                    {
+                                        <td class="text-end d-none d-sm-table-cell">
+                                            <span class="badge @(u.NewPayments > 0 ? "bg-primary" : "bg-light text-dark")">@u.NewPayments.ToString("N0")</span>
+                                        </td>
+                                        <td class="text-end d-none d-md-table-cell text-soft">@u.AlreadyRecorded.ToString("N0")</td>
+                                        <td class="text-end d-none d-md-table-cell @(u.Skipped > 0 ? "text-warning fw-medium" : "text-soft")">@u.Skipped.ToString("N0")</td>
+                                    }
+                                    <td class="d-none d-lg-table-cell small text-soft">@u.FileName</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Earlier.Any())
+    {
+        <div class="nk-block">
+            <div class="card card-bordered">
+                <div class="card-inner card-inner-md">
+                    <h6 class="title mb-1">Earlier imports</h6>
+                    <p class="small text-soft mb-0">
+                        Before this report, uploads weren't recorded, only the missed payments they added. These show the days
+                        something was imported and the dates of the payments it added, not the whole statement period.
+                    </p>
+                </div>
+                <div class="card-inner p-0 border-top">
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="white-space:nowrap;">
+                            <thead>
+                                <tr>
+                                    <th class="wl-th">Imported on</th>
+                                    <th class="wl-th text-end">Payments added</th>
+                                    <th class="wl-th">Their dates</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var e in Model.Earlier)
+                                {
+                                    <tr>
+                                        <td class="fw-medium">@D(e.ImportedOn)</td>
+                                        <td class="text-end">@e.Added.ToString("N0")</td>
+                                        <td class="text-soft" style="white-space:normal;">@(e.FirstPayment.Date == e.LastPayment.Date ? D(e.FirstPayment) : $"{D(e.FirstPayment)} – {D(e.LastPayment)}")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
