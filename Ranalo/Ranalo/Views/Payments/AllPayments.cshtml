@@ -44,6 +44,7 @@
 					</li>
 					@if (ViewBag.IsAdmin is true)
 						{
+							<li><a href="/statement-uploads" class="btn btn-outline-light"><em class="icon ni ni-calendar-check"></em><span>Statement Uploads</span></a></li>
 							<li><a href="#upload-payments" data-bs-toggle="modal" class="btn btn-primary"><em class="icon ni ni-upload-cloud"></em><span>Import Payments</span></a></li>
 						}
 				</ul>
@@ -241,4 +242,11 @@
 
 @section Scripts {
     <script src="~/js/watchlist-table.js"></script>
+    <script>
+        // Statement Uploads links to /allpayments#upload-payments: open the import.
+        if (location.hash === '#upload-payments' && window.bootstrap) {
+            var m = document.getElementById('upload-payments');
+            if (m) new bootstrap.Modal(m).show();
+        }
+    </script>
 }

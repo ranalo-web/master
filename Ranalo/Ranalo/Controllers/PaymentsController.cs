@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Ranalo.DataStore;
 using Ranalo.DataStore.DataModels;
+using Ranalo.Models;
 using Ranalo.Services;
 
 namespace Ranalo.Controllers
@@ -11,12 +13,15 @@ namespace Ranalo.Controllers
         private readonly IUserService _userService;
         private readonly IEnrolmentService _enrolmentService;
         private readonly ILogger<PaymentsController> _logger;
+        private readonly IStatementUploadRepository _uploads;
         public PaymentsController(IPaymentsService paymentsService,
             IApplicationReportService applicationReportService,
             IUserService userService,
             IEnrolmentService enrolmentService,
-            ILogger<PaymentsController> logger)
+            ILogger<PaymentsController> logger,
+            IStatementUploadRepository uploads)
         {
+            _uploads = uploads;
             _paymentsService = paymentsService;
             _applicationReportService = applicationReportService;
             _userService = userService;
@@ -59,9 +64,18 @@ namespace Ranalo.Controllers
                 return RedirectToAction("AllPayments", "Payments");
             }
 
+            var upload = new StatementUpload
+            {
+                FileName = file.FileName,
+                UploadedAtUtc = DateTime.UtcNow,
+                UploadedByUserId = settings.UserId,
+                UploadedByName = settings.KnownAs,
+            };
+
             try
             {
                 var payments = RanaloXlsmUploadParser.Parse(file);
+                (upload.PeriodFrom, upload.PeriodTo) = StatementUploadRules.Period(payments);
                 var mapped = payments.Any() ? _paymentsService.MapXlsPayments(payments) : new();
                 var inserted = mapped.Any() ? (await _paymentsService.CreatePayments(mapped))?.Count ?? 0 : 0;
 
@@ -71,6 +85,11 @@ namespace Ranalo.Controllers
                     .Where(p => !long.TryParse(p.AccountNumber, out _))
                     .Select(p => $"{p.ReceiptNo} ('{p.AccountNumber}')")
                     .ToList();
+
+                upload.RowsRead = payments.Count;
+                upload.NewPayments = inserted;
+                upload.AlreadyRecorded = mapped.Count - inserted;
+                upload.Skipped = skipped.Count;
 
                 _logger.LogInformation("Payments import {FileName}: {Read} read, {Valid} valid, {Inserted} new, {Skipped} skipped",
                     file.FileName, payments.Count, mapped.Count, inserted, skipped.Count);
@@ -86,9 +105,42 @@ namespace Ranalo.Controllers
             {
                 _logger.LogError(ex, "Payments import failed for {FileName}", file.FileName);
                 TempData["ImportError"] = $"Import of '{file.FileName}' failed: {ex.Message}";
+                upload.Error = ex.Message.Length > 1000 ? ex.Message[..1000] : ex.Message;
+            }
+
+            // For the Statement Uploads report. A failure here never undoes the import.
+            try
+            {
+                await _uploads.AddAsync(upload);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Couldn't record the statement upload {FileName} (has StatementUploads/001 been run?)", file.FileName);
             }
 
             return RedirectToAction("AllPayments", "Payments");
+        }
+
+        // Which periods of the M-Pesa statement have been imported, and the gaps.
+        [HttpGet("statement-uploads")]
+        public async Task<IActionResult> StatementUploads()
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (settings.RoleId != UserRole.Admin)
+            {
+                return RedirectToAction("AllPayments", "Payments");
+            }
+
+            await SetViewBags(settings, "allpayments");
+            var uploads = await _uploads.GetAllAsync();
+            var firstRecorded = uploads.Count == 0 ? (DateTime?)null : uploads.Min(u => u.UploadedAtUtc);
+            var earlier = await _uploads.GetEarlierImportsAsync(firstRecorded);
+            return View(StatementUploadRules.Build(uploads, earlier, DateTime.UtcNow.AddHours(3).Date));
         }
 
         [Route("allpayments/{page:int?}")]
