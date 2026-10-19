@@ -151,15 +151,19 @@ namespace Ranalo.Services
                     };
                     if (statusRow.Arrears < 0)
                     {
-
-                        var daysLeft = _calculatorService.CalculateNoDaysUnit((DateTime)statusRow.FirstPaymentDate);
-                        var effectiveDays = (decimal)daysLeft / 1m;
-                        var restructuredAmount = ((statusRow.Arrears * -1m) / effectiveDays) * 1.1m;
-                        var newRateToPay = restructuredAmount + payment.Daily + payment.Weekly + payment.Monthly;
+                        // Auto restructure: the arrears spread over the days
+                        // left to the contract end (Services/RestructureCalculator.cs).
+                        // Past the end there's none: NewDaily 0.
+                        var nowUtc = DateTime.UtcNow;
+                        var dailyAll = RestructureCalculator.DailyPaymentAll(payment.Daily, payment.Weekly, payment.Monthly);
+                        var contractEnd = RestructureCalculator.ContractEndDate(payment.FirstPaidDate, payment.TermsInMonths);
+                        var daysLeft = Math.Max(0, RestructureCalculator.DaysLeft(contractEnd, nowUtc));
+                        var newRate = RestructureCalculator.AutoNewDaily(statusRow.Arrears, dailyAll, contractEnd, nowUtc);
+                        var newRateToPay = newRate ?? 0;
+                        var restructuredAmount = newRate.HasValue ? newRate.Value - dailyAll : 0;
 
                         //Here we have silly units calculation
                         var oldUints = (statusRow.Arrears / (payment.Daily + payment.Weekly + payment.Monthly));
-                        var unitsLeft = (statusRow.Arrears / newRateToPay);
                         var now = DateTime.UtcNow; // Or DateTime.Now depending on your context
                         var autoLockDatePmt = now.AddSeconds(Convert.ToDouble(oldUints * 60 * 60 * 30));
 

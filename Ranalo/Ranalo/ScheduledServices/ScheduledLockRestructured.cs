@@ -75,7 +75,8 @@ namespace Ranalo.ScheduledServices
             records.Records?.RemoveAll(x => x.Arrears > 0 && x.LoanBalance < 0);
 
 
-            var qualifying = GetQualifyingRecords(records);
+            var now = DateTime.UtcNow;
+            var qualifying = GetQualifyingRecords(records, now);
 
             var devicesToLock = new List<LockTransaction>();
             var devicesToLockKnox = new List<LockTransaction>();
@@ -90,12 +91,7 @@ namespace Ranalo.ScheduledServices
 
             foreach (var account in qualifying)
             {
-                var nextLock = account.AutoLockDatePmtR;
-
-                if (account.ArrearsR < 0 && account.PaidLast24Hours > 0)
-                {
-                    nextLock = (account.LastPaymentDate ?? DateTime.UtcNow).AddHours(30);
-                }
+                var nextLock = NextLockDate(account, now)!.Value;
 
                 var lockDevice = new LockTransaction()
                 {
@@ -133,24 +129,25 @@ namespace Ranalo.ScheduledServices
             return lockedDevices;
         }
 
-        public static List<RestructuredRecord> GetQualifyingRecords(RestructuredViewModel? records)
+        public static List<RestructuredRecord> GetQualifyingRecords(RestructuredViewModel? records, DateTime now)
         {
             // Robust null checks
             if (records == null || records.Records == null || !records.Records.Any())
                 return null;
 
-            // Remove records where arrears are negative (optional — if still needed)
-            var qualifying = records.Records
-                .Where(r =>
-                    // Condition 1: Not in arrears
-                    r.ArrearsR >= 0 ||
-
-                    // Condition 2: In arrears but made a payment in last 24 hours
-                    (r.ArrearsR < 0 && r.PaidLast24Hours > 0)
-                ).ToList();
-
-            return qualifying;
+            // The rest are left to lock when their current lock date passes.
+            return records.Records.Where(r => NextLockDate(r, now).HasValue).ToList();
         }
+
+        // Ahead on the agreed plan: open for the units paid since the first
+        // payment on it. Behind: only the auto restructure can open it --
+        // paying at least the auto new daily in 24h, before the contract end.
+        // (Until 2026-10-19 any payment at all opened it for 30h, so
+        // 1 shilling every day or two kept a phone open.)
+        public static DateTime? NextLockDate(RestructuredRecord r, DateTime now) =>
+            r.ArrearsR > 0
+                ? r.AutoLockDatePmtR
+                : RestructureCalculator.AutoLockDate(r.AutoNewDaily, r.PaidLast24Hours, r.LastPaymentDate, now);
 
         bool NeedsUpdate(string? kenyanTimestamp)
         {

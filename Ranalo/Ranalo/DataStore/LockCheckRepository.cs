@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using Dapper;
 using Ranalo.Models;
 
@@ -9,6 +9,7 @@ namespace Ranalo.DataStore
         Task<List<LockCheckRow>> GetNuovoRowsAsync();
         Task LogAsync(long accountNo, string action, bool success, string? result, int? userId);
         Task<bool> EndContractAsync(int contractId, long accountNo);
+        Task<bool> EndPaidOffContractAsync(long accountNo);
     }
 
     // Nuovo phones with open contracts, their payments and what was last
@@ -76,7 +77,20 @@ namespace Ranalo.DataStore
         // it off (running total reaches the contract value, less the 1-shilling
         // tolerance) -- not the day it's closed. Today if that can't be found.
         public async Task<bool> EndContractAsync(int contractId, long accountNo) =>
-            await _db.ExecuteAsync(@"
+            await _db.ExecuteAsync(EndContractSql + @"
+                WHERE ci.ContractID = @ContractId AND ci.ID = @AccountNo AND ci.EndDate IS NULL",
+                new { ContractId = contractId, AccountNo = accountNo, Tolerance = Ranalo.Services.LockCheckRules.PaidTolerance }) == 1;
+
+        // The fully-paid job (any lock group): the account's open contract,
+        // dated as above. Left alone when the account has more than one open
+        // contract -- its payments can't be told apart here.
+        public async Task<bool> EndPaidOffContractAsync(long accountNo) =>
+            await _db.ExecuteAsync(EndContractSql + @"
+                WHERE ci.ID = @AccountNo AND ci.EndDate IS NULL
+                  AND (SELECT COUNT(*) FROM Contract_Info x WHERE x.ID = ci.ID AND x.EndDate IS NULL) = 1",
+                new { AccountNo = accountNo, Tolerance = Ranalo.Services.LockCheckRules.PaidTolerance }) == 1;
+
+        private const string EndContractSql = @"
                 UPDATE ci SET EndDate = COALESCE(po.PaidOffAt, GETDATE())
                 FROM Contract_Info ci
                 OUTER APPLY (
@@ -92,8 +106,6 @@ namespace Ranalo.DataStore
                     WHERE x.RunningPaid >= ci.Deposit + ci.Daily * 30 * ci.Term_in_Months
                                            + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months + ci.Monthly * ci.Term_in_Months - @Tolerance
                     ORDER BY x.PaymentDateValue
-                ) po
-                WHERE ci.ContractID = @ContractId AND ci.ID = @AccountNo AND ci.EndDate IS NULL",
-                new { ContractId = contractId, AccountNo = accountNo, Tolerance = Ranalo.Services.LockCheckRules.PaidTolerance }) == 1;
+                ) po";
     }
 }

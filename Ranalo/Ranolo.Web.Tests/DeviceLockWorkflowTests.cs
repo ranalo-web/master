@@ -1238,12 +1238,14 @@ namespace Ranolo.Web.Tests
         };
 
         [Test]
-        public void Planner_PicksFullyPaidThisYearOnly()
+        public void Planner_PicksFullyPaidNotYetReleased()
         {
-            var year = DateTime.UtcNow.Year;
             var records = new[]
             {
                 Account(1, 1),                                        // fully paid
+                Account(8, 1, nextLock: "11/09/2025T10:00:00"),       // last year's date: still released
+                Account(9, 1, nextLock: "15/01/2027T10:00:00"),       // next year's date: still released
+                Account(10, 1, nextLock: "01/01/2100T00:00:00"),      // already handled (old R date)
                 Account(2, 1, balance: 500),                          // still owes
                 Account(3, 1, arrears: -10),                          // behind
                 Account(4, 1, nextLock: "31/12/9999T23:59:59"),       // already handled
@@ -1253,9 +1255,9 @@ namespace Ranolo.Web.Tests
             };
             records.Single(r => r.AccountNo == 6).NextLockDate = null;
 
-            var picked = FullyPaidPlanner.Select(records, year);
+            var picked = FullyPaidPlanner.Select(records);
 
-            Assert.That(picked.Select(p => p.AccountNo), Is.EqualTo(new[] { 1 }));
+            Assert.That(picked.Select(p => p.AccountNo), Is.EqualTo(new[] { 1, 8, 9 }));
         }
 
         [TestCase("15/10/2026T10:00:00")]
@@ -1325,6 +1327,56 @@ namespace Ranolo.Web.Tests
             // again): no duplicate tasks.
             await job.Process(processor, reports, payments, enrolmentService, removal);
             Assert.That(tasks.Items, Has.Count.EqualTo(4));
+        }
+
+        [Test]
+        public void Planner_AShillingShortCountsAsPaid_AsLockCheck()
+        {
+            var records = new[] { Account(1, 1, arrears: -0.6m, balance: 0.6m), Account(2, 1, arrears: -2, balance: 2) };
+
+            Assert.That(FullyPaidPlanner.Select(records).Select(p => p.AccountNo), Is.EqualTo(new[] { 1 }));
+        }
+
+        [Test]
+        public async Task Process_EndsEveryPaidOffContract_EvenOnesAlreadyReleased()
+        {
+            // 3 is like 7201937: already at 31/12/9999 with the release queued,
+            // but its contract was never ended.
+            var records = new List<MobileStatusReport>
+            {
+                Account(1, 1), Account(2, 2, arrears: -0.5m, balance: 0.5m),
+                Account(3, 1, arrears: 199, balance: -199, nextLock: "31/12/9999T23:59:59"),
+                Account(4, 1, balance: 100),
+            };
+
+            var (reports, _) = InterfaceFake<IApplicationReportService>.Create(new()
+            {
+                ["GetStatusReportByDealer"] = _ => Task.FromResult(new StatusReportViewModel { StatusReports = records })
+            });
+            var (processor, _) = InterfaceFake<IDeviceProcessor>.Create(new()
+            {
+                ["ProcessBatchesAsync"] = args => Task.FromResult((List<LockTransaction>)args![0]!)
+            });
+            var (enrolmentService, _) = InterfaceFake<IEnrolmentService>.Create(new()
+            {
+                ["SetFullyPaidKnox"] = args => Task.FromResult((List<LockTransaction>)args![0]!),
+                ["SetFullyPaidPayTrigger"] = args => Task.FromResult((List<LockTransaction>)args![0]!)
+            });
+            var (payments, _) = InterfaceFake<Ranalo.DataStore.IPaymentsRepository>.Create(new());
+
+            var ended = new List<long>();
+            var (contracts, _) = InterfaceFake<Ranalo.DataStore.ILockCheckRepository>.Create(new()
+            {
+                ["EndPaidOffContractAsync"] = args => { ended.Add((long)args![0]!); return Task.FromResult(true); }
+            });
+
+            var removal = new DeviceRemovalService(new FakeRemovalTasks(), new FakeEnrolmentRepository(), new FakeDevices(), new FakePayTrigger(), new FakeKnox(),
+                processor, new FakeTime(), NullLogger<DeviceRemovalService>.Instance);
+
+            var job = new ScheduledLockFullyPaid(NullLogger<ScheduledLockFullyPaid>.Instance, null!);
+            await job.Process(processor, reports, payments, enrolmentService, removal, null, contracts);
+
+            Assert.That(ended, Is.EqualTo(new long[] { 1, 2, 3 }));
         }
 
         [Test]

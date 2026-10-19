@@ -91,6 +91,10 @@ namespace Ranalo.ScheduledServices
             //Remove all on agreed restructure
             autoRestructured?.RemoveAll(a => manualRestructured?.Any(m => m.AccountNo == a.AccountNo) == true);
 
+            // Past the contract end there's no auto restructure (NewDaily 0),
+            // so no "amount to pay" to send.
+            autoRestructured?.RemoveAll(x => x.NewDaily <= 0);
+
             
             var accountMessages = new List<AccountSendMessage>();
             var knoxReminders = new List<AccountSendMessage>();

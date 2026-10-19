@@ -97,9 +97,11 @@ namespace Ranalo.ScheduledServices
             //Remove all on agreed restructure
             autoRestructured?.RemoveAll(a => manualRestructured?.Any(m => m.AccountNo == a.AccountNo) == true);
 
-            //Now check if they have paid more than the restructured new amount
+            //Now check if they have paid more than the restructured new amount.
+            //NewDaily is 0 past the contract end: no auto restructure, the
+            //phone stays locked until an agent agrees a manual restructure.
             var qualifying = autoRestructured?
-            .Where(r => r.TotalLast24 >= r.NewDaily )//&& NeedsUpdate(r.NextLockDate)) 
+            .Where(r => r.NewDaily > 0 && r.TotalLast24 >= r.NewDaily )//&& NeedsUpdate(r.NextLockDate)) 
             .ToList();
 
             var devicesToLock = new List<LockTransaction>();

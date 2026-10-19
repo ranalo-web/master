@@ -32,6 +32,10 @@
         public string? NextLockDate { get; set; }
         public DateTime AutoLockDatePmtR { get; set; }
         public decimal LoanBalance { get; set; }
+        public DateTime? ContractEndDate { get; set; }
+        // The auto restructure's new daily, for when the customer is behind
+        // on the agreed plan; null past the contract end (no auto restructure).
+        public decimal? AutoNewDaily { get; set; }
 
         public int? LockGroup { get; set; }
         public bool Locked { get; set; }

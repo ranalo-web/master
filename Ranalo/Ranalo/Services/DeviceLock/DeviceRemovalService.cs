@@ -233,12 +233,25 @@ namespace Ranalo.Services.DeviceLock
     // and again the next day only if setting the date failed.
     public static class FullyPaidPlanner
     {
-        public static List<MobileStatusReport> Select(IEnumerable<MobileStatusReport>? records, int currentYear) =>
-            (records ?? Enumerable.Empty<MobileStatusReport>())
-                .Where(x => x.Arrears >= 0 &&
-                            x.LoanBalance <= 0 &&
-                            ParseLockDate(x.NextLockDate)?.Year == currentYear)
+        // Paid off as Lock Check counts it: a shilling short still counts.
+        public static bool IsPaidOff(MobileStatusReport x) =>
+            x.Arrears >= -LockCheckRules.PaidTolerance && x.LoanBalance <= LockCheckRules.PaidTolerance;
+
+        // Still to be set to 31/12/9999 and queued for release: any lock date
+        // short of the release dates (31/12/2099 is Transsion's fallback; the
+        // R script used 01/01/2100 too). Until 2026-10-19 only this year's
+        // dates counted, so a paid-off phone dated last year or next year was
+        // never released.
+        public static List<MobileStatusReport> Select(IEnumerable<MobileStatusReport>? records) =>
+            PaidOff(records)
+                .Where(x => ParseLockDate(x.NextLockDate)?.Year < DeviceLockRules.FullyPaidFallbackLockDateUtc.Year)
                 .ToList();
+
+        // Every paid-off account, whatever its lock date: its contract is
+        // ended (2026-10-19). Before, nothing ended it, so paid-off phones
+        // never reached Completed Contracts (e.g. 7201937).
+        public static List<MobileStatusReport> PaidOff(IEnumerable<MobileStatusReport>? records) =>
+            (records ?? Enumerable.Empty<MobileStatusReport>()).Where(IsPaidOff).ToList();
 
         // Lock dates come in several formats (see TimestampHelper and the
         // Nuovo sync). An unreadable one is skipped rather than stopping the
