@@ -215,6 +215,7 @@ namespace Ranolo.Web.Tests
             }
 
             public Task<Ranalo.Models.Enrolment> PreEnrolAsync(Ranalo.Models.Enrolment enrolment, int? deviceGroupId) => throw new NotImplementedException();
+            public Task<string?> AttachStockSaleAsync(Ranalo.Models.Enrolment enrolment, int? deviceGroupId) => throw new NotImplementedException();
             public Task<Ranalo.Services.DeviceLock.WorkflowResult> ApproveCallAsync(Guid enrolmentId, Ranalo.DataStore.DataModels.User actor) => throw new NotImplementedException();
             public Task<Ranalo.Services.DeviceLock.WorkflowResult> RetryUnlockAsync(Guid enrolmentId, Ranalo.DataStore.DataModels.User actor) => throw new NotImplementedException();
             public Task<Ranalo.Services.DeviceLock.WorkflowResult> SendAgainAsync(Guid enrolmentId, Ranalo.DataStore.DataModels.User actor, int? deviceGroupId) => throw new NotImplementedException();

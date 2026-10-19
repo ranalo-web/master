@@ -20,15 +20,18 @@ namespace Ranalo.Controllers
         private readonly IEnrolmentCheckService _checks;
         private readonly ITranssionEnrolmentWorkflow _transsion;
         private readonly IDevicesRepository _devices;
+        private readonly IStockPhoneService _stock;
         public EnrolmentsController(IUserService userService, 
             IEnrolmentService enrolmentService, 
             IApplicationReportService applicationReportService,
             ISyncService syncService,
             IEnrolmentCheckService checks,
             ITranssionEnrolmentWorkflow transsion,
-            IDevicesRepository devices)
+            IDevicesRepository devices,
+            IStockPhoneService stock)
         {
             _devices = devices;
+            _stock = stock;
             _userService = userService;
             _enrolmentService = enrolmentService;
             _applicationReportService = applicationReportService;
@@ -152,7 +155,12 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Enrolments");
             }
 
-            if (existingEnrolment.Status == EnrolmentStatus.Pending)
+            if (existingEnrolment.Status == EnrolmentStatus.Pending && existingEnrolment.StockKnoxApprovedAt.HasValue)
+            {
+                var sold = await _stock.UnlockSoldKnoxAsync(existingEnrolment, settings);
+                TempData[sold.Success ? "EnrolmentMessage" : "EnrolmentError"] = sold.Message;
+            }
+            else if (existingEnrolment.Status == EnrolmentStatus.Pending)
             {
                 existingEnrolment.CallApprovedByUserId = settings.UserId;
                 existingEnrolment.CallApprovedAt = DateTime.UtcNow;
@@ -327,7 +335,11 @@ namespace Ranalo.Controllers
 
             var existingEnrolment = await _enrolmentService.GetByImeiNumberAsync(enrolment.IMEI);
 
-            if (existingEnrolment != null)
+            // A stock phone (locked by IMEI, no order) is sold by enrolling it
+            // with the order as usual: the sale is attached to it.
+            var stock = existingEnrolment != null && StockPhoneRules.IsStock(existingEnrolment) ? existingEnrolment : null;
+
+            if (existingEnrolment != null && stock == null)
             {
                 response.Errors.Add("The IMEI Number is registered to another order");
             }
@@ -341,10 +353,14 @@ namespace Ranalo.Controllers
             }
 
             // Phones already on Nuovo are approved as Nuovo (any brand).
-            object? nuovoDevice;
+            object? nuovoDevice = null;
             try
             {
-                nuovoDevice = await _syncService.DevicePullSearch(enrolment.IMEI);
+                // A stock phone is with Knox or Transsion already.
+                if (stock == null)
+                {
+                    nuovoDevice = await _syncService.DevicePullSearch(enrolment.IMEI);
+                }
             }
             catch (Exception)
             {
@@ -355,6 +371,20 @@ namespace Ranalo.Controllers
             // Brand (from the order + TAC), M-Pesa deposit, order's dealer.
             var checks = await _checks.EvaluateAsync(enrolment, order!, settings.RoleId, overrideBrand, onNuovo: nuovoDevice != null);
             response.Errors.AddRange(checks.Errors);
+
+            // The stock phone's brand was confirmed by an admin when it was
+            // locked; the order can only disagree with it.
+            if (stock != null)
+            {
+                var brandError = StockPhoneRules.CheckSaleBrand(stock, checks.Brand);
+                if (brandError != null)
+                {
+                    response.Errors.Add(brandError);
+                }
+                checks.Brand = stock.DeviceBrand;
+                checks.BrandBlocked = false;
+                checks.BrandOverridden = false;
+            }
 
             if (checks.BrandBlocked && !response.Errors.Any())
             {
@@ -408,6 +438,24 @@ namespace Ranalo.Controllers
                 enrolment.RequiredDeposit = checks.Deposit.Required;
                 enrolment.DepositPaid = checks.Deposit.Paid;
                 enrolment.DepositShort = checks.Deposit.IsShort;
+
+                if (stock != null)
+                {
+                    var attachError = await _enrolmentService.AttachStockSaleAsync(stock, enrolment);
+                    if (attachError != null)
+                    {
+                        response.Errors.Add(attachError);
+                        return await EnrolmentFormAsync(response, enrolment);
+                    }
+
+                    TempData["EnrolmentMessage"] = $"Stock phone {stock.IMEI} sold on order {stock.OrderId}. "
+                        + (DeviceLockRules.IsTranssion(stock.DeviceBrand)
+                            ? "It unlocks once an approver has called the customer and approved it."
+                            : "An approver approves it on this page to unlock it.")
+                        + (stock.DepositShort ? " The deposit is short, so only an admin can approve it." : "");
+                    return RedirectToAction("Index");
+                }
+
                 enrolment = await _enrolmentService.CreateEnrolmentasync(enrolment, order);
             }
             catch (Exception)
@@ -494,33 +542,6 @@ namespace Ranalo.Controllers
             }
         }
 
-        public static bool IsValidImei(string imei)
-        {
-            if (string.IsNullOrWhiteSpace(imei))
-                return false;
-
-            if (imei.Length != 15 || !imei.All(char.IsDigit))
-                return false;
-
-            int sum = 0;
-
-            for (int i = 0; i < 14; i++)
-            {
-                int digit = imei[i] - '0';
-
-                if (i % 2 == 1) // Double every second digit
-                {
-                    digit *= 2;
-                    if (digit > 9)
-                        digit -= 9;
-                }
-
-                sum += digit;
-            }
-
-            int checkDigit = (10 - (sum % 10)) % 10;
-
-            return checkDigit == (imei[14] - '0');
-        }
+        public static bool IsValidImei(string imei) => DeviceLockRules.IsValidImei(imei);
     }
 }

@@ -1,0 +1,177 @@
+@using Ranalo.Models
+@using Ranalo.Services.DeviceLock
+@model StockPhonesViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var filters = new[] { (StockPhoneRules.FilterAll, "In stock", Model.Total), (StockPhoneRules.FilterUnverified, "Not verified", Model.Unverified) };
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Stock Phones</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Phones locked with Knox or Transsion by IMEI, before they're sold.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/enrolments" class="btn btn-outline-light"><em class="icon ni ni-arrow-left"></em><span>Enrolments</span></a>
+            </div>
+        </div>
+    </div>
+
+    @foreach (var message in Model.Messages)
+    {
+        <div class="alert alert-success alert-icon"><em class="icon ni ni-check-circle"></em>@message</div>
+    }
+    @foreach (var error in Model.Errors)
+    {
+        <div class="alert alert-danger alert-icon"><em class="icon ni ni-cross-circle"></em>@error</div>
+    }
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-lg-5">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-3">Lock stock phones</h6>
+                        <form method="post" action="/enrolments/stock/lock">
+                            @Html.AntiForgeryToken()
+                            <div class="form-group">
+                                <label class="form-label" for="imeis">IMEIs, one per line</label>
+                                <textarea id="imeis" name="imeis" rows="4" class="form-control" placeholder="350522366526910" required></textarea>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="brand">Brand</label>
+                                        <select id="brand" name="brand" class="form-select" required>
+                                            <option value="">Choose…</option>
+                                            <option value="@DeviceLockRules.Samsung">Samsung (Knox)</option>
+                                            <option value="@DeviceLockRules.Itel">itel (Transsion)</option>
+                                            <option value="@DeviceLockRules.Tecno">TECNO (Transsion)</option>
+                                            <option value="@DeviceLockRules.Infinix">Infinix (Transsion)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="dealerId">With dealer</label>
+                                        <select id="dealerId" name="dealerId" class="form-select">
+                                            <option value="0">Not given out yet</option>
+                                            @foreach (var d in Model.Dealers)
+                                            {
+                                                <option value="@d.Key">@d.Value</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-1">Lock phones</button>
+                        </form>
+                        <ol class="small text-soft mt-3 mb-0 ps-0 list-unstyled">
+                            <li>1. Lock the phones here. For Samsung, press <strong>Approve &amp; lock</strong> once it reaches Knox.</li>
+                            <li>2. Switch the phone on and connect it to Wi-Fi: it should show the lock screen.</li>
+                            <li>3. Press <strong>Check lock</strong> and wait for <strong>Locked ✓</strong>. Then it can go to the field.</li>
+                            <li>4. When it's sold, enrol it as usual with the customer's order on <a href="/addenrolment">Add Enrolment</a>. It unlocks once it's approved.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="row g-2 mb-2">
+                    @foreach (var (key, label, count) in filters)
+                    {
+                        var active = key == Model.Filter;
+                        <div class="col-6">
+                            <a href="/enrolments/stock?filter=@key" class="card card-bordered h-100 text-decoration-none @(active ? "border-primary" : "")" style="@(active ? "border-width:2px;" : "")">
+                                <div class="card-inner p-3">
+                                    <div class="small @(active ? "text-primary fw-bold" : "text-soft")">@label</div>
+                                    <div class="fs-4 fw-bold @(count == 0 ? "text-soft" : key == StockPhoneRules.FilterUnverified ? "text-warning" : "")">@count</div>
+                                </div>
+                            </a>
+                        </div>
+                    }
+                </div>
+
+                <div class="card card-bordered">
+                    <div class="card-inner card-inner-md">
+                        <form method="get" action="/enrolments/stock" class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                            <input type="hidden" name="filter" value="@Model.Filter" />
+                            <input type="search" name="q" value="@Model.Search" placeholder="IMEI or brand" class="form-control form-control-sm" style="max-width:260px;" />
+                            <button type="submit" class="btn btn-sm btn-outline-light">Search</button>
+                            @if (!string.IsNullOrEmpty(Model.Search))
+                            {
+                                <a href="/enrolments/stock?filter=@Model.Filter" class="small">Clear</a>
+                            }
+                        </form>
+                    </div>
+                    <div class="card-inner p-0 border-top">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="wl-th">Phone</th>
+                                        <th class="wl-th d-none d-md-table-cell">Dealer</th>
+                                        <th class="wl-th">Lock</th>
+                                        <th class="wl-th text-end"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.Rows.Count == 0)
+                                    {
+                                        <tr><td colspan="4" class="text-center text-soft py-4">No stock phones.</td></tr>
+                                    }
+                                    @foreach (var e in Model.Rows)
+                                    {
+                                        var knox = DeviceLockRules.ProviderForBrand(e.DeviceBrand) == LockProvider.Knox;
+                                        <tr>
+                                            <td>
+                                                <span class="fw-medium">@e.IMEI</span>
+                                                <div class="small text-soft">@e.DeviceBrand · @(knox ? "Knox" : "Transsion") · @e.StockLockedAt?.ToString("dd/MM/yyyy")</div>
+                                                <div class="small text-soft d-md-none">@(Model.Dealers.TryGetValue(e.DealerId, out var dn) ? dn : "")</div>
+                                            </td>
+                                            <td class="d-none d-md-table-cell">@(Model.Dealers.TryGetValue(e.DealerId, out var dealer) ? dealer : "—")</td>
+                                            <td>
+                                                <span class="fw-medium @(e.StockVerifiedAt.HasValue ? "text-success" : "text-warning")">@StockPhoneRules.StatusText(e)</span>
+                                                @if (e.StockVerifiedAt.HasValue)
+                                                {
+                                                    <div class="small text-soft">Checked @e.StockVerifiedAt.Value.ToString("dd/MM/yyyy HH:mm") UTC</div>
+                                                }
+                                                else if (!string.IsNullOrEmpty(e.StockCheck))
+                                                {
+                                                    <div class="small text-soft">@e.StockCheck</div>
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="d-flex flex-column align-items-end" style="gap:4px;white-space:nowrap;">
+                                                @if (knox)
+                                                {
+                                                    <form method="post" action="/enrolments/stock/@e.Id/knox-lock?filter=@Model.Filter" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="btn btn-sm @(e.StockKnoxApprovedAt.HasValue ? "btn-outline-light" : "btn-primary")">
+                                                            @(e.StockKnoxApprovedAt.HasValue ? "Lock again" : "Approve & lock")
+                                                        </button>
+                                                    </form>
+                                                }
+                                                <form method="post" action="/enrolments/stock/@e.Id/check?filter=@Model.Filter" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary">Check lock</button>
+                                                </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

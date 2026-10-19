@@ -144,6 +144,7 @@ builder.Services.AddScoped<IDeviceLockRepository, DeviceLockRepository>();
 builder.Services.AddScoped<IDeviceRemovalTaskRepository, DeviceRemovalTaskRepository>();
 builder.Services.AddScoped<IEnrolmentCheckService, EnrolmentCheckService>();
 builder.Services.AddScoped<ITranssionEnrolmentWorkflow, TranssionEnrolmentWorkflow>();
+builder.Services.AddScoped<Ranalo.Services.DeviceLock.IStockPhoneService, Ranalo.Services.DeviceLock.StockPhoneService>();
 builder.Services.AddScoped<IDeviceRemovalService, DeviceRemovalService>();
 builder.Services.AddScoped<ICommissionsReportsService, CommissionsReportsService>();
 

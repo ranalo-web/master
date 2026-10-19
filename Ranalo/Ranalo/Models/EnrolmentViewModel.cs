@@ -66,6 +66,14 @@ namespace Ranalo.Models
         public int? CallApprovedByUserId { get; set; }
         public DateTime? CallApprovedAt { get; set; }
         public DateTime? UnlockedAt { get; set; }
+
+        // Stock phones (Database/StockPhones/001): locked by IMEI with no
+        // order, until it's sold. See Services/DeviceLock/StockPhoneRules.cs.
+        public DateTime? StockLockedAt { get; set; }
+        public int? StockLockedByUserId { get; set; }
+        public DateTime? StockKnoxApprovedAt { get; set; }
+        public DateTime? StockVerifiedAt { get; set; }
+        public string? StockCheck { get; set; }
     }
 
     public enum EnrolmentStatus
@@ -80,6 +88,8 @@ namespace Ranalo.Models
             PendingActivation = 5,
             // Transsion: phone switched on and active, waiting for the
             // approver/admin call before it unlocks.
-            Enrolled = 6
+            Enrolled = 6,
+            // Locked by IMEI with no order (stock), waiting to be sold.
+            Stock = 7
     }
 }

@@ -104,6 +104,29 @@ namespace Ranalo.Services.DeviceLock
             return brands.Count == 1 ? brands[0] : null;
         }
 
+        // 15 digits with a valid Luhn check digit.
+        public static bool IsValidImei(string? imei)
+        {
+            if (string.IsNullOrWhiteSpace(imei) || imei.Length != 15 || !imei.All(char.IsDigit))
+            {
+                return false;
+            }
+
+            var sum = 0;
+            for (var i = 0; i < 14; i++)
+            {
+                var digit = imei[i] - '0';
+                if (i % 2 == 1)
+                {
+                    digit *= 2;
+                    if (digit > 9) digit -= 9;
+                }
+                sum += digit;
+            }
+
+            return (10 - (sum % 10)) % 10 == imei[14] - '0';
+        }
+
         public static string? Tac(string? imei) =>
             imei != null && imei.Length >= 8 && imei.Take(8).All(char.IsDigit) ? imei[..8] : null;
 
@@ -209,6 +232,11 @@ namespace Ranalo.Services.DeviceLock
                 return ApprovalDecision.No("Only an approver or admin can approve an enrolment.");
             }
 
+            if (enrolment.Status == EnrolmentStatus.Stock)
+            {
+                return ApprovalDecision.No("This is a stock phone that hasn't been sold. Enrol it with the customer's order first.");
+            }
+
             if (role == UserRole.Approver && enrolment.EnrolledByUserId == userId)
             {
                 return ApprovalDecision.No("You enrolled this device, so an admin must approve it.");
@@ -273,6 +301,7 @@ namespace Ranalo.Services.DeviceLock
             not EnrolmentStatus.Error when NeedsSendingToTranssion(enrolment) => enrolment.CallApprovedAt.HasValue
                 ? "Approved – not sent to Transsion yet"
                 : "Not sent to Transsion yet",
+            EnrolmentStatus.Stock => "Stock – locked, not sold",
             EnrolmentStatus.New => "New",
             EnrolmentStatus.Pending => "Pending",
             EnrolmentStatus.PendingActivation => enrolment.CallApprovedAt.HasValue

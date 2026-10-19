@@ -723,5 +723,45 @@ namespace Ranalo.Controllers
             };
             return View("~/Views/Recovery/Details.cshtml", model);
         }
+
+        // Stock phones with sample rows (the Enrolments stock columns need
+        // Database/StockPhones/001): /dev-preview/stock-phones.
+        [HttpGet]
+        [Route("dev-preview/stock-phones")]
+        public IActionResult StockPhones(string filter = Ranalo.Services.DeviceLock.StockPhoneRules.FilterAll)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var now = DateTime.UtcNow;
+            var rows = new List<Enrolment>
+            {
+                new() { Id = Guid.NewGuid(), IMEI = "356938035643809", DeviceBrand = "TECNO", Status = EnrolmentStatus.Stock, DealerId = 4,
+                        StockLockedAt = now.AddDays(-2), ActivatedAt = now.AddDays(-2).AddMinutes(20), StockVerifiedAt = now.AddDays(-2).AddMinutes(25),
+                        StockCheck = "Locked by Transsion. Last connected 17/10/2026 09:25 UTC." },
+                new() { Id = Guid.NewGuid(), IMEI = "350522366526910", DeviceBrand = "Samsung", Status = EnrolmentStatus.Stock,
+                        StockLockedAt = now.AddHours(-1) },
+                new() { Id = Guid.NewGuid(), IMEI = "350522366526928", DeviceBrand = "Samsung", Status = EnrolmentStatus.Stock, DealerId = 4,
+                        StockLockedAt = now.AddHours(-3), StockKnoxApprovedAt = now.AddHours(-3),
+                        StockCheck = "Active in Knox, but the lock hasn't reached the phone yet: connect it to the internet. Last seen 19/10/2026 06:02 UTC." },
+                new() { Id = Guid.NewGuid(), IMEI = "356938035643817", DeviceBrand = "itel", Status = EnrolmentStatus.Stock,
+                        StockLockedAt = now.AddMinutes(-30), ActivatedAt = now.AddMinutes(-10) },
+            };
+            var model = new StockPhonesViewModel
+            {
+                Filter = filter,
+                Total = rows.Count,
+                Unverified = rows.Count(Ranalo.Services.DeviceLock.StockPhoneRules.NeedsVerifying),
+                Rows = filter == Ranalo.Services.DeviceLock.StockPhoneRules.FilterUnverified
+                    ? rows.Where(Ranalo.Services.DeviceLock.StockPhoneRules.NeedsVerifying).ToList() : rows,
+                Dealers = new Dictionary<int, string> { [4] = "Newway Mobiles", [7] = "Kisumu Phones" },
+            };
+            model.Messages.Add("356938035643817: sent to Transsion. It locks the first time it's switched on and connected.");
+            ViewBag.IsAdmin = true;
+            ViewBag.UserName = "Preview Admin";
+            return View("~/Views/StockPhones/Index.cshtml", model);
+        }
     }
 }

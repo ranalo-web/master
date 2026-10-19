@@ -26,6 +26,9 @@ namespace Ranalo.Services.DeviceLock
     public interface ITranssionEnrolmentWorkflow
     {
         Task<Enrolment> PreEnrolAsync(Enrolment enrolment, int? deviceGroupId);
+        // A sold stock phone (sale already attached): Transsion has it, so
+        // only our device row. null = done; otherwise why not, nothing saved.
+        Task<string?> AttachStockSaleAsync(Enrolment enrolment, int? deviceGroupId);
         Task<WorkflowResult> SendAgainAsync(Guid enrolmentId, User actor, int? deviceGroupId);
         Task<WorkflowResult> ApproveCallAsync(Guid enrolmentId, User actor);
         Task<WorkflowResult> RetryUnlockAsync(Guid enrolmentId, User actor);
@@ -68,16 +71,14 @@ namespace Ranalo.Services.DeviceLock
 
         private DateTime UtcNow => _time.GetUtcNow().UtcDateTime;
 
-        public async Task<Enrolment> PreEnrolAsync(Enrolment enrolment, int? deviceGroupId)
+        // null = the account and IMEI are free for this enrolment.
+        private async Task<(string? Error, Ranalo.Woocommece.Api.Models.Device? Existing)> CheckDeviceFreeAsync(Enrolment enrolment)
         {
-            enrolment.UpdatedBy = "PAYTRIGGER";
-
             // The Devices table holds one device per account (Id = account).
             var existing = await _devices.GetDeviceByAccountId(enrolment.AccountId);
             if (existing != null && existing.ImeiNo != enrolment.IMEI && existing.Status != "removed" && existing.EnrollmentStatus != "Removed")
             {
-                return await FailAsync(enrolment,
-                    $"Account {enrolment.AccountId} already has device {existing.ImeiNo} ({existing.Status}). Remove it before enrolling another.");
+                return ($"Account {enrolment.AccountId} already has device {existing.ImeiNo} ({existing.Status}). Remove it before enrolling another.", existing);
             }
 
             // The webhook finds the device by IMEI, so the IMEI can't stay
@@ -85,8 +86,20 @@ namespace Ranalo.Services.DeviceLock
             var elsewhere = await _devices.GetDeviceByImeiAsync(enrolment.IMEI);
             if (elsewhere != null && elsewhere.Id != enrolment.AccountId && elsewhere.Status != "removed" && elsewhere.EnrollmentStatus != "Removed")
             {
-                return await FailAsync(enrolment,
-                    $"IMEI {enrolment.IMEI} is still on account {elsewhere.Id} ({elsewhere.Make} {elsewhere.Status}). End that contract and remove the device first.");
+                return ($"IMEI {enrolment.IMEI} is still on account {elsewhere.Id} ({elsewhere.Make} {elsewhere.Status}). End that contract and remove the device first.", existing);
+            }
+
+            return (null, existing);
+        }
+
+        public async Task<Enrolment> PreEnrolAsync(Enrolment enrolment, int? deviceGroupId)
+        {
+            enrolment.UpdatedBy = "PAYTRIGGER";
+
+            var (error, existing) = await CheckDeviceFreeAsync(enrolment);
+            if (error != null)
+            {
+                return await FailAsync(enrolment, error);
             }
 
             PayTriggerModels.PreEnrollImeiResponse response;
@@ -116,6 +129,34 @@ namespace Ranalo.Services.DeviceLock
                     $"Transsion refused the IMEI: {failed?.Message ?? response.Message} (code {failed?.ErrCode ?? response.Code})");
             }
 
+            await SaveDeviceAsync(enrolment, existing, deviceGroupId);
+
+            enrolment.Status = DeviceLockRules.WaitingStatus(enrolment);
+            enrolment.Updated = UtcNow;
+            enrolment.PayTriggerStatus = response.Message;
+            enrolment.PayTriggerResponse = "Pre-enrolled. Waiting for the customer to switch the phone on and connect to the internet.";
+            await _enrolments.UpdateEnrolmentAsync(enrolment);
+
+            return enrolment;
+        }
+
+        public async Task<string?> AttachStockSaleAsync(Enrolment enrolment, int? deviceGroupId)
+        {
+            var (error, existing) = await CheckDeviceFreeAsync(enrolment);
+            if (error != null)
+            {
+                return error;
+            }
+
+            await SaveDeviceAsync(enrolment, existing, deviceGroupId);
+            enrolment.Status = DeviceLockRules.WaitingStatus(enrolment);
+            enrolment.Updated = UtcNow;
+            await _enrolments.UpdateEnrolmentAsync(enrolment);
+            return null;
+        }
+
+        private async Task SaveDeviceAsync(Enrolment enrolment, Ranalo.Woocommece.Api.Models.Device? existing, int? deviceGroupId)
+        {
             var device = existing ?? new Ranalo.Woocommece.Api.Models.Device { Id = (int)enrolment.AccountId };
             device.Name = enrolment.FirstName;
             device.ImeiNo = enrolment.IMEI;
@@ -141,14 +182,6 @@ namespace Ranalo.Services.DeviceLock
             {
                 await _devices.UpdateDeviceToDatabaseAsync(device);
             }
-
-            enrolment.Status = DeviceLockRules.WaitingStatus(enrolment);
-            enrolment.Updated = UtcNow;
-            enrolment.PayTriggerStatus = response.Message;
-            enrolment.PayTriggerResponse = "Pre-enrolled. Waiting for the customer to switch the phone on and connect to the internet.";
-            await _enrolments.UpdateEnrolmentAsync(enrolment);
-
-            return enrolment;
         }
 
         // Approver/admin: pre-enrol a Transsion enrolment PayTrigger never
@@ -297,7 +330,8 @@ namespace Ranalo.Services.DeviceLock
                 var response = await _payTrigger.UpdateRepayInfoAsync(new PayTriggerModels.UpdateRepayInfoRequest
                 {
                     Imei = enrolment.IMEI,
-                    OrderNum = enrolment.OrderId.ToString(),
+                    // A stock phone was pre-enrolled with its IMEI only.
+                    OrderNum = StockPhoneRules.FromStock(enrolment) ? null : enrolment.OrderId.ToString(),
                     NextRepayTime = firstLockSeconds
                 });
 
