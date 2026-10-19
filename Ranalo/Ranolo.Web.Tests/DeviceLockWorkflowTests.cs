@@ -738,6 +738,29 @@ namespace Ranolo.Web.Tests
             Assert.That(r.Errors, Has.Some.Contains("no M-Pesa deposit reference"));
         }
 
+        // The dealer gives the code at enrolment: it goes on the order and
+        // the deposit check confirms it like any other.
+        [Test]
+        public async Task EnteredDepositCode_PaidToThisAccount_Passes()
+        {
+            _repo.Payments.Add(new DepositPayment("UJEJ79VIED", "30111222", 5000m));
+            var order = Order();
+            order.MpesaDepositRef = "UJEJ79VIED";
+            var r = await _service.EvaluateAsync(Enrolment(), order, UserRole.Dealer, null);
+            Assert.That(r.Errors, Is.Empty);
+            Assert.That(r.Deposit.Paid, Is.EqualTo(5000m));
+        }
+
+        [Test]
+        public async Task EnteredDepositCode_SomeoneElsesPayment_Blocks()
+        {
+            _repo.Payments.Add(new DepositPayment("UJEJ79VIED", "29999999", 5000m));
+            var order = Order();
+            order.MpesaDepositRef = "UJEJ79VIED";
+            var r = await _service.EvaluateAsync(Enrolment(), order, UserRole.Dealer, null);
+            Assert.That(r.Errors, Has.Some.Contains("paid to a different account"));
+        }
+
         [Test]
         public async Task AccountAlreadyHasAnotherPhone_BlocksAndSuggestsSuffix()
         {
