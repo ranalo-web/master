@@ -376,15 +376,19 @@ namespace Ranalo.Services
                     };
                     if (statusRow.Arrears < 0)
                     {
-                        
-                        var daysLeft = _calculatorService.CalculateNoDaysUnit((DateTime)statusRow.FirstPaymentDate);
-                        var effectiveDays = (decimal)daysLeft / 1m;
-                        var restructuredAmount = ((statusRow.Arrears * -1m) / effectiveDays) * 1.1m;
-                        var newRateToPay = restructuredAmount + payment.Daily + payment.Weekly + payment.Monthly;
+                        // Auto restructure: the arrears spread over the days
+                        // left to the contract end (Services/RestructureCalculator.cs).
+                        // Past the end there's none: NewDaily 0.
+                        var nowUtc = DateTime.UtcNow;
+                        var dailyAll = RestructureCalculator.DailyPaymentAll(payment.Daily, payment.Weekly, payment.Monthly);
+                        var contractEnd = RestructureCalculator.ContractEndDate(payment.FirstPaidDate, payment.TermsInMonths);
+                        var daysLeft = Math.Max(0, RestructureCalculator.DaysLeft(contractEnd, nowUtc));
+                        var newRate = RestructureCalculator.AutoNewDaily(statusRow.Arrears, dailyAll, contractEnd, nowUtc);
+                        var newRateToPay = newRate ?? 0;
+                        var restructuredAmount = newRate.HasValue ? newRate.Value - dailyAll : 0;
 
                         //Here we have silly units calculation
                         var oldUints = (statusRow.Arrears / (payment.Daily + payment.Weekly + payment.Monthly));
-                        var unitsLeft = (statusRow.Arrears / newRateToPay);
                         var now = DateTime.UtcNow; // Or DateTime.Now depending on your context
                         var autoLockDatePmt = now.AddSeconds(Convert.ToDouble(oldUints * 60 * 60 * 30));
 
@@ -639,18 +643,7 @@ namespace Ranalo.Services
                         out var paymentSummary))
                     continue;
 
-                var daysRestructured =
-                    (DateTime.UtcNow.Date -
-                     record.DateAgreed.Date).TotalDays;
-
-                var resDue =
-                    _calculatorService.CalculateTotalDue(
-                        record.AmountRes,
-                        0,
-                        0,
-                        0,
-                        record.DateAgreed,
-                        paymentSummary.TermsInMonths);
+                var now = DateTime.UtcNow;
 
                 var accountDue =
                     _calculatorService.CalculateTotalDue(
@@ -661,13 +654,16 @@ namespace Ranalo.Services
                         paymentSummary.FirstPaymentDate,
                         paymentSummary.TermsInMonths);
 
-                var arrears =
-                    record.TotalPaidR - resDue;
-
                 record.Arrears = _calculatorService.CalculateArears(paymentSummary.TotalPaid, accountDue);
 
                 record.Daily =
                     paymentSummary.Daily;
+
+                record.Weekly =
+                    paymentSummary.Weekly;
+
+                record.Monthly =
+                    paymentSummary.Monthly;
 
                 record.NewDaily =
                     record.AmountRes;
@@ -676,6 +672,9 @@ namespace Ranalo.Services
                     paymentSummary.LastConnectedAt;
 
                 record.LastResPaymentDate =
+                    paymentSummary.LastPaymentDate;
+
+                record.LastPaymentDate =
                     paymentSummary.LastPaymentDate;
 
                 record.LastPaidAmount =
@@ -690,47 +689,21 @@ namespace Ranalo.Services
                 record.LockGroup =
                     paymentSummary.LockGroup;
 
-                record.ImeiNo = record.ImeiNo;
-
                 record.LoanBalance = _calculatorService.CalculateOutstandingAmount(paymentSummary.Deposit,
                     paymentSummary.Daily, paymentSummary.Weekly, paymentSummary.Monthly, paymentSummary.TotalPaid, paymentSummary.TermsInMonths);
 
-                if (resDue <= 0)
-                {
-                    record.AutoLockDatePmtR =
-                        DateTime.UtcNow;
+                // The agreed plan counts from the first payment after the
+                // agreed date (Services/RestructureCalculator.cs).
+                record.ArrearsR = RestructureCalculator.ManualArrears(record.TotalPaidR, record.FirstResPaymentDate, record.AmountRes, now);
+                record.DaysRestructured = RestructureCalculator.ManualDaysRestructured(record.FirstResPaymentDate, now);
+                record.TotalDueR = record.TotalPaidR - record.ArrearsR;
+                record.AutoLockDatePmtR = RestructureCalculator.ManualLockDate(record.ArrearsR, record.AmountRes, now);
 
-                    record.TotalDueR =
-                        (decimal)resDue;
-
-                    record.ArrearsR =
-                        (decimal)arrears;
-
-                    record.DaysRestructured =
-                        (int)daysRestructured;
-                }
-                else
-                {
-                    var unitsLeft =
-                        arrears / record.AmountRes;
-
-                    var autoLockDatePmt =
-                        DateTime.UtcNow.AddSeconds(
-                            Convert.ToDouble(
-                                unitsLeft * 86400));
-
-                    record.AutoLockDatePmtR =
-                        autoLockDatePmt;
-
-                    record.TotalDueR =
-                        (decimal)resDue;
-
-                    record.ArrearsR =
-                        arrears;
-
-                    record.DaysRestructured =
-                        (int)daysRestructured;
-                }
+                // Behind on the plan, the auto restructure rule applies.
+                record.ContractEndDate = RestructureCalculator.ContractEndDate(paymentSummary.FirstPaymentDate, paymentSummary.TermsInMonths);
+                record.AutoNewDaily = RestructureCalculator.AutoNewDaily(record.Arrears,
+                    RestructureCalculator.DailyPaymentAll(paymentSummary.Daily, paymentSummary.Weekly, paymentSummary.Monthly),
+                    record.ContractEndDate.Value, now);
             }
 
             return allRestructuredRecords;

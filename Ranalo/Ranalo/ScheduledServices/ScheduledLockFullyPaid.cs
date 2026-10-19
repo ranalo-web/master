@@ -41,7 +41,8 @@ namespace Ranalo.ScheduledServices
                         // If this lookup fails the run is skipped rather than risk
                         // releasing a lost/stolen phone.
                         var lostStolen = await scope.ServiceProvider.GetRequiredService<ILostStolenRepository>().GetLockedAccountNosAsync();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService, removalService, lostStolen);
+                        var contracts = scope.ServiceProvider.GetRequiredService<ILockCheckRepository>();
+                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService, removalService, lostStolen, contracts);
                         foreach (var order in inactiveUsers)
                         {
                             _logger.LogInformation("Unlock fully paid lock Auto for: {user}", order.AccountId);
@@ -74,7 +75,8 @@ namespace Ranalo.ScheduledServices
             IPaymentsRepository paymentsRepository,
             IEnrolmentService enrolmentService,
             IDeviceRemovalService removalService,
-            IReadOnlySet<long>? lostStolenLocked = null)
+            IReadOnlySet<long>? lostStolenLocked = null,
+            ILockCheckRepository? contracts = null)
         {
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, "");
 
@@ -83,7 +85,9 @@ namespace Ranalo.ScheduledServices
             // Closing the report as Paid off lets the next run release it.
             LostStolenRules.LeaveLocked(records?.StatusReports, r => r.AccountNo, lostStolenLocked);
 
-            var fullyPaid = FullyPaidPlanner.Select(records?.StatusReports, DateTime.UtcNow.Year);
+            await EndContractsAsync(contracts, FullyPaidPlanner.PaidOff(records?.StatusReports));
+
+            var fullyPaid = FullyPaidPlanner.Select(records?.StatusReports);
             if (!fullyPaid.Any())
             {
                 return new List<LockTransaction>();
@@ -132,6 +136,35 @@ namespace Ranalo.ScheduledServices
                 fullyPaid.Count, queued);
 
             return processed;
+        }
+
+        // Ends each paid-off contract, dated the day of the payment that paid
+        // it off, so it shows on Completed Contracts. One failure doesn't stop
+        // the rest or the release.
+        private async Task EndContractsAsync(ILockCheckRepository? contracts, List<MobileStatusReport> paidOff)
+        {
+            if (contracts == null)
+            {
+                return;
+            }
+
+            var ended = 0;
+            foreach (var account in paidOff)
+            {
+                try
+                {
+                    if (await contracts.EndPaidOffContractAsync(account.AccountNo)) ended++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Fully paid: couldn't end the contract for {Account}", account.AccountNo);
+                }
+            }
+
+            if (ended > 0)
+            {
+                _logger.LogInformation("Fully paid: {Ended} contract(s) ended", ended);
+            }
         }
     }
 }
