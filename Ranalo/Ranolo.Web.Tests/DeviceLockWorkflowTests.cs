@@ -19,6 +19,7 @@ namespace Ranolo.Web.Tests
         private FakeDeviceLockRepository _lockRepo = null!;
         private FakeTime _time = null!;
         private TranssionEnrolmentWorkflow _workflow = null!;
+        private FakeOrderContracts _contracts = null!;
 
         private static readonly User Approver = new() { UserId = 20, RoleId = UserRole.Approver, Name = "Approver" };
         private static readonly User Admin = new() { UserId = 1, RoleId = UserRole.Admin, Name = "Admin" };
@@ -32,8 +33,9 @@ namespace Ranolo.Web.Tests
             _payTrigger = new FakePayTrigger();
             _lockRepo = new FakeDeviceLockRepository();
             _time = new FakeTime();
+            _contracts = new FakeOrderContracts();
             _workflow = new TranssionEnrolmentWorkflow(_enrolments, _devices, _payTrigger, _lockRepo, _time,
-                NullLogger<TranssionEnrolmentWorkflow>.Instance);
+                NullLogger<TranssionEnrolmentWorkflow>.Instance, _contracts);
         }
 
         private Enrolment NewEnrolment(int enrolledBy = 10, UserRole role = UserRole.Dealer, bool depositShort = false)
@@ -395,6 +397,7 @@ namespace Ranolo.Web.Tests
                 Assert.That(_payTrigger.RepayCalls[0].NextRepayTime, Is.EqualTo(expectedLock));
                 Assert.That(e.Status, Is.EqualTo(EnrolmentStatus.Approved));
                 Assert.That(e.UnlockedAt, Is.Not.Null);
+                Assert.That(_contracts.Orders, Is.EqualTo(new long[] { e.OrderId }), "contract created on approval");
                 Assert.That(device.Status, Is.EqualTo("enrolled"), "now picked up by the paying-lock job");
                 Assert.That(device.Locked, Is.False);
                 Assert.That(device.IsActivated, Is.True);

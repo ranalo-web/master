@@ -88,6 +88,7 @@ builder.Services.AddScoped<IWooOrderRepository, WooOrderRepository>();
 builder.Services.AddScoped<ISyncLogsRepository, SyncLogsRepository>();
 builder.Services.AddScoped<IWooOrderProductRepository, WooOrderProductRepository>();
 builder.Services.AddScoped<ISyncService, SyncService>();
+builder.Services.AddScoped<IOrderContractService, OrderContractService>();
 builder.Services.AddScoped<IKosePaymentsRepository, KosePaymentsRepository>();
 
 

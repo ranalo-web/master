@@ -185,6 +185,15 @@ namespace Ranalo.Woocommece.Api.Services
             return accountsNos;
         }
 
+        // As soon as an enrolment is approved: that order's contract, if it
+        // qualifies (deposit received, device on the account). Otherwise
+        // false, and the scheduled run picks it up once it does.
+        public async Task<bool> CreateContractForOrderAsync(long orderId)
+        {
+            var order = await _wooOrderProductRepository.GetContractEligibleOrder(orderId);
+            return order != null && !string.IsNullOrEmpty(order.FirstName) && await CreateContractSingle(order);
+        }
+
         // false = not created: the account isn't a number or has no device.
         public async Task<bool> CreateContractSingle(ContractCreateDto order)
         {
