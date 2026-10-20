@@ -87,7 +87,7 @@ namespace Ranalo.ScheduledServices
             IPaymentsRepository paymentsRepository, 
             IKnoxGuardClient knoxGuardClient)
         {
-            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, ""); ;
+            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, ReportPaging.All, ""); ;
 
             // Get all restructured records to remove from the auto restructure list
 

@@ -130,6 +130,7 @@ namespace Ranalo.Services
                         TotalLast24 = payment.Last24hrPaidAmount,
                         FirstPaidAmt = payment.FirstPaymentAmount,
                         FirstPaymentDate = payment.FirstPaidDate,
+                        ContractEndDate = RestructureCalculator.ContractEndDate(payment.FirstPaidDate, payment.TermsInMonths),
                         LiveFlag = "1", //Ask Eddie Not sure what this is
                         Locked = payment.Locked,
                         Make = payment.Make,

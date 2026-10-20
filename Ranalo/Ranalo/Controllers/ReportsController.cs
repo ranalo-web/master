@@ -284,7 +284,9 @@ namespace Ranalo.Controllers
             {
                 AccountNo = accountNo,
                 AmountRes = newRate,
-                DateAgreed = dateFrom.ToUniversalTime().Date,
+                // The calendar day picked. Converting it to UTC on a server
+                // ahead of UTC moved it back a day (7005299, 2026-10-20).
+                DateAgreed = dateFrom.Date,
                 DaysRestructured = 0, // dateFrom to today 
                 ArrearsR = 0, //TotalDueR - TotalPaidR
                 TotalDueR = 0,  //AmountRes * SystemDate - DateAgreed
@@ -317,9 +319,15 @@ namespace Ranalo.Controllers
 
             await SetViewBags(settings, "approver");
 
+            // Accounts on an agreed restructure are on the Manual Restructured
+            // report and locked by its plan, not the auto one.
+            var manualRestructured = (await _applicationReportService.GetAllRestructuredNoCalculation())
+                .Select(r => r.AccountNo)
+                .ToHashSet();
+
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
-                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, false, null, null, page, pageSize, searchTerm.Trim());
+                var allPaymentSummaries = await _applicationReportService.CallQualifyingFunc(true, false, false, null, null, page, pageSize, searchTerm.Trim(), excludeAccounts: manualRestructured);
 
                 ViewData["OrdersStatus"] = "Waiting Approval";
 
@@ -334,7 +342,8 @@ namespace Ranalo.Controllers
 
             var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
 
-            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(false, false, false, null, dealerId, page, pageSize, searchTerm.Trim(), agentUserId);
+            // In arrears only, as admins see it (dealers and agents used to get every account).
+            var allDelaerStatusReport = await _applicationReportService.CallQualifyingFunc(true, false, false, null, dealerId, page, pageSize, searchTerm.Trim(), agentUserId, manualRestructured);
 
             return View(allDelaerStatusReport);
         }

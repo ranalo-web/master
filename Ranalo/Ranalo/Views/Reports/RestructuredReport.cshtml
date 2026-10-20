@@ -177,6 +177,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Daily Rate</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Rstrd Amount</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Rstrd Days</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Contract End</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">New Daily</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Total 24hrs</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Arrears</th>
@@ -184,7 +185,6 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Lock Date</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Paid</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Conn</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Auto Lock</th>
                                 <th class="wl-th"></th>
                             </tr>
                         </thead>
@@ -199,14 +199,14 @@
                                 <td>@report.Daily</td>
                                 <td>@report.RestructuredAmnt</td>
                                 <td>@report.DaysRestructured</td>
+                                <td>@(report.ContractEndDate?.ToString("dd MMM yyyy") ?? "-")</td>
                                 <td>@report.NewDaily</td>
                                 <td>@report.TotalLast24</td>
-                                <td><span class="@SetStatusBadge(report.Arrears)">@report.Arrears</span></td>
+                                <td><span class="@SetStatusBadge(report.Arrears)">@report.Arrears.ToString("N0")</span></td>
                                 <td><span class="@SetLockStatusBadge(report.Locked)">@SetLockStatusText(report.Locked)</span></td>
                                 <td>@FormatLockDate(report.NextLockDate)</td>
                                 <td>@(report.LastPaymentDate?.ToString("dd MMM yyyy") ?? "-")</td>
                                 <td>@FormartUtcDate(report.LastConnectedAt)</td>
-                                <td>@FormatLockDate(report.NextLockDateIsoFormat)</td>
                                 <td class="text-end">
                                     <ul class="nk-tb-actions gx-2 justify-content-end">
                                         <li>

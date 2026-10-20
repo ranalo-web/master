@@ -65,7 +65,7 @@ namespace Ranalo.ScheduledServices
 
         public async Task<List<AccountSendMessage>?> Process(IPaymentReminderService syncService, IApplicationReportService applicationReportsService, IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient)
         {
-            var records = await applicationReportsService.GetStatusReportByDealer(null, null, 1, 1000, ""); ;
+            var records = await applicationReportsService.GetStatusReportByDealer(null, null, 1, ReportPaging.All, ""); ;
 
             if (records == null && records?.StatusReports?.Any() == false)
             { return null; }

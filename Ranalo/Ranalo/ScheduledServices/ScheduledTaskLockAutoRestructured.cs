@@ -72,7 +72,7 @@ namespace Ranalo.ScheduledServices
             IReadOnlySet<long>? lostStolenLocked = null
             )
         {
-            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, "");
+            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, ReportPaging.All, "");
 
             // Lost/stolen phones stay locked whatever the customer pays.
             LostStolenRules.LeaveLocked(records?.StatusReports, r => r.AccountNo, lostStolenLocked);
