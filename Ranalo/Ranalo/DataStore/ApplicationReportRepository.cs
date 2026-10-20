@@ -1519,13 +1519,19 @@ namespace Ranalo.DataStore
             throw new NotImplementedException();
         }
 
-        public async Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null)
+        public async Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null, bool includeCount = true)
         {
             var offset = (page - 1) * pageSize;
 
-            var countQuery = SetPaymentSummaryQuery();
-            var totalRecords = await _db.QuerySingleAsync<int>(countQuery, new { DealerId = deviceGroupId, searchParam = searchTerm, AccountId = accountId, AgentUserId = agentUserId });
+            // The qualifying-records reports page in memory and never read the
+            // count, so they skip it (it scans every KosePayments row).
+            var totalRecords = includeCount
+                ? await _db.QuerySingleAsync<int>(SetPaymentSummaryQuery(), new { DealerId = deviceGroupId, searchParam = searchTerm, AccountId = accountId, AgentUserId = agentUserId })
+                : 0;
 
+            // Payments are read once: totals plus first and last payment come
+            // from one pass (it used to scan KosePayments three times, and the
+            // Auto Restructured report took 100s for 473 accounts).
             var sql = @";WITH ValidPayments AS
 (
     SELECT
@@ -1536,6 +1542,18 @@ namespace Ranalo.DataStore
     FROM KosePayments kp
     LEFT JOIN OrphanedPayments op 
         ON op.MpesaCode = kp.MpesaCode
+),
+
+RankedPayments AS
+(
+    SELECT
+        AccountNo,
+        MpesaCode,
+        AmountValue,
+        PaymentDateValue,
+        ROW_NUMBER() OVER (PARTITION BY AccountNo ORDER BY PaymentDateValue ASC) AS rnFirst,
+        ROW_NUMBER() OVER (PARTITION BY AccountNo ORDER BY PaymentDateValue DESC) AS rnLast
+    FROM ValidPayments
 ),
 
 PaymentStats AS
@@ -1553,50 +1571,15 @@ PaymentStats AS
             WHEN PaymentDateValue >= DATEADD(DAY,-7,GETDATE()) 
             THEN AmountValue END) AS LastWeekPaidAmount,
 
-        MIN(PaymentDateValue) AS FirstPaidDate,
-        MAX(PaymentDateValue) AS LastPaidDate
-    FROM ValidPayments
+        MAX(CASE WHEN rnFirst = 1 THEN PaymentDateValue END) AS FirstPaidDate,
+        MAX(CASE WHEN rnFirst = 1 THEN AmountValue END) AS FirstPaymentAmount,
+        MAX(CASE WHEN rnFirst = 1 THEN MpesaCode END) AS FirstMPesaCode,
+
+        MAX(CASE WHEN rnLast = 1 THEN PaymentDateValue END) AS LastPaidDate,
+        MAX(CASE WHEN rnLast = 1 THEN AmountValue END) AS LastPaymentAmount,
+        MAX(CASE WHEN rnLast = 1 THEN MpesaCode END) AS LastMPesaCode
+    FROM RankedPayments
     GROUP BY AccountNo
-),
-
-FirstPayment AS
-(
-    SELECT *
-    FROM
-    (
-        SELECT
-            AccountNo,
-            AmountValue,
-            MpesaCode,
-            PaymentDateValue,
-            ROW_NUMBER() OVER
-            (
-                PARTITION BY AccountNo
-                ORDER BY PaymentDateValue ASC
-            ) rn
-        FROM ValidPayments
-    ) t
-    WHERE rn = 1
-),
-
-LastPayment AS
-(
-    SELECT *
-    FROM
-    (
-        SELECT
-            AccountNo,
-            AmountValue,
-            MpesaCode,
-            PaymentDateValue,
-            ROW_NUMBER() OVER
-            (
-                PARTITION BY AccountNo
-                ORDER BY PaymentDateValue DESC
-            ) rn
-        FROM ValidPayments
-    ) t
-    WHERE rn = 1
 )
 
 SELECT
@@ -1604,13 +1587,13 @@ SELECT
     ci.TotalAmount,
     ps.TotalPaid,
 
-    fp.PaymentDateValue AS FirstPaidDate,
-    fp.AmountValue AS FirstPaymentAmount,
-    fp.MpesaCode AS FirstMPesaCode,
+    ps.FirstPaidDate,
+    ps.FirstPaymentAmount,
+    ps.FirstMPesaCode,
 
-    lp.PaymentDateValue AS LastPaidDate,
-    lp.AmountValue AS LastPaymentAmount,
-    lp.MpesaCode AS LastMPesaCode,
+    ps.LastPaidDate,
+    ps.LastPaymentAmount,
+    ps.LastMPesaCode,
 
     ps.Last24hrPaidAmount,
     ps.LastWeekPaidAmount,
@@ -1639,8 +1622,6 @@ SELECT
 
 FROM Devices d
 JOIN PaymentStats ps ON d.Id = ps.AccountNo
-JOIN FirstPayment fp ON d.Id = fp.AccountNo
-JOIN LastPayment lp ON d.Id = lp.AccountNo
 JOIN Contract_Info ci 
     ON ci.ID = d.Id
     AND ci.EndDate IS NULL
@@ -1652,11 +1633,11 @@ AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
 AND (
     @searchParam IS NULL
     OR CAST(d.Id AS NVARCHAR(50)) LIKE '%' + @searchParam + '%'
-    OR fp.MpesaCode LIKE '%' + @searchParam + '%'
+    OR ps.FirstMPesaCode LIKE '%' + @searchParam + '%'
     OR ci.First_Name LIKE '%' + @searchParam + '%'
 )
 
-ORDER BY lp.PaymentDateValue DESC
+ORDER BY ps.LastPaidDate DESC
                         	OFFSET @offset ROWS
                         	FETCH NEXT @pageSize ROWS ONLY;";
 
@@ -2207,80 +2188,79 @@ FROM
         {
 
             var offset = (page - 1) * pageSize;
-            // Count uses the same Contract_Info join and dealer/agent scope as the page query.
-            var countSql = @"SELECT 
-                            COUNT(*)
-                        FROM RestructuredRecords wo
-                        INNER JOIN Contract_Info ci
-                            ON ci.ID = wo.AccountNo
-                            AND ci.EndDate IS NULL
-                        WHERE (
-                        @SearchTerm IS NULL
-                        OR WO.AccountNo LIKE '%' + @SearchTerm + '%'
-                    )
-                    AND (@DealerId IS NULL OR EXISTS (
-                        SELECT 1 FROM Devices d
-                        WHERE d.Id = wo.AccountNo AND d.DeviceGroupId = @DealerId))
-                    AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
+            // One row per account: the latest restructure agreed, against the
+            // latest open contract. Two RestructuredRecords rows or two open
+            // Contract_Info rows for an account used to list it twice.
+            const string restructuredAccounts = @"
+                WITH LatestRestructure AS (
+                    SELECT rr.*,
+                        ROW_NUMBER() OVER (PARTITION BY rr.AccountNo ORDER BY rr.Date_Agreed DESC, rr.ID DESC) AS rn
+                    FROM RestructuredRecords rr
+                ),
+                Restructured AS (
+                    SELECT r.AccountNo, r.ID, r.Date_Agreed, r.Amount_Res,
+                        ci.Daily, ci.Weekly, ci.Monthly, ci.First_Name, ci.AssignedAgentId
+                    FROM LatestRestructure r
+                    CROSS APPLY (
+                        SELECT TOP 1 c.Daily, c.Weekly, c.Monthly, c.First_Name, c.AssignedAgentId
+                        FROM Contract_Info c
+                        WHERE c.ID = r.AccountNo AND c.EndDate IS NULL
+                        ORDER BY c.ContractID DESC
+                    ) ci
+                    WHERE r.rn = 1
+                        AND (@SearchTerm IS NULL OR r.AccountNo LIKE '%' + @SearchTerm + '%')
+                        AND (@DealerId IS NULL OR EXISTS (
+                            SELECT 1 FROM Devices d
+                            WHERE d.Id = r.AccountNo AND d.DeviceGroupId = @DealerId))
+                        AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+                )";
+
+            var countSql = restructuredAccounts + " SELECT COUNT(*) FROM Restructured;";
             var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
             var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { SearchTerm = searchParam, DealerId = dealerId, AgentUserId = agentUserId });
 
-            var sqlSelectAll = @"
+            var sqlSelectAll = restructuredAccounts + @"
                 SELECT 
                     r.AccountNo,
                     r.ID,
                     r.Date_Agreed AS DateAgreed,
                     r.Amount_Res AS AmountRes,
-                    SUM(vp.AmountValue) AS TotalPaidR,
-                    MIN(vp.PaymentDateValue) AS FirstResPaymentDate,
-                    MAX(vp.PaymentDateValue) AS LastResPaymentDate,
-                    ci.Daily,
-                    ci.Weekly,
-                    ci.Monthly,
-                    ci.First_Name AS FirstName,
+                    pay.TotalPaidR,
+                    pay.FirstResPaymentDate,
+                    pay.LastResPaymentDate,
+                    r.Daily,
+                    r.Weekly,
+                    r.Monthly,
+                    r.First_Name AS FirstName,
                     CAST(ISNULL(dl.Locked, 0) AS bit) AS Locked
-                FROM RestructuredRecords r
-                -- ✅ Merge KosePayments + OrphanedPayments properly
-                LEFT JOIN (
+                FROM Restructured r
+                -- Payments after the agreed date (KosePayments, re-pointed by OrphanedPayments)
+                OUTER APPLY (
                     SELECT 
-                        COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
-                        kp.MpesaCode,
-                        kp.AmountValue,
-                        kp.PaymentDateValue
-                    FROM KosePayments kp
-                    LEFT JOIN OrphanedPayments op 
-                        ON kp.MpesaCode = op.MpesaCode
-                ) vp 
-                    ON vp.AccountNo = r.AccountNo
-                    AND vp.PaymentDateValue > r.Date_Agreed
-                INNER JOIN Contract_Info ci 
-                    ON ci.ID = r.AccountNo
-                    AND ci.EndDate IS NULL
+                        SUM(vp.AmountValue) AS TotalPaidR,
+                        MIN(vp.PaymentDateValue) AS FirstResPaymentDate,
+                        MAX(vp.PaymentDateValue) AS LastResPaymentDate
+                    FROM (
+                        SELECT 
+                            COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
+                            kp.AmountValue,
+                            kp.PaymentDateValue
+                        FROM KosePayments kp
+                        LEFT JOIN OrphanedPayments op 
+                            ON kp.MpesaCode = op.MpesaCode
+                    ) vp
+                    WHERE vp.AccountNo = r.AccountNo
+                        AND vp.PaymentDateValue > r.Date_Agreed
+                ) pay
                 -- Current lock state of the device on this account
                 OUTER APPLY (
                     SELECT TOP 1 d.Locked
                     FROM Devices d
                     WHERE d.Id = r.AccountNo
                 ) dl
-                WHERE 
-                    (@SearchTerm IS NULL
-                    OR r.AccountNo LIKE '%' + @SearchTerm + '%')
-                    AND (@DealerId IS NULL OR EXISTS (
-                        SELECT 1 FROM Devices d
-                        WHERE d.Id = r.AccountNo AND d.DeviceGroupId = @DealerId))
-                    AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
-                GROUP BY 
-                    r.AccountNo,
-                    r.ID,
-                    r.Date_Agreed,
-                    r.Amount_Res,
-                    ci.Daily,
-                    ci.Weekly,
-                    ci.Monthly,
-                    ci.First_Name,
-                    dl.Locked
                 ORDER BY 
-                    r.Date_Agreed DESC
+                    r.Date_Agreed DESC,
+                    r.AccountNo
                 OFFSET @Offset ROWS 
                 FETCH NEXT @pageSize ROWS ONLY;";
 
@@ -2309,7 +2289,7 @@ FROM
                     Arrears_R AS ArrearsR,
                     Auto_lock_date_pmt_R AS AutoLockDatePmtR
                 FROM RestructuredRecords
-                WHERE Amount_Res = @AccountId
+                WHERE AccountNo = @AccountId
                 ORDER BY Date_Agreed DESC;";
 
             var records = await _db.QueryAsync<RestructuredRecord>(sqlSelectAll, new {AccountId = accountId});

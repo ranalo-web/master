@@ -57,17 +57,45 @@ namespace Ranolo.Web.Tests
         // ---- Manual restructure --------------------------------------------
 
         [Test]
-        public void ManualArrears_CountsFromFirstPaymentAfterAgreed()
+        public void ManualArrears_CountsFromTheAgreementDay()
         {
-            // First paid 10 days ago, 75/day agreed: 750 due, 900 paid -> 150 ahead.
-            Assert.That(RestructureCalculator.ManualArrears(900m, Now.AddDays(-10), 75m, Now), Is.EqualTo(150m));
+            // Agreed 10 days ago, 75/day: 750 due, 900 paid -> 150 ahead.
+            Assert.That(RestructureCalculator.ManualArrears(900m, Now.AddDays(-10), 75m, Now, 5000m), Is.EqualTo(150m));
             Assert.That(RestructureCalculator.ManualDaysRestructured(Now.AddDays(-10), Now), Is.EqualTo(10));
         }
 
         [Test]
-        public void ManualArrears_NoPaymentYet_Zero()
+        public void ManualArrears_NoPaymentYet_StillDueFromTheAgreementDay()
         {
-            Assert.That(RestructureCalculator.ManualArrears(0m, null, 75m, Now), Is.EqualTo(0m));
+            // Agreed 4 days ago, nothing paid: 300 behind.
+            Assert.That(RestructureCalculator.ManualArrears(0m, Now.AddDays(-4), 75m, Now, 5000m), Is.EqualTo(-300m));
+        }
+
+        [Test]
+        public void ManualArrears_AgreedForALaterDay_NothingDueYet()
+        {
+            Assert.That(RestructureCalculator.ManualArrears(0m, Now.AddDays(2), 75m, Now, 5000m), Is.EqualTo(0m));
+            Assert.That(RestructureCalculator.ManualDaysRestructured(Now.AddDays(2), Now), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ManualArrears_BehindIsCappedAtTheLoanBalance()
+        {
+            // 7252849: 329 days at 81/day is 26,649 due, 11,339 paid, but only 3,102.20 left on the loan.
+            Assert.That(RestructureCalculator.ManualArrears(11339m, Now.AddDays(-329), 81m, Now, 3102.20m), Is.EqualTo(-3102.20m));
+        }
+
+        [Test]
+        public void ManualArrears_BehindLessThanTheLoanBalance_Unchanged()
+        {
+            // 10 days at 75/day = 750 due, 600 paid -> 150 behind, 5,000 left.
+            Assert.That(RestructureCalculator.ManualArrears(600m, Now.AddDays(-10), 75m, Now, 5000m), Is.EqualTo(-150m));
+        }
+
+        [Test]
+        public void ManualArrears_LoanOverpaid_NeverBehind()
+        {
+            Assert.That(RestructureCalculator.ManualArrears(0m, Now.AddDays(-10), 75m, Now, -200m), Is.EqualTo(0m));
         }
 
         [Test]

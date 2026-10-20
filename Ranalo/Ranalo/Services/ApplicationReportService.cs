@@ -352,6 +352,7 @@ namespace Ranalo.Services
                         LastPaidMpesa = payment.LastMPesaCode,
                         FirstPaidAmt = payment.FirstPaymentAmount,
                         FirstPaymentDate = payment.FirstPaidDate,
+                        ContractEndDate = RestructureCalculator.ContractEndDate(payment.FirstPaidDate, payment.TermsInMonths),
                         LiveFlag = "1", //Ask Eddie Not sure what this is
                         Locked = payment.Locked,
                         Make = payment.Make,
@@ -409,7 +410,7 @@ namespace Ranalo.Services
             return mobileStatusReports;
         }
 
-        public async Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, bool assigned, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, int? agentUserId = null)
+        public async Task<StatusReportViewModel> CallQualifyingFunc(bool isInArrears, bool notPaid90, bool assigned, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, int? agentUserId = null, IReadOnlySet<long>? excludeAccounts = null)
         {
             deviceGroupId ??= 0;
 
@@ -419,6 +420,7 @@ namespace Ranalo.Services
                 isInArrears,
                 notPaid90,
                 assigned,
+                excludeAccounts: excludeAccounts,
                 fetchPageAsync: async (pageNumber, pageSize) =>
                 {
                     // Fetch *this page* directly from repo
@@ -428,7 +430,8 @@ namespace Ranalo.Services
                         pageNumber,
                         pageSize,
                         searchTerm,
-                        agentUserId
+                        agentUserId,
+                        includeCount: false
                     );
 
                     // Apply your business transformation (IsInArrears calc)
@@ -449,13 +452,18 @@ namespace Ranalo.Services
 
         public async Task<(int total, List<MobileStatusReport> page)> GetQualifyingPageAsync(
             int pageNumber, int pageSize,
-            bool isInArrears, bool notPaid90, bool assigned, Func<int, int, Task<List<MobileStatusReport>>> fetchPageAsync)
+            bool isInArrears, bool notPaid90, bool assigned, Func<int, int, Task<List<MobileStatusReport>>> fetchPageAsync,
+            IReadOnlySet<long>? excludeAccounts = null)
         {
             var qualifying = new List<MobileStatusReport>();
             int total = 0;
 
             await foreach (var record in GetAllQualifyingRecordsAsync(fetchPageAsync, isInArrears, notPaid90, assigned))
             {
+                // Left out before paging, so the page count stays right.
+                if (excludeAccounts?.Contains(record.AccountNo) == true)
+                    continue;
+
                 total++;
                 qualifying.Add(record);
             }
@@ -474,8 +482,11 @@ namespace Ranalo.Services
         bool isInArrears,
         bool notPaidIn90,
         bool assigned,
-        int dbPageSize = 1000)
+        int dbPageSize = 10000)
         {
+            // Each fetch re-totals every payment in the database, so fetch the
+            // whole book in as few batches as possible -- at 1,000 a batch the
+            // Auto Restructured report ran past the SQL timeout (2026-10-20).
             int pageNumber = 1;
 
             while (true)
@@ -483,6 +494,8 @@ namespace Ranalo.Services
                 var page = await fetchPageAsync(pageNumber, dbPageSize);
                 if (page == null || page.Count == 0)
                     yield break;
+
+                var lastBatch = page.Count < dbPageSize;
 
                 if (isInArrears && notPaidIn90 == false)
                 {
@@ -516,6 +529,9 @@ namespace Ranalo.Services
                         yield return record;
                     }
                 }
+
+                if (lastBatch)
+                    yield break;
 
                 pageNumber++;
             }
@@ -692,10 +708,10 @@ namespace Ranalo.Services
                 record.LoanBalance = _calculatorService.CalculateOutstandingAmount(paymentSummary.Deposit,
                     paymentSummary.Daily, paymentSummary.Weekly, paymentSummary.Monthly, paymentSummary.TotalPaid, paymentSummary.TermsInMonths);
 
-                // The agreed plan counts from the first payment after the
-                // agreed date (Services/RestructureCalculator.cs).
-                record.ArrearsR = RestructureCalculator.ManualArrears(record.TotalPaidR, record.FirstResPaymentDate, record.AmountRes, now);
-                record.DaysRestructured = RestructureCalculator.ManualDaysRestructured(record.FirstResPaymentDate, now);
+                // The agreed plan counts from the agreement day
+                // (Services/RestructureCalculator.cs).
+                record.ArrearsR = RestructureCalculator.ManualArrears(record.TotalPaidR, record.DateAgreed, record.AmountRes, now, record.LoanBalance);
+                record.DaysRestructured = RestructureCalculator.ManualDaysRestructured(record.DateAgreed, now);
                 record.TotalDueR = record.TotalPaidR - record.ArrearsR;
                 record.AutoLockDatePmtR = RestructureCalculator.ManualLockDate(record.ArrearsR, record.AmountRes, now);
 

@@ -19,6 +19,7 @@
         public string Model { get; set; }
         public DateTime? LastPaymentDate { get; set; }
         public DateTime? FirstPaymentDate { get; set; }
+        public DateTime? ContractEndDate { get; set; }
         public string? LastConnectedAt { get; set; }
         public bool Locked { get; set; }
         public DateTime? EnrolledOn { get; set; }

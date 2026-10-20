@@ -66,7 +66,7 @@ namespace Ranalo.ScheduledServices
             IPaymentsRepository paymentsRepository,
             IKnoxGuardClient knoxGuardClient)
         {
-            var records = await reminderService.GetAllRestructured("", 1, 1000);
+            var records = await reminderService.GetAllRestructured("", 1, ReportPaging.All);
 
             //Remove all fully paid
             records.Records?.RemoveAll(x => x.Arrears > 0 && x.LoanBalance < 0);

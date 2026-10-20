@@ -3,10 +3,12 @@ namespace Ranalo.Services
     // Restructure rules (2026-10-19), as the original R script ran them, with
     // the business's decisions where the R broke down:
     //
-    // Manual (agreed) restructure: units count from the customer's first
-    // payment after the agreed date. Paid since then minus days x agreed daily
-    // is ArrearsR; ahead, the phone stays open ArrearsR / agreed daily days
-    // (24h each). Behind on the plan, the auto restructure rule below applies.
+    // Manual (agreed) restructure: a new contract from the agreement day for
+    // the agreed daily until the loan balance is paid (2026-10-20; it used to
+    // count from the first payment after the agreed date). Paid since then
+    // minus days x agreed daily is ArrearsR; ahead, the phone stays open
+    // ArrearsR / agreed daily days (24h each). Behind on the plan, the auto
+    // restructure rule below applies.
     //
     // Auto restructure (anyone in arrears): new daily = arrears spread over the
     // days left to the contract end, plus 10%, plus the normal daily. Paying at
@@ -49,15 +51,17 @@ namespace Ranalo.Services
                 ? (lastPaymentDate ?? now).AddHours(AutoOpenHours)
                 : null;
 
-        // Paid since the agreed date minus what was due since the first of
-        // those payments. No payment yet: nothing paid, nothing due.
-        public static decimal ManualArrears(decimal paidSinceAgreed, DateTime? firstPaymentAfterAgreed, decimal amountRes, DateTime now) =>
-            firstPaymentAfterAgreed.HasValue
-                ? paidSinceAgreed - (decimal)Math.Max(0, (now - firstPaymentAfterAgreed.Value).TotalDays) * amountRes
-                : 0;
+        // Paid since the agreement day minus what was due since then. Never
+        // further behind than the loan balance: the plan ends once the
+        // balance owed at the agreement is due.
+        public static decimal ManualArrears(decimal paidSinceAgreed, DateTime dateAgreed, decimal amountRes, DateTime now, decimal loanBalance)
+        {
+            var arrears = paidSinceAgreed - (decimal)Math.Max(0, (now - dateAgreed).TotalDays) * amountRes;
+            return Math.Max(arrears, -Math.Max(0, loanBalance));
+        }
 
-        public static int ManualDaysRestructured(DateTime? firstPaymentAfterAgreed, DateTime now) =>
-            firstPaymentAfterAgreed.HasValue ? Math.Max(0, (int)(now - firstPaymentAfterAgreed.Value).TotalDays) : 0;
+        public static int ManualDaysRestructured(DateTime dateAgreed, DateTime now) =>
+            Math.Max(0, (int)(now - dateAgreed).TotalDays);
 
         // Ahead on the plan: open for the units paid. Otherwise now (locks).
         public static DateTime ManualLockDate(decimal arrearsR, decimal amountRes, DateTime now) =>

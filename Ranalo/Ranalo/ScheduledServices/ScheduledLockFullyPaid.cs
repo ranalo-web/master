@@ -78,7 +78,7 @@ namespace Ranalo.ScheduledServices
             IReadOnlySet<long>? lostStolenLocked = null,
             ILockCheckRepository? contracts = null)
         {
-            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, 1000, "");
+            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, ReportPaging.All, "");
 
             // A lost/stolen phone isn't set to 31/12/9999 or queued for
             // removal when paid off -- that would hand it to whoever has it.

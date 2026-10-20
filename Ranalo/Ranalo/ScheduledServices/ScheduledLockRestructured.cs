@@ -66,7 +66,7 @@ namespace Ranalo.ScheduledServices
         public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, IApplicationReportService reminderService, IPaymentsRepository paymentsRepository, IEnrolmentService enrolmentService,
             IReadOnlySet<long>? lostStolenLocked = null)
         {
-            var records = await reminderService.GetAllRestructured("", 1, 1000); ;
+            var records = await reminderService.GetAllRestructured("", 1, ReportPaging.All); ;
 
             // Lost/stolen phones stay locked whatever the customer pays.
             LostStolenRules.LeaveLocked(records?.Records, r => r.AccountNo, lostStolenLocked);

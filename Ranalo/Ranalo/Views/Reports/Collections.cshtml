@@ -191,6 +191,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Arrears</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Due</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Balance</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Contract End</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Days in Arrears</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Enrolled On</th>
@@ -211,6 +212,7 @@
                                 <td><span class="@SetArrearsStatusBadge(report.Arrears)">@report.Arrears</span></td>
                                 <td>@report.TotalDue</td>
                                 <td>@report.LoanBalance</td>
+                                <td>@(report.ContractEndDate?.ToString("dd MMM yyyy") ?? "-")</td>
                                 <td><span class="@SetStatusBadge(report.NotPaying7D)">Arrears</span></td>
                                 <td>@(GetDaysInArrears(report.NextLockDateIsoFormat)?.ToString() ?? "-")</td>
                                 <td>@(report.EnrolledOn?.ToString("dd MMM yyyy") ?? "-")</td>

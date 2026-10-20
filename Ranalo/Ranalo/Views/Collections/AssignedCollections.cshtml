@@ -202,6 +202,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Arrears</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Due</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Balance</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Contract End</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Enrolled On</th>
                                 <th class="wl-th"></th>
@@ -231,6 +232,7 @@
                                 </td>
                                 <td>@report.TotalDue</td>
                                 <td>@report.LoanBalance</td>
+                                <td>@(report.ContractEndDate?.ToString("dd MMM yyyy") ?? "-")</td>
                                 <td><span class="@SetStatusBadge(report.NotPaying7D)">@SetStatusText(report.NotPaying7D)</span></td>
                                 <td>@(report.EnrolledOn?.ToString("dd MMM yyyy") ?? "-")</td>
                                 <td class="text-end">
