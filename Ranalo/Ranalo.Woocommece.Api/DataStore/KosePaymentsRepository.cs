@@ -39,6 +39,12 @@ namespace Ranalo.Woocommece.Api.DataStore
             return await _db.ExecuteScalarAsync<int>(sql, record);
         }
 
+        public async Task<bool> MpesaCodeExistsAsync(string mpesaCode)
+        {
+            var sql = "SELECT COUNT(1) FROM [dbo].[KosePayments] WHERE [MpesaCode] = @MpesaCode";
+            return await _db.ExecuteScalarAsync<int>(sql, new { MpesaCode = mpesaCode }) > 0;
+        }
+
         public async Task<MpesaRecord?> GetByIdAsync(int id)
         {
             var sql = "SELECT * FROM [dbo].[KosePayments] WHERE Id = @Id";

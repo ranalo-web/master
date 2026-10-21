@@ -13,6 +13,7 @@ namespace Ranalo.Woocommece.Api.Services
 
         Task LogLastPaymentSyncDetails(SyncPaymentsLog log);
         Task<int> CreateKosePaymentAsync(MpesaRecord record);
+        Task<bool> MpesaCodeExistsAsync(string mpesaCode);
 
         Task<List<string>> CreateKoseBatchPaymentAsync(Dictionary<string, List<MpesaRecord>> records);
 

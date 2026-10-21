@@ -8,6 +8,7 @@ namespace Ranalo.Woocommece.Api.DataStore
         Task<IEnumerable<MpesaRecord>> GetAllAsync();
         Task<MpesaRecord?> GetByIdAsync(int id);
         Task<int> InsertAsync(MpesaRecord record);
+        Task<bool> MpesaCodeExistsAsync(string mpesaCode);
 
         Task<List<string>> SaveToDatabaseAsync(Dictionary<string, List<MpesaRecord>> groupedRecords);
 

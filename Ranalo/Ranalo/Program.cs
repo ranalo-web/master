@@ -270,6 +270,21 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+// Log who calls the still-open Ranalo.Woocommece.Api routes (see the note at
+// AddControllersWithViews), to find which one IONOS uses before closing the rest.
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+    if (path.StartsWithSegments("/api/DataSync", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWithSegments("/api/Values", StringComparison.OrdinalIgnoreCase))
+    {
+        var ip = MpesaIntakeRules.SenderIp(context.Request.Headers["X-Forwarded-For"].ToString(), context.Connection.RemoteIpAddress?.ToString());
+        app.Logger.LogInformation("Open API called: {Method} {Path} from {Ip}, agent {Agent}",
+            context.Request.Method, path.Value, ip, context.Request.Headers.UserAgent.ToString());
+    }
+    await next();
+});
+
 app.UseRouting();
 
 app.UseAuthorization();
