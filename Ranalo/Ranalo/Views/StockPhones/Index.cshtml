@@ -1,4 +1,4 @@
-@using Ranalo.Models
+﻿@using Ranalo.Models
 @using Ranalo.Services.DeviceLock
 @model StockPhonesViewModel
 @{
@@ -57,6 +57,8 @@
                                         </select>
                                     </div>
                                 </div>
+                                @if (Model.ChooseDealer)
+                                {
                                 <div class="col-sm-6">
                                     <div class="form-group">
                                         <label class="form-label" for="dealerId">With dealer</label>
@@ -69,6 +71,7 @@
                                         </select>
                                     </div>
                                 </div>
+                                }
                             </div>
                             <button type="submit" class="btn btn-primary mt-1">Lock phones</button>
                         </form>
@@ -163,6 +166,22 @@
                                                     <button type="submit" class="btn btn-sm btn-outline-primary">Check lock</button>
                                                 </form>
                                                 </div>
+                                                @if (StockPhoneRules.IsStock(e))
+                                                {
+                                                    @* Sold: the same as Add Enrolment with this IMEI (same checks), back here when done. *@
+                                                    <details class="mt-1 text-start">
+                                                        <summary class="btn btn-sm btn-outline-success">Assign to order</summary>
+                                                        <form method="post" action="/addenrolment" class="mt-2" style="min-width:220px;">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="imei" value="@e.IMEI" />
+                                                            <input type="hidden" name="returnTo" value="stock" />
+                                                            <input type="number" name="orderId" class="form-control form-control-sm mb-1" placeholder="Order number" required />
+                                                            <input type="text" name="accountId" class="form-control form-control-sm mb-1" placeholder="Customer national ID" required />
+                                                            <input type="text" name="mpesaCode" class="form-control form-control-sm mb-1" placeholder="Deposit M-Pesa code (if not on the order)" />
+                                                            <button type="submit" class="btn btn-sm btn-success w-100">Assign</button>
+                                                        </form>
+                                                    </details>
+                                                }
                                             </td>
                                         </tr>
                                     }

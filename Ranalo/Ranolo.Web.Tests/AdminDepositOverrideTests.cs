@@ -1,36 +1,20 @@
-using Ranalo.DataStore.DataModels;
+﻿using Ranalo.DataStore.DataModels;
 using Ranalo.Services.DeviceLock;
 
 namespace Ranolo.Web.Tests
 {
-    // Admins enrol without the M-Pesa deposit code (2026-10-21).
+    // The M-Pesa deposit must be confirmed to enrol, whoever enrols (2026-10-21).
     public class AdminDepositOverrideTests
     {
         private static DepositCheckResult Missing() =>
             DeviceLockRules.CheckDeposit(null, "39282520", 3000m, Array.Empty<DepositPayment>());
 
         [Test]
-        public void NoDepositCode_BlocksApproverAndDealer()
+        public void NoDepositCode_BlocksEveryone_AdminsToo()
         {
-            Assert.That(DeviceLockRules.AllowForAdmin(Missing(), UserRole.Approver).Blocks, Is.True);
-            Assert.That(DeviceLockRules.AllowForAdmin(Missing(), UserRole.Dealer).Blocks, Is.True);
-        }
-
-        [Test]
-        public void NoDepositCode_AdminEnrols_FlaggedShort()
-        {
-            var result = DeviceLockRules.AllowForAdmin(Missing(), UserRole.Admin);
-
-            Assert.That(result.Blocks, Is.False);
-            Assert.That(result.IsShort, Is.True, "short, so only an admin can approve it");
-            Assert.That(result.Message, Does.Contain("No confirmed deposit"));
-        }
-
-        [Test]
-        public void DepositOk_UnchangedForAdmin()
-        {
-            var ok = new DepositCheckResult(DepositCheck.Ok, 3000m, 3000m, null);
-            Assert.That(DeviceLockRules.AllowForAdmin(ok, UserRole.Admin), Is.EqualTo(ok));
+            // The admin override was removed the same day: every enrolment
+            // needs its deposit confirmed, as before.
+            Assert.That(Missing().Blocks, Is.True);
         }
 
         [TestCase("IN ACCOUNT", null)]

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Reflection;
 using System.Text;
 using Ranalo.Calculator.Logic.Models;
@@ -49,6 +49,8 @@ namespace Ranolo.Web.Tests
         public Task<(IEnumerable<Enrolment> Items, int TotalCount)> GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null) => throw new NotImplementedException();
         public Task<(IEnumerable<Enrolment> Items, int TotalCount)> GetAllEnrolmentsAsync(int pageNumber, int pageSize, string? searchTerm = null) => throw new NotImplementedException();
         public Task<bool> DeleteEnrolmentAsync(Enrolment enrolment) => Task.FromResult(Items.Remove(enrolment));
+        public Task<List<Enrolment>> GetAwaitingApprovalAsync() =>
+            Task.FromResult(Items.Where(x => x.CallApprovedAt == null && x.Status is EnrolmentStatus.Pending or EnrolmentStatus.PendingActivation or EnrolmentStatus.Enrolled).ToList());
         public Task<List<Enrolment>> GetStockAsync(bool unverifiedOnly, string? searchTerm = null) =>
             Task.FromResult(Items.Where(e => e.Status == EnrolmentStatus.Stock && (!unverifiedOnly || e.StockVerifiedAt == null)).ToList());
     }

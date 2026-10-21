@@ -831,6 +831,21 @@ namespace Ranalo.Woocommece.Api.Services
             var match = records.FirstOrDefault(r => r.MpesaCode == mpesaCode);
             return match != null ? $"Group-{match.AccountNo}" : "Unknown Group";
         }
+        // The dealer picked at checkout ("Select a Dealer"): order meta
+        // dealer_code, the dealer's reference (7639 = Lunich). It used to be
+        // read from billing_referral_code, a different field ("Mercy"), so the
+        // dealer chosen was ignored (order 19922, 2026-10-21). That field is
+        // only used now for orders with no dealer_code.
+        public static string DealerRefFromWoo(JToken order)
+        {
+            var chosen = (order["meta_data"] as JArray)?
+                .FirstOrDefault(m => m["key"]?.ToString() is "dealer_code" or "_dealer_code")?["value"]?.ToString()
+                ?? order["billing"]?["dealer_code"]?.ToString();
+            return !string.IsNullOrWhiteSpace(chosen)
+                ? chosen.Trim()
+                : order["billing"]?["billing_referral_code"]?.Value<string?>() ?? "";
+        }
+
         private WooOrder MapOrderFromWoo(JToken value)
         {
             var products = MapOrderProducts(value);
@@ -851,7 +866,7 @@ namespace Ranalo.Woocommece.Api.Services
                 IMEI = value["billing"]?["billing_imei"]?.Value<string?>() ?? "",
                 NationalId = value["billing"]?["billing_identification"]?.Value<string?>() ?? "",
                 DOB = value["billing"]?["billing_date_of_birth"]?.Value<string?>() ?? "",
-                DealerRef = value["billing"]?["billing_referral_code"]?.Value<string?>() ?? "",
+                DealerRef = DealerRefFromWoo(value),
                 CustPhone = value["identity_verification"]?["owners_phone"]?.Value<string?>() ?? "",
                 CustEmail = value["billing"]?["billing_email_of_your_next_of_kin"]?.Value<string?>() ?? "",
                 MpesaDepositRef = (value["identity_verification"]?["mpesa_deposit_reference"]?.Value<string?>() ?? value["meta_data"]?["mpesa_deposit_reference"]?.Value<string?>())?.Trim(),

@@ -22,5 +22,7 @@ namespace Ranalo.DataStore
         Task<bool> DeleteEnrolmentAsync(Enrolment enrolment);
 
         Task<List<Enrolment>> GetStockAsync(bool unverifiedOnly, string? searchTerm = null);
+        // Not approved yet and could be approved automatically (DeviceLockRules.AutoApproves).
+        Task<List<Enrolment>> GetAwaitingApprovalAsync();
     }
 }

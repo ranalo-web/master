@@ -1,4 +1,4 @@
-using Ranalo.DataStore.DataModels;
+﻿using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.Services.DeviceLock;
 
@@ -359,5 +359,77 @@ namespace Ranolo.Web.Tests
         {
             Assert.That(DeviceLockRules.FullyPaidLockDateUtc.ToString("dd/MM/yyyy"), Is.EqualTo("31/12/9999"));
         }
-    }
+    
+        // ---- Automatic approval ----
+
+        private static readonly DateTime Now = new(2026, 10, 21, 20, 0, 0);
+
+        private static Enrolment Knox(int minutesAgo) => new()
+        {
+            IMEI = "350522366526910", OrderId = 19922, DeviceBrand = "Samsung",
+            Status = EnrolmentStatus.Pending, Created = Now.AddMinutes(-minutesAgo)
+        };
+
+        [Test]
+        public void AutoApproves_Transsion_ScreenedAndPaid_StraightAway()
+        {
+            var e = NewEnrolment();
+            e.OrderId = 19922;
+            e.Created = Now;
+            Assert.That(DeviceLockRules.AutoApproves(e, screeningPassed: true, Now), Is.True);
+        }
+
+        [Test]
+        public void AutoApproves_NotScreened_Short_Overridden_OrAlreadyApproved_No()
+        {
+            var e = NewEnrolment();
+            e.OrderId = 19922;
+            Assert.That(DeviceLockRules.AutoApproves(e, screeningPassed: false, Now), Is.False, "orders from before screening wait for an approver");
+
+            e.DepositShort = true;
+            Assert.That(DeviceLockRules.AutoApproves(e, true, Now), Is.False, "short deposit: admin");
+
+            e.DepositShort = false;
+            e.BrandOverriddenByUserId = 1;
+            Assert.That(DeviceLockRules.AutoApproves(e, true, Now), Is.False, "brand overridden: admin");
+
+            e.BrandOverriddenByUserId = null;
+            e.CallApprovedAt = Now;
+            Assert.That(DeviceLockRules.AutoApproves(e, true, Now), Is.False);
+        }
+
+        [Test]
+        public void AutoApproves_Knox_WaitsForVeritech_ThenTriesForTwoDays()
+        {
+            Assert.Multiple(() =>
+            {
+                Assert.That(DeviceLockRules.AutoApproves(Knox(2), true, Now), Is.False, "too soon: Veritech hasn't passed it to Knox");
+                Assert.That(DeviceLockRules.AutoApproves(Knox(10), true, Now), Is.True);
+                Assert.That(DeviceLockRules.AutoApproves(Knox(60 * 47), true, Now), Is.True);
+                Assert.That(DeviceLockRules.AutoApproves(Knox(60 * 49), true, Now), Is.False, "left for a person");
+            });
+        }
+
+        [Test]
+        public void AutoApproves_SoldKnoxStockPhone_StraightAway()
+        {
+            var e = Knox(0);
+            e.StockKnoxApprovedAt = Now.AddDays(-5);
+            Assert.That(DeviceLockRules.AutoApproves(e, true, Now), Is.True, "already in Knox, no Veritech wait");
+
+            e.Status = EnrolmentStatus.Stock;
+            Assert.That(DeviceLockRules.AutoApproves(e, true, Now), Is.False, "not sold yet");
+        }
+
+        [Test]
+        public void AutoApproves_StillNeedsSendingToTranssion_No()
+        {
+            var e = NewEnrolment();
+            e.OrderId = 19922;
+            e.PayTriggerResponse = null;
+            e.Status = EnrolmentStatus.Pending;
+            Assert.That(DeviceLockRules.NeedsSendingToTranssion(e), Is.True);
+            Assert.That(DeviceLockRules.AutoApproves(e, true, Now), Is.False);
+        }
+}
 }

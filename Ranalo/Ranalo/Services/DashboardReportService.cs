@@ -1,4 +1,4 @@
-using Ranalo.Controllers;
+﻿using Ranalo.Controllers;
 using Ranalo.DataStore;
 using Ranalo.Models;
 using Ranalo.ScheduledServices;
@@ -1259,9 +1259,11 @@ namespace Ranalo.Services
         // Contracts Ending Soon (redefined by the dealer): not in arrears
         // (Good or Slow) AND 80%+ of the contract's full value paid off --
         // same >=80% threshold RefreshCompletedContractsAsync uses for its
-        // "UpsellTarget" status, just also requiring good standing.
+        // "UpsellTarget" status, just also requiring good standing. Paid off
+        // (within LockCheckRules.PaidTolerance) = completed, not ending soon.
         private static List<DealerContract> BuildContractsEndingSoon(List<DashboardAccountDetailRow> rows) => rows
-            .Where(r => r.FullContractValue > 0 && LockDays(r) <= 7)
+            .Where(r => r.FullContractValue > 0 && LockDays(r) <= 7
+                && r.TotalPaid < r.FullContractValue - LockCheckRules.PaidTolerance)
             .Select(r => new { r, pctComplete = Math.Min(100m, 100m * r.TotalPaid / r.FullContractValue) })
             .Where(x => x.pctComplete >= 80)
             .Select(x => new DealerContract

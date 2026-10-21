@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 
@@ -261,21 +261,49 @@ namespace Ranalo.Services.DeviceLock
                 : null;
         }
 
-        // Admins can enrol without a confirmed deposit (2026-10-21): what
-        // would have blocked it is kept, flagged short, so only an admin can
-        // approve the enrolment and the record shows why.
-        public static DepositCheckResult AllowForAdmin(DepositCheckResult result, UserRole actorRole) =>
-            actorRole == UserRole.Admin && result.Blocks
-                ? new DepositCheckResult(DepositCheck.Short, result.Paid, result.Required,
-                    $"No confirmed deposit ({result.Message}) Enrolled by an admin; only an admin can approve it.")
-                : result;
-
         // ---- Who can do what -----------------------------------------------
 
         public static bool CanEnrol(UserRole role) =>
             role is UserRole.Admin or UserRole.Approver or UserRole.Dealer;
 
         public static bool CanOverrideBrand(UserRole role) => role == UserRole.Admin;
+
+        // ---- Automatic approval (2026-10-21) --------------------------------
+        // Screening already called the customer and next of kin, so an
+        // enrolment on a screened order with the deposit in full is approved
+        // without a person (EnrolmentApprovalService). A short deposit or a
+        // brand override still waits for an admin; orders from before
+        // screening for an approver.
+
+        // Veritech passes a Knox upload on a few minutes after enrolling;
+        // approving sooner fails.
+        public static readonly TimeSpan KnoxApprovalDelay = TimeSpan.FromMinutes(10);
+
+        // After this a Knox phone that still isn't in Knox is left for a person.
+        public static readonly TimeSpan KnoxAutoApprovalFor = TimeSpan.FromDays(2);
+
+        // now: the same clock as Enrolment.Created (DateTime.Now).
+        public static bool AutoApproves(Enrolment enrolment, bool screeningPassed, DateTime now)
+        {
+            if (!screeningPassed || enrolment.DepositShort || enrolment.BrandOverriddenByUserId.HasValue
+                || enrolment.CallApprovedAt.HasValue || enrolment.OrderId <= 0
+                || enrolment.Status is EnrolmentStatus.Error or EnrolmentStatus.Approved or EnrolmentStatus.Stock
+                || NeedsSendingToTranssion(enrolment))
+            {
+                return false;
+            }
+
+            // Transsion and sold stock Knox phones are already with their locker.
+            if (IsTranssion(enrolment.DeviceBrand) || enrolment.StockKnoxApprovedAt.HasValue)
+            {
+                return true;
+            }
+
+            var age = now - enrolment.Created;
+            return ProviderForBrand(enrolment.DeviceBrand) == LockProvider.Knox
+                && enrolment.Status == EnrolmentStatus.Pending
+                && age >= KnoxApprovalDelay && age <= KnoxAutoApprovalFor;
+        }
 
         public static ApprovalDecision CanApproveEnrolment(UserRole role, int userId, Enrolment enrolment)
         {

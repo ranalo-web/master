@@ -1,4 +1,4 @@
-using Ranalo.DataStore;
+﻿using Ranalo.DataStore;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 
@@ -52,7 +52,7 @@ namespace Ranalo.Services.DeviceLock
 
             if (onNuovo)
             {
-                await CheckDepositAsync(outcome, enrolment, order, accountNo: null, actorRole);
+                await CheckDepositAsync(outcome, enrolment, order, accountNo: null);
                 if (!string.IsNullOrWhiteSpace(order.DealerRef))
                 {
                     outcome.OrderDealerId = await _repository.GetDealerIdByReferenceAsync(order.DealerRef);
@@ -68,7 +68,7 @@ namespace Ranalo.Services.DeviceLock
             }
 
             await CheckBrandAsync(outcome, enrolment, order, actorRole, overrideBrand);
-            await CheckDepositAsync(outcome, enrolment, order, enrolment.AccountId.ToString(), actorRole);
+            await CheckDepositAsync(outcome, enrolment, order, enrolment.AccountId.ToString());
 
             if (!string.IsNullOrWhiteSpace(order.DealerRef))
             {
@@ -132,7 +132,7 @@ namespace Ranalo.Services.DeviceLock
             outcome.BrandError = check.Error;
         }
 
-        private async Task CheckDepositAsync(EnrolmentCheckOutcome outcome, Enrolment enrolment, CustomerDetails order, string? accountNo, UserRole actorRole)
+        private async Task CheckDepositAsync(EnrolmentCheckOutcome outcome, Enrolment enrolment, CustomerDetails order, string? accountNo)
         {
             var dailySalePrice = await _repository.GetOrderDailySalePriceAsync(order.OrderID);
             var wooDeposit = await _repository.GetOrderDepositAmountAsync(order.OrderID);
@@ -143,8 +143,7 @@ namespace Ranalo.Services.DeviceLock
                 ? new List<DepositPayment>()
                 : await _repository.GetPaymentsByMpesaCodeAsync(depositCode);
 
-            outcome.Deposit = DeviceLockRules.AllowForAdmin(
-                DeviceLockRules.CheckDeposit(depositCode, accountNo, required, payments), actorRole);
+            outcome.Deposit = DeviceLockRules.CheckDeposit(depositCode, accountNo, required, payments);
 
             if (outcome.Deposit.Blocks)
             {
