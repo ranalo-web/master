@@ -1,4 +1,4 @@
-using Ranalo.DataStore.DataModels;
+﻿using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.PayTrigger.Models;
 using Ranalo.SumsungKnox.Models;
@@ -21,7 +21,18 @@ namespace Ranalo.Services.DeviceLock
         public const string FilterAll = "all";
         public const string FilterUnverified = "unverified";
 
-        public static bool CanManage(UserRole role) => role == UserRole.Admin;
+        // Admins and approvers manage every stock phone. A dealer locks and
+        // sees only their own (2026-10-21), so they aren't waiting on an admin
+        // before taking phones to the field.
+        public static bool CanManage(User user) =>
+            SeesAll(user.RoleId) || (user.RoleId == UserRole.Dealer && user.DealerId > 0);
+
+        public static bool SeesAll(UserRole role) => role == UserRole.Admin || role == UserRole.Approver;
+
+        public static bool CanSee(User user, Enrolment e) => SeesAll(user.RoleId) || e.DealerId == user.DealerId;
+
+        // The dealer a newly locked phone goes to: a dealer's own phones are always theirs.
+        public static int DealerFor(User user, int chosen) => SeesAll(user.RoleId) ? chosen : user.DealerId;
 
         public static bool IsStock(Enrolment e) => e.Status == EnrolmentStatus.Stock;
 

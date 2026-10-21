@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging.Abstractions;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.PayTrigger.Models;
@@ -237,11 +237,53 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
-        public async Task Lock_NotAdmin_Refused()
+        public async Task Lock_AgentOrCollector_Refused()
         {
-            var (_, errors) = await _service.LockAsync("356938035643809", "TECNO", 0, new User { UserId = 2, RoleId = UserRole.Approver });
-            Assert.That(errors.Single(), Does.Contain("Only an admin"));
+            var (_, errors) = await _service.LockAsync("356938035643809", "TECNO", 0, new User { UserId = 2, RoleId = UserRole.Agent, DealerId = 4 });
+            Assert.That(errors.Single(), Does.Contain("Only an admin, approver or dealer"));
             Assert.That(_payTrigger.PreEnrolCalls, Is.Empty);
+        }
+
+        [Test]
+        public async Task Lock_Dealer_PhoneIsAlwaysTheirs()
+        {
+            var dealer = new User { UserId = 9, RoleId = UserRole.Dealer, DealerId = 4 };
+            var (_, errors) = await _service.LockAsync("356938035643809", "TECNO", 7, dealer);
+
+            Assert.That(errors, Is.Empty);
+            Assert.That(_enrolments.Items.Single().DealerId, Is.EqualTo(4), "a dealer can't lock phones for another dealer");
+        }
+
+        [Test]
+        public async Task Lock_DealerWithNoDealerAccount_Refused()
+        {
+            var (_, errors) = await _service.LockAsync("356938035643809", "TECNO", 0, new User { UserId = 9, RoleId = UserRole.Dealer, DealerId = 0 });
+            Assert.That(errors, Is.Not.Empty);
+            Assert.That(_payTrigger.PreEnrolCalls, Is.Empty);
+        }
+
+        [Test]
+        public async Task Check_AnotherDealersPhone_Refused()
+        {
+            await _service.LockAsync("356938035643809", "TECNO", 4, Admin);
+            var e = _enrolments.Items.Single();
+
+            var result = await _service.CheckLockAsync(e.Id, new User { UserId = 9, RoleId = UserRole.Dealer, DealerId = 5 });
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Does.Contain("your own"));
+        }
+
+        [Test]
+        public void Approver_SeesAllStockPhones_DealerOnlyTheirs()
+        {
+            var phone = new Enrolment { IMEI = "356938035643809", DealerId = 4 };
+            Assert.Multiple(() =>
+            {
+                Assert.That(StockPhoneRules.CanSee(new User { RoleId = UserRole.Approver }, phone), Is.True);
+                Assert.That(StockPhoneRules.CanSee(new User { RoleId = UserRole.Dealer, DealerId = 4 }, phone), Is.True);
+                Assert.That(StockPhoneRules.CanSee(new User { RoleId = UserRole.Dealer, DealerId = 5 }, phone), Is.False);
+            });
         }
 
         [Test]

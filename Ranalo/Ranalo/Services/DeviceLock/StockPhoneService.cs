@@ -1,4 +1,4 @@
-using Ranalo.DataStore;
+﻿using Ranalo.DataStore;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 using Ranalo.PayTrigger;
@@ -52,11 +52,12 @@ namespace Ranalo.Services.DeviceLock
         {
             var messages = new List<string>();
             var errors = new List<string>();
-            if (!StockPhoneRules.CanManage(actor.RoleId))
+            if (!StockPhoneRules.CanManage(actor))
             {
-                errors.Add("Only an admin can lock stock phones.");
+                errors.Add("Only an admin, approver or dealer can lock stock phones.");
                 return (messages, errors);
             }
+            dealerId = StockPhoneRules.DealerFor(actor, dealerId);
 
             var (list, parseErrors) = StockPhoneRules.ParseImeis(imeis);
             errors.AddRange(parseErrors);
@@ -168,10 +169,10 @@ namespace Ranalo.Services.DeviceLock
         public async Task<WorkflowResult> KnoxApproveAndLockAsync(Guid enrolmentId, User actor)
         {
             var e = await _enrolments.GetByEnrolmentIdAsync(enrolmentId);
-            if (!StockPhoneRules.CanManage(actor.RoleId) || e == null || !StockPhoneRules.IsStock(e)
+            if (!StockPhoneRules.CanManage(actor) || e == null || !StockPhoneRules.CanSee(actor, e) || !StockPhoneRules.IsStock(e)
                 || DeviceLockRules.ProviderForBrand(e.DeviceBrand) != LockProvider.Knox)
             {
-                return new WorkflowResult(false, "Only an admin can approve and lock a Knox stock phone.");
+                return new WorkflowResult(false, "You can only approve and lock your own Knox stock phones.");
             }
 
             if (!e.StockKnoxApprovedAt.HasValue)
@@ -207,9 +208,9 @@ namespace Ranalo.Services.DeviceLock
         public async Task<WorkflowResult> CheckLockAsync(Guid enrolmentId, User actor)
         {
             var e = await _enrolments.GetByEnrolmentIdAsync(enrolmentId);
-            if (!StockPhoneRules.CanManage(actor.RoleId) || e == null || !StockPhoneRules.IsStock(e))
+            if (!StockPhoneRules.CanManage(actor) || e == null || !StockPhoneRules.CanSee(actor, e) || !StockPhoneRules.IsStock(e))
             {
-                return new WorkflowResult(false, "Only an admin can check a stock phone.");
+                return new WorkflowResult(false, "You can only check your own stock phones.");
             }
 
             StockPhoneRules.StockCheckResult result;
