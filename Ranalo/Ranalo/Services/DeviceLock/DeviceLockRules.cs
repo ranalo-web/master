@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Models;
 
@@ -260,15 +260,6 @@ namespace Ranalo.Services.DeviceLock
                 ? trimmed
                 : null;
         }
-
-        // Admins can enrol without a confirmed deposit (2026-10-21): what
-        // would have blocked it is kept, flagged short, so only an admin can
-        // approve the enrolment and the record shows why.
-        public static DepositCheckResult AllowForAdmin(DepositCheckResult result, UserRole actorRole) =>
-            actorRole == UserRole.Admin && result.Blocks
-                ? new DepositCheckResult(DepositCheck.Short, result.Paid, result.Required,
-                    $"No confirmed deposit ({result.Message}) Enrolled by an admin; only an admin can approve it.")
-                : result;
 
         // ---- Who can do what -----------------------------------------------
 

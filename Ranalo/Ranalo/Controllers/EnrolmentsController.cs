@@ -435,6 +435,11 @@ namespace Ranalo.Controllers
             {
                 dealerId = checks.OrderDealerId.Value;
             }
+            else if (stock != null && stock.DealerId > 0)
+            {
+                // A stock phone already belongs to the dealer it was locked for.
+                dealerId = stock.DealerId;
+            }
             else if (selectedDealerId.HasValue)
             {
                 dealerId = selectedDealerId.Value;
