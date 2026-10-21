@@ -821,6 +821,7 @@ namespace Ranalo.DataStore
                             ,[PaymentDateValue]
                             ,kp.[Created]
                             ,kp.FirstName
+                            ,kp.[Imported]
                         FROM [dbo].[KosePayments] kp
                         LEFT JOIN Devices d
                             ON kp.AccountNoBigint = d.Id
