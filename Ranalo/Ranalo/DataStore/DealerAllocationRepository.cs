@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using Dapper;
 using Ranalo.Models;
 
@@ -40,7 +40,8 @@ namespace Ranalo.DataStore
                     LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
                     GROUP BY COALESCE(op.AccountNoBigint, kp.AccountNoBigint)
                 )
-                SELECT TOP (@Take)
+                SELECT TOP (@Take) * FROM (
+                SELECT
                     ci.ID AS AccountNo,
                     ci.ContractID AS ContractId,
                     ci.First_Name AS CustomerName,
@@ -58,15 +59,31 @@ namespace Ranalo.DataStore
                 LEFT JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
                 LEFT JOIN Users au ON au.UserId = ci.AssignedAgentId
                 LEFT JOIN Paid p ON p.AccountNo = ci.ID
-                WHERE ci.StartDate IS NOT NULL
-                  AND (@UnassignedOnly = 0 OR dl.DealerId IS NULL)
+                -- A search finds the account whatever its state: assigned or
+                -- not, and before its first payment (no StartDate yet).
+                WHERE (@Search IS NOT NULL OR ci.StartDate IS NOT NULL)
+                  AND (@Search IS NOT NULL OR @UnassignedOnly = 0 OR dl.DealerId IS NULL)
                   AND (@Search IS NULL
                        OR CAST(ci.ID AS NVARCHAR(30)) = @Search
                        OR CAST(ci.ContractID AS NVARCHAR(30)) = @Search
                        OR CAST(d.ImeiNo AS NVARCHAR(50)) = @Search
                        OR ci.First_Name LIKE '%' + @Search + '%'
                        OR dl.CompanyName LIKE '%' + @Search + '%')
-                ORDER BY ci.StartDate DESC";
+                UNION ALL
+                -- Searched for a device with no contract yet.
+                SELECT
+                    d.Id, NULL, NULL, NULL, CAST(1 AS BIT),
+                    NULLIF(LTRIM(RTRIM(ISNULL(d.Make, '') + ' ' + ISNULL(d.Model, ''))), ''),
+                    CAST(d.ImeiNo AS NVARCHAR(50)), d.DeviceGroupId, dl.DealerId, dl.CompanyName, NULL,
+                    ISNULL(p.TotalPaid, 0)
+                FROM Devices d
+                LEFT JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId
+                LEFT JOIN Paid p ON p.AccountNo = d.Id
+                WHERE @Search IS NOT NULL
+                  AND NOT EXISTS (SELECT 1 FROM Contract_Info c WHERE c.ID = d.Id)
+                  AND (CAST(d.Id AS NVARCHAR(30)) = @Search OR CAST(d.ImeiNo AS NVARCHAR(50)) = @Search)
+                ) accounts
+                ORDER BY StartDate DESC";
 
             var term = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
             var rows = await _db.QueryAsync<DealerAllocationAccount>(sql, new
