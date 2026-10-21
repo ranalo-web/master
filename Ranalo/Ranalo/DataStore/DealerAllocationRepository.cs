@@ -68,7 +68,13 @@ namespace Ranalo.DataStore
                        OR CAST(ci.ContractID AS NVARCHAR(30)) = @Search
                        OR CAST(d.ImeiNo AS NVARCHAR(50)) = @Search
                        OR ci.First_Name LIKE '%' + @Search + '%'
-                       OR dl.CompanyName LIKE '%' + @Search + '%')
+                       OR dl.CompanyName LIKE '%' + @Search + '%'
+                       -- a customer's second/third phone: the ID plus one digit
+                       OR CAST(ci.ID AS NVARCHAR(30)) LIKE @Search + '[1-9]'
+                       -- by WooCommerce order number or the customer's national ID
+                       OR EXISTS (SELECT 1 FROM Enrolments e WHERE e.AccountId = ci.ID AND CAST(e.OrderId AS NVARCHAR(30)) = @Search)
+                       OR EXISTS (SELECT 1 FROM Woo_Orders wo WHERE wo.ContractId = ci.ContractID
+                                  AND (CAST(wo.OrderID AS NVARCHAR(30)) = @Search OR LTRIM(RTRIM(wo.NationalId)) = @Search)))
                 UNION ALL
                 -- Searched for a device with no contract yet.
                 SELECT
@@ -81,7 +87,10 @@ namespace Ranalo.DataStore
                 LEFT JOIN Paid p ON p.AccountNo = d.Id
                 WHERE @Search IS NOT NULL
                   AND NOT EXISTS (SELECT 1 FROM Contract_Info c WHERE c.ID = d.Id)
-                  AND (CAST(d.Id AS NVARCHAR(30)) = @Search OR CAST(d.ImeiNo AS NVARCHAR(50)) = @Search)
+                  AND (CAST(d.Id AS NVARCHAR(30)) = @Search OR CAST(d.ImeiNo AS NVARCHAR(50)) = @Search
+                       OR CAST(d.Id AS NVARCHAR(30)) LIKE @Search + '[1-9]'
+                       OR EXISTS (SELECT 1 FROM Enrolments e WHERE (e.AccountId = d.Id OR e.IMEI = CAST(d.ImeiNo AS NVARCHAR(50)))
+                                  AND CAST(e.OrderId AS NVARCHAR(30)) = @Search))
                 ) accounts
                 ORDER BY StartDate DESC";
 
