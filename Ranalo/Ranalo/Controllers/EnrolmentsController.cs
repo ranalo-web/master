@@ -356,10 +356,11 @@ namespace Ranalo.Controllers
             string? newDepositCode = null;
             if (order != null && enteredCode != null)
             {
-                var orderHasCode = !string.IsNullOrWhiteSpace(order.MpesaDepositRef);
+                var orderCode = DeviceLockRules.DepositCodeOrNull(order.MpesaDepositRef);
+                var orderHasCode = orderCode != null;
                 var onAnotherOrder = !orderHasCode && DeviceLockRules.IsMpesaCodeFormat(enteredCode)
                     && await _devices.MpesaCodeIsAlreadyLinked(enteredCode);
-                var codeError = DeviceLockRules.CheckEnteredDepositCode(order.MpesaDepositRef, enteredCode, onAnotherOrder);
+                var codeError = DeviceLockRules.CheckEnteredDepositCode(orderCode, enteredCode, onAnotherOrder);
                 if (codeError != null)
                 {
                     response.Errors.Add(codeError);

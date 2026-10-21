@@ -52,7 +52,7 @@ namespace Ranalo.Services.DeviceLock
 
             if (onNuovo)
             {
-                await CheckDepositAsync(outcome, enrolment, order, accountNo: null);
+                await CheckDepositAsync(outcome, enrolment, order, accountNo: null, actorRole);
                 if (!string.IsNullOrWhiteSpace(order.DealerRef))
                 {
                     outcome.OrderDealerId = await _repository.GetDealerIdByReferenceAsync(order.DealerRef);
@@ -68,7 +68,7 @@ namespace Ranalo.Services.DeviceLock
             }
 
             await CheckBrandAsync(outcome, enrolment, order, actorRole, overrideBrand);
-            await CheckDepositAsync(outcome, enrolment, order, enrolment.AccountId.ToString());
+            await CheckDepositAsync(outcome, enrolment, order, enrolment.AccountId.ToString(), actorRole);
 
             if (!string.IsNullOrWhiteSpace(order.DealerRef))
             {
@@ -132,17 +132,19 @@ namespace Ranalo.Services.DeviceLock
             outcome.BrandError = check.Error;
         }
 
-        private async Task CheckDepositAsync(EnrolmentCheckOutcome outcome, Enrolment enrolment, CustomerDetails order, string? accountNo)
+        private async Task CheckDepositAsync(EnrolmentCheckOutcome outcome, Enrolment enrolment, CustomerDetails order, string? accountNo, UserRole actorRole)
         {
             var dailySalePrice = await _repository.GetOrderDailySalePriceAsync(order.OrderID);
             var wooDeposit = await _repository.GetOrderDepositAmountAsync(order.OrderID);
             var required = DeviceLockRules.RequiredDeposit(order.TotalAmount, dailySalePrice, wooDeposit);
 
-            var payments = string.IsNullOrWhiteSpace(order.MpesaDepositRef)
+            var depositCode = DeviceLockRules.DepositCodeOrNull(order.MpesaDepositRef);
+            var payments = depositCode == null
                 ? new List<DepositPayment>()
-                : await _repository.GetPaymentsByMpesaCodeAsync(order.MpesaDepositRef);
+                : await _repository.GetPaymentsByMpesaCodeAsync(depositCode);
 
-            outcome.Deposit = DeviceLockRules.CheckDeposit(order.MpesaDepositRef, accountNo, required, payments);
+            outcome.Deposit = DeviceLockRules.AllowForAdmin(
+                DeviceLockRules.CheckDeposit(depositCode, accountNo, required, payments), actorRole);
 
             if (outcome.Deposit.Blocks)
             {
