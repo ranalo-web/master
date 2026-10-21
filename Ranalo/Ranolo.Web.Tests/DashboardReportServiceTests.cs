@@ -1,4 +1,4 @@
-using Ranalo.DataStore;
+﻿using Ranalo.DataStore;
 using Ranalo.Models;
 
 namespace Ranolo.Web.Tests
@@ -370,6 +370,26 @@ namespace Ranolo.Web.Tests
             Assert.That(result.AgentPerformance, Is.Empty);
             Assert.That(result.Contracts, Is.Empty);
             Assert.That(result.ContractsEndingSoon, Is.Empty);
+        }
+
+        [Test]
+        public async Task ContractsEndingSoon_LeavesOutPaidOffContracts()
+        {
+            var lockDate = DateTime.Now.AddDays(30).ToString("yyyy-MM-dd HH:mm:ss");
+            var fakeRepo = new FakeDashboardReportRepository
+            {
+                AccountDetailsToReturn = new()
+                {
+                    new() { AccountId = 1, CustomerName = "Nearly there", NextLockDateRaw = lockDate, FullContractValue = 10000m, TotalPaid = 8500m },
+                    new() { AccountId = 2, CustomerName = "Paid off", NextLockDateRaw = lockDate, FullContractValue = 10000m, TotalPaid = 10000m },
+                    new() { AccountId = 3, CustomerName = "Paid off, rounding", NextLockDateRaw = lockDate, FullContractValue = 10000m, TotalPaid = 9999.5m },
+                },
+            };
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
+
+            var rows = await service.GetDealerContractsEndingSoonAsync(42);
+
+            Assert.That(rows.Select(r => r.CustomerName), Is.EqualTo(new[] { "Nearly there" }));
         }
 
         [Test]
