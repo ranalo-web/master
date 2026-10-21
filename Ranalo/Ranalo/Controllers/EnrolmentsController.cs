@@ -214,6 +214,24 @@ namespace Ranalo.Controllers
             return RedirectToAction("Index", "Enrolments");
         }
 
+        // Transsion, admin: unlock for a few days once Transsion has the phone
+        // registered, when its activation hasn't reached us.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("enrolments/unlock-for/{enrolmentId:guid}")]
+        public async Task<IActionResult> UnlockFor(Guid enrolmentId, int days = 3)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var result = await _transsion.UnlockForAsync(enrolmentId, TimeSpan.FromDays(Math.Clamp(days, 1, 7)), settings);
+            TempData[result.Success ? "EnrolmentMessage" : "EnrolmentError"] = result.Message;
+            return RedirectToAction("Index", "Enrolments");
+        }
+
         // Transsion: pre-enrol a phone PayTrigger never took or refused.
         [HttpPost]
         [ValidateAntiForgeryToken]
