@@ -18,29 +18,22 @@ namespace Ranalo.Woocommece.Api.DataStore
 
         public async Task<int> InsertAsync(MpesaRecord record)
         {
-            // An M-Pesa code already recorded isn't added again (returns 0),
-            // so a payment can't be replayed.
             var sql = @"
-            IF EXISTS (SELECT 1 FROM [dbo].[KosePayments] WITH (UPDLOCK, HOLDLOCK) WHERE [MpesaCode] = @MpesaCode)
-                SELECT CAST(0 AS bigint);
-            ELSE
-            BEGIN
-                INSERT INTO [dbo].[KosePayments] (
-                   [AccountNo]
-               ,[MpesaCode]
-               ,[Amount]
-               ,[PaymentDate]
-               ,[AmountValue]
-               ,[PaymentDateValue]
-               ,[Created]
-               ,[FirstName]
-                )
-                VALUES (
-                    @AccountNo, @MpesaCode, @Amount, @PaymentDate, @AmountValue, @PaymentDateValue, GETDATE(), @FirstName
-                );
+            INSERT INTO [dbo].[KosePayments] (
+               [AccountNo]
+           ,[MpesaCode]
+           ,[Amount]
+           ,[PaymentDate]
+           ,[AmountValue]
+           ,[PaymentDateValue]
+           ,[Created]
+           ,[FirstName]
+            )
+            VALUES (
+                @AccountNo, @MpesaCode, @Amount, @PaymentDate, @AmountValue, @PaymentDateValue, GETDATE(), @FirstName
+            );
 
-                SELECT CAST(SCOPE_IDENTITY() as bigint);
-            END
+            SELECT CAST(SCOPE_IDENTITY() as bigint);
         ";
 
             return await _db.ExecuteScalarAsync<int>(sql, record);

@@ -1,83 +1,50 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Ranalo.Services;
 using Ranalo.Woocommece.Api.Models;
 using Ranalo.Woocommece.Api.Services;
 using System.Globalization;
-using System.Text.Json;
 
 namespace Ranalo.Controllers
 {
-    // M-Pesa payments forwarded from IONOS (Safaricom C2B fields). The live
-    // way payments arrive -- checks in Services/MpesaIntakeRules.cs.
     [ApiController]
     [Route("api/mpesa")]
     public class MpesaController : ControllerBase
     {
         private readonly ISyncService _syncService;
-        private readonly IConfiguration _configuration;
-        private readonly ILogger<MpesaController> _logger;
 
-        public MpesaController(ISyncService syncService, IConfiguration configuration, ILogger<MpesaController> logger)
+        public MpesaController(ISyncService syncService)
         {
             _syncService = syncService;
-            _configuration = configuration;
-            _logger = logger;
         }
 
         [HttpPost("transaction")]
-        public async Task<IActionResult> ReceiveTransaction([FromBody] JsonElement body, [FromQuery] string? key)
+        public async Task<IActionResult> ReceiveTransaction([FromBody] MpesaTransaction transaction)
         {
-            // Read by hand, not bound to MpesaTransaction: a missing FirstName or
-            // a numeric TransAmount used to be refused with a 400 before this
-            // ran, so nothing was logged and the payment silently lost.
-            var transaction = MpesaIntakeRules.Read(body);
+            if (transaction == null)
+                return BadRequest("Invalid transaction data.");
 
-            var provided = Request.Headers.TryGetValue(MpesaIntakeRules.SecretHeader, out var header) ? header.ToString() : key;
-            if (!MpesaIntakeRules.SecretOk(_configuration["MpesaIntake:SharedSecret"], provided))
-            {
-                _logger.LogWarning("M-Pesa payment refused: wrong or missing key, from {Ip}, TransID {TransID}",
-                    HttpContext.Connection.RemoteIpAddress, transaction?.TransID);
-                return Unauthorized();
-            }
-
-            var invalid = transaction == null
-                ? "Invalid transaction data."
-                : MpesaIntakeRules.Invalid(transaction.TransID, transaction.TransAmount, transaction.BillRefNumber, transaction.TransTime);
-            if (invalid != null)
-            {
-                _logger.LogWarning("M-Pesa payment refused: {Reason} TransID {TransID}", invalid, transaction?.TransID);
-                return BadRequest(invalid);
-            }
-
-            var newPayment = new MpesaRecord()
-            {
-                AccountNo = transaction!.BillRefNumber!.Trim(),
+            // TODO: Save to database or trigger business logic
+            var newPayment = new MpesaRecord() 
+            { 
+                AccountNo = transaction.BillRefNumber,
                 Amount = transaction.TransAmount,
-                MpesaCode = transaction.TransID!.Trim(),
-                PaymentDate = DateTime.ParseExact(transaction.TransTime, MpesaIntakeRules.TransTimeFormat, CultureInfo.InvariantCulture).ToString(),
+                MpesaCode = transaction.TransID,
+                PaymentDate = DateTime.ParseExact(transaction.TransTime, "yyyyMMddHHmmss", CultureInfo.InvariantCulture).ToString(),
                 FirstName = transaction.FirstName
             };
 
-            // 0 = this M-Pesa code is already recorded; still 200 so the sender doesn't keep retrying.
             var result = await _syncService.CreateKosePaymentAsync(newPayment);
-            if (result == 0)
-            {
-                _logger.LogWarning("M-Pesa payment {TransID} already recorded; not added again", newPayment.MpesaCode);
-                return Ok(new { Message = $"Transaction {newPayment.MpesaCode} already recorded" });
-            }
 
-            _logger.LogInformation("M-Pesa payment {TransID} saved as {Id}: account {Account}, amount {Amount}",
-                newPayment.MpesaCode, result, newPayment.AccountNo, newPayment.Amount);
+            // Return success response
             return Ok(new { Message = $"Transaction received successfully {result}", Received = transaction });
         }
     }
 
     public class MpesaTransaction
     {
-        public string? TransID { get; set; }
-        public string? TransAmount { get; set; }
-        public string? BillRefNumber { get; set; }
-        public string? TransTime { get; set; }
-        public string? FirstName { get; set; }
+        public string TransID { get; set; }
+        public string TransAmount { get; set; }
+        public string BillRefNumber { get; set; }
+        public string TransTime { get; set; }
+        public string FirstName { get; set; }
     }
 }
