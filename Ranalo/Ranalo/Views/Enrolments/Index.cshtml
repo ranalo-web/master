@@ -209,6 +209,16 @@
             {
                 <span class="small text-soft" style="white-space:normal">@decision.Reason</span>
             }
+
+            @* Admin: Transsion has the phone but its activation hasn't reached us. *@
+            @if (Model.IsAdmin && !enrolment.UnlockedAt.HasValue && !DeviceLockRules.NeedsSendingToTranssion(enrolment))
+            {
+                <form method="post" action="/enrolments/unlock-for/@enrolment.Id?days=3" class="d-inline"
+                      onsubmit="return confirm('Unlock @enrolment.FirstName @enrolment.LastName\'s phone for 3 days? Only works once Transsion shows it active.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Checks Transsion first">Unlock 3 days</button>
+                </form>
+            }
         }
         else if (Model.CanApprove != null)
         {

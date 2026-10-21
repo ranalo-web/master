@@ -251,6 +251,25 @@ namespace Ranalo.Services.DeviceLock
                     $"Deposit paid ({paid:N2}) is less than the required {requiredDeposit:N2}. Only an admin can approve this enrolment.");
         }
 
+        // A deposit reference that isn't an M-Pesa code ("IN ACCOUNT", say)
+        // is treated as no code, so the real one can be entered.
+        public static string? DepositCodeOrNull(string? mpesaDepositRef)
+        {
+            var trimmed = mpesaDepositRef?.Trim();
+            return !string.IsNullOrEmpty(trimmed) && trimmed.Length is >= 6 and <= 20 && trimmed.All(char.IsAsciiLetterOrDigit)
+                ? trimmed
+                : null;
+        }
+
+        // Admins can enrol without a confirmed deposit (2026-10-21): what
+        // would have blocked it is kept, flagged short, so only an admin can
+        // approve the enrolment and the record shows why.
+        public static DepositCheckResult AllowForAdmin(DepositCheckResult result, UserRole actorRole) =>
+            actorRole == UserRole.Admin && result.Blocks
+                ? new DepositCheckResult(DepositCheck.Short, result.Paid, result.Required,
+                    $"No confirmed deposit ({result.Message}) Enrolled by an admin; only an admin can approve it.")
+                : result;
+
         // ---- Who can do what -----------------------------------------------
 
         public static bool CanEnrol(UserRole role) =>

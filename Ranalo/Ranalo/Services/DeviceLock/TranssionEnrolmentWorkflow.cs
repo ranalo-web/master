@@ -32,6 +32,9 @@ namespace Ranalo.Services.DeviceLock
         Task<WorkflowResult> SendAgainAsync(Guid enrolmentId, User actor, int? deviceGroupId);
         Task<WorkflowResult> ApproveCallAsync(Guid enrolmentId, User actor);
         Task<WorkflowResult> RetryUnlockAsync(Guid enrolmentId, User actor);
+        // Admin: unlock for a set time once Transsion confirms the phone is
+        // registered -- for when the activation webhook hasn't arrived.
+        Task<WorkflowResult> UnlockForAsync(Guid enrolmentId, TimeSpan period, User actor);
         Task OnActivatedAsync(string imei);
     }
 
@@ -267,6 +270,37 @@ namespace Ranalo.Services.DeviceLock
             return await TryUnlockAsync(enrolment);
         }
 
+        public async Task<WorkflowResult> UnlockForAsync(Guid enrolmentId, TimeSpan period, User actor)
+        {
+            if (actor.RoleId != UserRole.Admin)
+            {
+                return new WorkflowResult(false, "Only an admin can unlock a phone for a set time.");
+            }
+
+            var enrolment = await _enrolments.GetByEnrolmentIdAsync(enrolmentId);
+            if (enrolment == null || !DeviceLockRules.IsTranssion(enrolment.DeviceBrand))
+            {
+                return new WorkflowResult(false, "This isn't a Transsion enrolment.");
+            }
+
+            // Only once Transsion has the phone registered and active.
+            var state = await _payTrigger.FindLockStateAsync(new PayTriggerModels.FindLockStateRequest { Imei = enrolment.IMEI });
+            if (state.Data?.LockState != 3000)
+            {
+                return new WorkflowResult(false, $"Transsion doesn't have this phone active yet (lockState {state.Data?.LockState}). Switch it on with internet first.");
+            }
+
+            if (!enrolment.ActivatedAt.HasValue)
+            {
+                enrolment.ActivatedAt = UtcNow;
+                enrolment.Updated = UtcNow;
+                enrolment.UpdatedBy = actor.Name;
+                await _enrolments.UpdateEnrolmentAsync(enrolment);
+            }
+
+            return await TryUnlockAsync(enrolment, period, force: true);
+        }
+
         public async Task OnActivatedAsync(string imei)
         {
             var enrolment = await _enrolments.GetByImeiNumberAsync(imei);
@@ -318,14 +352,14 @@ namespace Ranalo.Services.DeviceLock
             await TryUnlockAsync(enrolment);
         }
 
-        private async Task<WorkflowResult> TryUnlockAsync(Enrolment enrolment)
+        private async Task<WorkflowResult> TryUnlockAsync(Enrolment enrolment, TimeSpan? period = null, bool force = false)
         {
-            if (!DeviceLockRules.ReadyToUnlock(enrolment))
+            if (!force && !DeviceLockRules.ReadyToUnlock(enrolment))
             {
                 return new WorkflowResult(true, "Approved.");
             }
 
-            var firstLock = UtcNow.Add(FirstUnlockPeriod);
+            var firstLock = UtcNow.Add(period ?? FirstUnlockPeriod);
             var firstLockSeconds = new DateTimeOffset(firstLock).ToUnixTimeSeconds();
 
             string failure;

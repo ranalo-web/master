@@ -376,7 +376,7 @@
 
                                 @if (mustScreen && Model.Status == "approval-waiting")
                                 {
-                                    <partial name="_ScreeningPanel" model="(Model, screening!)" />
+                                    @await Html.PartialAsync("_ScreeningPanel", (Model, screening!))
                                 }
                                 else if (mustScreen && screening!.Calls.Any())
                                 {
