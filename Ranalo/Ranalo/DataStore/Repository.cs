@@ -111,8 +111,11 @@ namespace Ranalo.DataStore
         {
             try
             {
-                return await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == password);
+                // Passwords hashed by the 2026-10-21 release (PasswordRules) still
+                // log in. The cookie holds the stored value, hence the exact match.
+                var users = await _context.Users.Where(u => u.Email == email).ToListAsync();
+                return users.FirstOrDefault(u => u.PasswordHash == password)
+                    ?? users.FirstOrDefault(u => Ranalo.Services.PasswordRules.Verify(u.PasswordHash, password).Ok);
             }
             catch (Exception)
             {
