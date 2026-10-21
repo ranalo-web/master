@@ -26,18 +26,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-// Only this app's own controllers. The referenced Ranalo.Woocommece.Api project
-// is used for its sync services; its controllers (api/DataSync/..., api/Values)
-// were being served here with no login -- customer orders by id, payment and
-// order imports (2026-10-21).
-builder.Services.AddControllersWithViews()
-    .ConfigureApplicationPartManager(parts =>
-    {
-        foreach (var part in parts.ApplicationParts.Where(p => p.Name == "Ranalo.Woocommece.Api").ToList())
-        {
-            parts.ApplicationParts.Remove(part);
-        }
-    });
+// Ranalo.Woocommece.Api's controllers (api/DataSync/..., api/Values) are
+// served here too, with no login. Blocking them on 2026-10-21 stopped
+// payments coming in, so they're open again until we know which one IONOS
+// uses and can close the rest (api/DataSync/OrderById returns customer data).
+builder.Services.AddControllersWithViews();
 
 builder.Services.AddScoped<IDbConnection>(sp =>
     new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
