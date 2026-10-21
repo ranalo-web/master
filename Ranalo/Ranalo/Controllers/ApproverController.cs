@@ -11,11 +11,14 @@ namespace Ranalo.Controllers
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
         private readonly IDashboardReportService _dashboardReportService;
-        public ApproverController(IApplicationReportService applicationReportService, IUserService userService, IDashboardReportService dashboardReportService)
+        private readonly ICustomerScreeningService _screening;
+        public ApproverController(IApplicationReportService applicationReportService, IUserService userService, IDashboardReportService dashboardReportService,
+            ICustomerScreeningService screening)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
             _dashboardReportService = dashboardReportService;
+            _screening = screening;
         }
 
         [HttpGet]
@@ -104,6 +107,20 @@ namespace Ranalo.Controllers
             }
 
             await SetViewBags(settings, "approver"); await SetViewBags(settings, "approver");
+
+            // Screening first (Services/ScreeningRules.cs).
+            var order = await _applicationReportService.GetOrderByOrderIdAsync(orderId);
+            if (order == null)
+            {
+                return Redirect($"/order-details/{orderId}");
+            }
+
+            var cannotApprove = await _screening.CannotApproveAsync(orderId, order.DateCreated);
+            if (cannotApprove != null)
+            {
+                TempData["ScreeningError"] = cannotApprove;
+                return Redirect($"/order-details/{orderId}");
+            }
 
             var isApproved = await _applicationReportService.ApproveOrderAsync(orderId);
 

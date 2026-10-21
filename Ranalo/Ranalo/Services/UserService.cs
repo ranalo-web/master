@@ -6,10 +6,18 @@ namespace Ranalo.Services
     public class UserService : IUserService
     {
         private readonly IRepository _userRepository;
+        private readonly ILogger<UserService>? _logger;
 
-        public UserService(IRepository userRepository)
+        // Passwords stored as typed are hashed when the person logs in -- but
+        // not from a developer's machine: the local server uses the live
+        // database, and the live site can't read a hash until this is deployed.
+        private readonly bool _upgradePasswordsOnLogin;
+
+        public UserService(IRepository userRepository, IHostEnvironment? environment = null, ILogger<UserService>? logger = null)
         {
             _userRepository = userRepository;
+            _logger = logger;
+            _upgradePasswordsOnLogin = environment?.IsDevelopment() != true;
         }
 
         //public async Task<IEnumerable<User>> GetAllUsersAsync()
@@ -22,6 +30,7 @@ namespace Ranalo.Services
             var existingUser = await GetUserByEmail(user.Email);
             if(existingUser == null)
             {
+                user.PasswordHash = PasswordRules.Hash(user.PasswordHash);
                 await _userRepository.CreateUserAsync(user);
             }
 
@@ -75,20 +84,41 @@ namespace Ranalo.Services
             return;
         }
 
+        // null when the email and password don't match an active account.
         public async Task<User?> LoginUser(string email, string password)
         {
-            var user = await _userRepository.GetByEmailAndPasswordAsync(email, password);
-            if(user != null)
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password))
             {
-                await _userRepository.UpdateUserLastLogin(user);
+                return null;
             }
 
-            return user;
-        }
+            var user = await _userRepository.GetUserByEmailAsync(email.Trim());
+            if (user == null || user.Status == UserStatus.Suspended)
+            {
+                return null;
+            }
 
-        public async Task<User?> GetUserByPasswordAsync(string password)
-        {
-            return await _userRepository.GetUserByPasswordAsync(password);
+            var (ok, needsRehash) = PasswordRules.Verify(user.PasswordHash, password);
+            if (!ok)
+            {
+                return null;
+            }
+
+            if (needsRehash && _upgradePasswordsOnLogin)
+            {
+                try
+                {
+                    user = await _userRepository.UpdateUserPasswordAsync(user.UserId, PasswordRules.Hash(password));
+                }
+                catch (Exception ex)
+                {
+                    // Still signed in; it's hashed next time.
+                    _logger?.LogWarning(ex, "Couldn't hash the password for user {UserId}", user.UserId);
+                }
+            }
+
+            await _userRepository.UpdateUserLastLogin(user);
+            return user;
         }
 
         public async Task<User?> GetUserByEmail(string email)
@@ -96,9 +126,15 @@ namespace Ranalo.Services
             return await _userRepository.GetUserByEmailAsync(email);
         }
 
-        public async Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash)
+        public Task<User?> GetSignedInUserAsync(int userId) => _userRepository.GetSignedInUserAsync(userId);
+
+        // A user loaded with GetUserAnyUserByIdAsync and changed.
+        public Task SaveUserAsync(User user) => _userRepository.UpdateUserAsync(user);
+
+        // newPassword as typed; it's stored hashed.
+        public async Task<User> UpdateUserPasswordAsync(int userId, string newPassword)
         {
-            return await _userRepository.UpdateUserPasswordAsync(userId, newPasswordHash);
+            return await _userRepository.UpdateUserPasswordAsync(userId, PasswordRules.Hash(newPassword));
         }
 
         public async Task<Dealer?> GetDealerByUserId(int userId)
@@ -215,6 +251,7 @@ namespace Ranalo.Services
                 return (false, $"A user with email {login.Email} already exists. Use a different email for the dealer's login.");
             }
 
+            login.PasswordHash = PasswordRules.Hash(login.PasswordHash);
             login.RoleId = UserRole.Dealer;
             login.Status = UserStatus.Active;
             login.IsActive = true;

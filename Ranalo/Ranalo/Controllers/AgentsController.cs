@@ -252,57 +252,6 @@ namespace Ranalo.Controllers
             return RedirectToAction("AssignedCollections", "Agents");
         }
 
-        [HttpPost]
-        [Route("reject-order")]
-        public async Task<IActionResult> Reject(long orderId)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-
-            await SetViewBags(settings, "approver");
-
-            var isApproved = await _applicationReportService.RejectOrderAsync(orderId);
-            //var allPaymentsByUser = await _applicationReportService.GetAllPaymentsAsync(settings.UserId, "searchTerm");
-            return Redirect($"/order-details/{orderId}");
-        }
-
-        [HttpPost]
-        [Route("approve-order")]
-        public async Task<IActionResult> Approve(long orderId)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-
-            await SetViewBags(settings, "approver"); await SetViewBags(settings, "approver");
-
-            var isApproved = await _applicationReportService.ApproveOrderAsync(orderId);
-
-            return Redirect($"/order-details/{orderId}");
-        }
-
-        [HttpPost]
-        [Route("add-note")]
-        public async Task<IActionResult> AddNote(long orderId, string customerNote)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-
-            await SetViewBags(settings, "approver"); await SetViewBags(settings, "approver");
-
-            await _applicationReportService.AddCustomerNoteAsync(settings.UserId, orderId, customerNote);
-
-            return Redirect($"/order-details/{orderId}");
-        }
-
         private async Task SetViewBags(User settings, string backLink)
         {
             ViewBag.BackLink = backLink;

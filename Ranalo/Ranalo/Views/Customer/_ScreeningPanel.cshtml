@@ -1,0 +1,143 @@
+@using Ranalo.Models
+@model (CustomerDetails Order, OrderScreening Screening)
+@{
+    var order = Model.Order;
+    var screening = Model.Screening;
+    string Tick(bool b) => b ? "✓" : "–";
+    var statusText = screening.Status switch
+    {
+        ScreeningStatus.Passed => ("Passed", "bg-success"),
+        ScreeningStatus.InProgress => ("In progress", "bg-warning"),
+        _ => ("Not started", "bg-warning")
+    };
+}
+
+<h6 class="lead-text">Customer Screening <span class="badge badge-dim @statusText.Item2 ms-1">@statusText.Item1</span></h6>
+
+@if (TempData["ScreeningError"] is string screeningError)
+{
+    <div class="alert alert-danger alert-icon"><em class="icon ni ni-cross-circle"></em>@screeningError</div>
+}
+@if (TempData["ScreeningMessage"] is string screeningMessage)
+{
+    <div class="alert alert-success alert-icon"><em class="icon ni ni-check-circle"></em>@screeningMessage</div>
+}
+
+<div class="card card-bordered mb-3">
+    <div class="card-inner">
+        <p class="text-soft mb-2">
+            Call the customer and one next of kin before approving. Log every call, including ones nobody answered.
+            Customer: <strong>@(screening.CustomerPassed ? "passed" : "to do")</strong> ·
+            Next of kin: <strong>@(screening.NextOfKinPassed ? "passed" : "to do")</strong>
+        </p>
+
+        <div class="row g-4">
+            @* ---- Customer call ---- *@
+            <div class="col-lg-6">
+                <form method="post" action="/customer-calls/screening">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="OrderId" value="@order.OrderID">
+                    <input type="hidden" name="CallType" value="@ScreeningCall.Customer">
+                    <h6 class="title">Customer call</h6>
+                    <p class="sub-text">@order.FirstName @order.LastName · @order.Phone · ID @order.NationalId</p>
+                    <div class="custom-control custom-checkbox d-block mb-1">
+                        <input type="checkbox" class="custom-control-input" id="c-reached" name="Reached" value="true">
+                        <label class="custom-control-label" for="c-reached">Customer answered</label>
+                    </div>
+                    <div class="custom-control custom-checkbox d-block mb-1">
+                        <input type="checkbox" class="custom-control-input" id="c-identity" name="IdentityConfirmed" value="true">
+                        <label class="custom-control-label" for="c-identity">Name and ID match the order</label>
+                    </div>
+                    <div class="custom-control custom-checkbox d-block mb-1">
+                        <input type="checkbox" class="custom-control-input" id="c-terms" name="TermsConfirmed" value="true">
+                        <label class="custom-control-label" for="c-terms">Phone, deposit, daily amount and term agreed</label>
+                    </div>
+                    <div class="custom-control custom-checkbox d-block mb-2">
+                        <input type="checkbox" class="custom-control-input" id="c-lock" name="LockUnderstood" value="true">
+                        <label class="custom-control-label" for="c-lock">Understands the phone locks if they don't pay</label>
+                    </div>
+                    <textarea name="Notes" class="form-control mb-2" rows="2" maxlength="1000" placeholder="Notes"></textarea>
+                    <button type="submit" class="btn btn-primary">Log customer call</button>
+                </form>
+            </div>
+
+            @* ---- Next of kin call ---- *@
+            <div class="col-lg-6">
+                <form method="post" action="/customer-calls/screening">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="OrderId" value="@order.OrderID">
+                    <input type="hidden" name="CallType" value="@ScreeningCall.NextOfKin">
+                    <h6 class="title">Next of kin call</h6>
+                    <select name="NextOfKinNo" class="form-select mb-2" required>
+                        @if (order.NextOfKin != null)
+                        {
+                            <option value="1">@order.NextOfKin.Name · @order.NextOfKin.Phone</option>
+                        }
+                        @if (order.NextOfKin2 != null)
+                        {
+                            <option value="2">@order.NextOfKin2.Name · @order.NextOfKin2.Phone</option>
+                        }
+                        @if (order.NextOfKin == null && order.NextOfKin2 == null)
+                        {
+                            <option value="">No next of kin on this order</option>
+                        }
+                    </select>
+                    <div class="custom-control custom-checkbox d-block mb-1">
+                        <input type="checkbox" class="custom-control-input" id="k-reached" name="Reached" value="true">
+                        <label class="custom-control-label" for="k-reached">Next of kin answered</label>
+                    </div>
+                    <div class="custom-control custom-checkbox d-block mb-1">
+                        <input type="checkbox" class="custom-control-input" id="k-knows" name="KnowsCustomer" value="true">
+                        <label class="custom-control-label" for="k-knows">Knows the customer</label>
+                    </div>
+                    <div class="custom-control custom-checkbox d-block mb-2">
+                        <input type="checkbox" class="custom-control-input" id="k-relationship" name="RelationshipConfirmed" value="true">
+                        <label class="custom-control-label" for="k-relationship">Confirmed the relationship</label>
+                    </div>
+                    <input type="text" name="Relationship" class="form-control mb-2" maxlength="100" placeholder="Relationship (e.g. brother, employer)">
+                    <textarea name="Notes" class="form-control mb-2" rows="2" maxlength="1000" placeholder="Notes"></textarea>
+                    <button type="submit" class="btn btn-primary">Log next of kin call</button>
+                </form>
+            </div>
+        </div>
+
+        @if (screening.Calls.Any())
+        {
+            <h6 class="title mt-4">Calls</h6>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0" style="white-space:nowrap;">
+                    <thead>
+                        <tr>
+                            <th>When (UTC)</th><th>Call</th><th>Answered</th><th>Checks</th><th>Result</th><th>By</th><th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in screening.Calls)
+                        {
+                            var isCustomer = c.CallType == ScreeningCall.Customer;
+                            var passed = isCustomer ? Ranalo.Services.ScreeningRules.CustomerCallPassed(c) : Ranalo.Services.ScreeningRules.NextOfKinCallPassed(c);
+                            <tr>
+                                <td>@c.CalledAtUtc.ToString("dd MMM yyyy HH:mm")</td>
+                                <td>@(isCustomer ? "Customer" : $"Next of kin {c.NextOfKinNo}")@(string.IsNullOrEmpty(c.Relationship) ? "" : $" ({c.Relationship})")</td>
+                                <td>@(c.Reached ? "Yes" : "No")</td>
+                                <td>
+                                    @if (isCustomer)
+                                    {
+                                        <span>ID @Tick(c.IdentityConfirmed) · Terms @Tick(c.TermsConfirmed) · Lock @Tick(c.LockUnderstood)</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Knows @Tick(c.KnowsCustomer) · Relationship @Tick(c.RelationshipConfirmed)</span>
+                                    }
+                                </td>
+                                <td><span class="badge badge-dim @(passed ? "bg-success" : "bg-danger")">@(passed ? "Passed" : "Not passed")</span></td>
+                                <td>@c.CalledByName</td>
+                                <td style="white-space:normal;">@c.Notes</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

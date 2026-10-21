@@ -80,6 +80,15 @@ namespace Ranalo.DataStore
         }
 
 
+        // The signed-in user for this request (UserSettingsMiddleware): not
+        // tracked, so pages that adjust it (a dealer's DealerId, say) can't
+        // write that back to their Users row when something else is saved.
+        public async Task<User?> GetSignedInUserAsync(int userId)
+        {
+            return await _context.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.UserId == userId && u.Status != UserStatus.Suspended);
+        }
+
         public async Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash)
         {
             try
@@ -107,20 +116,6 @@ namespace Ranalo.DataStore
             }
         }
 
-        public async Task<User?> GetByEmailAndPasswordAsync(string email, string password)
-        {
-            try
-            {
-                return await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == password);
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-            
-        }
         public async Task<User?> GetByCustomerIdAsync(int userId)
         {
             try
@@ -286,19 +281,6 @@ namespace Ranalo.DataStore
             }
         }
 
-        public async Task<User?> GetUserByPasswordAsync(string password)
-        {
-            try
-            {
-                return await _context.Users
-                .FirstOrDefaultAsync(u => u.PasswordHash == password);
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
 
         public async Task UpdateUserLastLogin(User user)
         {
