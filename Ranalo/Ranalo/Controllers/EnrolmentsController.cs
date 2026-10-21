@@ -316,7 +316,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("addenrolment")]
-        public async Task<IActionResult> AddEnrolment(Enrolment enrolment, string? overrideBrand, int? selectedDealerId, string? mpesaCode)
+        public async Task<IActionResult> AddEnrolment(Enrolment enrolment, string? overrideBrand, int? selectedDealerId, string? mpesaCode, string? returnTo = null)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -517,6 +517,13 @@ namespace Ranalo.Controllers
                             ? "It unlocks once an approver has called the customer and approved it."
                             : "An approver approves it on this page to unlock it.")
                         + (stock.DepositShort ? " The deposit is short, so only an admin can approve it." : "");
+                    if (returnTo == "stock")
+                    {
+                        // Assigned from the Stock phones page: show the result there.
+                        TempData["StockMessages"] = new[] { (string)TempData["EnrolmentMessage"]! };
+                        TempData.Remove("EnrolmentMessage");
+                        return RedirectToAction("Index", "StockPhones");
+                    }
                     return RedirectToAction("Index");
                 }
 
