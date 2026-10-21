@@ -1,0 +1,133 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@using Ranalo.DataStore.DataModels
+@model EditUserViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var u = Model.User;
+    var suspended = u.Status == UserStatus.Suspended;
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">@u.Name @u.LastName</h3>
+                <div class="nk-block-des text-soft">
+                    <p>@UserAdminRules.RoleName(u.RoleId) · @u.Email · last login @(u.LastLogin?.ToString("dd MMM yyyy HH:mm") ?? "never")
+                        <span class="badge badge-dim @(suspended ? "bg-danger" : "bg-success") ms-1">@(suspended ? "Suspended" : "Active")</span></p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="/users" class="btn btn-outline-light bg-white"><em class="icon ni ni-arrow-left"></em><span>Users</span></a>
+            </div>
+        </div>
+    </div>
+
+    @if (ViewBag.ResetRequestedAt is DateTime resetRequestedAt)
+    {
+        <div class="alert alert-warning alert-icon"><em class="icon ni ni-alert-circle"></em>They asked for a password reset on @resetRequestedAt.ToString("dd MMM yyyy HH:mm") UTC. Set a new one below and give it to them.</div>
+    }
+    @if (TempData["UserMessage"] is string message)
+    {
+        <div class="alert alert-success alert-icon"><em class="icon ni ni-check-circle"></em>@message</div>
+    }
+    @if (TempData["UserError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon"><em class="icon ni ni-cross-circle"></em>@error</div>
+    }
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <h6 class="title mb-3">Details</h6>
+                <form method="post" action="/users/@u.UserId/edit">
+                    @Html.AntiForgeryToken()
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label">First name</label>
+                            <input type="text" name="Name" class="form-control" value="@u.Name" maxlength="100" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Last name</label>
+                            <input type="text" name="LastName" class="form-control" value="@u.LastName" maxlength="100">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Known as</label>
+                            <input type="text" name="KnownAs" class="form-control" value="@u.KnownAs" maxlength="100">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Email (their login)</label>
+                            <input type="email" name="Email" class="form-control" value="@u.Email" maxlength="200" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Phone</label>
+                            <input type="text" name="Phone" class="form-control" value="@u.Phone" maxlength="50">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">City</label>
+                            <input type="text" name="City" class="form-control" value="@u.City" maxlength="100">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Role</label>
+                            <select name="RoleId" class="form-select">
+                                @foreach (var role in Model.AssignableRoles)
+                                {
+                                    <option value="@((int)role)" selected="@(role == u.RoleId)">@UserAdminRules.RoleName(role)</option>
+                                }
+                            </select>
+                        </div>
+                        @if (Model.Dealers.Any())
+                        {
+                            <div class="col-sm-6">
+                                <label class="form-label">Dealer</label>
+                                <select name="DealerId" class="form-select">
+                                    <option value="0">Keep current</option>
+                                    @foreach (var d in Model.Dealers)
+                                    {
+                                        <option value="@d.DealerId" selected="@(d.DealerId == u.DealerId)">@d.CompanyName (ref @d.DealerReference)</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Save details</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-1">Reset password</h6>
+                        <p class="text-soft">Sets a new password and signs them out everywhere. They can change it on My Account.</p>
+                        <form method="post" action="/users/@u.UserId/password" autocomplete="off">
+                            @Html.AntiForgeryToken()
+                            <input type="password" name="newPassword" class="form-control mb-2" placeholder="New password (8+ characters)" minlength="@PasswordRules.MinLength" required autocomplete="new-password">
+                            <input type="password" name="confirmPassword" class="form-control mb-2" placeholder="Confirm new password" required autocomplete="new-password">
+                            <button type="submit" class="btn btn-warning">Reset password</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-1">@(suspended ? "Reactivate" : "Suspend")</h6>
+                        <p class="text-soft">@(suspended ? "Lets them log in again." : "Stops them logging in and signs them out straight away. Nothing they did is deleted.")</p>
+                        <form method="post" action="/users/@u.UserId/@(suspended ? "reactivate" : "suspend")"
+                              onsubmit="return confirm('@(suspended ? "Reactivate" : "Suspend") @u.Name?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn @(suspended ? "btn-success" : "btn-danger")">@(suspended ? "Reactivate" : "Suspend")</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

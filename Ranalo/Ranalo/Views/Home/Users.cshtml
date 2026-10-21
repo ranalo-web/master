@@ -97,6 +97,17 @@
             </div><!-- .nk-block-head-content -->
         </div><!-- .nk-block-between -->
     </div><!-- .nk-block-head -->
+    @if (ViewBag.ResetRequests is List<Ranalo.DataStore.PasswordResetRequest> resetRequests && resetRequests.Any())
+    {
+        <div class="alert alert-warning alert-icon">
+            <em class="icon ni ni-alert-circle"></em>
+            <strong>Password reset requested:</strong>
+            @foreach (var r in resetRequests)
+            {
+                <a href="/users/@r.UserId/edit" class="ms-2">@r.Name @r.LastName (@r.Email, @r.RequestedAtUtc.ToString("dd MMM HH:mm") UTC)</a>
+            }
+        </div>
+    }
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
@@ -128,12 +139,16 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Email</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">City</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Verified</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Login</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                                <th class="wl-th"></th>
                             </tr>
                         </thead>
                         <tbody>
+                        @{
+                            // SetViewBags has set a dealer's DealerId to their dealer.
+                            var actor = Context.Items["UserSettings"] as Ranalo.DataStore.DataModels.User;
+                        }
                         @foreach (var user in Model.Users)
                         {
                             <tr>
@@ -142,9 +157,18 @@
                                 <td>@(string.IsNullOrWhiteSpace(user.Email) ? "-" : user.Email)</td>
                                 <td>@(string.IsNullOrWhiteSpace(user.Phone) ? "-" : user.Phone)</td>
                                 <td>@(string.IsNullOrWhiteSpace(user.City) ? "-" : user.City)</td>
-                                <td><em class="icon text-success ni ni-check-circle"></em> Email</td>
                                 <td>@(user.LastLogin?.ToString("dd MMM yyyy") ?? "Never")</td>
                                 <td><span class="@SetStatusBadge(user.Status)">@SetStatusText(user.Status)</span></td>
+                                <td class="text-end">
+                                    @if (actor != null && actor.UserId == user.UserId)
+                                    {
+                                        <a href="/account" class="btn btn-sm btn-outline-light">My Account</a>
+                                    }
+                                    else if (actor != null && Ranalo.Services.UserAdminRules.CanManage(actor, actor.DealerId, user))
+                                    {
+                                        <a href="/users/@user.UserId/edit" class="btn btn-sm btn-primary">Edit</a>
+                                    }
+                                </td>
                             </tr>
                         }
                         </tbody>

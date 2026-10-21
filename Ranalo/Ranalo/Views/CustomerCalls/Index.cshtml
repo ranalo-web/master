@@ -1,0 +1,228 @@
+@using Ranalo.Models
+@model CustomerCallsViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Customer Calls";
+    string Date(DateTime? d) => d?.ToString("dd MMM yyyy") ?? "-";
+    string DateTime(DateTime? d) => d?.ToString("dd MMM yyyy HH:mm") ?? "-";
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-head-content">
+            <h3 class="nk-block-title page-title">Customer Calls</h3>
+            <div class="nk-block-des text-soft">
+                <p>Customers behind in their first month, orders to screen before approval, and welfare calls due from day 7 after enrolment.</p>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["CallsMessage"] is string message)
+    {
+        <div class="alert alert-success alert-icon"><em class="icon ni ni-check-circle"></em>@message</div>
+    }
+    @if (TempData["CallsError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon"><em class="icon ni ni-cross-circle"></em>@error</div>
+    }
+
+    @* ---- Not paying: top of the list ---- *@
+    <div class="nk-block">
+        <div class="nk-block-head nk-block-head-sm">
+            <h5 class="nk-block-title">Not paying in their first month <span class="badge rounded-pill bg-danger ms-1">@Model.NotPaying.Count</span></h5>
+            <p class="text-soft">In arrears within 30 days of their first payment. Most behind first.</p>
+        </div>
+        <div class="card card-bordered">
+            <div class="card-inner p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="calls-not-paying" data-page-size="10">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Started</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Day</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Daily</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Total Paid</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Arrears</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Paid</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.NotPaying.Any())
+                            {
+                                <tr><td colspan="8" class="text-soft">Nobody is behind in their first month.</td></tr>
+                            }
+                            @foreach (var row in Model.NotPaying)
+                            {
+                                <tr>
+                                    <td>
+                                        <a href="/account-details/@row.AccountNo" class="fw-medium">@row.FirstName</a>
+                                        <span class="d-block sub-text">AC: @row.AccountNo</span>
+                                    </td>
+                                    <td>@Date(row.FirstPaymentDate)</td>
+                                    <td>@row.DaysSinceStart</td>
+                                    <td>@row.Daily.ToString("N2")</td>
+                                    <td>@row.TotalPaid.ToString("N0")</td>
+                                    <td><span class="badge badge-dim bg-danger">@row.Arrears.ToString("N0")</span></td>
+                                    <td>@Date(row.LastPaymentDate)</td>
+                                    <td>@(row.Locked ? "Locked" : "Unlocked")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ---- Orders to screen ---- *@
+    <div class="nk-block">
+        <div class="nk-block-head nk-block-head-sm">
+            <h5 class="nk-block-title">Orders to screen <span class="badge rounded-pill bg-warning ms-1">@Model.ToScreen.Count</span></h5>
+            <p class="text-soft">Call the customer and one next of kin before approving. Oldest first.</p>
+        </div>
+        <div class="card card-bordered">
+            <div class="card-inner p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="calls-to-screen" data-page-size="10">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Order</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Ordered</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer Call</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Next of Kin Call</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Attempts</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Call</th>
+                                <th class="wl-th"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.ToScreen.Any())
+                            {
+                                <tr><td colspan="10" class="text-soft">No orders waiting for screening.</td></tr>
+                            }
+                            @foreach (var row in Model.ToScreen)
+                            {
+                                <tr>
+                                    <td><a href="/order-details/@row.OrderId" class="fw-medium">@row.OrderId</a></td>
+                                    <td>@row.FirstName @row.LastName</td>
+                                    <td>@row.Phone</td>
+                                    <td>@row.DealerRef</td>
+                                    <td>@Date(row.DateCreated)</td>
+                                    <td><span class="badge badge-dim @(row.CustomerPassed ? "bg-success" : "bg-warning")">@(row.CustomerPassed ? "Passed" : "To do")</span></td>
+                                    <td><span class="badge badge-dim @(row.NextOfKinPassed ? "bg-success" : "bg-warning")">@(row.NextOfKinPassed ? "Passed" : "To do")</span></td>
+                                    <td>@row.Attempts</td>
+                                    <td>@DateTime(row.LastCallUtc)</td>
+                                    <td class="text-end"><a href="/order-details/@row.OrderId" class="btn btn-sm btn-primary">Screen</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ---- Welfare calls ---- *@
+    <div class="nk-block">
+        <div class="nk-block-head nk-block-head-sm">
+            <h5 class="nk-block-title">Welfare calls <span class="badge rounded-pill bg-info ms-1">@Model.Welfare.Count</span></h5>
+            <p class="text-soft">Due from day 7 after enrolment, overdue after day 30. Overdue first.</p>
+        </div>
+        <div class="card card-bordered">
+            <div class="card-inner p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="calls-welfare" data-page-size="10">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Enrolled</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Day</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Attempts</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Call</th>
+                                <th class="wl-th"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Welfare.Any())
+                            {
+                                <tr><td colspan="8" class="text-soft">No welfare calls due.</td></tr>
+                            }
+                            @foreach (var row in Model.Welfare)
+                            {
+                                <tr>
+                                    <td>
+                                        <a href="/account-details/@row.AccountNo" class="fw-medium">@row.FirstName @row.LastName</a>
+                                        <span class="d-block sub-text">AC: @row.AccountNo</span>
+                                    </td>
+                                    <td>@row.Phone</td>
+                                    <td>@Date(row.EnrolledAtUtc)</td>
+                                    <td>@row.DaysSinceEnrolment</td>
+                                    <td><span class="badge badge-dim @(row.Status == WelfareStatus.Overdue ? "bg-danger" : "bg-warning")">@row.Status</span></td>
+                                    <td>@row.Attempts</td>
+                                    <td>@DateTime(row.LastCallUtc)</td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#welfare-call"
+                                                data-account="@row.AccountNo" data-name="@row.FirstName @row.LastName">Log call</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" tabindex="-1" role="dialog" id="welfare-call">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <a href="#" class="close" data-bs-dismiss="modal"><em class="icon ni ni-cross-sm"></em></a>
+            <div class="modal-body modal-body-md">
+                <h5 class="title">Welfare call</h5>
+                <p class="text-soft" id="welfare-call-name"></p>
+                <form method="post" action="/customer-calls/welfare">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="AccountNo" id="welfare-call-account">
+                    <input type="hidden" name="returnUrl" value="/customer-calls">
+                    <div class="form-group">
+                        <label class="form-label">Outcome</label>
+                        <div class="form-control-wrap">
+                            <select name="Outcome" class="form-select" required>
+                                <option value="@WelfareCall.AllGood">All good</option>
+                                <option value="@WelfareCall.Issue">Issue (add a note)</option>
+                                <option value="@WelfareCall.NoAnswer">No answer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea name="Notes" class="form-control" maxlength="1000" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/watchlist-table.js"></script>
+    <script>
+        document.getElementById('welfare-call').addEventListener('show.bs.modal', function (e) {
+            var b = e.relatedTarget;
+            document.getElementById('welfare-call-account').value = b.getAttribute('data-account');
+            document.getElementById('welfare-call-name').textContent = b.getAttribute('data-name') + ' (AC: ' + b.getAttribute('data-account') + ')';
+        });
+    </script>
+}

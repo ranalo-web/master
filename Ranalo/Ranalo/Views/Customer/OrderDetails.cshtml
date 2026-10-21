@@ -370,6 +370,19 @@
                         <div class="nk-block">
                             @if (ViewBag.IsDealer == false)
                             {
+                                var screening = ViewBag.Screening as OrderScreening;
+                                var mustScreen = screening != null && screening.Status != ScreeningStatus.NotRequired;
+                                var screeningPassed = screening == null || screening.Status is ScreeningStatus.NotRequired or ScreeningStatus.Passed;
+
+                                @if (mustScreen && Model.Status == "approval-waiting")
+                                {
+                                    <partial name="_ScreeningPanel" model="(Model, screening!)" />
+                                }
+                                else if (mustScreen && screening!.Calls.Any())
+                                {
+                                    <p class="text-soft">Customer screening: @(screening.Status == ScreeningStatus.Passed ? "passed" : "not completed") (@screening.Calls.Count call(s) logged).</p>
+                                }
+
                                 @if (Model.Status == "approval-waiting")
                                 {
                                     <h6 class="lead-text">Order Approval</h6>
@@ -381,13 +394,20 @@
                                                         <em class="icon icon-circle icon-circle-lg ni ni-user-check-fill"></em>
                                                     </div>
                                                     <div class="media-content">
-                                                        <p>After checking and verifying order details, please approve the order.</p>
+                                                        <p>After checking and verifying order details, please approve the order.@(screeningPassed ? "" : " Customer screening must pass first.")</p>
                                                     </div>
                                                 </div>
                                                 <form action="/approve-order" method="post">
                                                     <div class="nk-block-actions flex-shrink-0">
                                                         <input name="orderId" type="hidden" value="@Model.OrderID">
-                                                        <button type="submit" class="btn btn-lg btn-success">Approve</button>
+                                                        @if (screeningPassed)
+                                                        {
+                                                            <button type="submit" class="btn btn-lg btn-success">Approve</button>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button type="submit" class="btn btn-lg btn-success" disabled title="Complete customer screening first">Approve</button>
+                                                        }
                                                     </div>
                                                 </form>
                                             </div>

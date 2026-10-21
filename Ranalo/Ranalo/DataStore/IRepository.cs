@@ -10,7 +10,6 @@ namespace Ranalo.DataStore
         //void Update(T entity);
         //void Delete(T entity);
         Task SaveAsync();
-        Task<User?> GetByEmailAndPasswordAsync(string email, string password);
         Task<Dealer?> GetDealerByUserIdAsync(int userId);
         Task<Dealer?> GetDealerByDealerIdAsync(int dealerId);
 
@@ -29,9 +28,9 @@ namespace Ranalo.DataStore
         Task<User> UpdateUserAsync(User newUser);
         Task<User?> GetUserByEmailAsync(string email);
 
-        Task<User?> GetUserByPasswordAsync(string password);
 
         Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash);
+        Task<User?> GetSignedInUserAsync(int userId);
         Task UpdateUserLastLogin(User user);
         Task<IEnumerable<User>> GetDebtCollectorsAsync();
         Task<IEnumerable<Dealer>> GetAllDealersAsync();

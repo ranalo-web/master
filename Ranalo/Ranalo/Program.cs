@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Ranalo.DataStore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.SqlServer;
@@ -25,7 +26,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddControllersWithViews();
+// Only this app's own controllers. The referenced Ranalo.Woocommece.Api project
+// is used for its sync services; its controllers (api/DataSync/..., api/Values)
+// were being served here with no login -- customer orders by id, payment and
+// order imports (2026-10-21).
+builder.Services.AddControllersWithViews()
+    .ConfigureApplicationPartManager(parts =>
+    {
+        foreach (var part in parts.ApplicationParts.Where(p => p.Name == "Ranalo.Woocommece.Api").ToList())
+        {
+            parts.ApplicationParts.Remove(part);
+        }
+    });
 
 builder.Services.AddScoped<IDbConnection>(sp =>
     new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -111,6 +123,15 @@ builder.Services.AddScoped<ICostBackfillRepository, CostBackfillRepository>();
 builder.Services.AddScoped<IWriteOffRepository, WriteOffRepository>();
 builder.Services.AddScoped<IFraudService, FraudService>();
 builder.Services.AddScoped<IFraudRepository, FraudRepository>();
+builder.Services.AddMemoryCache();
+// Signs and encrypts the login cookie (Services/LoginSession.cs). On Azure App
+// Service the keys are kept in the site's storage, so restarts keep people
+// signed in; a fixed app name keeps them valid across deployments.
+builder.Services.AddDataProtection().SetApplicationName("Ranalo");
+builder.Services.AddScoped<ILoginSession, LoginSession>();
+builder.Services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
+builder.Services.AddScoped<ICustomerScreeningService, CustomerScreeningService>();
+builder.Services.AddScoped<ICustomerScreeningRepository, CustomerScreeningRepository>();
 builder.Services.AddScoped<IRecoveryService, RecoveryService>();
 builder.Services.AddScoped<ILockRecoveryRepository, LockRecoveryRepository>();
 builder.Services.AddScoped<IRepoStockService, RepoStockService>();

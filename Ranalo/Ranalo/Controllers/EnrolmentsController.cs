@@ -23,6 +23,7 @@ namespace Ranalo.Controllers
         private readonly IStockPhoneService _stock;
         private readonly IDeviceService _deviceService;
         private readonly IOrderContractService _contracts;
+        private readonly ICustomerScreeningService _screening;
         public EnrolmentsController(IUserService userService, 
             IEnrolmentService enrolmentService, 
             IApplicationReportService applicationReportService,
@@ -32,8 +33,10 @@ namespace Ranalo.Controllers
             IDevicesRepository devices,
             IStockPhoneService stock,
             IDeviceService deviceService,
-            IOrderContractService contracts)
+            IOrderContractService contracts,
+            ICustomerScreeningService screening)
         {
+            _screening = screening;
             _devices = devices;
             _contracts = contracts;
             _deviceService = deviceService;
@@ -325,6 +328,15 @@ namespace Ranalo.Controllers
             if (order == null)
             {
                 response.Errors.Add("There are no orders for the order Id!");
+            }
+            else
+            {
+                // Screened and approved first (Services/ScreeningRules.cs).
+                var cannotEnrol = await _screening.CannotEnrolAsync(order.Status, order.DateCreated);
+                if (cannotEnrol != null)
+                {
+                    response.Errors.Add(cannotEnrol);
+                }
             }
             if (order?.NationalId != enrolment.AccountId.ToString())
             {

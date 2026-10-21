@@ -26,11 +26,14 @@ namespace Ranalo.Controllers
         private readonly IMySqlPaymentsRepository _mysqlRepository;
         private readonly IKnoxGuardClient _knoxSerciceClient;
         private readonly IVeritechApiClient _veritechApiClient;
+        private readonly IPasswordResetRepository _passwordResets;
         public HomeController(IApplicationReportService applicationReportService, 
             IUserService userService, 
             IStatementService statementService,
-            IMySqlPaymentsRepository mysqlRepository, IKnoxGuardClient knoxClient, IVeritechApiClient veritechApiClient)
+            IMySqlPaymentsRepository mysqlRepository, IKnoxGuardClient knoxClient, IVeritechApiClient veritechApiClient,
+            IPasswordResetRepository passwordResets)
         {
+            _passwordResets = passwordResets;
             _mysqlRepository = mysqlRepository;
             _applicationReportService = applicationReportService;
             _userService = userService;
@@ -361,6 +364,13 @@ namespace Ranalo.Controllers
             await SetViewBags(settings, "index");
             ViewBag.SearchTerm = searchTerm.Trim();
 
+            // "Forgot password?" requests for logins this person manages
+            // (SetViewBags has set a dealer's DealerId to their dealer).
+            ViewBag.ResetRequests = (await _passwordResets.GetOpenAsync())
+                .Where(r => UserAdminRules.CanManage(settings, settings.DealerId,
+                    new User { UserId = r.UserId, RoleId = r.RoleId, DealerId = r.DealerId }))
+                .ToList();
+
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {
                 var (allUsers, allTotal) = await _userService.GetAllUsersPagedAsync(page, pageSize, searchTerm.Trim());
@@ -433,22 +443,9 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            await SetViewBags(settings, "index");
-            if (settings.RoleId == UserRole.Admin)
+            if (!UserAdminRules.CanAddUsers(settings))
             {
-                ViewBag.Dealers = await _userService.GetAllDealers();
-            }
-
-            return View();
-        }
-
-        [Route("edituser")]
-        public async Task<IActionResult> EditUser(int userId)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
+                return RedirectToAction("Users");
             }
 
             await SetViewBags(settings, "index");
@@ -470,7 +467,28 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
+            if (!UserAdminRules.CanAddUsers(settings))
+            {
+                return RedirectToAction("Users");
+            }
+
             await SetViewBags(settings, "index");
+
+            // Only roles this user may give, a confirmed password, an unused email.
+            string? addError = !UserAdminRules.CanAssign(settings, userDetails.RoleId) ? "Choose a role for this user."
+                : PasswordRules.CannotUse(userDetails.PasswordHash, Request.Form["PasswordHashconfirm"])
+                  ?? (await _userService.GetUserByEmail(userDetails.Email?.Trim() ?? "") != null
+                      ? $"A user with email {userDetails.Email} already exists." : null);
+            if (addError != null)
+            {
+                ViewBag.Error = addError;
+                if (settings.RoleId == UserRole.Admin)
+                {
+                    ViewBag.Dealers = await _userService.GetAllDealers();
+                }
+                return View("AddUser");
+            }
+            userDetails.Email = userDetails.Email!.Trim();
 
             // The new user's dealer: an admin chooses it on the form (their
             // own DealerId is 0, which linked every admin-created login to no
@@ -500,65 +518,6 @@ namespace Ranalo.Controllers
             {
 
                 return View("AddUser");
-            }
-
-            return RedirectToAction("Users");
-        }
-
-        [HttpPost]
-        [Route("updateuser")]
-        public async Task<IActionResult> UpdateUserSubmit(User userDetails)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-
-            await SetViewBags(settings, "index");
-
-            try
-            {
-
-                userDetails.Status = UserStatus.Active;
-                // Admin: the dealer chosen on the form, or 0 = keep the user's
-                // current dealer. Dealer editing their staff: their own.
-                userDetails.DealerId = settings.RoleId == UserRole.Admin
-                    ? (int.TryParse(Request.Form["dealerId"], out var chosen) ? chosen : 0)
-                    : settings.DealerId;
-                userDetails.ParentUserId = userDetails.DealerId;
-                userDetails.IsActive = true;
-                await _userService.UpdateUserAsync(userDetails);
-            }
-            catch (Exception)
-            {
-
-                return View("EditUser", userDetails);
-            }
-
-            return RedirectToAction("Users");
-        }
-
-
-        [Route("suspenduser/{userId:int}")]
-        public async Task<IActionResult> SuspendUserSubmit(int userId)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return RedirectToAction("Index", "Login");
-            }
-
-            await SetViewBags(settings, "index");
-
-            try
-            {
-                await _userService.SuspendUserAsync(userId);
-            }
-            catch (Exception)
-            {
-
-                return RedirectToAction("Users");
             }
 
             return RedirectToAction("Users");

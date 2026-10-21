@@ -10,10 +10,12 @@ namespace Ranalo.Controllers
     {
         private readonly IApplicationReportService _applicationReportService;
         private readonly IUserService _userService;
-        public CustomerController(IApplicationReportService applicationReportService, IUserService userService)
+        private readonly ICustomerScreeningService _screening;
+        public CustomerController(IApplicationReportService applicationReportService, IUserService userService, ICustomerScreeningService screening)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
+            _screening = screening;
         }
 
         [Route("order-details/{orderId:int}")]
@@ -54,6 +56,12 @@ namespace Ranalo.Controllers
                     
                 }
                 customerDetails.Notes = notes;
+            }
+
+            // Screening calls, for approvers and admins on a real order.
+            if (customerDetails.OrderID > 0 && settings.RoleId is UserRole.Admin or UserRole.Approver)
+            {
+                ViewBag.Screening = await _screening.GetOrderScreeningAsync(orderId, customerDetails.DateCreated);
             }
 
             return View(customerDetails);

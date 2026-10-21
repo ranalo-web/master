@@ -1,158 +1,76 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Wordprocessing;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Ranalo.DataStore;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Services;
-using System.Text.Json;
-using static Dapper.SqlMapper;
 
 namespace Ranalo.Controllers
 {
+    // Sign in, sign out and change password. Who's signed in comes from the
+    // signed login cookie (LoginSession), checked against the database on
+    // every request (UserSettingsMiddleware).
     public class LoginController : Controller
     {
+        private const string LoginFailed = "That email and password don't match an active account.";
+
         private readonly IUserService _usersService;
-        public LoginController(IUserService usersService)
+        private readonly ILoginSession _session;
+        private readonly IPasswordResetRepository _resets;
+        private readonly ILogger<LoginController> _logger;
+
+        public LoginController(IUserService usersService, ILoginSession session, IPasswordResetRepository resets, ILogger<LoginController> logger)
         {
             _usersService = usersService;
+            _session = session;
+            _resets = resets;
+            _logger = logger;
         }
 
         [HttpGet]
         [Route("")]
         public IActionResult Index()
-            {
-            var cookie = Request.Cookies["UserSettings"];
-            if (string.IsNullOrEmpty(cookie))
-            {
-                return View();
-
-            }
-
-            var cookieValue = CookieHelper.Deserialize<User>(cookie);
-
-            if (cookieValue == null)
-            {
-                return View();
-            }
-
-            // Optional: set it to HttpContext.Items if you want to use it elsewhere
-            HttpContext.Items["UserSettings"] = cookieValue;
-
-            switch (cookieValue.RoleId)
-            {
-                case UserRole.Admin:
-                    return RedirectToAction("Index", "AdminDashboard");
-                case UserRole.Dealer:
-                    return RedirectToAction("Index", "DealerDashboard");
-                case UserRole.Approver:
-                    return RedirectToAction("Index", "Approver");
-                case UserRole.Collector:
-                    return RedirectToAction("Index", "Collections");
-                case UserRole.Agent:
-                    return RedirectToAction("Index", "Agents");
-                default:
-                    break;
-            }
-
-            return RedirectToAction("Index", "DealerDashboard");
+        {
+            return HttpContext.Items["UserSettings"] is User user ? Home(user) : View();
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [Route("")]
         public async Task<IActionResult> Login(string email, string password, string rememberme)
         {
-            try
+            var user = await _usersService.LoginUser(email, password);
+            if (user == null)
             {
-                // Get user by email and password
-                var user = await _usersService.LoginUser(email, password);
-                if (user != null)
-                {
-                    //Set the user cookie
-                    var cookieValue = CookieHelper.Serialize(user);
-
-                    Response.Cookies.Append("UserSettings", cookieValue, new CookieOptions
-                    {
-                        Expires = DateTimeOffset.UtcNow.AddDays(30),
-                        HttpOnly = true,
-                        Secure = true,
-                        IsEssential = true,
-                        SameSite = SameSiteMode.Strict
-                    });
-
-                    ViewBag.BackLink = "dashboard";
-                    ViewBag.IsAdmin = user.RoleId == UserRole.Admin;
-                    ViewBag.IsApprover = user.RoleId == UserRole.Approver;
-                    ViewBag.IsDealer = user.RoleId == UserRole.Dealer;
-                    ViewBag.IsCollector = user.RoleId == UserRole.Collector;
-                    ViewBag.IsAgent = user.RoleId == UserRole.Agent;
-
-
-                    switch (user.RoleId)
-                    {
-                        case UserRole.Admin:
-                            return RedirectToAction("Index", "AdminDashboard");
-                        case UserRole.Dealer:
-                            return RedirectToAction("Index", "DealerDashboard");
-                        case UserRole.Approver:
-                            return RedirectToAction("Index", "Approver");
-                        case UserRole.Collector:
-                            return RedirectToAction("Index", "Collections");
-                        case UserRole.Agent:
-                            return RedirectToAction("Index", "Agents");
-                        default:
-                            break;
-                    }
-                    return RedirectToAction("Index", "Login");
-                }
-
-                return RedirectToAction("Index");
-            }
-            catch (Exception)
-            {
-
+                ViewBag.LoginError = LoginFailed;
                 return View("Index");
             }
+
+            _session.SignIn(Response, user);
+            return Home(user);
         }
 
-
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [Route("reset")]
-        public async Task<IActionResult> ResetPassword(string email, string oldpassword, string newpassword)
+        public async Task<IActionResult> ResetPassword(string email, string oldpassword, string newpassword, string? newpasswordconfirm)
         {
-            try
+            var user = await _usersService.LoginUser(email, oldpassword);
+            if (user == null)
             {
-                // Get user by email and password
-                var user = await _usersService.LoginUser(email, oldpassword);
-                if (user != null)
-                {
-                    var updatedUser = await _usersService.UpdateUserPasswordAsync(user.UserId, newpassword);
-                    //Set the user cookie
-                    var cookieValue = CookieHelper.Serialize(user);
-
-                    Response.Cookies.Append("UserSettings", cookieValue, new CookieOptions
-                    {
-                        Expires = DateTimeOffset.UtcNow.AddDays(30),
-                        HttpOnly = true,
-                        Secure = true,
-                        IsEssential = true,
-                        SameSite = SameSiteMode.Strict
-                    });
-
-                    ViewBag.BackLink = "Index";
-                    ViewBag.IsAdmin = user.RoleId == UserRole.Admin;
-                    ViewBag.IsApprover = user.RoleId == UserRole.Approver;
-                    ViewBag.IsDealer = user.RoleId == UserRole.Dealer;
-
-
-                    return View("ResetSuccess");
-                }
-
-                return RedirectToAction("Index"); ;
+                ViewBag.ResetError = LoginFailed;
+                return View();
             }
-            catch (Exception)
+
+            // The reset page has no confirm box; the account page does.
+            var cannotUse = PasswordRules.CannotUse(newpassword, newpasswordconfirm ?? newpassword);
+            if (cannotUse != null)
             {
-
-                return View("Index");
+                ViewBag.ResetError = cannotUse;
+                return View();
             }
+
+            var updated = await _usersService.UpdateUserPasswordAsync(user.UserId, newpassword);
+            _session.SignIn(Response, updated);
+            return View("ResetSuccess");
         }
 
         [HttpGet]
@@ -170,20 +88,48 @@ namespace Ranalo.Controllers
         }
 
         [HttpGet]
+        [Route("forgot-password")]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        // No email or SMS for staff yet: whoever manages the login sees the
+        // request on the Users page and resets it. The reply is the same
+        // whether or not the email has an account, so it can't be used to
+        // find out which emails do.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(string email)
+        {
+            var user = string.IsNullOrWhiteSpace(email) ? null : await _usersService.GetUserByEmail(email.Trim());
+            if (user != null && user.Status != UserStatus.Suspended)
+            {
+                await _resets.RequestAsync(user.UserId);
+                _logger.LogInformation("Password reset requested for user {UserId}", user.UserId);
+            }
+
+            ViewBag.Requested = true;
+            return View();
+        }
+
+        [HttpGet]
         [Route("logout")]
         public IActionResult Logout()
         {
-            // Delete the UserSettings cookie
-            Response.Cookies.Delete("UserSettings");
-
-            // Redirect to login or home page
+            _session.SignOut(Response);
             return RedirectToAction("Index", "Login");
         }
 
-        [Route("signup")]
-        public IActionResult Signup()
+        private IActionResult Home(User user) => user.RoleId switch
         {
-            return View("Signup");
-        }
+            UserRole.Admin => RedirectToAction("Index", "AdminDashboard"),
+            UserRole.Dealer => RedirectToAction("Index", "DealerDashboard"),
+            UserRole.Approver => RedirectToAction("Index", "Approver"),
+            UserRole.Collector => RedirectToAction("Index", "Collections"),
+            UserRole.Agent => RedirectToAction("Index", "Agents"),
+            _ => RedirectToAction("Index", "DealerDashboard")
+        };
     }
 }
