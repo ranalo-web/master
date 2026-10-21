@@ -24,6 +24,7 @@ namespace Ranalo.Controllers
         private readonly IDeviceService _deviceService;
         private readonly IOrderContractService _contracts;
         private readonly ICustomerScreeningService _screening;
+        private readonly IEnrolmentApprovalService _approvals;
         public EnrolmentsController(IUserService userService, 
             IEnrolmentService enrolmentService, 
             IApplicationReportService applicationReportService,
@@ -34,9 +35,11 @@ namespace Ranalo.Controllers
             IStockPhoneService stock,
             IDeviceService deviceService,
             IOrderContractService contracts,
-            ICustomerScreeningService screening)
+            ICustomerScreeningService screening,
+            IEnrolmentApprovalService approvals)
         {
             _screening = screening;
+            _approvals = approvals;
             _devices = devices;
             _contracts = contracts;
             _deviceService = deviceService;
@@ -157,42 +160,8 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Enrolments");
             }
 
-            var decision = DeviceLockRules.CanApproveEnrolment(settings.RoleId, settings.UserId, existingEnrolment);
-            if (!decision.Allowed)
-            {
-                TempData["EnrolmentError"] = decision.Reason;
-                return RedirectToAction("Index", "Enrolments");
-            }
-
-            if (existingEnrolment.Status == EnrolmentStatus.Pending && existingEnrolment.StockKnoxApprovedAt.HasValue)
-            {
-                var sold = await _stock.UnlockSoldKnoxAsync(existingEnrolment, settings);
-                TempData[sold.Success ? "EnrolmentMessage" : "EnrolmentError"] = sold.Message;
-            }
-            else if (existingEnrolment.Status == EnrolmentStatus.Pending)
-            {
-                existingEnrolment.CallApprovedByUserId = settings.UserId;
-                existingEnrolment.CallApprovedAt = DateTime.UtcNow;
-                if (await _enrolmentService.ApproveEnrolment(existingEnrolment))
-                {
-                    TempData["EnrolmentMessage"] = $"Phone {imei} approved in Knox.";
-                }
-                else
-                {
-                    TempData["EnrolmentError"] = $"Knox hasn't accepted phone {imei} yet: {existingEnrolment.KnoxResponse}. "
-                        + "It usually reaches Knox a few minutes after enrolling -- try Approve again shortly.";
-                }
-            }
-
-            var updatedEnrolment = await _enrolmentService.GetByImeiNumberAsync(imei);
-
-            if (updatedEnrolment != null && updatedEnrolment.Status == EnrolmentStatus.Approved)
-            {
-                await _enrolmentService.CreateDeviceFromKnox(updatedEnrolment);
-                await _contracts.TryCreateAsync(updatedEnrolment.OrderId);
-            }
-
-
+            var result = await _approvals.ApproveKnoxAsync(existingEnrolment, settings);
+            TempData[result.Success ? "EnrolmentMessage" : "EnrolmentError"] = result.Message;
             return RedirectToAction("Index", "Enrolments");
         }
 
@@ -512,10 +481,11 @@ namespace Ranalo.Controllers
 
                     await SaveDepositCodeAsync(enrolment.OrderId, newDepositCode);
 
+                    var auto = await TryAutoApproveAsync(stock);
                     TempData["EnrolmentMessage"] = $"Stock phone {stock.IMEI} sold on order {stock.OrderId}. "
-                        + (DeviceLockRules.IsTranssion(stock.DeviceBrand)
-                            ? "It unlocks once an approver has called the customer and approved it."
-                            : "An approver approves it on this page to unlock it.")
+                        + (auto ?? (DeviceLockRules.IsTranssion(stock.DeviceBrand)
+                            ? "It unlocks once an approver has approved it."
+                            : "An approver approves it on this page to unlock it."))
                         + (stock.DepositShort ? " The deposit is short, so only an admin can approve it." : "");
                     if (returnTo == "stock")
                     {
@@ -558,20 +528,27 @@ namespace Ranalo.Controllers
                 return await EnrolmentFormAsync(response, enrolment);
             }
 
+            // Screened order, deposit in full: no approver needed. Knox waits
+            // for Veritech, so its approval comes from the 5-minute job.
+            var autoApproves = enrolment.Status != EnrolmentStatus.Error && await WillAutoApproveAsync(enrolment);
             if (enrolment.Status == EnrolmentStatus.Error)
             {
                 TempData["EnrolmentError"] = $"Enrolment for IMEI {enrolment.IMEI} failed: {enrolment.PayTriggerResponse ?? enrolment.KnoxResponse}";
             }
             else if (DeviceLockRules.IsTranssion(enrolment.DeviceBrand))
             {
+                var auto = autoApproves ? await TryAutoApproveAsync(enrolment) : null;
                 TempData["EnrolmentMessage"] =
                     $"{enrolment.DeviceBrand} phone {enrolment.IMEI} pre-enrolled. Ask the customer to switch it on and connect to the internet. " +
-                    "It stays locked until an approver has called the customer and approved it." +
+                    (auto ?? "It stays locked until an approver has approved it.") +
                     (enrolment.DepositShort ? " The deposit is short, so only an admin can approve it." : "");
             }
             else if (enrolment.Status == EnrolmentStatus.Pending)
             {
-                TempData["EnrolmentMessage"] = $"Phone {enrolment.IMEI} enrolled and sent to Knox. An approver approves it on this page once it reaches Knox (usually a few minutes)."
+                TempData["EnrolmentMessage"] = $"Phone {enrolment.IMEI} enrolled and sent to Knox. "
+                    + (autoApproves
+                        ? "The order passed screening, so it's approved automatically once it reaches Knox (about 10–15 minutes)."
+                        : "An approver approves it on this page once it reaches Knox (usually a few minutes).")
                     + (enrolment.DepositShort ? " The deposit is short, so only an admin can approve it." : "");
             }
             else if (enrolment.DepositShort)
@@ -600,6 +577,33 @@ namespace Ranalo.Controllers
             {
                 await _devices.UpdateMpesaForOrder(orderId, code);
                 TempData["EnrolmentError"] = $"The deposit code {code} was saved on order {orderId} here, but WooCommerce couldn't be updated. An admin should add it to the order in WooCommerce.";
+            }
+        }
+
+        private async Task<bool> WillAutoApproveAsync(Enrolment enrolment)
+        {
+            try
+            {
+                return await _approvals.WillAutoApproveAsync(enrolment);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        // The message to show if it was approved automatically now, else null
+        // (the 5-minute job keeps trying).
+        private async Task<string?> TryAutoApproveAsync(Enrolment enrolment)
+        {
+            try
+            {
+                var result = await _approvals.TryAutoApproveAsync(await _enrolmentService.GetByImeiNumberAsync(enrolment.IMEI) ?? enrolment);
+                return result?.Success == true ? "The order passed screening, so it's approved: " + result.Message : null;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

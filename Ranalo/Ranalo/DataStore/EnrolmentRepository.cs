@@ -187,6 +187,18 @@ namespace Ranalo.DataStore
         }
 
         // Stock phones, newest first; unverifiedOnly = not yet confirmed locked.
+        // Touched in the last 14 days (a stock phone's sale updates it), so old
+        // enrolments approvers never approved aren't checked every run.
+        public async Task<List<Enrolment>> GetAwaitingApprovalAsync()
+        {
+            var since = DateTime.UtcNow.AddDays(-14);
+            return await _context.Enrolments.AsNoTracking()
+                .Where(x => x.CallApprovedAt == null && !x.DepositShort && x.BrandOverriddenByUserId == null && x.OrderId > 0
+                    && (x.Status == EnrolmentStatus.Pending || x.Status == EnrolmentStatus.PendingActivation || x.Status == EnrolmentStatus.Enrolled)
+                    && x.Updated >= since)
+                .ToListAsync();
+        }
+
         public async Task<List<Enrolment>> GetStockAsync(bool unverifiedOnly, string? searchTerm = null)
         {
             var query = _context.Enrolments.AsNoTracking().Where(x => x.Status == EnrolmentStatus.Stock);

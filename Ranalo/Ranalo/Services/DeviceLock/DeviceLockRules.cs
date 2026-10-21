@@ -277,6 +277,43 @@ namespace Ranalo.Services.DeviceLock
 
         public static bool CanOverrideBrand(UserRole role) => role == UserRole.Admin;
 
+        // ---- Automatic approval (2026-10-21) --------------------------------
+        // Screening already called the customer and next of kin, so an
+        // enrolment on a screened order with the deposit in full is approved
+        // without a person (EnrolmentApprovalService). A short deposit or a
+        // brand override still waits for an admin; orders from before
+        // screening for an approver.
+
+        // Veritech passes a Knox upload on a few minutes after enrolling;
+        // approving sooner fails.
+        public static readonly TimeSpan KnoxApprovalDelay = TimeSpan.FromMinutes(10);
+
+        // After this a Knox phone that still isn't in Knox is left for a person.
+        public static readonly TimeSpan KnoxAutoApprovalFor = TimeSpan.FromDays(2);
+
+        // now: the same clock as Enrolment.Created (DateTime.Now).
+        public static bool AutoApproves(Enrolment enrolment, bool screeningPassed, DateTime now)
+        {
+            if (!screeningPassed || enrolment.DepositShort || enrolment.BrandOverriddenByUserId.HasValue
+                || enrolment.CallApprovedAt.HasValue || enrolment.OrderId <= 0
+                || enrolment.Status is EnrolmentStatus.Error or EnrolmentStatus.Approved or EnrolmentStatus.Stock
+                || NeedsSendingToTranssion(enrolment))
+            {
+                return false;
+            }
+
+            // Transsion and sold stock Knox phones are already with their locker.
+            if (IsTranssion(enrolment.DeviceBrand) || enrolment.StockKnoxApprovedAt.HasValue)
+            {
+                return true;
+            }
+
+            var age = now - enrolment.Created;
+            return ProviderForBrand(enrolment.DeviceBrand) == LockProvider.Knox
+                && enrolment.Status == EnrolmentStatus.Pending
+                && age >= KnoxApprovalDelay && age <= KnoxAutoApprovalFor;
+        }
+
         public static ApprovalDecision CanApproveEnrolment(UserRole role, int userId, Enrolment enrolment)
         {
             if (role != UserRole.Admin && role != UserRole.Approver)
