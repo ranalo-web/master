@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Text.Json;
+using Ranalo.Controllers;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -15,6 +17,42 @@ namespace Ranalo.Services
     {
         public const string SecretHeader = "X-Ranalo-Key";
         public const string TransTimeFormat = "yyyyMMddHHmmss";
+
+        // The posted JSON as a transaction, null if it isn't a JSON object.
+        // Field names any case; numbers (TransAmount 10) taken as text.
+        public static MpesaTransaction? Read(JsonElement body)
+        {
+            if (body.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            string? Field(string name)
+            {
+                foreach (var property in body.EnumerateObject())
+                {
+                    if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return property.Value.ValueKind switch
+                        {
+                            JsonValueKind.String => property.Value.GetString(),
+                            JsonValueKind.Number => property.Value.GetRawText(),
+                            _ => null
+                        };
+                    }
+                }
+                return null;
+            }
+
+            return new MpesaTransaction
+            {
+                TransID = Field("TransID"),
+                TransAmount = Field("TransAmount"),
+                BillRefNumber = Field("BillRefNumber"),
+                TransTime = Field("TransTime"),
+                FirstName = Field("FirstName")
+            };
+        }
 
         // No secret configured = not enforced yet.
         public static bool SecretOk(string? configured, string? provided)
