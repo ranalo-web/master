@@ -14,6 +14,8 @@ namespace Ranalo.Woocommece.Api.Services
         Task LogLastPaymentSyncDetails(SyncPaymentsLog log);
         Task<int> CreateKosePaymentAsync(MpesaRecord record);
         Task<bool> MpesaCodeExistsAsync(string mpesaCode);
+        // 0 = the M-Pesa code is already recorded, nothing added.
+        Task<int> CreateKosePaymentIfNewAsync(MpesaRecord record);
 
         Task<List<string>> CreateKoseBatchPaymentAsync(Dictionary<string, List<MpesaRecord>> records);
 

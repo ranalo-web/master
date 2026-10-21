@@ -289,6 +289,11 @@ namespace Ranalo.Woocommece.Api.Services
             return await _kosePaymentsRepository.MpesaCodeExistsAsync(mpesaCode);
         }
 
+        public async Task<int> CreateKosePaymentIfNewAsync(MpesaRecord record)
+        {
+            return await _kosePaymentsRepository.InsertIfNewAsync(record);
+        }
+
         public async Task<List<string>> CreateKoseBatchPaymentAsync(Dictionary<string, List<MpesaRecord>> records)
         {
             return await _kosePaymentsRepository.SaveToDatabaseAsync(records);

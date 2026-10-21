@@ -98,6 +98,26 @@ namespace Ranolo.Web.Tests
             Assert.That(MpesaIntakeRules.Read("not a payment"), Is.Null);
         }
 
+        [Test]
+        public void C2b_SafaricomIpsByDefault_ConfigReplacesThem()
+        {
+            Assert.That(MpesaIntakeRules.IpAllowed(C2bRules.AllowedIps(null), "196.201.214.200"), Is.True);
+            Assert.That(MpesaIntakeRules.IpAllowed(C2bRules.AllowedIps(""), "196.201.212.69:40112"), Is.True);
+            Assert.That(MpesaIntakeRules.IpAllowed(C2bRules.AllowedIps(null), "203.0.113.9"), Is.False);
+            Assert.That(MpesaIntakeRules.IpAllowed(C2bRules.AllowedIps(null), null), Is.False);
+            Assert.That(MpesaIntakeRules.IpAllowed(C2bRules.AllowedIps("203.0.113.9"), "203.0.113.9"), Is.True);
+            Assert.That(MpesaIntakeRules.IpAllowed(C2bRules.AllowedIps("203.0.113.9"), "196.201.214.200"), Is.False);
+        }
+
+        [Test]
+        public void C2b_SafaricomCallbackReadable()
+        {
+            // Shape of the callbacks in IONOS's log.
+            var t = MpesaIntakeRules.Read("{\"TransactionType\":\"Pay Bill\",\"TransID\":\"UJK2DB4M46\",\"TransTime\":\"20261021173214\",\"TransAmount\":\"140.00\",\"BusinessShortCode\":\"4090703\",\"BillRefNumber\":\"7005299\",\"OrgAccountBalance\":\"\",\"MSISDN\":\"x\",\"FirstName\":\"JUNIOR\"}")!;
+            Assert.That(MpesaIntakeRules.Invalid(t.TransID, t.TransAmount, t.BillRefNumber, t.TransTime), Is.Null);
+            Assert.That(t.FirstName, Is.EqualTo("JUNIOR"));
+        }
+
         [TestCase("", "140", "7005299", "20261020133631")]
         [TestCase("UJK2'; DROP", "140", "7005299", "20261020133631")]
         [TestCase("UJK2DB4M46", "0", "7005299", "20261020133631")]

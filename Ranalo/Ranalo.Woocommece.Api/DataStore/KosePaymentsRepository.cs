@@ -45,6 +45,39 @@ namespace Ranalo.Woocommece.Api.DataStore
             return await _db.ExecuteScalarAsync<int>(sql, new { MpesaCode = mpesaCode }) > 0;
         }
 
+        // Safaricom retries a callback it thinks failed; the lock stops two
+        // copies of the same M-Pesa code landing at once.
+        public async Task<int> InsertIfNewAsync(MpesaRecord record)
+        {
+            var sql = @"
+            SET XACT_ABORT ON;
+            BEGIN TRANSACTION;
+            IF EXISTS (SELECT 1 FROM [dbo].[KosePayments] WITH (UPDLOCK, HOLDLOCK) WHERE [MpesaCode] = @MpesaCode)
+                SELECT CAST(0 AS bigint);
+            ELSE
+            BEGIN
+                INSERT INTO [dbo].[KosePayments] (
+                   [AccountNo]
+               ,[MpesaCode]
+               ,[Amount]
+               ,[PaymentDate]
+               ,[AmountValue]
+               ,[PaymentDateValue]
+               ,[Created]
+               ,[FirstName]
+                )
+                VALUES (
+                    @AccountNo, @MpesaCode, @Amount, @PaymentDate, @AmountValue, @PaymentDateValue, GETDATE(), @FirstName
+                );
+
+                SELECT CAST(SCOPE_IDENTITY() as bigint);
+            END
+            COMMIT TRANSACTION;
+        ";
+
+            return await _db.ExecuteScalarAsync<int>(sql, record);
+        }
+
         public async Task<MpesaRecord?> GetByIdAsync(int id)
         {
             var sql = "SELECT * FROM [dbo].[KosePayments] WHERE Id = @Id";

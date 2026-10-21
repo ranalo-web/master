@@ -9,6 +9,8 @@ namespace Ranalo.Woocommece.Api.DataStore
         Task<MpesaRecord?> GetByIdAsync(int id);
         Task<int> InsertAsync(MpesaRecord record);
         Task<bool> MpesaCodeExistsAsync(string mpesaCode);
+        // 0 = the M-Pesa code is already recorded, nothing added.
+        Task<int> InsertIfNewAsync(MpesaRecord record);
 
         Task<List<string>> SaveToDatabaseAsync(Dictionary<string, List<MpesaRecord>> groupedRecords);
 
