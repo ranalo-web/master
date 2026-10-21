@@ -1,4 +1,5 @@
 using Ranalo.Services;
+using System.Text.Json;
 
 namespace Ranolo.Web.Tests
 {
@@ -19,6 +20,23 @@ namespace Ranolo.Web.Tests
             Assert.That(MpesaIntakeRules.SecretOk("s3cret-value", "wrong"), Is.False);
             Assert.That(MpesaIntakeRules.SecretOk("s3cret-value", null), Is.False);
             Assert.That(MpesaIntakeRules.SecretOk("s3cret-value", ""), Is.False);
+        }
+
+        [Test]
+        public void Read_NoFirstNameAndNumericAmount_StillReadable()
+        {
+            var body = JsonDocument.Parse("{\"transid\":\"UJK2DB4M46\",\"TransAmount\":10,\"BillRefNumber\":\"test\",\"TransTime\":\"20261021180000\"}").RootElement;
+            var t = MpesaIntakeRules.Read(body)!;
+            Assert.That(t.TransID, Is.EqualTo("UJK2DB4M46"));
+            Assert.That(t.TransAmount, Is.EqualTo("10"));
+            Assert.That(t.FirstName, Is.Null);
+            Assert.That(MpesaIntakeRules.Invalid(t.TransID, t.TransAmount, t.BillRefNumber, t.TransTime), Is.Null);
+        }
+
+        [Test]
+        public void Read_NotAnObject_Null()
+        {
+            Assert.That(MpesaIntakeRules.Read(JsonDocument.Parse("[]").RootElement), Is.Null);
         }
 
         [Test]

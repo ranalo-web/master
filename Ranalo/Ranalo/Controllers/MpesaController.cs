@@ -3,6 +3,7 @@ using Ranalo.Services;
 using Ranalo.Woocommece.Api.Models;
 using Ranalo.Woocommece.Api.Services;
 using System.Globalization;
+using System.Text.Json;
 
 namespace Ranalo.Controllers
 {
@@ -24,8 +25,13 @@ namespace Ranalo.Controllers
         }
 
         [HttpPost("transaction")]
-        public async Task<IActionResult> ReceiveTransaction([FromBody] MpesaTransaction transaction, [FromQuery] string? key)
+        public async Task<IActionResult> ReceiveTransaction([FromBody] JsonElement body, [FromQuery] string? key)
         {
+            // Read by hand, not bound to MpesaTransaction: a missing FirstName or
+            // a numeric TransAmount used to be refused with a 400 before this
+            // ran, so nothing was logged and the payment silently lost.
+            var transaction = MpesaIntakeRules.Read(body);
+
             var provided = Request.Headers.TryGetValue(MpesaIntakeRules.SecretHeader, out var header) ? header.ToString() : key;
             if (!MpesaIntakeRules.SecretOk(_configuration["MpesaIntake:SharedSecret"], provided))
             {
@@ -45,9 +51,9 @@ namespace Ranalo.Controllers
 
             var newPayment = new MpesaRecord()
             {
-                AccountNo = transaction!.BillRefNumber.Trim(),
+                AccountNo = transaction!.BillRefNumber!.Trim(),
                 Amount = transaction.TransAmount,
-                MpesaCode = transaction.TransID.Trim(),
+                MpesaCode = transaction.TransID!.Trim(),
                 PaymentDate = DateTime.ParseExact(transaction.TransTime, MpesaIntakeRules.TransTimeFormat, CultureInfo.InvariantCulture).ToString(),
                 FirstName = transaction.FirstName
             };
@@ -60,16 +66,18 @@ namespace Ranalo.Controllers
                 return Ok(new { Message = $"Transaction {newPayment.MpesaCode} already recorded" });
             }
 
+            _logger.LogInformation("M-Pesa payment {TransID} saved as {Id}: account {Account}, amount {Amount}",
+                newPayment.MpesaCode, result, newPayment.AccountNo, newPayment.Amount);
             return Ok(new { Message = $"Transaction received successfully {result}", Received = transaction });
         }
     }
 
     public class MpesaTransaction
     {
-        public string TransID { get; set; }
-        public string TransAmount { get; set; }
-        public string BillRefNumber { get; set; }
-        public string TransTime { get; set; }
-        public string FirstName { get; set; }
+        public string? TransID { get; set; }
+        public string? TransAmount { get; set; }
+        public string? BillRefNumber { get; set; }
+        public string? TransTime { get; set; }
+        public string? FirstName { get; set; }
     }
 }
