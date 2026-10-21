@@ -8,11 +8,11 @@ namespace Ranalo.Controllers
 {
     // Safaricom C2B callbacks received directly, rules in Services/C2bRules.cs.
     // Register in Daraja URL Management as:
-    //   Confirmation: https://<site>/api/c2b/confirm
-    //   Validation:   https://<site>/api/c2b/validate
+    //   Confirmation: https://<site>/api/malipo/confirm
+    //   Validation:   https://<site>/api/malipo/validate
     // (Daraja refuses URLs containing "mpesa", hence not api/mpesa/...)
     [ApiController]
-    [Route("api/c2b")]
+    [Route("api/malipo")]
     public class C2bController : ControllerBase
     {
         private readonly ISyncService _syncService;

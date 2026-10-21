@@ -1,6 +1,6 @@
 namespace Ranalo.Services
 {
-    // Safaricom C2B callbacks sent straight to Azure (api/c2b/confirm), so
+    // Safaricom C2B callbacks sent straight to Azure (api/malipo/confirm), so
     // payments don't depend on IONOS (callbacks to IONOS stopped 2026-10-21
     // 17:32). Only Safaricom's servers are accepted: the same IPs IONOS's
     // confirmpayments.php has checked for months. Azure setting
