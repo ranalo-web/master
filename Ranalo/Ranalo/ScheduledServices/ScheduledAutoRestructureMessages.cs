@@ -39,8 +39,11 @@ namespace Ranalo.ScheduledServices
                         var reminderService = scope.ServiceProvider.GetRequiredService<IApplicationReportService>();
                         var paymentsRepository = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
                         var knoxGuardClient = scope.ServiceProvider.GetRequiredService<IKnoxGuardClient>();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, knoxGuardClient);
-                        foreach (var order in inactiveUsers)
+                        // Not sent in a LockGrace: payments may be missing, so they'd be wrong.
+                        var inactiveUsers = LockGrace.Until(scope.ServiceProvider.GetRequiredService<IConfiguration>()) != null
+                            ? new()
+                            : await Process(syncService, reminderService, paymentsRepository, knoxGuardClient);
+                        foreach (var order in inactiveUsers ?? new())
                         {
                             _logger.LogInformation("Auto Restructured lock Reminder sent to: {user}", order.AccountId);
                             // Possibly send email reminders, clean up data, etc.

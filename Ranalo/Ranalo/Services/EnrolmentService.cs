@@ -279,8 +279,17 @@ namespace Ranalo.Services
 
             foreach (var device in devicesToLockKnox)
             {
-                // Get the enrolment our link to the record 
+              // One phone's failure (no enrolment, Knox unreachable) is recorded
+              // and skipped rather than stopping every phone after it.
+              try
+              {
+                // Get the enrolment our link to the record
                 var enrolment = await _enrolmentRepository.GetByAccountIdAsync(device.AccountId);
+                if (enrolment == null)
+                {
+                    device.Result = "No enrolment";
+                    continue;
+                }
 
                 long unixTimestamp = new DateTimeOffset(device.AutoLockDate)
                     .ToUnixTimeMilliseconds();
@@ -327,6 +336,11 @@ namespace Ranalo.Services
 
                     await _kosePaymentsRepository.UpdateDeviceToDatabaseAsync(existingDevice);
                 }
+              }
+              catch (Exception ex)
+              {
+                  device.Result = $"Knox error: {ex.Message}";
+              }
             }
 
         }
@@ -340,8 +354,17 @@ namespace Ranalo.Services
         {
             foreach (var device in devicesToLockPayTrigger)
             {
+              // One phone's failure (no enrolment, PayTrigger unreachable) is
+              // recorded and skipped rather than stopping every phone after it.
+              try
+              {
                 // Get the enrolment our link to the record
                 var enrolment = await _enrolmentRepository.GetByAccountIdAsync(device.AccountId);
+                if (enrolment == null)
+                {
+                    device.Result = "No enrolment";
+                    continue;
+                }
 
                 long unixSeconds = new DateTimeOffset(device.AutoLockDate).ToUnixTimeSeconds();
                 long unixMillis = unixSeconds * 1000;
@@ -365,6 +388,11 @@ namespace Ranalo.Services
 
                     await _kosePaymentsRepository.UpdateDeviceToDatabaseAsync(existingDevice);
                 }
+              }
+              catch (Exception ex)
+              {
+                  device.Result = $"PayTrigger error: {ex.Message}";
+              }
             }
         }
 

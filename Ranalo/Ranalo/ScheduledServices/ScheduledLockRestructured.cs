@@ -39,7 +39,8 @@ namespace Ranalo.ScheduledServices
                         // If this lookup fails the run is skipped rather than risk
                         // unlocking a lost/stolen phone.
                         var lostStolen = await scope.ServiceProvider.GetRequiredService<ILostStolenRepository>().GetLockedAccountNosAsync();
-                        var inactiveUsers = await Process(deviceProcessor, reminderService, paymentsRepository, enrolmentService, lostStolen);
+                        var graceUntil = LockGrace.Until(scope.ServiceProvider.GetRequiredService<IConfiguration>());
+                        var inactiveUsers = await Process(deviceProcessor, reminderService, paymentsRepository, enrolmentService, lostStolen, graceUntil);
                         foreach (var device in inactiveUsers)
                         {
                             _logger.LogInformation("Restructured locking locked: {device}", device.AccountId);
@@ -64,7 +65,8 @@ namespace Ranalo.ScheduledServices
         }
 
         public async Task<List<LockTransaction>?> Process(IDeviceProcessor deviceProcessor, IApplicationReportService reminderService, IPaymentsRepository paymentsRepository, IEnrolmentService enrolmentService,
-            IReadOnlySet<long>? lostStolenLocked = null)
+            IReadOnlySet<long>? lostStolenLocked = null,
+            DateTimeOffset? graceUntil = null)
         {
             var records = await reminderService.GetAllRestructured("", 1, ReportPaging.All); ;
 
@@ -91,7 +93,9 @@ namespace Ranalo.ScheduledServices
 
             foreach (var account in qualifying)
             {
-                var nextLock = NextLockDate(account, now)!.Value;
+                // Never before a LockGrace end, or this would relock what
+                // ScheduledLockPaying opened for it.
+                var nextLock = LockGrace.Apply(NextLockDate(account, now)!.Value, graceUntil);
 
                 var lockDevice = new LockTransaction()
                 {

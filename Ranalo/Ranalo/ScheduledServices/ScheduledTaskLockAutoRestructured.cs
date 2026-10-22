@@ -41,7 +41,8 @@ namespace Ranalo.ScheduledServices
                         // If this lookup fails the run is skipped rather than risk
                         // unlocking a lost/stolen phone.
                         var lostStolen = await scope.ServiceProvider.GetRequiredService<ILostStolenRepository>().GetLockedAccountNosAsync();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService, lostStolen);
+                        var graceUntil = LockGrace.Until(scope.ServiceProvider.GetRequiredService<IConfiguration>());
+                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService, lostStolen, graceUntil);
                         foreach (var order in inactiveUsers)
                         {
                             _logger.LogInformation("lock Auto restructured for: {user}", order.AccountId);
@@ -69,7 +70,8 @@ namespace Ranalo.ScheduledServices
             IApplicationReportService applicationReportService, 
             IPaymentsRepository paymentsRepository,
             IEnrolmentService enrolmentService,
-            IReadOnlySet<long>? lostStolenLocked = null
+            IReadOnlySet<long>? lostStolenLocked = null,
+            DateTimeOffset? graceUntil = null
             )
         {
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, ReportPaging.All, "");
@@ -119,7 +121,9 @@ namespace Ranalo.ScheduledServices
                         AccountId = account.AccountNo,
                         FirstName = account.FirstName,
                         NewDaily = account.NewDaily,
-                        AutoLockDate = account.LastPaymentDate != null ? account.LastPaymentDate.Value.AddHours(30) : DateTime.UtcNow
+                        // Never before a LockGrace end, or this would relock what
+                        // ScheduledLockPaying opened for it.
+                        AutoLockDate = LockGrace.Apply(account.LastPaymentDate != null ? account.LastPaymentDate.Value.AddHours(30) : DateTime.UtcNow, graceUntil)
                     };
 
                     if (account.LockGroup == 2)

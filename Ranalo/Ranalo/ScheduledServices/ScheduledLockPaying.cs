@@ -40,7 +40,8 @@ namespace Ranalo.ScheduledServices
                         // If this lookup fails the run is skipped rather than risk
                         // unlocking a lost/stolen phone.
                         var lostStolen = await scope.ServiceProvider.GetRequiredService<ILostStolenRepository>().GetLockedAccountNosAsync();
-                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService, lostStolen);
+                        var graceUntil = LockGrace.Until(scope.ServiceProvider.GetRequiredService<IConfiguration>());
+                        var inactiveUsers = await Process(syncService, reminderService, paymentsRepository, enrolmentService, lostStolen, graceUntil);
                         
                         if(inactiveUsers != null && inactiveUsers.Any())
                         {
@@ -73,7 +74,8 @@ namespace Ranalo.ScheduledServices
             IApplicationReportService applicationReportService, 
             IPaymentsRepository paymentsRepository,
             IEnrolmentService enrolmentService,
-            IReadOnlySet<long>? lostStolenLocked = null)
+            IReadOnlySet<long>? lostStolenLocked = null,
+            DateTimeOffset? graceUntil = null)
         {
             var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, ReportPaging.All, ""); ;
 
@@ -94,8 +96,12 @@ namespace Ranalo.ScheduledServices
                 x => x.Arrears >= 0 &&
                 x.LoanBalance <= 0);
 
-            // Remove positive arrears
-            autoLockRecords?.RemoveAll(x => x.Arrears < 0);
+            // Remove positive arrears -- except in a LockGrace, when overdue
+            // phones are opened until it ends too.
+            if (graceUntil == null)
+            {
+                autoLockRecords?.RemoveAll(x => x.Arrears < 0);
+            }
 
             var qualifying = autoLockRecords?
             //.Where(r => NeedsUpdate(r.NextLockDate))
@@ -116,7 +122,9 @@ namespace Ranalo.ScheduledServices
                     var unitsLeft = SafeDivide(account.Arrears, dailyAll);
 
                     var now = DateTime.Now;
-                    var autoLockDatePmt = now.AddSeconds(Convert.ToDouble(unitsLeft * 60 * 60 * 24));
+                    // Overdue (only here in a LockGrace): due now. Not now minus the days
+                    // owed, which for a big debt on a tiny daily is before year 1 and throws.
+                    var autoLockDatePmt = unitsLeft < 0 ? now : now.AddSeconds(Convert.ToDouble(unitsLeft * 60 * 60 * 24));
 
                     var lockDevice = new LockTransaction()
                     {
@@ -125,7 +133,7 @@ namespace Ranalo.ScheduledServices
                         AutoLockDate = (account.Arrears > 0 
                                         && account.LoanBalance < 0 &&
                         DateTimeFormat(account.NextLockDate).HasValue &&
-                        DateTimeFormat(account.NextLockDate).Value.Year == currentYear) ? DateTime.MaxValue : autoLockDatePmt
+                        DateTimeFormat(account.NextLockDate).Value.Year == currentYear) ? DateTime.MaxValue : LockGrace.Apply(autoLockDatePmt, graceUntil)
                     };
 
                     if(account.LockGroup == 2)
