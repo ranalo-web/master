@@ -271,9 +271,32 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            if (!CanRestructure(settings.RoleId))
+            if (!RestructurePermissions.CanRestructure(settings.RoleId))
             {
                 return RedirectToAction("ManualRestructuredReport", "Reports");
+            }
+
+            // Approvers can't go below the account's daily payment
+            // (Services/RestructurePermissions.cs); admins can set any rate.
+            decimal? dailyPaymentAll = null;
+            if (settings.RoleId == UserRole.Approver)
+            {
+                var account = (await _applicationReportService.GetStatusReportByDealer(accountNo, null))?.StatusReports?.FirstOrDefault();
+                if (account != null)
+                {
+                    dailyPaymentAll = RestructureCalculator.DailyPaymentAll(account.Daily, account.Weekly, account.Monthly);
+                }
+            }
+
+            var refusal = RestructurePermissions.Refusal(settings.RoleId, newRate, dailyPaymentAll);
+            if (refusal != null)
+            {
+                TempData["RestructureError"] = refusal;
+                // Back to the page the form was on, which shows the message.
+                var back = Request.Headers.Referer.ToString();
+                return Uri.TryCreate(back, UriKind.Absolute, out var backUri) && backUri.Host == Request.Host.Host
+                    ? LocalRedirect(backUri.PathAndQuery)
+                    : LocalRedirect($"/statussummary/{accountNo}");
             }
 
             //We need to get the current contract info and do the checks
@@ -380,11 +403,6 @@ namespace Ranalo.Controllers
 
             return View(allDelaerStatusReport);
         }
-
-        // Dealers and agents can view restructured accounts but cannot create a restructure.
-        // Approvers were already excluded.
-        private static bool CanRestructure(UserRole role) =>
-            role is not (UserRole.Dealer or UserRole.Agent or UserRole.Approver);
 
         private async Task SetViewBags(User settings, string backLink, string searchTerm = "")
         {

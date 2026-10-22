@@ -578,9 +578,16 @@
 
                             
                             <div class="nk-divider divider md"></div>
-                            @if (!(ViewBag.IsDealer is true || ViewBag.IsAgent is true))
+                            @if (ViewBag.IsAdmin is true || ViewBag.IsApprover is true)
                             {
                                 <div class="nk-block">
+                                    @if (TempData["RestructureError"] is string restructureError)
+                                    {
+                                        <div class="alert alert-danger alert-icon alert-dismissible">
+                                            <em class="icon ni ni-cross-circle"></em> @restructureError
+                                            <button class="close" data-bs-dismiss="alert"></button>
+                                        </div>
+                                    }
                                     <div class="nk-block-head nk-block-head-sm">
                                         <button type="button" data-bs-toggle="modal" data-bs-target="#modalRestructure" class="link link-primary ms-auto">Restructure</button>
                                     </div><!-- .nk-block-head -->
@@ -640,7 +647,11 @@
                                 <div class="form-group">
                                     <label class="form-label" for="edit-income">New Rate</label>
                                     <div class="form-control-wrap">
-                                        <input type="number" name="newRate" class="form-control" id="edit-income" required />
+                                        <input type="number" name="newRate" class="form-control" id="edit-income" step="0.01" min="0.01" required />
+                                        @if (ViewBag.IsApprover is true)
+                                        {
+                                            <div class="form-note">Approvers can't go below the account's daily payment.</div>
+                                        }
                                     </div>
                                 </div>
                             </div>

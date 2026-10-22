@@ -395,7 +395,7 @@
     </div><!-- .nk-block -->
 
     @{
-        const int tablePageSize = 5;
+        const int tablePageSize = 3;
 
         int AgentMoreCount = Math.Max(0, Model.AgentPerformance.Count - tablePageSize);
         int ContractsMoreCount = Math.Max(0, Model.Contracts.Count - tablePageSize);
@@ -417,7 +417,7 @@
 
     @if (ViewBag.IsApprover is true)
     {
-        var contactMoreCount = Math.Max(0, Model.CustomersToContact.Count - 10);
+        var contactMoreCount = Math.Max(0, Model.CustomersToContact.Count - tablePageSize);
         <div class="nk-block">
             <div class="card card-bordered">
                 <div class="card-inner">
@@ -434,7 +434,7 @@
                     else
                     {
                         <div class="table-responsive">
-                            <table class="table mb-0" style="white-space:nowrap;" data-key="approver-contact" data-page-size="@("10")">
+                            <table class="table mb-0" style="white-space:nowrap;" data-key="approver-contact" data-page-size="@tablePageSize">
                                 <thead>
                                     <tr>
                                         <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
@@ -448,7 +448,7 @@
                                     @for (var i = 0; i < Model.CustomersToContact.Count; i++)
                                     {
                                         var c = Model.CustomersToContact[i];
-                                        <tr class="@(i >= 10 ? "d-none" : "")" data-watchlist-row="approver-contact">
+                                        <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="approver-contact">
                                             <td><span class="fw-medium">@c.CustomerName</span></td>
                                             <td>@(string.IsNullOrWhiteSpace(c.Phone) ? "-" : c.Phone)</td>
                                             <td>@c.DealerName</td>
@@ -462,8 +462,8 @@
                         @if (contactMoreCount > 0)
                         {
                             <div class="d-flex pt-2" style="column-gap:1rem;">
-                                <a href="#" class="link link-primary" data-more-for="approver-contact" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'approver-contact', 10);">Show @Math.Min(10, contactMoreCount) more</a>
-                                <a href="#" class="link link-primary" data-less-for="approver-contact" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'approver-contact', 10);">Show less</a>
+                                <a href="#" class="link link-primary" data-more-for="approver-contact" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'approver-contact', @tablePageSize);">Show @Math.Min(tablePageSize, contactMoreCount) more</a>
+                                <a href="#" class="link link-primary" data-less-for="approver-contact" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'approver-contact', @tablePageSize);">Show less</a>
                             </div>
                         }
                     }
@@ -1516,7 +1516,7 @@
 
             function loadRevenueForPeriod(period) {
                 toggle.disabled = true;
-                fetch('/dealer-dashboard/revenue?period=' + encodeURIComponent(period), {
+                fetch('/dealer-dashboard/revenue?period=' + encodeURIComponent(period) + '@(ViewBag.IsApprover is true ? "&scope=all" : "")', {
                     headers: { 'Accept': 'application/json' }
                 })
                     .then(function (res) {
@@ -1589,20 +1589,27 @@
 
                         // Count-based, not value-based -- how many contracts
                         // were completed within the selected period.
-                        completedContractsPeriodCountEl.textContent = Math.round(data.completedContractsInPeriod).toLocaleString();
-                        completedContractsPeriodLabelEl.textContent = data.label;
+                        // My Portfolio is hidden on the Approver Dashboard too.
+                        if (completedContractsPeriodCountEl) {
+                            completedContractsPeriodCountEl.textContent = Math.round(data.completedContractsInPeriod).toLocaleString();
+                            completedContractsPeriodLabelEl.textContent = data.label;
+                        }
 
                         // Collection Rate / PAR30: of accounts enrolled within
                         // the selected period, count-based, not value-based.
-                        collectionRatePctTextEl.textContent = data.newInPeriod > 0 ? data.collectionRatePct.toFixed(1) + '%' : 'No new accounts';
-                        collectionRateProgressBarEl.style.width = data.collectionRatePct + '%';
-                        collectionRateProgressBarEl.setAttribute('data-progress', data.collectionRatePct);
-                        collectionRatePeriodLabelEl.textContent = data.label;
+                        if (collectionRatePctTextEl) {
+                            collectionRatePctTextEl.textContent = data.newInPeriod > 0 ? data.collectionRatePct.toFixed(1) + '%' : 'No new accounts';
+                            collectionRateProgressBarEl.style.width = data.collectionRatePct + '%';
+                            collectionRateProgressBarEl.setAttribute('data-progress', data.collectionRatePct);
+                            collectionRatePeriodLabelEl.textContent = data.label;
+                        }
 
-                        portfolioAtRiskPctTextEl.textContent = data.newInPeriod > 0 ? data.portfolioAtRiskPct.toFixed(1) + '%' : 'No new accounts';
-                        portfolioAtRiskProgressBarEl.style.width = data.portfolioAtRiskPct + '%';
-                        portfolioAtRiskProgressBarEl.setAttribute('data-progress', data.portfolioAtRiskPct);
-                        portfolioAtRiskPeriodLabelEl.textContent = data.label;
+                        if (portfolioAtRiskPctTextEl) {
+                            portfolioAtRiskPctTextEl.textContent = data.newInPeriod > 0 ? data.portfolioAtRiskPct.toFixed(1) + '%' : 'No new accounts';
+                            portfolioAtRiskProgressBarEl.style.width = data.portfolioAtRiskPct + '%';
+                            portfolioAtRiskProgressBarEl.setAttribute('data-progress', data.portfolioAtRiskPct);
+                            portfolioAtRiskPeriodLabelEl.textContent = data.label;
+                        }
                     })
                     .catch(function (err) {
                         console.error('Failed to load revenue for period ' + period, err);
