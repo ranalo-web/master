@@ -80,8 +80,10 @@ namespace Ranalo.Controllers
                 MpesaCode = transaction.TransID!.Trim().ToUpperInvariant(),
                 Amount = decimal.Parse(transaction.TransAmount!, NumberStyles.Number, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture),
                 // TransTime is Nairobi time, which is what KosePayments holds.
+                // Same text as the rest of the table ("10/21/2026 9:09:01 PM"):
+                // reports pick first/last payment by this text.
                 PaymentDate = DateTime.ParseExact(transaction.TransTime!, MpesaIntakeRules.TransTimeFormat, CultureInfo.InvariantCulture)
-                    .ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                    .ToString("M/d/yyyy h:mm:ss tt", CultureInfo.InvariantCulture),
                 FirstName = transaction.FirstName?.Trim()
             };
 
