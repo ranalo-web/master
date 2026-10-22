@@ -27,31 +27,37 @@ namespace Ranalo.Services
                 return null;
             }
 
-            string? Field(string name)
+            return new MpesaTransaction
             {
-                foreach (var property in body.EnumerateObject())
-                {
-                    if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return property.Value.ValueKind switch
-                        {
-                            JsonValueKind.String => property.Value.GetString(),
-                            JsonValueKind.Number => property.Value.GetRawText(),
-                            _ => null
-                        };
-                    }
-                }
+                TransID = Field(body, "TransID"),
+                TransAmount = Field(body, "TransAmount"),
+                BillRefNumber = Field(body, "BillRefNumber"),
+                TransTime = Field(body, "TransTime"),
+                FirstName = Field(body, "FirstName")
+            };
+        }
+
+        // One field of a posted JSON object as text, null if missing.
+        public static string? Field(JsonElement body, string name)
+        {
+            if (body.ValueKind != JsonValueKind.Object)
+            {
                 return null;
             }
 
-            return new MpesaTransaction
+            foreach (var property in body.EnumerateObject())
             {
-                TransID = Field("TransID"),
-                TransAmount = Field("TransAmount"),
-                BillRefNumber = Field("BillRefNumber"),
-                TransTime = Field("TransTime"),
-                FirstName = Field("FirstName")
-            };
+                if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return property.Value.ValueKind switch
+                    {
+                        JsonValueKind.String => property.Value.GetString(),
+                        JsonValueKind.Number => property.Value.GetRawText(),
+                        _ => null
+                    };
+                }
+            }
+            return null;
         }
 
         // No secret configured = not enforced yet.
