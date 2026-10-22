@@ -52,7 +52,7 @@ namespace Ranalo.Controllers
         // the Total Accounts card so they stay in sync off one toggle.
         [HttpGet]
         [Route("dealer-dashboard/revenue")]
-        public async Task<IActionResult> Revenue(string period)
+        public async Task<IActionResult> Revenue(string period, string? scope = null)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -74,7 +74,11 @@ namespace Ranalo.Controllers
             // doc note. An Approver's dashboard is system-wide (no single
             // dealer to scope to) -- see GetApproverDashboardAsync.
             var agentUserId = settings.RoleId == UserRole.Agent ? settings.UserId : (int?)null;
-            var dealerId = settings.RoleId == UserRole.Approver ? (int?)null : settings.DealerId;
+            // scope=all: the Approver Dashboard, which an Admin can open too
+            // (/approver) -- system-wide for them as well, not their own dealer.
+            var systemWide = settings.RoleId == UserRole.Approver
+                || (settings.RoleId == UserRole.Admin && scope == "all");
+            var dealerId = systemWide ? (int?)null : settings.DealerId;
             var result = await _dashboardReportService.GetDealerRevenueForPeriodAsync(dealerId, period, agentUserId);
             if (result == null)
             {

@@ -395,7 +395,7 @@
     </div><!-- .nk-block -->
 
     @{
-        const int tablePageSize = 5;
+        const int tablePageSize = 10;
 
         int AgentMoreCount = Math.Max(0, Model.AgentPerformance.Count - tablePageSize);
         int ContractsMoreCount = Math.Max(0, Model.Contracts.Count - tablePageSize);
@@ -1516,7 +1516,7 @@
 
             function loadRevenueForPeriod(period) {
                 toggle.disabled = true;
-                fetch('/dealer-dashboard/revenue?period=' + encodeURIComponent(period), {
+                fetch('/dealer-dashboard/revenue?period=' + encodeURIComponent(period) + '@(ViewBag.IsApprover is true ? "&scope=all" : "")', {
                     headers: { 'Accept': 'application/json' }
                 })
                     .then(function (res) {
@@ -1589,20 +1589,27 @@
 
                         // Count-based, not value-based -- how many contracts
                         // were completed within the selected period.
-                        completedContractsPeriodCountEl.textContent = Math.round(data.completedContractsInPeriod).toLocaleString();
-                        completedContractsPeriodLabelEl.textContent = data.label;
+                        // My Portfolio is hidden on the Approver Dashboard too.
+                        if (completedContractsPeriodCountEl) {
+                            completedContractsPeriodCountEl.textContent = Math.round(data.completedContractsInPeriod).toLocaleString();
+                            completedContractsPeriodLabelEl.textContent = data.label;
+                        }
 
                         // Collection Rate / PAR30: of accounts enrolled within
                         // the selected period, count-based, not value-based.
-                        collectionRatePctTextEl.textContent = data.newInPeriod > 0 ? data.collectionRatePct.toFixed(1) + '%' : 'No new accounts';
-                        collectionRateProgressBarEl.style.width = data.collectionRatePct + '%';
-                        collectionRateProgressBarEl.setAttribute('data-progress', data.collectionRatePct);
-                        collectionRatePeriodLabelEl.textContent = data.label;
+                        if (collectionRatePctTextEl) {
+                            collectionRatePctTextEl.textContent = data.newInPeriod > 0 ? data.collectionRatePct.toFixed(1) + '%' : 'No new accounts';
+                            collectionRateProgressBarEl.style.width = data.collectionRatePct + '%';
+                            collectionRateProgressBarEl.setAttribute('data-progress', data.collectionRatePct);
+                            collectionRatePeriodLabelEl.textContent = data.label;
+                        }
 
-                        portfolioAtRiskPctTextEl.textContent = data.newInPeriod > 0 ? data.portfolioAtRiskPct.toFixed(1) + '%' : 'No new accounts';
-                        portfolioAtRiskProgressBarEl.style.width = data.portfolioAtRiskPct + '%';
-                        portfolioAtRiskProgressBarEl.setAttribute('data-progress', data.portfolioAtRiskPct);
-                        portfolioAtRiskPeriodLabelEl.textContent = data.label;
+                        if (portfolioAtRiskPctTextEl) {
+                            portfolioAtRiskPctTextEl.textContent = data.newInPeriod > 0 ? data.portfolioAtRiskPct.toFixed(1) + '%' : 'No new accounts';
+                            portfolioAtRiskProgressBarEl.style.width = data.portfolioAtRiskPct + '%';
+                            portfolioAtRiskProgressBarEl.setAttribute('data-progress', data.portfolioAtRiskPct);
+                            portfolioAtRiskPeriodLabelEl.textContent = data.label;
+                        }
                     })
                     .catch(function (err) {
                         console.error('Failed to load revenue for period ' + period, err);
