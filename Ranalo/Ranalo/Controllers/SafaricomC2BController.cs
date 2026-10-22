@@ -95,6 +95,11 @@ namespace Ranalo.Controllers
                         ? "C2B confirmation saved: TransID={TransID} Amount={Amount} Account={Account}"
                         : "C2B confirmation already recorded, skipped: TransID={TransID} Amount={Amount} Account={Account}",
                     record.MpesaCode, record.Amount, record.AccountNo);
+
+                if (added)
+                {
+                    await SaveDetailsAsync(body.Value, record.MpesaCode);
+                }
             }
             catch (Exception ex)
             {
@@ -161,6 +166,39 @@ namespace Ranalo.Controllers
             }
 
             return null;
+        }
+
+        // The rest of the callback, onto the row just saved. The payment
+        // itself is already in, so a failure here (e.g. the columns from
+        // Database/Payments/002 not added yet) is only logged.
+        private async Task SaveDetailsAsync(JsonElement body, string mpesaCode)
+        {
+            // Clipped to the column sizes so an odd value can't fail the update.
+            string? Text(string name, int max)
+            {
+                var value = MpesaIntakeRules.Field(body, name)?.Trim();
+                return string.IsNullOrEmpty(value) ? null : value.Length > max ? value[..max] : value;
+            }
+
+            try
+            {
+                await _payments.SaveC2BDetailsAsync(new C2BPaymentDetails
+                {
+                    MpesaCode = mpesaCode,
+                    MiddleName = Text("MiddleName", 100),
+                    LastName = Text("LastName", 100),
+                    Msisdn = Text("MSISDN", 100),
+                    TransactionType = Text("TransactionType", 50),
+                    BusinessShortCode = Text("BusinessShortCode", 20),
+                    InvoiceNumber = Text("InvoiceNumber", 100),
+                    OrgAccountBalance = Text("OrgAccountBalance", 30),
+                    ThirdPartyTransID = Text("ThirdPartyTransID", 100)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "C2B confirmation {TransID}: payment saved, extra details skipped.", mpesaCode);
+            }
         }
 
         private string? WrongShortCode(string? shortCode)

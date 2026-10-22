@@ -68,6 +68,24 @@ namespace Ranalo.Woocommece.Api.DataStore
             return await _db.ExecuteScalarAsync<int>(sql, record) > 0;
         }
 
+        public async Task SaveC2BDetailsAsync(C2BPaymentDetails details)
+        {
+            var sql = @"
+            UPDATE [dbo].[KosePayments]
+            SET [MiddleName] = @MiddleName,
+                [LastName] = @LastName,
+                [Msisdn] = @Msisdn,
+                [TransactionType] = @TransactionType,
+                [BusinessShortCode] = @BusinessShortCode,
+                [InvoiceNumber] = @InvoiceNumber,
+                [OrgAccountBalance] = @OrgAccountBalance,
+                [ThirdPartyTransID] = @ThirdPartyTransID
+            WHERE [MpesaCode] = @MpesaCode;
+        ";
+
+            await _db.ExecuteAsync(sql, details);
+        }
+
         public async Task<MpesaRecord?> GetByIdAsync(int id)
         {
             var sql = "SELECT * FROM [dbo].[KosePayments] WHERE Id = @Id";

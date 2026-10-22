@@ -70,6 +70,7 @@ namespace Ranolo.Web.Tests
         public Task<MpesaRecord?> GetByIdAsync(int id) => throw new NotImplementedException();
         public Task<int> InsertAsync(MpesaRecord record) => throw new NotImplementedException();
         public Task<bool> InsertIfNewAsync(MpesaRecord record) => throw new NotImplementedException();
+        public Task SaveC2BDetailsAsync(C2BPaymentDetails details) => throw new NotImplementedException();
         public Task<List<string>> SaveToDatabaseAsync(Dictionary<string, List<MpesaRecord>> groupedRecords) => throw new NotImplementedException();
         public Task SaveDevicesToDatabaseAsync(List<Device> groupedRecords) => throw new NotImplementedException();
         public Task UpdateDevicesToDatabaseAsync(List<Device> groupedRecords) => throw new NotImplementedException();
