@@ -39,6 +39,35 @@ namespace Ranalo.Woocommece.Api.DataStore
             return await _db.ExecuteScalarAsync<int>(sql, record);
         }
 
+        // As InsertAsync, but skipped when the M-Pesa code is already
+        // recorded. The check and insert are one statement, with the range
+        // locked, so two copies of a payment arriving together can't both
+        // go in. False = already there.
+        public async Task<bool> InsertIfNewAsync(MpesaRecord record)
+        {
+            var sql = @"
+            INSERT INTO [dbo].[KosePayments] (
+               [AccountNo]
+           ,[MpesaCode]
+           ,[Amount]
+           ,[PaymentDate]
+           ,[AmountValue]
+           ,[PaymentDateValue]
+           ,[Created]
+           ,[FirstName]
+            )
+            SELECT @AccountNo, @MpesaCode, @Amount, @PaymentDate, @AmountValue, @PaymentDateValue, GETDATE(), @FirstName
+            WHERE NOT EXISTS (
+                SELECT 1 FROM [dbo].[KosePayments] WITH (UPDLOCK, HOLDLOCK)
+                WHERE [MpesaCode] = @MpesaCode
+            );
+
+            SELECT @@ROWCOUNT;
+        ";
+
+            return await _db.ExecuteScalarAsync<int>(sql, record) > 0;
+        }
+
         public async Task<MpesaRecord?> GetByIdAsync(int id)
         {
             var sql = "SELECT * FROM [dbo].[KosePayments] WHERE Id = @Id";

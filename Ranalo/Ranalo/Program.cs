@@ -97,6 +97,11 @@ builder.Services.AddScoped<IOrderContractService, OrderContractService>();
 builder.Services.AddScoped<IStatementUploadRepository, StatementUploadRepository>();
 builder.Services.AddScoped<IKosePaymentsRepository, KosePaymentsRepository>();
 
+//Safaricom C2B payments posted straight to Azure (SafaricomC2BController).
+//The callback token is a secret: Azure setting SafaricomC2B__CallbackToken.
+builder.Services.Configure<Ranalo.Models.SafaricomC2BSettings>(
+    builder.Configuration.GetSection("SafaricomC2B"));
+
 
 builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -257,6 +262,13 @@ foreach (var key in new[] { "Veritech:BaseUrl", "Knox:RegionBaseUrl", "PayTrigge
             "Setting {SettingKey} is missing or not a valid URL. Calls to that service will fail until it is set (Azure name: {AzureName}).",
             key, key.Replace(":", "__"));
     }
+}
+
+if ((app.Configuration["SafaricomC2B:CallbackToken"]?.Length ?? 0) < SafaricomCallerRules.MinTokenLength)
+{
+    app.Logger.LogError(
+        "Setting SafaricomC2B:CallbackToken is missing or shorter than {MinLength} characters. Safaricom payment callbacks are refused until it is set (Azure name: SafaricomC2B__CallbackToken).",
+        SafaricomCallerRules.MinTokenLength);
 }
 
 // Configure the HTTP request pipeline.
