@@ -44,6 +44,7 @@ namespace Ranalo.Models
         {
             "Repossessed" => "Repossessed",
             "Fraud" => "Fraud",
+            "LostPhone" => "Lost phone",
             _ => "360 days no payment"
         };
 
@@ -51,6 +52,7 @@ namespace Ranalo.Models
         {
             "Repossessed" => "bg-info",
             "Fraud" => "bg-danger",
+            "LostPhone" => "bg-secondary",
             _ => "bg-warning"
         };
 
