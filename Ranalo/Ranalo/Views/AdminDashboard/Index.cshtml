@@ -1,374 +1,309 @@
 @model Ranalo.Models.AdminDashboardViewModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
+
+    var cur = Model.Profit;
+    var prior = Model.PriorProfit;
+    var netChange = Ranalo.Services.AdminDashboardRules.ChangePct(cur.NetProfit, prior.NetProfit);
+    var netUp = cur.NetProfit >= prior.NetProfit;
+
+    string Kes(decimal v) => (v < 0 ? "-" : "") + "KES " + Math.Abs(v).ToString("N0");
+    string ChangeText(decimal current, decimal before)
+    {
+        var pct = Ranalo.Services.AdminDashboardRules.ChangePct(current, before);
+        return pct.HasValue ? (pct >= 0 ? "+" : "") + pct.Value.ToString("0") + "%" : "-";
+    }
+
+    // Month only: where the month lands at the current pace.
+    var paceRevenue = Model.MonthDaysElapsed > 0 ? cur.Revenue / Model.MonthDaysElapsed * Model.MonthDays : 0;
+
+    var periods = new[] { ("week", "7 days"), ("month", "Month"), ("ytd", "Year to date"), ("year", "12 months") };
+
+    var portfolioTotal = Model.PortfolioGoodCount + Model.PortfolioRestructuredCount + Model.PortfolioSlowCount + Model.PortfolioArrearsCount + Model.PortfolioBadCount;
+    decimal PortfolioPct(int n) => portfolioTotal > 0 ? Math.Round(100m * n / portfolioTotal, 1) : 0;
+    var newChange = ChangeText(Model.NewInPeriod, Model.NewPriorPeriod);
+    var arrearsPctOfBook = Model.LoanBookOutstanding > 0 ? Math.Round(Model.ArrearsTotal / Model.LoanBookOutstanding * 100, 1) : 0;
+    var commissionsPaid = cur.Commissions;
 }
 
 <link rel="stylesheet" href="~/css/watchlist-table.css?v=2">
 
 <div class="nk-content-body">
     <div class="nk-block-head nk-block-head-sm">
-        <div class="nk-block-between">
+        <div class="nk-block-between flex-wrap g-2">
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Admin Dashboard</h3>
                 <div class="nk-block-des text-soft">
-                    <p>Welcome back, @ViewBag.UserName &mdash; here's how Ranalo Credit is performing.</p>
+                    <p>Welcome back, @ViewBag.UserName &mdash; are we making money, and what to do next. Figures are for @Model.PeriodLabel, compared with @Model.PriorLabel.</p>
                 </div>
             </div>
             <div class="nk-block-head-content">
-                <ul class="nk-block-tools g-3">
-                    <li>
-                        <div class="btn-group">
-                            <button type="button" id="revenuePeriodToggle" class="btn btn-outline-light btn-white dropdown-toggle" data-bs-toggle="dropdown">
-                                <em class="icon ni ni-calendar"></em><span>Month</span>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end">
-                                <ul class="link-list-opt no-bdr">
-                                    <li><a href="#" class="revenue-period-opt" data-period="week"><span>Week</span></a></li>
-                                    <li><a href="#" class="revenue-period-opt" data-period="month"><span>Month</span></a></li>
-                                    <li><a href="#" class="revenue-period-opt" data-period="ytd"><span>Year to Date</span></a></li>
-                                    <li><a href="#" class="revenue-period-opt" data-period="year"><span>Last 12 Months</span></a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </li>
-                </ul>
+                <div class="btn-group flex-wrap" role="group" aria-label="Period">
+                    @foreach (var (key, label) in periods)
+                    {
+                        <a href="/admin-dashboard?period=@key" class="btn btn-sm @(Model.Period == key ? "btn-primary" : "btn-outline-light btn-white")">@label</a>
+                    }
+                </div>
             </div>
         </div>
     </div><!-- .nk-block-head -->
 
     <div class="nk-block">
         <div class="row g-gs">
-            @{
-                var revenueTargetPct = Model.RevenueTargetThisMonth > 0
-                    ? Math.Min(100m, Math.Round(Model.RevenueThisMonth / Model.RevenueTargetThisMonth * 100, 1))
-                    : 0;
-                var revenuePerPayingAccount = Model.PayingAccounts > 0
-                    ? Model.RevenueThisMonth / Model.PayingAccounts
-                    : 0;
-            }
-            <div class="col-12 col-md-6 col-lg-3">
+            <div class="col-12 col-lg-5">
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group align-start mb-2">
                             <div class="card-title">
-                                <h6 class="title">Revenue <span class="badge badge-dim bg-primary ms-1">Live</span></h6>
+                                <h6 class="title">Are we making money?</h6>
+                                <p class="text-soft mb-0">Net profit after tax, @Model.PeriodLabel</p>
                             </div>
+                            <div class="card-tools"><a href="/financials" class="link link-primary small">Financials</a></div>
                         </div>
-                        <div class="align-end flex-sm-wrap g-4 flex-md-nowrap">
-                            <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                                <div class="d-flex flex-column">
-                                    <span class="amount" id="revenueAmount">KES @Model.RevenueThisMonth.ToString("N0")</span>
-                                    @{ var revenueUp = Model.RevenueGrowthPct >= 0; }
-                                    <span class="sub-title d-block mt-1">
-                                        <span id="revenueGrowth" class="@(revenueUp ? "text-success" : "text-danger")">
-                                            <em id="revenueGrowthIcon" class="icon ni ni-arrow-long-@(revenueUp ? "up" : "down")"></em><span id="revenueGrowthPct">@Math.Abs(Model.RevenueGrowthPct).ToString("0.0")</span>%
-                                        </span> <span id="revenuePeriodLabel">this month</span>
-                                    </span>
-                                </div>
-                            </div>
+                        <div class="d-flex align-items-baseline flex-wrap" style="column-gap:.75rem;">
+                            <span class="amount fs-2 fw-bold @(cur.NetProfit >= 0 ? "text-success" : "text-danger")">@Kes(cur.NetProfit)</span>
+                            @if (netChange.HasValue)
+                            {
+                                <span class="@(netUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(netUp ? "up" : "down")"></em>@Kes(cur.NetProfit - prior.NetProfit) vs @Model.PriorLabel</span>
+                            }
                         </div>
-                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft"><span id="revenueTargetPct">@revenueTargetPct.ToString("0")</span>% of KES <span id="revenueTargetAmount">@Model.RevenueTargetThisMonth.ToString("N0")</span> target</span>
-                            <span class="text-soft">KES <span id="revenueAvgPerAccount">@revenuePerPayingAccount.ToString("N0")</span> avg / paying account</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @{
-                // Live -- same monthRevenueRow (GetDealerRevenueForPeriodAsync)
-                // the period-filter dropdown's AJAX endpoint uses for its
-                // "Month" option, so the initial load and a manual "Month"
-                // selection always show the same number. Previously this read
-                // a stale, disconnected delta off the never-written monthly
-                // trend array (Model.AccountsByMonth).
-                var accountsChangeNeutral = Model.NewThisMonthChangePct is null;
-                var accountsUp = Model.NewThisMonthChangePct is null or >= 0;
+                        <div class="text-soft small mb-3">@cur.MarginPct.ToString("0.0")% margin &middot; @(cur.ProfitBeforeTax >= 0 ? $"KES {cur.ProfitBeforeTax:N0} above costs" : $"KES {-cur.ProfitBeforeTax:N0} more cash needed to break even")</div>
 
-                var nonPayingImproved = Model.NonPayingAccountsChange <= 0;
-
-                var goodAccountsPct = Model.TotalAccounts > 0 ? Math.Round((decimal)Model.GoodAccounts / Model.TotalAccounts * 100, 1) : 0;
-                var accountsPerDealer = Model.DealerPerformance.Count > 0 ? (decimal)Model.TotalAccounts / Model.DealerPerformance.Count : 0;
-
-                // Excludes Slow from the denominator, same "Paying vs
-                // Non-Paying" convention as the Dealer/Approver Dashboards'
-                // lockGoodPct (Good / (Good + Arrears)).
-                var payingDenominator = Model.PayingAccounts + Model.NonPayingAccounts;
-                var payingPct = payingDenominator > 0 ? Math.Round((decimal)Model.PayingAccounts / payingDenominator * 100, 1) : 0;
-
-                var arrearsPerNonPaying = Model.NonPayingAccounts > 0 ? Model.ArrearsTotal / Model.NonPayingAccounts : 0;
-                var arrearsPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(Model.ArrearsTotal / Model.RevenueThisMonth * 100, 1) : 0;
-            }
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Total Accounts</h6></div>
-                        </div>
-                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex flex-column">
-                                <span class="amount" id="totalAccountsAmount">@Model.TotalAccounts.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1">
-                                    <span id="totalAccountsChange" class="change @(accountsChangeNeutral ? "text-soft" : (accountsUp ? "up text-success" : "down text-danger"))">
-                                        <em id="totalAccountsChangeIcon" class="icon ni @(accountsChangeNeutral ? "ni-minus" : "ni-arrow-long-" + (accountsUp ? "up" : "down"))"></em><span id="totalAccountsChangePct">@Model.NewThisMonth.ToString("N0")</span>
-                                    </span> new <span id="totalAccountsPeriodLabel">this month</span>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@goodAccountsPct.ToString("0")% good standing</span>
-                            <span><span class="text-success">@Model.GoodAccounts.ToString("N0") good</span> &middot; <span class="text-danger">@Model.BadAccounts.ToString("N0") bad</span> &middot; <span class="text-soft">@accountsPerDealer.ToString("N0") avg / dealer</span></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Paying vs Non-Paying</h6></div>
-                        </div>
-                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex flex-column">
-                                <span class="amount">@Model.PayingAccounts.ToString("N0")</span>
-                                @if (Model.NonPayingAccountsChange.HasValue) { <span class="sub-title d-block mt-1"><span class="@(nonPayingImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(nonPayingImproved ? "down" : "up")"></em>@Math.Abs(Model.NonPayingAccountsChange.Value).ToString("N0")</span> non-paying vs last month</span> }
-                            </div>
-                        </div>
-                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@payingPct.ToString("0")% of accounts paying</span>
-                            <span class="text-danger">@Model.NonPayingAccounts.ToString("N0") not paying</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Total Arrears</h6></div>
-                        </div>
-                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex flex-column">
-                                <span class="amount text-danger">KES @Model.ArrearsTotal.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1">@Model.ArrearsTrueCount.ToString("N0") accounts locked past due</span>
-                            </div>
-                        </div>
-                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@arrearsPctOfRevenue.ToString("0")% of this month's revenue</span>
-                            <span class="text-soft">KES @arrearsPerNonPaying.ToString("N0") avg / non-paying account</span>
+                        <table class="table table-sm mb-0" style="font-size:13px;">
+                            <thead>
+                                <tr class="text-soft">
+                                    <th></th>
+                                    <th class="text-end fw-normal">Now</th>
+                                    <th class="text-end fw-normal">Before</th>
+                                    <th class="text-end fw-normal">Change</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="fw-medium">Cash collected</td>
+                                    <td class="text-end fw-medium">@cur.Revenue.ToString("N0")</td>
+                                    <td class="text-end text-soft">@prior.Revenue.ToString("N0")</td>
+                                    <td class="text-end">@ChangeText(cur.Revenue, prior.Revenue)</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-soft" title="Buying price of phones on contracts that started in the period">Device cost</td>
+                                    <td class="text-end text-danger">(@cur.CostOfDevices.ToString("N0"))</td>
+                                    <td class="text-end text-soft">(@prior.CostOfDevices.ToString("N0"))</td>
+                                    <td class="text-end">@ChangeText(cur.CostOfDevices, prior.CostOfDevices)</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-soft" title="Dealer, agent and collector payouts, on the date paid">Commissions paid</td>
+                                    <td class="text-end text-danger">(@cur.Commissions.ToString("N0"))</td>
+                                    <td class="text-end text-soft">(@prior.Commissions.ToString("N0"))</td>
+                                    <td class="text-end">@ChangeText(cur.Commissions, prior.Commissions)</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-soft">Operating expenses</td>
+                                    <td class="text-end text-danger">(@cur.OperatingExpenses.ToString("N0"))</td>
+                                    <td class="text-end text-soft">(@prior.OperatingExpenses.ToString("N0"))</td>
+                                    <td class="text-end">@ChangeText(cur.OperatingExpenses, prior.OperatingExpenses)</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-soft">Tax (@cur.TaxRatePct.ToString("0")%)</td>
+                                    <td class="text-end text-danger">(@cur.Tax.ToString("N0"))</td>
+                                    <td class="text-end text-soft">(@prior.Tax.ToString("N0"))</td>
+                                    <td class="text-end"></td>
+                                </tr>
+                                <tr class="fw-bold">
+                                    <td>Net profit</td>
+                                    <td class="text-end @(cur.NetProfit >= 0 ? "text-success" : "text-danger")">@cur.NetProfit.ToString("N0")</td>
+                                    <td class="text-end text-soft">@prior.NetProfit.ToString("N0")</td>
+                                    <td class="text-end"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-3 d-flex flex-column text-soft" style="font-size:11px; row-gap:4px;">
+                            @if (Model.Period == "month" && Model.MonthDaysElapsed > 0)
+                            {
+                                <span>At this pace: about <strong>KES @paceRevenue.ToString("N0")</strong> collected by month end (day @Model.MonthDaysElapsed of @Model.MonthDays)@(Model.RevenueTargetThisMonth > 0 ? $" against a KES {Model.RevenueTargetThisMonth:N0} target" : "").</span>
+                            }
+                            <span>Device cost counts when a contract starts; the customer pays it back over the term. Months with strong sales look weaker until they do.</span>
                         </div>
                     </div>
                 </div>
             </div>
-        </div><!-- .row -->
-    </div><!-- .nk-block -->
-
-    @{
-        // Dealer payouts this month (per dealer) plus agent payouts this month.
-        var dealerCommissionsPaid = Model.DealerPerformance.Sum(d => d.CommissionPaid);
-        var totalCommissionsPaid = dealerCommissionsPaid + Model.AgentCommissionPaidThisMonth;
-        // No bad-debt deduction (same as Financials): revenue is cash received
-        // and device cost is counted at contract start, so an unpaid balance
-        // was never income. Write-offs are shown in their own card.
-        var netProfitThisMonth = Model.RevenueThisMonth - Model.CostOfDevicesThisMonth - totalCommissionsPaid;
-        var profitMarginPct = Model.RevenueThisMonth > 0 ? Math.Round(netProfitThisMonth / Model.RevenueThisMonth * 100, 1) : 0;
-        var netProfitUp = Model.NetProfitChangePct >= 0;
-        var marginUp = Model.ProfitMarginChangePct >= 0;
-        var marginVsTarget = profitMarginPct - (Model.ProfitMarginTargetPct ?? 0);
-        var commissionsUp = Model.CommissionsChangePct >= 0;
-        var commissionsPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(totalCommissionsPaid / Model.RevenueThisMonth * 100, 1) : 0;
-        var commissionsPerDealer = Model.DealerPerformance.Count > 0 ? totalCommissionsPaid / Model.DealerPerformance.Count : 0;
-        var writeOffs = Model.WriteOffsThisMonth;
-        var writeOffChangePct = Model.WriteOffsLastMonth.WrittenOffBalance > 0
-            ? Math.Round((writeOffs.WrittenOffBalance - Model.WriteOffsLastMonth.WrittenOffBalance) / Model.WriteOffsLastMonth.WrittenOffBalance * 100, 1)
-            : 0;
-        var writeOffsImproved = writeOffChangePct <= 0;
-        var realLossPctOfRevenue = Model.RevenueThisMonth > 0 ? Math.Round(writeOffs.RealLoss / Model.RevenueThisMonth * 100, 1) : 0;
-        var netProfitPerPayingAccount = Model.PayingAccounts > 0 ? netProfitThisMonth / Model.PayingAccounts : 0;
-    }
-    <div class="nk-block">
-        <div class="row g-gs">
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Net Profit</h6></div>
-                        </div>
-                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex flex-column">
-                                <span class="amount">KES @netProfitThisMonth.ToString("N0")</span>
-                                @if (Model.NetProfitChangePct.HasValue) { <span class="sub-title d-block mt-1"><span class="@(netProfitUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(netProfitUp ? "up" : "down")"></em>@Math.Abs(Model.NetProfitChangePct.Value).ToString("0.0")%</span> vs last month</span> }
-                            </div>
-                        </div>
-                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@profitMarginPct.ToString("0.0")% margin</span>
-                            <span class="text-soft">KES @netProfitPerPayingAccount.ToString("N0") avg / paying account</span>
-                            <a href="/financials" class="text-soft">View full financials &rarr;</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Profit Margin</h6></div>
-                        </div>
-                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex flex-column">
-                                <span class="amount">@profitMarginPct.ToString("0.0")%</span>
-                                @if (Model.ProfitMarginChangePct.HasValue) { <span class="sub-title d-block mt-1"><span class="@(marginUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(marginUp ? "up" : "down")"></em>@Math.Abs(Model.ProfitMarginChangePct.Value).ToString("0.0")pp</span> vs last month</span> }
-                            </div>
-                        </div>
-                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            @if (Model.ProfitMarginTargetPct.HasValue) { <span class="text-soft">vs @Model.ProfitMarginTargetPct.Value.ToString("0")% target</span> }
-                            @if (Model.ProfitMarginTargetPct.HasValue) { <span class="@(marginVsTarget >= 0 ? "text-success" : "text-danger")">@(marginVsTarget >= 0 ? "+" : "")@marginVsTarget.ToString("0.0")pp @(marginVsTarget >= 0 ? "above" : "below")</span> }
-                            <a href="/financials" class="text-soft">View full financials &rarr;</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Commissions Paid</h6></div>
-                        </div>
-                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex flex-column">
-                                <span class="amount" id="commissionsPaidAmount">KES @totalCommissionsPaid.ToString("N0")</span>
-                                @if (Model.CommissionsChangePct.HasValue) { <span class="sub-title d-block mt-1"><span class="@(commissionsUp ? "text-danger" : "text-success")"><em class="icon ni ni-arrow-long-@(commissionsUp ? "up" : "down")"></em>@Math.Abs(Model.CommissionsChangePct.Value).ToString("0.0")%</span> vs last month</span> }
-                            </div>
-                        </div>
-                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft"><span id="commissionsPctOfRevenue">@commissionsPctOfRevenue.ToString("0")</span>% of revenue</span>
-                            <span class="text-soft">Dealers KES <span id="commissionsPaidDealers">@dealerCommissionsPaid.ToString("N0")</span> &middot; agents KES <span id="commissionsPaidAgents">@Model.AgentCommissionPaidThisMonth.ToString("N0")</span></span>
-                            <span class="text-soft">KES <span id="commissionsPerDealer">@commissionsPerDealer.ToString("N0")</span> avg / dealer</span>
-                            <a href="/financials" class="text-soft">View full financials &rarr;</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-2">
-                            <div class="card-title"><h6 class="title">Write-offs <span class="text-soft small">this month</span></h6></div>
-                        </div>
-                        <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
-                            <div class="d-flex flex-column">
-                                <span class="amount text-danger" title="Balance taken off the loan book by approved write-offs dated this month">KES @writeOffs.WrittenOffBalance.ToString("N0")</span>
-                                <span class="sub-title d-block mt-1"><span class="@(writeOffsImproved ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(writeOffsImproved ? "down" : "up")"></em>@Math.Abs(writeOffChangePct).ToString("0.0")%</span> vs last month</span>
-                            </div>
-                        </div>
-                        <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">@writeOffs.WrittenOffCount.ToString("N0") accounts &middot; real loss KES @writeOffs.RealLoss.ToString("N0") (@realLossPctOfRevenue.ToString("0.0")% of revenue)</span>
-                            <span class="text-soft">@writeOffs.ReinstatedCount.ToString("N0") reinstated this month</span>
-                            <a href="/write-offs" class="text-soft">Review write-offs &rarr;</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div><!-- .row -->
-    </div><!-- .nk-block -->
-
-    <div class="nk-block">
-        <div class="row g-gs">
-            <div class="col-12 col-lg-8">
+            <div class="col-12 col-lg-7">
                 <div class="card card-bordered h-100">
                     <div class="card-inner">
                         <div class="card-title-group mb-3">
                             <div class="card-title">
-                                <h6 class="title">Revenue &amp; Accounts Growth</h6>
-                                <p class="text-soft">Last 8 months</p>
+                                <h6 class="title">Cash in vs costs</h6>
+                                <p class="text-soft">Last 12 months &middot; costs = devices + commissions + expenses; the line is profit before tax</p>
                             </div>
                         </div>
-                        <div style="height:260px;">
-                            <canvas id="revenueGrowthChart"></canvas>
+                        <div style="height:300px;">
+                            <canvas id="profitTrendChart"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-lg-4">
-                <div class="card card-bordered">
-                    <div class="card-inner">
-                        <div class="card-title-group mb-3">
-                            <div class="card-title">
-                                <h6 class="title">Portfolio Composition</h6>
-                                <p class="text-soft">Risk mix &amp; collections health</p>
-                            </div>
-                        </div>
-                        @{
-                            var goodCount = Math.Round(Model.TotalAccounts * Model.PortfolioGoodPct / 100);
-                            var slowCount = Math.Round(Model.TotalAccounts * Model.PortfolioSlowPct / 100);
-                            var arrearsCount = Math.Round(Model.TotalAccounts * Model.PortfolioArrearsPct / 100);
-                            var nonPayCount = Math.Round(Model.TotalAccounts * Model.PortfolioNonPayingPct / 100);
-                            var goodTrendUp = Model.PortfolioGoodPctChange >= 0;
-                            var collectionTrendUp = Model.CollectionRateChangePct >= 0;
-                            var parImproved = Model.PortfolioAtRiskChangePct <= 0;
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <div class="card-title-group mb-2">
+                    <div class="card-title">
+                        <h6 class="title">What to do</h6>
+                        <p class="text-soft mb-0">Worked out from the figures on this page, most urgent first</p>
+                    </div>
+                </div>
+                @if (Model.Actions.Count == 0)
+                {
+                    <p class="text-soft mb-0">Nothing needs attention right now.</p>
+                }
+                else
+                {
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var a in Model.Actions)
+                        {
+                            <li class="d-flex align-items-start py-2 border-bottom" style="column-gap:.6rem;">
+                                <em class="icon ni @a.Icon text-@a.Level fs-5 flex-shrink-0"></em>
+                                <span class="flex-grow-1">@a.Text</span>
+                                @if (a.Link != null)
+                                {
+                                    <a href="@a.Link" class="link link-primary small flex-shrink-0">@a.LinkText &rarr;</a>
+                                }
+                            </li>
                         }
-                        <div class="row g-3 align-items-start gx-3">
-                            <div class="col-12 col-sm-5">
-                                <div style="position:relative; width:130px; max-width:100%; aspect-ratio:1/1; margin:0 auto;">
-                                    <canvas id="portfolioCompositionChart" width="130" height="130" style="width:100%; height:100%;"></canvas>
+                    </ul>
+                }
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-2">Active accounts</h6>
+                        <span class="amount fs-4 fw-bold">@Model.ActiveAccounts.ToString("N0")</span>
+                        <span class="d-block sub-title mt-1"><span class="text-success">+@Model.NewInPeriod.ToString("N0")</span> new @Model.PeriodLabel <span class="text-soft">(@newChange vs before)</span></span>
+                        <div class="mt-3 d-flex flex-column text-soft" style="font-size:11px; row-gap:4px;">
+                            @if (Model.NewInPeriod > 0)
+                            {
+                                <span title="Of the accounts started in the period">New accounts: @Model.CollectionRatePct.ToString("0")% on time &middot; @Model.PortfolioAtRiskPct.ToString("0")% already 30+ days late</span>
+                            }
+                            <span>@Model.CompletedContractsThisMonth.ToString("N0") paid off @Model.PeriodLabel</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-2">Arrears <span class="text-soft small">excl. restructured</span></h6>
+                        <span class="amount fs-4 fw-bold text-danger">KES @Model.ArrearsTotal.ToString("N0")</span>
+                        <span class="d-block sub-title mt-1">@Model.ArrearsTrueCount.ToString("N0") accounts past their lock date</span>
+                        <div class="mt-3 d-flex flex-column text-soft" style="font-size:11px; row-gap:4px;">
+                            <span class="text-danger">@Model.BadDebtCount.ToString("N0") over 90 days &middot; KES @Model.BadDebtThisMonth.ToString("N0")</span>
+                            @if (Model.LoanBookOutstanding > 0)
+                            {
+                                <span>@arrearsPctOfBook.ToString("0.0")% of the money still to collect</span>
+                            }
+                            <span>@Model.Collections.Count.ToString("N0") need collection &middot; <a href="/collections" class="text-soft">Collections &rarr;</a></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-2">Restructured</h6>
+                        <span class="amount fs-4 fw-bold text-info">@Model.RestructuredCount.ToString("N0") <span class="fs-6 fw-normal text-soft">accounts</span></span>
+                        <span class="d-block sub-title mt-1">KES @Model.RestructuredBehind.ToString("N0") behind on the original plan</span>
+                        <div class="mt-3 d-flex flex-column text-soft" style="font-size:11px; row-gap:4px;">
+                            <span class="@(Model.RestructuredPayingCount < Model.RestructuredCount ? "text-warning" : "text-success")">@Model.RestructuredPayingCount.ToString("N0") of @Model.RestructuredCount.ToString("N0") paid in the last 30 days</span>
+                            <span>KES @Model.RestructuredBalance.ToString("N0") left to pay on them</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-2">Still to collect</h6>
+                        <span class="amount fs-4 fw-bold">KES @Model.LoanBookOutstanding.ToString("N0")</span>
+                        <span class="d-block sub-title mt-1">on @Model.LoanBookAccounts.ToString("N0") open contracts</span>
+                        <div class="mt-3 d-flex flex-column text-soft" style="font-size:11px; row-gap:4px;">
+                            <span title="Paid so far as a share of what was due by today">Customers have paid @Model.RepaymentRatePct.ToString("0")% of what's due</span>
+                            <span title="Device cost as a share of contract value">A phone is paid for at @Model.BreakEvenCollectionPct.ToString("0")% of its contract</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <div class="col-12 col-lg-4">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h6 class="title mb-3">Portfolio</h6>
+                        <div class="row g-3 align-items-center">
+                            <div class="col-5">
+                                <div style="position:relative; width:120px; max-width:100%; aspect-ratio:1/1; margin:0 auto;">
+                                    <canvas id="portfolioCompositionChart" width="120" height="120" style="width:100%; height:100%;"></canvas>
                                     <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none;">
-                                        <div style="font-weight:800; font-size:20px; color:#364a63; line-height:1.1;">@Model.PortfolioGoodPct.ToString("0")%</div>
-                                        <div style="font-size:10px; color:#8091a7;">good</div>
-                                        <div style="font-size:10px;" class="@(goodTrendUp ? "text-success" : "text-danger")">
-                                            @if (Model.PortfolioGoodPctChange.HasValue) { <text><em class="icon ni ni-arrow-long-@(goodTrendUp ? "up" : "down")"></em>@Math.Abs(Model.PortfolioGoodPctChange.Value).ToString("0.0")pp</text> }
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="d-flex align-items-center text-truncate" style="font-size:11px; min-width:0;"><span class="dot flex-shrink-0 me-1" style="background-color:#1ee0ac;"></span>Good</span>
-                                        <span class="fw-bold flex-shrink-0" style="font-size:11px;">@goodCount.ToString("N0") &middot; @Model.PortfolioGoodPct.ToString("0")%</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="d-flex align-items-center text-truncate" style="font-size:11px; min-width:0;"><span class="dot flex-shrink-0 me-1" style="background-color:#f4bd0e;"></span>Slow</span>
-                                        <span class="fw-bold flex-shrink-0" style="font-size:11px;">@slowCount.ToString("N0") &middot; @Model.PortfolioSlowPct.ToString("0")%</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="d-flex align-items-center text-truncate" style="font-size:11px; min-width:0;"><span class="dot flex-shrink-0 me-1" style="background-color:#e85347;"></span>Arrears</span>
-                                        <span class="fw-bold flex-shrink-0" style="font-size:11px;">@arrearsCount.ToString("N0") &middot; @Model.PortfolioArrearsPct.ToString("0")%</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="d-flex align-items-center text-truncate" style="font-size:11px; min-width:0;"><span class="dot flex-shrink-0 me-1" style="background-color:#364a63;"></span>Non-Pay</span>
-                                        <span class="fw-bold flex-shrink-0" style="font-size:11px;">@nonPayCount.ToString("N0") &middot; @Model.PortfolioNonPayingPct.ToString("0")%</span>
+                                        <div class="fw-bold" style="font-size:18px; line-height:1.1;">@PortfolioPct(Model.PortfolioGoodCount).ToString("0")%</div>
+                                        <div class="text-soft" style="font-size:10px;">on time</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-12 col-sm-7" style="min-width:0;">
-                                <div class="mb-4">
-                                    <div class="d-flex justify-content-between align-items-baseline flex-wrap mb-1">
-                                        <span class="text-soft" style="font-size:12px;">Collection Rate</span>
-                                        <span class="fw-bold text-success" style="font-size:12px;" id="collectionRatePctText" title="Measured on accounts that started in the period">@(Model.NewThisMonth > 0 ? Model.CollectionRatePct.ToString("0.0") + "%" : "No new accounts")</span>
+                            <div class="col-7" style="font-size:11px;">
+                                @foreach (var (label, count, colour) in new[] {
+                                    ("On time", Model.PortfolioGoodCount, "#1ee0ac"),
+                                    ("Restructured", Model.PortfolioRestructuredCount, "#09c2de"),
+                                    ("1-7 days late", Model.PortfolioSlowCount, "#f4bd0e"),
+                                    ("8-90 days late", Model.PortfolioArrearsCount, "#e85347"),
+                                    ("Over 90 days", Model.PortfolioBadCount, "#364a63") })
+                                {
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="d-flex align-items-center"><span class="dot me-1" style="background-color:@colour;"></span>@label</span>
+                                        <span class="fw-bold">@count.ToString("N0") &middot; @PortfolioPct(count).ToString("0")%</span>
                                     </div>
-                                    <div class="progress progress-md progress-alt">
-                                        <div class="progress-bar bg-success" id="collectionRateProgressBar" data-progress="@Model.CollectionRatePct.ToString("0.0")"></div>
-                                    </div>
-                                    <div class="mt-1">
-                                        <div class="text-soft" style="font-size:11px;">of accounts started <span id="collectionRatePeriodLabel">this month</span>, currently paying</div>
-                                        <div class="@(collectionTrendUp ? "text-success" : "text-danger")" style="font-size:11px;">
-                                            @if (Model.CollectionRateChangePct.HasValue) { <text><em class="icon ni ni-arrow-long-@(collectionTrendUp ? "up" : "down")"></em>@Math.Abs(Model.CollectionRateChangePct.Value).ToString("0.0")pp <span class="text-soft">vs last month</span></text> }
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="d-flex justify-content-between align-items-baseline flex-wrap mb-1">
-                                        <span class="text-soft" style="font-size:12px;">Portfolio at Risk (PAR30)</span>
-                                        <span class="fw-bold text-danger" style="font-size:12px;" id="portfolioAtRiskPctText" title="Measured on accounts that started in the period">@(Model.NewThisMonth > 0 ? Model.PortfolioAtRiskPct.ToString("0.0") + "%" : "No new accounts")</span>
-                                    </div>
-                                    <div class="progress progress-md progress-alt">
-                                        <div class="progress-bar bg-danger" id="portfolioAtRiskProgressBar" data-progress="@Model.PortfolioAtRiskPct.ToString("0.0")"></div>
-                                    </div>
-                                    <div class="mt-1">
-                                        <div class="text-soft" style="font-size:11px;">of accounts started in the period, 30+ days overdue</div>
-                                        <div class="@(parImproved ? "text-success" : "text-danger")" style="font-size:11px;">
-                                            @if (Model.PortfolioAtRiskChangePct.HasValue) { <text><em class="icon ni ni-arrow-long-@(parImproved ? "down" : "up")"></em>@Math.Abs(Model.PortfolioAtRiskChangePct.Value).ToString("0.0")pp <span class="text-soft">vs last month</span></text> }
-                                        </div>
-                                    </div>
-                                </div>
+                                }
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group mb-2">
+                            <h6 class="title">Write-offs <span class="text-soft small">@Model.PeriodLabel</span></h6>
+                            <div class="card-tools"><a href="/write-offs" class="link link-primary small">Review</a></div>
+                        </div>
+                        <span class="amount fs-4 fw-bold text-danger">KES @Model.WriteOffsPeriod.WrittenOffBalance.ToString("N0")</span>
+                        <span class="d-block sub-title mt-1">@Model.WriteOffsPeriod.WrittenOffCount.ToString("N0") accounts &middot; real loss KES @Model.WriteOffsPeriod.RealLoss.ToString("N0")</span>
+                        <div class="mt-3 d-flex flex-column text-soft" style="font-size:11px; row-gap:4px;">
+                            <span>@Model.WriteOffsPendingCount.ToString("N0") waiting for review &middot; KES @Model.WriteOffsPendingBalance.ToString("N0")</span>
+                            <span class="text-success">@Model.WriteOffsPeriod.ReinstatedCount.ToString("N0") came back (customer paid again)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group mb-2">
+                            <h6 class="title">Commissions</h6>
+                            <div class="card-tools"><a href="/commission-payouts" class="link link-primary small">Pay</a></div>
+                        </div>
+                        <span class="amount fs-4 fw-bold">KES @commissionsPaid.ToString("N0")</span>
+                        <span class="d-block sub-title mt-1">paid @Model.PeriodLabel &middot; @(cur.Revenue > 0 ? (commissionsPaid / cur.Revenue * 100).ToString("0") : "0")% of cash collected</span>
+                        <div class="mt-3 d-flex flex-column text-soft" style="font-size:11px; row-gap:4px;">
+                            <span>Dealers payable now: KES @Model.DealerCommissionPayable.ToString("N0")@(Model.DealersSuspended > 0 ? $" · {Model.DealersSuspended} suspended" : "")</span>
+                            <span>Agents payable now: KES @Model.CommissionSummary.Payable.ToString("N0")</span>
                         </div>
                     </div>
                 </div>
@@ -394,152 +329,8 @@
                 <div class="card-inner">
                     <div class="card-title-group">
                         <div class="card-title">
-                            <h6 class="title"><span class="dot dot-lg bg-dark me-1"></span>Non-Payers</h6>
-                            <p class="text-soft">No payment in 30+ days</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-inner p-0">
-                    <div class="table-responsive">
-                    <table class="table mb-0" style="white-space:nowrap;" data-key="nonpayers" data-page-size="@tablePageSize">
-                        <thead>
-                            <tr>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Days Overdue</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (var i = 0; i < Model.NonPayers.Count; i++)
-                            {
-                                var e = Model.NonPayers[i];
-                                <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="nonpayers">
-                                    <td><span class="fw-medium">@e.CustomerName</span></td>
-                                    <td>@e.DealerName</td>
-                                    <td>@e.Phone</td>
-                                    <td><span class="text-danger">@e.Detail</span></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                    </div>
-                    @if (NonPayersMoreCount > 0)
-                    {
-                        <div class="card-inner d-flex" style="column-gap:1rem;">
-                            <a href="#" class="link link-primary" data-more-for="nonpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'nonpayers', @tablePageSize);">Show @Math.Min(tablePageSize, NonPayersMoreCount) more</a>
-                            <a href="#" class="link link-primary" data-less-for="nonpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'nonpayers', @tablePageSize);">Show less</a>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div><!-- .nk-block -->
-
-    <div class="nk-block">
-        <div class="card card-bordered card-stretch">
-            <div class="card-inner-group">
-                <div class="card-inner">
-                    <div class="card-title-group">
-                        <div class="card-title">
-                            <h6 class="title"><span class="dot dot-lg bg-warning me-1"></span>Slow Payers</h6>
-                            <p class="text-soft">Behind schedule, still paying</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-inner p-0">
-                    <div class="table-responsive">
-                    <table class="table mb-0" style="white-space:nowrap;" data-key="slowpayers" data-page-size="@tablePageSize">
-                        <thead>
-                            <tr>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Amount Due</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (var i = 0; i < Model.SlowPayers.Count; i++)
-                            {
-                                var e = Model.SlowPayers[i];
-                                <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="slowpayers">
-                                    <td><span class="fw-medium">@e.CustomerName</span></td>
-                                    <td>@e.DealerName</td>
-                                    <td>@e.Phone</td>
-                                    <td><span style="color:#b8860b;">@e.Detail</span></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                    </div>
-                    @if (SlowPayersMoreCount > 0)
-                    {
-                        <div class="card-inner d-flex" style="column-gap:1rem;">
-                            <a href="#" class="link link-primary" data-more-for="slowpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'slowpayers', @tablePageSize);">Show @Math.Min(tablePageSize, SlowPayersMoreCount) more</a>
-                            <a href="#" class="link link-primary" data-less-for="slowpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'slowpayers', @tablePageSize);">Show less</a>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div><!-- .nk-block -->
-
-    <div class="nk-block">
-        <div class="card card-bordered card-stretch">
-            <div class="card-inner-group">
-                <div class="card-inner">
-                    <div class="card-title-group">
-                        <div class="card-title">
-                            <h6 class="title"><span class="dot dot-lg bg-success me-1"></span>Good Paying Customers</h6>
-                            <p class="text-soft">Ahead of schedule</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-inner p-0">
-                    <div class="table-responsive">
-                    <table class="table mb-0" style="white-space:nowrap;" data-key="goodpayers" data-page-size="@tablePageSize">
-                        <thead>
-                            <tr>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Payments Ahead</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (var i = 0; i < Model.GoodPayers.Count; i++)
-                            {
-                                var e = Model.GoodPayers[i];
-                                <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="goodpayers">
-                                    <td><span class="fw-medium">@e.CustomerName</span></td>
-                                    <td>@e.DealerName</td>
-                                    <td>@e.Phone</td>
-                                    <td><span class="text-success">@e.Detail</span></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                    </div>
-                    @if (GoodPayersMoreCount > 0)
-                    {
-                        <div class="card-inner d-flex" style="column-gap:1rem;">
-                            <a href="#" class="link link-primary" data-more-for="goodpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'goodpayers', @tablePageSize);">Show @Math.Min(tablePageSize, GoodPayersMoreCount) more</a>
-                            <a href="#" class="link link-primary" data-less-for="goodpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'goodpayers', @tablePageSize);">Show less</a>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div><!-- .nk-block -->
-
-    <div class="nk-block">
-        <div class="card card-bordered card-stretch">
-            <div class="card-inner-group">
-                <div class="card-inner">
-                    <div class="card-title-group">
-                        <div class="card-title">
                             <h6 class="title">Dealer Performance</h6>
-                            <p class="text-soft">Ranked by active rate this month, vs. an 80% active-rate target</p>
+                            <p class="text-soft">Biggest books first. Late = more than 7 days past lock, restructured left out &middot; revenue is this calendar month</p>
                         </div>
                     </div>
                 </div>
@@ -550,11 +341,16 @@
                             <tr>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Rank</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Active %</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Revenue</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission paid this month / payable now after arrears (0 while suspended)">Commission Paid (month) / Payable</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">vs. Target</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Still paying -- the late and bad percentages are shares of these">Open</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Paid off in full">Completed</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Accounts started @Model.PeriodLabel">New</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Revenue (month)</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Share of the dealer's open accounts more than 7 days past lock, restructured left out">Late %</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Late (KES)</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Open accounts more than 90 days past lock, restructured left out">Bad customers</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Bad customers as a share of the dealer's open accounts">Bad %</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Restructured</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission paid this month / payable now after arrears (0 while suspended)">Commission Paid / Payable</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -564,13 +360,16 @@
                                 <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealers">
                                     <td>@d.Rank</td>
                                     <td><span class="fw-medium">@d.DealerName</span></td>
-                                    <td>@d.Accounts</td>
-                                    <td>@d.ActivePct.ToString("0")%</td>
+                                    <td>@d.OpenCount</td>
+                                    <td class="text-success">@d.CompletedCount</td>
+                                    <td>@d.NewInPeriod</td>
                                     <td>KES @d.Revenue.ToString("N0")</td>
+                                    <td><span class="badge badge-dim @(d.BehindPct >= 30 ? "bg-danger" : d.BehindPct >= 15 ? "bg-warning" : "bg-success")">@d.BehindPct.ToString("0")%</span></td>
+                                    <td>KES @d.BehindAmount.ToString("N0")</td>
+                                    <td class="@(d.BadCount > 0 ? "text-danger fw-bold" : "text-soft")">@d.BadCount</td>
+                                    <td><span class="badge badge-dim @(d.BadPct >= 15 ? "bg-danger" : d.BadPct >= 5 ? "bg-warning" : "bg-success")">@d.BadPct.ToString("0")%</span></td>
+                                    <td class="text-info">@d.RestructuredCount</td>
                                     <td>@d.CommissionPaid.ToString("N0") / @d.CommissionDue.ToString("N0")</td>
-                                    <td>
-                                        <span class="badge @(d.PctOfTarget >= 100 ? "badge-dim bg-success" : "badge-dim bg-warning")">@d.PctOfTarget.ToString("0")% of target</span>
-                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -660,7 +459,7 @@
     @{
         var collectionsMoreCount = Math.Max(0, Model.Collections.Count - tablePageSize);
     }
-    <div class="nk-block">
+    <div class="nk-block" id="collections">
         <div class="card card-bordered card-stretch">
             <div class="card-inner-group">
                 <div class="card-inner">
@@ -860,6 +659,173 @@
         </div>
     </div><!-- .nk-block -->
 
+    <div class="nk-block-head nk-block-head-sm mt-2">
+        <h6 class="nk-block-title">More to explore</h6>
+        <p class="text-soft small mb-0">Folded away -- useful for digging in, not needed day to day. Click to open.</p>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <a class="card-inner d-flex justify-content-between align-items-center text-body" data-bs-toggle="collapse" href="#explore-payers" role="button" aria-expanded="false" aria-controls="explore-payers">
+                <span><span class="fw-bold">Payer lists</span> <span class="text-soft small ms-1">Non-payers, slow payers, good payers</span></span>
+                <em class="icon ni ni-chevron-down"></em>
+            </a>
+        </div>
+        <div class="collapse mt-3" id="explore-payers">
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title"><span class="dot dot-lg bg-dark me-1"></span>Non-Payers</h6>
+                            <p class="text-soft">No payment in 30+ days</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="nonpayers" data-page-size="@tablePageSize">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Days Overdue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.NonPayers.Count; i++)
+                            {
+                                var e = Model.NonPayers[i];
+                                <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="nonpayers">
+                                    <td><span class="fw-medium">@e.CustomerName</span></td>
+                                    <td>@e.DealerName</td>
+                                    <td>@e.Phone</td>
+                                    <td><span class="text-danger">@e.Detail</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    </div>
+                    @if (NonPayersMoreCount > 0)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="nonpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'nonpayers', @tablePageSize);">Show @Math.Min(tablePageSize, NonPayersMoreCount) more</a>
+                            <a href="#" class="link link-primary" data-less-for="nonpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'nonpayers', @tablePageSize);">Show less</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title"><span class="dot dot-lg bg-warning me-1"></span>Slow Payers</h6>
+                            <p class="text-soft">Behind schedule, still paying</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="slowpayers" data-page-size="@tablePageSize">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Amount Due</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.SlowPayers.Count; i++)
+                            {
+                                var e = Model.SlowPayers[i];
+                                <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="slowpayers">
+                                    <td><span class="fw-medium">@e.CustomerName</span></td>
+                                    <td>@e.DealerName</td>
+                                    <td>@e.Phone</td>
+                                    <td><span style="color:#b8860b;">@e.Detail</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    </div>
+                    @if (SlowPayersMoreCount > 0)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="slowpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'slowpayers', @tablePageSize);">Show @Math.Min(tablePageSize, SlowPayersMoreCount) more</a>
+                            <a href="#" class="link link-primary" data-less-for="slowpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'slowpayers', @tablePageSize);">Show less</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner-group">
+                <div class="card-inner">
+                    <div class="card-title-group">
+                        <div class="card-title">
+                            <h6 class="title"><span class="dot dot-lg bg-success me-1"></span>Good Paying Customers</h6>
+                            <p class="text-soft">Ahead of schedule</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-inner p-0">
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="goodpayers" data-page-size="@tablePageSize">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Payments Ahead</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.GoodPayers.Count; i++)
+                            {
+                                var e = Model.GoodPayers[i];
+                                <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="goodpayers">
+                                    <td><span class="fw-medium">@e.CustomerName</span></td>
+                                    <td>@e.DealerName</td>
+                                    <td>@e.Phone</td>
+                                    <td><span class="text-success">@e.Detail</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    </div>
+                    @if (GoodPayersMoreCount > 0)
+                    {
+                        <div class="card-inner d-flex" style="column-gap:1rem;">
+                            <a href="#" class="link link-primary" data-more-for="goodpayers" onclick="event.preventDefault(); Ranalo.showMoreRows(this, 'goodpayers', @tablePageSize);">Show @Math.Min(tablePageSize, GoodPayersMoreCount) more</a>
+                            <a href="#" class="link link-primary" data-less-for="goodpayers" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, 'goodpayers', @tablePageSize);">Show less</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div><!-- .nk-block -->
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <a class="card-inner d-flex justify-content-between align-items-center text-body" data-bs-toggle="collapse" href="#explore-products" role="button" aria-expanded="false" aria-controls="explore-products">
+                <span><span class="fw-bold">Products and customers</span> <span class="text-soft small ms-1">Device performance and customer base</span></span>
+                <em class="icon ni ni-chevron-down"></em>
+            </a>
+        </div>
+        <div class="collapse mt-3" id="explore-products">
     @{
         var totalUnitsFinanced = Model.ProductPerformance.Sum(p => p.UnitsFinanced);
         var blendedDefaultRate = totalUnitsFinanced > 0
@@ -874,8 +840,8 @@
                         <div class="card-inner">
                             <div class="card-title-group">
                                 <div class="card-title">
-                                    <h6 class="title">Product Performance <span class="badge badge-dim bg-warning" title="No rollup or live query exists for this yet -- sample data.">Preview</span></h6>
-                                    <p class="text-soft">Devices financed this month, ranked by units</p>
+                                    <h6 class="title">Product Performance</h6>
+                                    <p class="text-soft">Every device financed, ranked by units</p>
                                 </div>
                             </div>
                         </div>
@@ -926,7 +892,7 @@
                     <div class="card-inner">
                         <div class="card-title-group mb-3">
                             <div class="card-title">
-                                <h6 class="title">Customer Performance <span class="badge badge-dim bg-warning" title="No rollup or live query exists for this yet -- sample data.">Preview</span></h6>
+                                <h6 class="title">Customer Performance</h6>
                                 <p class="text-soft">Customer base health, this month</p>
                             </div>
                         </div>
@@ -979,7 +945,17 @@
             </div>
         </div><!-- .row -->
     </div><!-- .nk-block -->
+        </div>
+    </div>
 
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <a class="card-inner d-flex justify-content-between align-items-center text-body" data-bs-toggle="collapse" href="#explore-completed" role="button" aria-expanded="false" aria-controls="explore-completed">
+                <span><span class="fw-bold">Completed contracts</span> <span class="text-soft small ms-1">Paid off in full, most recent first</span></span>
+                <em class="icon ni ni-chevron-down"></em>
+            </a>
+        </div>
+        <div class="collapse mt-3" id="explore-completed">
     @{
         var completedUp = Model.CompletedContractsChangePct >= 0;
         var completionRateUp = Model.ContractCompletionRateChangePct >= 0;
@@ -1046,11 +1022,11 @@
                         <div class="nk-sale-data" style="flex:1 1 auto; width:100%;">
                             <div class="d-flex flex-column">
                                 <span class="amount">@Model.CompletedContractsThisMonth.ToString("N0")</span>
-                                @if (Model.CompletedContractsChangePct.HasValue) { <span class="sub-title d-block mt-1"><span class="@(completedUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(completedUp ? "up" : "down")"></em>@Math.Abs(Model.CompletedContractsChangePct.Value).ToString("0.0")%</span> vs last month</span> }
+                                @if (Model.CompletedContractsChangePct.HasValue) { <span class="sub-title d-block mt-1"><span class="@(completedUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(completedUp ? "up" : "down")"></em>@Math.Abs(Model.CompletedContractsChangePct.Value).ToString("0.0")%</span> vs @Model.PriorLabel</span> }
                             </div>
                         </div>
                         <div class="mt-3 d-flex flex-column" style="font-size:11px; row-gap:4px;">
-                            <span class="text-soft">KES @Model.TotalValueCompletedThisMonth.ToString("N0") total value completed</span>
+                            <span class="text-soft">KES @Model.TotalValueCompletedThisMonth.ToString("N0") paid off @Model.PeriodLabel</span>
                             <span class="text-soft">@Model.AvgTimeToCompletionMonths.ToString("0.0") months avg. time to pay off</span>
                         </div>
                         <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
@@ -1070,6 +1046,8 @@
             </div>
         </div><!-- .row -->
     </div><!-- .nk-block -->
+        </div>
+    </div>
 
 </div>
 
@@ -1173,106 +1151,40 @@
     </script>
     <script>
         (function () {
-            var months = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.GrowthMonths));
-            var revenue = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByMonth));
-            var accounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AccountsByMonth));
+            var months = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProfitTrend.Select(m => m.MonthLabel)));
+            var revenue = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProfitTrend.Select(m => m.Revenue)));
+            var costs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProfitTrend.Select(m => m.CostOfDevices + m.CommissionsPaid + m.OperatingExpenses)));
+            var net = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProfitTrend.Select(m => m.NetBeforeTax)));
             var portfolio = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new[] {
-                Model.PortfolioGoodPct, Model.PortfolioSlowPct, Model.PortfolioArrearsPct, Model.PortfolioNonPayingPct
-            }));
-            var portfolioCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new[] {
-                Math.Round(Model.TotalAccounts * Model.PortfolioGoodPct / 100),
-                Math.Round(Model.TotalAccounts * Model.PortfolioSlowPct / 100),
-                Math.Round(Model.TotalAccounts * Model.PortfolioArrearsPct / 100),
-                Math.Round(Model.TotalAccounts * Model.PortfolioNonPayingPct / 100)
+                Model.PortfolioGoodCount, Model.PortfolioRestructuredCount, Model.PortfolioSlowCount, Model.PortfolioArrearsCount, Model.PortfolioBadCount
             }));
 
-            var revenueCanvas = document.getElementById('revenueGrowthChart');
-            if (revenueCanvas && window.Chart) {
-                var ctx = revenueCanvas.getContext('2d');
-                var fill = ctx.createLinearGradient(0, 0, 0, 260);
-                fill.addColorStop(0, 'rgba(101, 118, 255, .25)');
-                fill.addColorStop(1, 'rgba(101, 118, 255, 0)');
+            function kes(v) { return 'KES ' + Math.round(v).toLocaleString(); }
 
-                new Chart(ctx, {
-                    type: 'line',
+            var trendCanvas = document.getElementById('profitTrendChart');
+            if (trendCanvas && window.Chart) {
+                new Chart(trendCanvas.getContext('2d'), {
+                    type: 'bar',
                     data: {
                         labels: months,
                         datasets: [
-                            {
-                                label: 'Revenue (KES)',
-                                data: revenue,
-                                yAxisID: 'y',
-                                borderColor: '#6576ff',
-                                backgroundColor: fill,
-                                fill: true,
-                                tension: 0.35,
-                                borderWidth: 2.5,
-                                pointRadius: 3,
-                                pointBackgroundColor: '#6576ff',
-                                pointBorderColor: '#fff',
-                                pointBorderWidth: 1.5,
-                                pointHoverRadius: 5
-                            },
-                            {
-                                label: 'Accounts',
-                                data: accounts,
-                                yAxisID: 'y1',
-                                borderColor: '#9cabff',
-                                backgroundColor: 'transparent',
-                                borderDash: [4, 4],
-                                fill: false,
-                                tension: 0.35,
-                                borderWidth: 2,
-                                pointRadius: 3,
-                                pointBackgroundColor: '#9cabff',
-                                pointBorderColor: '#fff',
-                                pointBorderWidth: 1.5,
-                                pointHoverRadius: 5
-                            }
-                        ]
+                            { type: 'line', label: 'Profit before tax', data: net, borderColor: '#364a63', backgroundColor: '#364a63', borderWidth: 2, pointRadius: 3, tension: 0.3, order: 0 },
+                            { type: 'bar', label: 'Cash collected', data: revenue, backgroundColor: '#6576ff', order: 1 },
+                            { type: 'bar', label: 'Costs', data: costs, backgroundColor: '#e85347', order: 1 },
+                        ],
                     },
                     options: {
                         maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
                         plugins: {
-                            legend: {
-                                display: true,
-                                position: 'bottom',
-                                labels: { boxWidth: 10, usePointStyle: true, color: '#8091a7', font: { size: 11 } }
-                            },
-                            tooltip: {
-                                backgroundColor: '#fff',
-                                borderColor: '#eff6ff',
-                                borderWidth: 1,
-                                titleColor: '#6783b8',
-                                bodyColor: '#364a63',
-                                padding: 10,
-                                callbacks: {
-                                    label: function (context) {
-                                        return context.dataset.yAxisID === 'y'
-                                            ? 'Revenue: KES ' + context.parsed.y.toLocaleString()
-                                            : 'Accounts: ' + context.parsed.y.toLocaleString();
-                                    }
-                                }
-                            }
+                            legend: { position: 'bottom', labels: { boxWidth: 10, color: '#8091a7', font: { size: 11 } } },
+                            tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': ' + kes(c.parsed.y); } } },
                         },
                         scales: {
                             x: { grid: { display: false }, ticks: { color: '#8091a7' } },
-                            y: {
-                                position: 'left',
-                                grid: { color: '#e5e9f2' },
-                                ticks: {
-                                    color: '#8091a7',
-                                    callback: function (v) { return 'KES ' + (v / 1000) + 'k'; }
-                                }
-                            },
-                            y1: {
-                                position: 'right',
-                                grid: { drawOnChartArea: false },
-                                ticks: { color: '#8091a7' }
-                            }
-                        }
-                    }
+                            y: { grid: { color: '#e5e9f2' }, ticks: { color: '#8091a7', callback: function (v) { return 'KES ' + Math.round(v / 1000).toLocaleString() + 'k'; } } },
+                        },
+                    },
                 });
             }
 
@@ -1281,178 +1193,11 @@
                 new Chart(portfolioCanvas.getContext('2d'), {
                     type: 'doughnut',
                     data: {
-                        labels: ['Good Customers', 'Slow Payers', 'In Arrears', 'Non-Payers'],
-                        datasets: [{
-                            data: portfolio,
-                            backgroundColor: ['#1ee0ac', '#f4bd0e', '#e85347', '#364a63'],
-                            borderColor: '#fff',
-                            borderWidth: 2,
-                            hoverOffset: 4
-                        }]
+                        labels: ['On time', 'Restructured', '1-7 days late', '8-90 days late', 'Over 90 days'],
+                        datasets: [{ data: portfolio, backgroundColor: ['#1ee0ac', '#09c2de', '#f4bd0e', '#e85347', '#364a63'], borderColor: '#fff', borderWidth: 2 }],
                     },
-                    options: {
-                        maintainAspectRatio: false,
-                        cutout: '72%',
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: '#fff',
-                                borderColor: '#eff6ff',
-                                borderWidth: 1,
-                                titleColor: '#6783b8',
-                                bodyColor: '#364a63',
-                                padding: 10,
-                                callbacks: {
-                                    label: function (context) {
-                                        var count = portfolioCounts[context.dataIndex];
-                                        return context.label + ': ' + count.toLocaleString() + ' (' + context.parsed + '%)';
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    options: { maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false } } },
                 });
-            }
-        })();
-    </script>
-    <script>
-        (function () {
-            var toggle = document.getElementById('revenuePeriodToggle');
-            var opts = document.querySelectorAll('.revenue-period-opt');
-            if (!toggle || opts.length === 0) return;
-
-            var dealerCount = @Html.Raw(Model.DealerPerformance.Count);
-
-            var amountEl = document.getElementById('revenueAmount');
-            var growthEl = document.getElementById('revenueGrowth');
-            var growthIconEl = document.getElementById('revenueGrowthIcon');
-            var growthPctEl = document.getElementById('revenueGrowthPct');
-            var periodLabelEl = document.getElementById('revenuePeriodLabel');
-            var avgPerAccountEl = document.getElementById('revenueAvgPerAccount');
-            var targetPctEl = document.getElementById('revenueTargetPct');
-            var targetAmountEl = document.getElementById('revenueTargetAmount');
-            var toggleLabel = toggle.querySelector('span');
-
-            var totalAccountsAmountEl = document.getElementById('totalAccountsAmount');
-            var totalAccountsChangeEl = document.getElementById('totalAccountsChange');
-            var totalAccountsChangeIconEl = document.getElementById('totalAccountsChangeIcon');
-            var totalAccountsChangePctEl = document.getElementById('totalAccountsChangePct');
-            var totalAccountsPeriodLabelEl = document.getElementById('totalAccountsPeriodLabel');
-
-            var commissionsPaidAmountEl = document.getElementById('commissionsPaidAmount');
-            var commissionsPctOfRevenueEl = document.getElementById('commissionsPctOfRevenue');
-            var commissionsPerDealerEl = document.getElementById('commissionsPerDealer');
-
-            var collectionRatePctTextEl = document.getElementById('collectionRatePctText');
-            var collectionRateProgressBarEl = document.getElementById('collectionRateProgressBar');
-            var collectionRatePeriodLabelEl = document.getElementById('collectionRatePeriodLabel');
-            var portfolioAtRiskPctTextEl = document.getElementById('portfolioAtRiskPctText');
-            var portfolioAtRiskProgressBarEl = document.getElementById('portfolioAtRiskProgressBar');
-
-            var periodNames = { week: 'Week', month: 'Month', ytd: 'Year to Date', year: 'Last 12 Months' };
-
-            opts.forEach(function (opt) {
-                opt.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    var period = opt.getAttribute('data-period');
-                    loadRevenueForPeriod(period);
-                });
-            });
-
-            function loadRevenueForPeriod(period) {
-                toggle.disabled = true;
-                fetch('/admin-dashboard/revenue?period=' + encodeURIComponent(period), {
-                    headers: { 'Accept': 'application/json' }
-                })
-                    .then(function (res) {
-                        if (!res.ok) throw new Error('Request failed: ' + res.status);
-                        return res.json();
-                    })
-                    .then(function (data) {
-                        amountEl.textContent = 'KES ' + Math.round(data.revenue).toLocaleString();
-                        avgPerAccountEl.textContent = Math.round(data.avgPerAccount).toLocaleString();
-                        periodLabelEl.textContent = data.label;
-
-                        targetAmountEl.textContent = Math.round(data.targetRevenue).toLocaleString();
-                        var targetPct = data.targetRevenue > 0 ? Math.min(100, Math.round(data.revenue / data.targetRevenue * 100)) : 0;
-                        targetPctEl.textContent = targetPct;
-
-                        if (data.growthPct === null || data.growthPct === undefined) {
-                            growthEl.classList.remove('text-success', 'text-danger');
-                            growthEl.classList.add('text-soft');
-                            growthIconEl.className = 'icon ni ni-minus';
-                            growthPctEl.textContent = '—';
-                        } else {
-                            var up = data.growthPct >= 0;
-                            growthEl.classList.remove('text-soft');
-                            growthEl.classList.toggle('text-success', up);
-                            growthEl.classList.toggle('text-danger', !up);
-                            growthIconEl.className = 'icon ni ni-arrow-long-' + (up ? 'up' : 'down');
-                            growthPctEl.textContent = Math.abs(data.growthPct).toFixed(1);
-                        }
-
-                        toggleLabel.textContent = periodNames[period] || periodNames.month;
-
-                        // Total Accounts card: headline stays the running
-                        // total as of the selected period's end; the trend
-                        // line switches from "new accounts started within
-                        // the period".
-                        totalAccountsAmountEl.textContent = Math.round(data.totalAccounts).toLocaleString();
-                        totalAccountsPeriodLabelEl.textContent = data.label;
-                        totalAccountsChangePctEl.textContent = Math.round(data.newInPeriod).toLocaleString();
-                        if (data.newInPeriodChangePct === null || data.newInPeriodChangePct === undefined) {
-                            totalAccountsChangeEl.classList.remove('up', 'text-success', 'down', 'text-danger');
-                            totalAccountsChangeEl.classList.add('text-soft');
-                            totalAccountsChangeIconEl.className = 'icon ni ni-minus';
-                        } else {
-                            var accountsUp = data.newInPeriodChangePct >= 0;
-                            totalAccountsChangeEl.classList.remove('text-soft');
-                            totalAccountsChangeEl.classList.toggle('up', accountsUp);
-                            totalAccountsChangeEl.classList.toggle('text-success', accountsUp);
-                            totalAccountsChangeEl.classList.toggle('down', !accountsUp);
-                            totalAccountsChangeEl.classList.toggle('text-danger', !accountsUp);
-                            totalAccountsChangeIconEl.className = 'icon ni ni-arrow-long-' + (accountsUp ? 'up' : 'down');
-                        }
-
-                        // Commissions Paid: headline is the company-wide
-                        // dealer + agent commission paid in the selected
-                        // period; % of revenue and avg/dealer are recomputed
-                        // client-side from the same response.
-                        var commissionsPaid = data.dealerCommissionPaidThisPeriod + data.commissionPaidThisPeriod;
-                        if (commissionsPaidAmountEl) {
-                            commissionsPaidAmountEl.textContent = 'KES ' + Math.round(commissionsPaid).toLocaleString();
-                        }
-                        var dealersPaidEl = document.getElementById('commissionsPaidDealers');
-                        var agentsPaidEl = document.getElementById('commissionsPaidAgents');
-                        if (dealersPaidEl) dealersPaidEl.textContent = Math.round(data.dealerCommissionPaidThisPeriod).toLocaleString();
-                        if (agentsPaidEl) agentsPaidEl.textContent = Math.round(data.commissionPaidThisPeriod).toLocaleString();
-                        if (commissionsPctOfRevenueEl) {
-                            var commissionsPct = data.revenue > 0 ? Math.round(commissionsPaid / data.revenue * 100) : 0;
-                            commissionsPctOfRevenueEl.textContent = commissionsPct;
-                        }
-                        if (commissionsPerDealerEl) {
-                            var perDealer = dealerCount > 0 ? commissionsPaid / dealerCount : 0;
-                            commissionsPerDealerEl.textContent = Math.round(perDealer).toLocaleString();
-                        }
-
-                        // Collection Rate / PAR30: of accounts that started
-                        // within the selected period, count-based -- same
-                        // cohort definition as the Dealer/Approver Dashboards.
-                        collectionRatePctTextEl.textContent = data.newInPeriod > 0 ? data.collectionRatePct.toFixed(1) + '%' : 'No new accounts';
-                        collectionRateProgressBarEl.style.width = data.collectionRatePct + '%';
-                        collectionRateProgressBarEl.setAttribute('data-progress', data.collectionRatePct);
-                        collectionRatePeriodLabelEl.textContent = data.label;
-
-                        portfolioAtRiskPctTextEl.textContent = data.newInPeriod > 0 ? data.portfolioAtRiskPct.toFixed(1) + '%' : 'No new accounts';
-                        portfolioAtRiskProgressBarEl.style.width = data.portfolioAtRiskPct + '%';
-                        portfolioAtRiskProgressBarEl.setAttribute('data-progress', data.portfolioAtRiskPct);
-                    })
-                    .catch(function (err) {
-                        console.error('Failed to load revenue for period ' + period, err);
-                    })
-                    .finally(function () {
-                        toggle.disabled = false;
-                    });
             }
         })();
     </script>

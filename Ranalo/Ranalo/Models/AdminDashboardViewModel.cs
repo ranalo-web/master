@@ -2,6 +2,60 @@ namespace Ranalo.Models
 {
     public class AdminDashboardViewModel
     {
+        // Reporting period (week | month | ytd | year) and what it's compared
+        // with -- see AdminDashboardRules.ResolvePeriod.
+        public string Period { get; set; } = "month";
+        public string PeriodLabel { get; set; } = "this month";
+        public string PriorLabel { get; set; } = "same days last month";
+
+        // Are we making money? This period and the comparison period.
+        public AdminProfit Profit { get; set; } = new();
+        public AdminProfit PriorProfit { get; set; } = new();
+
+        // Month only: days gone and days in the month, for the month-end pace.
+        public int MonthDaysElapsed { get; set; }
+        public int MonthDays { get; set; }
+
+        // Revenue vs costs, last 12 months (same rows as the Financials chart).
+        public List<FinancialsMonthRow> ProfitTrend { get; set; } = new();
+
+        // What to do, most urgent first.
+        public List<AdminAction> Actions { get; set; } = new();
+
+        // Book health, live. Arrears here leaves restructured accounts out;
+        // they have their own card.
+        public int ActiveAccounts { get; set; }
+        public int NewInPeriod { get; set; }
+        public int NewPriorPeriod { get; set; }
+        public int BadDebtCount { get; set; }
+        public int RestructuredCount { get; set; }
+        public decimal RestructuredBehind { get; set; }
+        public decimal RestructuredBalance { get; set; }
+        public int RestructuredPayingCount { get; set; }
+
+        // Loan book still to collect (approved write-offs excluded), set by
+        // AdminDashboardController from the age-of-debt figures.
+        public decimal LoanBookOutstanding { get; set; }
+        public int LoanBookAccounts { get; set; }
+
+        // Paid as a share of what was due to date, across the book; and the
+        // share of a contract that has to be collected to cover the phone.
+        public decimal RepaymentRatePct { get; set; }
+        public decimal BreakEvenCollectionPct { get; set; }
+        public int MissingDeviceCostCount { get; set; }
+
+        // Write-offs dated in the period, and waiting for review.
+        public WriteOffPeriodSummary WriteOffsPeriod { get; set; } = new();
+        public int WriteOffsPendingCount { get; set; }
+        public decimal WriteOffsPendingBalance { get; set; }
+
+        // Portfolio split for the doughnut, active accounts only.
+        public int PortfolioRestructuredCount { get; set; }
+        public int PortfolioGoodCount { get; set; }
+        public int PortfolioSlowCount { get; set; }
+        public int PortfolioArrearsCount { get; set; }
+        public int PortfolioBadCount { get; set; }
+
         // Write-offs card -- the WriteOffs register (approved write-offs
         // dated this / last calendar month), same definition as Financials.
         // Set by AdminDashboardController.
@@ -137,6 +191,23 @@ namespace Ranalo.Models
         public decimal CommissionPaid { get; set; }
         public decimal CommissionDue { get; set; }
         public decimal PctOfTarget { get; set; }
+
+        // Accounts split: still paying vs paid off in full. Late/Bad %s are
+        // shares of OpenCount.
+        public int OpenCount { get; set; }
+        public int CompletedCount { get; set; }
+
+        // More than 7 days past lock, restructured left out.
+        public int BehindCount { get; set; }
+        public decimal BehindPct { get; set; }
+        public decimal BehindAmount { get; set; }
+
+        // Bad customers: more than 90 days past lock, restructured left out
+        // -- a share of the dealer's open accounts.
+        public int BadCount { get; set; }
+        public decimal BadPct { get; set; }
+        public int RestructuredCount { get; set; }
+        public int NewInPeriod { get; set; }
     }
 
     // Same metrics as the Dealer Dashboard's agent rows, plus the dealer.

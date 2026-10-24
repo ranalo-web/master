@@ -23,7 +23,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("admin-dashboard")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? period = null)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -42,55 +42,34 @@ namespace Ranalo.Controllers
             ViewBag.IsDealer = false;
             ViewBag.UserName = settings.KnownAs;
 
-            var model = await _dashboardReportService.GetAdminDashboardAsync();
+            var model = await _dashboardReportService.GetAdminDashboardAsync(period);
 
             try
             {
-                var thisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-                model.WriteOffsThisMonth = await _writeOffRepository.GetPeriodSummaryAsync(thisMonth, thisMonth.AddMonths(1));
-                model.WriteOffsLastMonth = await _writeOffRepository.GetPeriodSummaryAsync(thisMonth.AddMonths(-1), thisMonth);
+                var window = AdminDashboardRules.ResolvePeriod(model.Period, DateTime.Now);
+                model.WriteOffsPeriod = await _writeOffRepository.GetPeriodSummaryAsync(window.From, window.ToExclusive);
+                model.WriteOffsThisMonth = model.WriteOffsPeriod;
+                model.WriteOffsLastMonth = await _writeOffRepository.GetPeriodSummaryAsync(window.PriorFrom, window.PriorToExclusive);
+
+                var summary = await _writeOffRepository.GetSummaryAsync();
+                var pending = summary.Where(s => s.Status is "pending" or "held").ToList();
+                model.WriteOffsPendingCount = pending.Sum(s => s.Count);
+                model.WriteOffsPendingBalance = pending.Sum(s => s.Outstanding);
+
+                // Still to collect: every open contract that owes money,
+                // approved write-offs left out (same as the Financials book).
+                var ageing = await _writeOffRepository.GetLoanBookAgeingAsync(DateTime.UtcNow.AddHours(3).Date);
+                model.LoanBookOutstanding = ageing.Where(b => !b.IsWrittenOff).Sum(b => b.Outstanding);
+                model.LoanBookAccounts = ageing.Where(b => !b.IsWrittenOff).Sum(b => b.Accounts);
             }
             catch (Exception ex)
             {
-                // e.g. Database/WriteOffs/001 not applied -- card shows zeros.
+                // e.g. Database/WriteOffs/001 not applied -- those cards show zeros.
                 _logger.LogError(ex, "Admin dashboard: write-off figures unavailable");
             }
 
+            model.Actions = AdminDashboardRules.BuildActions(model);
             return View(model);
-        }
-
-        // Backs the top-of-page "This Month" date-range filter (see
-        // Views/AdminDashboard/Index.cshtml) -- was a dead, unwired widget
-        // (every option was a plain href="#") until now. Same
-        // dealerId=null, company-wide call as the Approver Dashboard's copy
-        // of this endpoint (DealerDashboardController.Revenue), reusing the
-        // exact same live infrastructure rather than a new query.
-        [HttpGet]
-        [Route("admin-dashboard/revenue")]
-        public async Task<IActionResult> Revenue(string period)
-        {
-            var settings = HttpContext.Items["UserSettings"] as User;
-            if (settings == null)
-            {
-                return Unauthorized();
-            }
-
-            if (settings.RoleId != UserRole.Admin)
-            {
-                // Not Forbid() -- this app has no ASP.NET Core authentication
-                // scheme registered (auth is the custom cookie-based
-                // LoadUserSettingsFromCookie filter), so ForbidResult would
-                // throw trying to resolve IAuthenticationService.
-                return StatusCode(403);
-            }
-
-            var result = await _dashboardReportService.GetDealerRevenueForPeriodAsync(dealerId: null, period);
-            if (result == null)
-            {
-                return BadRequest("Unrecognized period. Expected one of: week, month, ytd, year.");
-            }
-
-            return Json(result);
         }
     }
 

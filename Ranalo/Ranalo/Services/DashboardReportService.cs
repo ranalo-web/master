@@ -40,117 +40,89 @@ namespace Ranalo.Services
             _operatingExpenseRepository = operatingExpenseRepository;
         }
 
-        public async Task<AdminDashboardViewModel> GetAdminDashboardAsync()
+        // Admin Dashboard: is the business making money, what to do about
+        // it, and the tables to run it day to day. Everything is live --
+        // nothing comes from the nightly DashboardSnapshot (that job isn't
+        // registered, so its "vs last month" figures were stale). Profit uses
+        // the Financials rules and cost sources; the book figures come from
+        // the same per-account rows and lock-date rules as the Agent table.
+        public async Task<AdminDashboardViewModel> GetAdminDashboardAsync(string? period = null)
         {
-            // Empty defaults, not AdminDashboardSampleData.Build(): anything
-            // without a real source shows 0 or is hidden, never a made-up
-            // sample figure. The "vs last month" figures that have no history
-            // yet stay null and the view leaves them out.
             var model = new AdminDashboardViewModel();
-            var scope = DashboardScope.Admin;
+            var window = AdminDashboardRules.ResolvePeriod(period, DateTime.Now);
+            model.Period = window.Period;
+            model.PeriodLabel = window.Label;
+            model.PriorLabel = window.PriorLabel;
 
-            var snapshot = await _repository.GetSnapshotAsync(scope);
-            if (snapshot != null)
-            {
-                ApplyAdminSnapshot(model, snapshot);
-            }
-
-            // Live, system-wide (all dealers) recompute -- same source and
-            // Good/Slow/Arrears rule as the Approver Dashboard
-            // (GetApproverDashboardAsync), reused here instead of the old
-            // rollup path (DashboardWatchlistEntry/DashboardPerformanceEntry
-            // for EntryType Dealer/Agent), which is never populated -- see
-            // ScheduledDashboardRollup's "NOT refreshed by this job yet"
-            // note -- and was silently falling back to sample data.
             var accountDetails = await _repository.GetDealerAccountDetailsAsync(null);
-            var lockClassification = await _repository.GetDealerLockClassificationAsync(null);
+            var deviceCosts = await _repository.GetDeviceCostsAsync();
 
-            // Fixes a real bug this replaces: GoodAccounts/BadAccounts/
-            // PayingAccounts/NonPayingAccounts were never written by the
-            // rollup either, so they stayed on sample-data counts
-            // (1,583/259/1,691/151) while TotalAccounts above came from the
-            // (also real) snapshot -- a real denominator against a
-            // stale-mock numerator produced >100% figures ("313% good
-            // standing", "334% of accounts paying").
-            model.GoodAccounts = lockClassification.GoodCount;
-            model.BadAccounts = lockClassification.ArrearsCount;
-            model.PayingAccounts = lockClassification.GoodCount;
-            model.NonPayingAccounts = lockClassification.ArrearsCount;
-
-            // Portfolio Composition doughnut: same live lock-date split and
-            // NonPaying-is-a-subset-of-Arrears convention as the Dealer
-            // Dashboard's My Portfolio card (GetDealerDashboardAsync) --
-            // was left on the stale accrual-based rollup (PortfolioGoodPct
-            // etc. from ApplyAdminSnapshot) as an explicit out-of-scope call
-            // when Dealer's copy was made live. Reuses lockClassification,
-            // already fetched above -- no new query.
-            var lockTotal = lockClassification.GoodCount + lockClassification.SlowCount + lockClassification.ArrearsCount;
-            if (lockTotal > 0)
+            model.Profit = await GetProfitAsync(window.From, window.ToExclusive, deviceCosts);
+            model.PriorProfit = await GetProfitAsync(window.PriorFrom, window.PriorToExclusive, deviceCosts);
+            if (window.Period == "month")
             {
-                var exclusiveArrearsCount = lockClassification.ArrearsCount - lockClassification.NonPayingCount;
-                model.PortfolioGoodPct = Math.Round(100m * lockClassification.GoodCount / lockTotal, 2);
-                model.PortfolioSlowPct = Math.Round(100m * lockClassification.SlowCount / lockTotal, 2);
-                model.PortfolioArrearsPct = Math.Round(100m * exclusiveArrearsCount / lockTotal, 2);
-                model.PortfolioNonPayingPct = Math.Round(100m * lockClassification.NonPayingCount / lockTotal, 2);
+                model.MonthDaysElapsed = DateTime.Now.Day;
+                model.MonthDays = DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month);
             }
+            var trendEnd = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            model.ProfitTrend = await BuildMonthlyTrendAsync(12, trendEnd, deviceCosts);
 
-            // Collection Rate / PAR30 and Revenue Target/Growth: same live
-            // "month" window the top-of-page period filter's AJAX endpoint
-            // already computes on demand -- the initial page load never
-            // called it, so these stayed on the stale rollup snapshot until
-            // a user manually touched the filter. RevenueThisMonth itself
-            // is left alone (already live via GetRevenueThisMonthByDealerAsync
-            // above); this only fills in the two figures that had no live
-            // source at all on load: the target and the month-over-month
-            // growth %.
-            if (TryResolvePeriodWindow("month", out var monthWindow))
-            {
-                var (collectionRatePct, portfolioAtRiskPct) = ComputeCohortRates(
-                    accountDetails, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive);
-                model.CollectionRatePct = collectionRatePct;
-                model.PortfolioAtRiskPct = portfolioAtRiskPct;
+            // Kept for the Revenue/Commissions figures other code still reads.
+            model.RevenueThisMonth = model.Profit.Revenue;
+            model.RevenueGrowthPct = AdminDashboardRules.ChangePct(model.Profit.Revenue, model.PriorProfit.Revenue) ?? 0;
+            model.CostOfDevicesThisMonth = model.Profit.CostOfDevices;
+            model.OperatingExpensesThisMonth = model.Profit.OperatingExpenses;
+            model.TaxRatePct = model.Profit.TaxRatePct;
 
-                var monthRevenueRow = await _repository.GetDealerRevenueForPeriodAsync(
-                    null, monthWindow.PeriodStart, monthWindow.PeriodEndExclusive, monthWindow.PriorPeriodStart, monthWindow.PriorPeriodEndExclusive);
-                model.RevenueTargetThisMonth = monthRevenueRow.TargetRevenue;
+            // New accounts, target and the new-account cohort's health for the period.
+            var periodRow = await _repository.GetDealerRevenueForPeriodAsync(
+                null, window.From, window.ToExclusive, window.PriorFrom, window.PriorToExclusive);
+            model.RevenueTargetThisMonth = periodRow.TargetRevenue;
+            model.NewInPeriod = periodRow.NewAccountsInPeriod;
+            model.NewPriorPeriod = periodRow.NewAccountsPriorPeriod;
+            model.NewThisMonth = periodRow.NewAccountsInPeriod;
+            model.NewThisMonthChangePct = ScheduledDashboardRollup.CalculateGrowthPct(periodRow.NewAccountsInPeriod, periodRow.NewAccountsPriorPeriod);
+            (model.CollectionRatePct, model.PortfolioAtRiskPct) = ComputeCohortRates(accountDetails, window.From, window.ToExclusive);
 
-                // Revenue: live, with the Financials definition (every device
-                // payment) -- the nightly snapshot lagged a day and left out
-                // devices with no dealer mapping. Same figures as the period
-                // filter's "Month".
-                model.RevenueThisMonth = await _repository.GetRevenueForPeriodAsync(monthWindow.PeriodStart, monthWindow.PeriodEndExclusive);
-                var revenueLastMonth = await _repository.GetRevenueForPeriodAsync(monthWindow.PriorPeriodStart, monthWindow.PriorPeriodEndExclusive);
-                model.RevenueGrowthPct = ScheduledDashboardRollup.CalculateGrowthPct(model.RevenueThisMonth, revenueLastMonth) ?? 0;
+            // Book health: active = not yet paid off. Restructured accounts
+            // are their own group, so Arrears/Bad never include them.
+            var active = accountDetails.Where(r => !IsPaidOff(r)).ToList();
+            var restructured = active.Where(IsRestructured).ToList();
+            var normal = active.Where(r => !IsRestructured(r)).ToList();
+            var inArrears = normal.Where(r => LockDays(r) > 0 && r.ArrearsAmount < 0).ToList();
+            var bad = inArrears.Where(r => LockDays(r) > 90).ToList();
 
-                // Total Accounts card: headline and "new this month" delta
-                // were both still on the stale rollup snapshot (never
-                // overridden anywhere in this method). TotalAccounts now
-                // matches lockTotal/accountDetails.Count (same population,
-                // guaranteed consistent with the Good/Bad/Slow breakdown
-                // shown on the same card). NewThisMonth reuses this same
-                // monthRevenueRow so the initial page load shows the exact
-                // same number as manually selecting "Month" in the period
-                // filter does -- previously these were two disconnected
-                // calculations that could disagree.
-                model.TotalAccounts = lockTotal;
-                model.NewThisMonth = monthRevenueRow.NewAccountsInPeriod;
-                model.NewThisMonthChangePct = ScheduledDashboardRollup.CalculateGrowthPct(monthRevenueRow.NewAccountsInPeriod, monthRevenueRow.NewAccountsPriorPeriod);
-            }
+            model.ActiveAccounts = active.Count;
+            model.TotalAccounts = active.Count;
+            model.ArrearsTotal = inArrears.Sum(r => -r.ArrearsAmount);
+            model.ArrearsTrueCount = inArrears.Count;
+            model.BadDebtThisMonth = bad.Sum(r => -r.ArrearsAmount);
+            model.BadDebtCount = bad.Count;
 
-            // Total Arrears / Bad Debt cards: same live "true arrears" call
-            // as the Dealer/Approver Dashboards (GetDealerArrearsClassificationAsync
-            // -- only accounts genuinely locked past NextLockDate, not every
-            // account's accrual shortfall). Previously only BadDebtThisMonth
-            // was wired to this; ArrearsTotal was left on the stale rollup
-            // snapshot's older, broader accrual-based definition, so the two
-            // cards silently disagreed with each other and with the
-            // Approver Dashboard's live figure for the same thing. Bad Debt
-            // is a subset of this same classification (>90 days past lock),
-            // so the two cards are now guaranteed consistent with each other.
-            var arrearsClassification = await _repository.GetDealerArrearsClassificationAsync(null);
-            model.ArrearsTotal = arrearsClassification.TrueArrearsTotal;
-            model.ArrearsTrueCount = arrearsClassification.TrueArrearsCount;
-            model.BadDebtThisMonth = arrearsClassification.BadDebtTotal;
+            model.RestructuredCount = restructured.Count;
+            model.RestructuredBehind = restructured.Sum(r => Math.Max(0, -r.ArrearsAmount));
+            model.RestructuredBalance = restructured.Sum(r => r.FullContractValue - r.TotalPaid);
+            model.RestructuredPayingCount = restructured.Count(r => r.LastPaymentDate >= DateTime.Now.AddDays(-30));
+
+            model.PortfolioRestructuredCount = restructured.Count;
+            model.PortfolioGoodCount = normal.Count(r => LockDays(r) <= 0);
+            model.PortfolioSlowCount = normal.Count(r => LockDays(r) is > 0 and <= 7);
+            model.PortfolioBadCount = normal.Count(r => LockDays(r) > 90);
+            model.PortfolioArrearsCount = normal.Count - model.PortfolioGoodCount - model.PortfolioSlowCount - model.PortfolioBadCount;
+            model.GoodAccounts = model.PortfolioGoodCount;
+            model.BadAccounts = model.PortfolioArrearsCount + model.PortfolioBadCount;
+            model.PayingAccounts = model.GoodAccounts;
+            model.NonPayingAccounts = model.BadAccounts;
+
+            // Paid vs due to date (ArrearsAmount is paid minus due), and the
+            // share of a contract that covers the phone.
+            var dueToDate = accountDetails.Sum(r => r.TotalPaid - r.ArrearsAmount);
+            model.RepaymentRatePct = dueToDate > 0 ? Math.Round(100m * accountDetails.Sum(r => r.TotalPaid) / dueToDate, 1) : 0;
+            var costed = accountDetails.Where(r => r.BuyingPrice > 0 && r.FullContractValue > 0).ToList();
+            model.BreakEvenCollectionPct = costed.Count > 0
+                ? Math.Round(100m * costed.Sum(r => r.BuyingPrice!.Value) / costed.Sum(r => r.FullContractValue), 1)
+                : 0;
+            model.MissingDeviceCostCount = accountDetails.Count(r => r.BuyingPrice is null or 0);
 
             model.NonPayers = BuildNonPayers(accountDetails).Select(ToAdminWatchlistEntry).ToList();
             model.SlowPayers = BuildSlowPayers(accountDetails).Select(ToAdminWatchlistEntry).ToList();
@@ -172,53 +144,18 @@ namespace Ranalo.Services
             model.DealerCommissionPayable = dealerCommission.Sum(d => d.Payable);
             model.DealerCommissionHeld = dealerCommission.Where(d => d.IsSuspended).Sum(d => d.Pool.Owed);
 
-            model.DealerPerformance = BuildAdminDealerPerformance(accountDetails, revenueByDealer, commissionByDealer, commissionDueByDealer);
+            model.DealerPerformance = BuildAdminDealerPerformance(accountDetails, revenueByDealer, commissionByDealer, commissionDueByDealer, window);
             model.AgentPerformance = BuildAdminAgentPerformance(accountDetails);
             model.Collections = BuildCollections(accountDetails);
             (model.CommissionSummary, model.CommissionAccounts) = BuildCommissions(commissionAccounts, accountDetails);
-
-            // Commissions Paid card: agent payouts this month join the
-            // per-dealer dealer payouts summed in the view.
-            var monthStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
             model.AgentCommissionPaidThisMonth = await _repository.GetDealerAgentCommissionPaidForPeriodAsync(
-                null, monthStart, monthStart.AddMonths(1));
-
-            // Cost of Devices This Month: Contract_Info.BuyingPrice
-            // (manually entered per-contract device cost -- see
-            // DashboardAccountDetailRow's doc comment; NOT synced from
-            // WooCommerce) summed for accounts that started this calendar
-            // month, same period definition as NewThisMonth/RevenueThisMonth
-            // above. Was a flat mock constant (38,000); accounts with no
-            // BuyingPrice recorded contribute 0, same population
-            // DealerCommissionMissingCostCount already tracks.
-            var thisMonth = DateTime.Now;
-            model.CostOfDevicesThisMonth = accountDetails
-                .Where(r => r.StartDate.Year == thisMonth.Year && r.StartDate.Month == thisMonth.Month)
-                .Sum(r => r.BuyingPrice ?? 0);
-
-            // Growth chart: the last 8 months, live. Revenue uses the
-            // Financials definition (every device payment); accounts is how
-            // many accounts had started by the end of each month.
-            const int trendMonths = 8;
-            var trendStart = new DateTime(thisMonth.Year, thisMonth.Month, 1).AddMonths(-(trendMonths - 1));
-            var revenueByMonth = (await _repository.GetRevenueByMonthAsync(trendMonths))
-                .ToDictionary(r => (r.Year, r.Month), r => r.Total);
-            model.GrowthMonths = new List<string>();
-            model.RevenueByMonth = new List<decimal>();
-            model.AccountsByMonth = new List<int>();
-            for (var i = 0; i < trendMonths; i++)
-            {
-                var month = trendStart.AddMonths(i);
-                model.GrowthMonths.Add(month.ToString("MMM"));
-                model.RevenueByMonth.Add(revenueByMonth.TryGetValue((month.Year, month.Month), out var rev) ? rev : 0);
-                model.AccountsByMonth.Add(accountDetails.Count(r => r.StartDate < month.AddMonths(1)));
-            }
+                null, window.From, window.ToExclusive);
 
             // Customer Performance: one customer per account (the app has no
             // customer identity shared across accounts), so repeat-customer
             // and churn rates have no source yet and stay null (hidden).
             model.TotalCustomers = accountDetails.Select(r => r.AccountId).Distinct().Count();
-            model.NewCustomersThisMonth = model.NewThisMonth;
+            model.NewCustomersThisMonth = model.NewInPeriod;
             model.AvgCustomerLifetimeValue = model.TotalCustomers > 0
                 ? Math.Round(accountDetails.Sum(r => r.TotalPaid) / model.TotalCustomers, 0)
                 : 0;
@@ -241,35 +178,83 @@ namespace Ranalo.Services
                 .Select((p, i) => { p.Rank = i + 1; return p; })
                 .ToList();
 
-            var completedContracts = await _repository.GetCompletedContractsAsync(scope, DealerScopeTakeAll);
-
-            // Completed Contracts card: paid off this month vs last month,
-            // value and average duration. The completion rate has no agreed
-            // definition yet and stays null (hidden).
-            var paidOff = completedContracts.Where(c => c.Status == DashboardCompletedContractStatus.Completed && c.CompletedDate.HasValue).ToList();
-            var paidOffThisMonth = paidOff.Where(c => c.CompletedDate >= monthStart && c.CompletedDate < monthStart.AddMonths(1)).ToList();
-            var paidOffLastMonth = paidOff.Count(c => c.CompletedDate >= monthStart.AddMonths(-1) && c.CompletedDate < monthStart);
-            model.CompletedContractsThisMonth = paidOffThisMonth.Count;
-            model.CompletedContractsChangePct = ScheduledDashboardRollup.CalculateGrowthPct(paidOffThisMonth.Count, paidOffLastMonth);
-            model.TotalValueCompletedThisMonth = paidOffThisMonth.Sum(c => c.TotalPaid);
-            model.AvgTimeToCompletionMonths = paidOff.Count > 0 ? Math.Round((decimal)paidOff.Average(c => c.DurationMonths), 1) : 0;
-
-            if (completedContracts.Count > 0)
+            // Completed Contracts: live -- paid in full, dated by the last
+            // payment (the one that finished it), most recent first.
+            var paidOff = accountDetails
+                .Where(r => IsPaidOff(r) && r.LastPaymentDate.HasValue)
+                .OrderByDescending(r => r.LastPaymentDate)
+                .ToList();
+            int Months(DashboardAccountDetailRow r) => Math.Max(1, (int)Math.Round((r.LastPaymentDate!.Value - r.StartDate).TotalDays / 30.0));
+            var paidOffInPeriod = paidOff.Where(r => r.LastPaymentDate >= window.From && r.LastPaymentDate < window.ToExclusive).ToList();
+            var paidOffPrior = paidOff.Count(r => r.LastPaymentDate >= window.PriorFrom && r.LastPaymentDate < window.PriorToExclusive);
+            model.CompletedContractsThisMonth = paidOffInPeriod.Count;
+            model.CompletedContractsChangePct = ScheduledDashboardRollup.CalculateGrowthPct(paidOffInPeriod.Count, paidOffPrior);
+            model.TotalValueCompletedThisMonth = paidOffInPeriod.Sum(r => r.TotalPaid);
+            model.AvgTimeToCompletionMonths = paidOff.Count > 0 ? Math.Round((decimal)paidOff.Average(Months), 1) : 0;
+            model.CompletedContracts = paidOff.Take(50).Select(r => new AdminCompletedContract
             {
-                model.CompletedContracts = completedContracts.Take(20).Select(c => new AdminCompletedContract
-                {
-                    CustomerName = c.CustomerName,
-                    DealerName = c.DealerName ?? "",
-                    ProductName = c.ProductName,
-                    CompletedDate = CompletedDateLabel(c.CompletedDate),
-                    TotalPaid = c.TotalPaid,
-                    DurationMonths = c.DurationMonths,
-                    Status = c.Status,
-                    PctComplete = c.PctComplete,
-                }).ToList();
-            }
+                CustomerName = r.CustomerName,
+                DealerName = r.DealerName ?? "",
+                ProductName = r.DeviceName,
+                CompletedDate = CompletedDateLabel(r.LastPaymentDate),
+                TotalPaid = r.TotalPaid,
+                DurationMonths = Months(r),
+                Status = DashboardCompletedContractStatus.Completed,
+            }).ToList();
 
             return model;
+        }
+
+        // One period's profit with the Financials rules: revenue = every
+        // device payment, device cost at contract start, commissions as paid
+        // out (CommissionPayouts), logged operating expenses.
+        private async Task<AdminProfit> GetProfitAsync(DateTime from, DateTime toExclusive, List<DashboardDeviceCostRow> deviceCosts) => new()
+        {
+            Revenue = await _repository.GetRevenueForPeriodAsync(from, toExclusive),
+            Commissions = await _repository.GetCommissionsPaidForPeriodAsync(from, toExclusive),
+            OperatingExpenses = await _operatingExpenseRepository.GetTotalAsync(from, toExclusive),
+            CostOfDevices = deviceCosts.Where(r => r.StartDate >= from && r.StartDate < toExclusive).Sum(r => r.BuyingPrice),
+        };
+
+        // Revenue, direct costs and expenses per calendar month, ending at
+        // trendEnd's month -- the Financials chart and the Admin Dashboard's.
+        private async Task<List<FinancialsMonthRow>> BuildMonthlyTrendAsync(int months, DateTime trendEnd, List<DashboardDeviceCostRow> deviceCosts)
+        {
+            var revenueByMonth = (await _repository.GetRevenueByMonthAsync(months, trendEnd))
+                .ToDictionary(r => (r.Year, r.Month), r => r.Total);
+            var commissionsByMonth = (await _repository.GetCommissionsPaidByMonthAsync(months, trendEnd))
+                .ToDictionary(r => (r.Year, r.Month), r => r.Total);
+            var opexByMonth = (await _operatingExpenseRepository.GetMonthlyTotalsAsync(months, trendEnd))
+                .ToDictionary(r => (r.Year, r.Month), r => r.Total);
+
+            var trendStart = trendEnd.AddMonths(-(months - 1));
+            var rows = new List<FinancialsMonthRow>();
+            for (var i = 0; i < months; i++)
+            {
+                var monthStart = trendStart.AddMonths(i);
+                var monthEnd = monthStart.AddMonths(1);
+                var key = (monthStart.Year, monthStart.Month);
+
+                var revenue = revenueByMonth.TryGetValue(key, out var rev) ? rev : 0;
+                var commissions = commissionsByMonth.TryGetValue(key, out var comm) ? comm : 0;
+                var costOfDevices = deviceCosts
+                    .Where(r => r.StartDate >= monthStart && r.StartDate < monthEnd)
+                    .Sum(r => r.BuyingPrice);
+                var opex = opexByMonth.TryGetValue(key, out var opexTotal) ? opexTotal : 0;
+
+                rows.Add(new FinancialsMonthRow
+                {
+                    MonthLabel = monthStart.ToString("MMM yyyy"),
+                    Revenue = revenue,
+                    CostOfDevices = costOfDevices,
+                    CommissionsPaid = commissions,
+                    OperatingExpenses = opex,
+                    NetBeforeTax = revenue - costOfDevices - commissions - opex,
+                    HasOperatingExpenses = opex > 0,
+                });
+            }
+
+            return rows;
         }
 
         // Financials page -- moved off the Admin Dashboard so the P&L could
@@ -322,43 +307,10 @@ namespace Ranalo.Services
             model.AsOfDate = asOfExclusive.AddDays(-1);
 
             // Monthly comparison chart: the months of the period, ending at
-            // its end date. Cost of Devices is
-            // filtered in-memory from the already-fetched deviceCosts. Bad Debt and Tax are deliberately not
-            // part of this trend -- see FinancialsMonthRow's doc comment.
+            // its end date. Bad Debt and Tax are deliberately not part of
+            // this trend -- see FinancialsMonthRow's doc comment.
             var trendEnd = new DateTime(model.AsOfDate.Year, model.AsOfDate.Month, 1);
-            var trendMonths = FinancialsTrendMonths(fromDate, trendEnd);
-            var revenueByMonth = (await _repository.GetRevenueByMonthAsync(trendMonths, trendEnd))
-                .ToDictionary(r => (r.Year, r.Month), r => r.Total);
-            var commissionsByMonth = (await _repository.GetCommissionsPaidByMonthAsync(trendMonths, trendEnd))
-                .ToDictionary(r => (r.Year, r.Month), r => r.Total);
-            var opexByMonth = await _operatingExpenseRepository.GetMonthlyTotalsAsync(trendMonths, trendEnd);
-            var opexByMonthMap = opexByMonth.ToDictionary(r => (r.Year, r.Month), r => r.Total);
-
-            var trendStart = trendEnd.AddMonths(-(trendMonths - 1));
-            for (var i = 0; i < trendMonths; i++)
-            {
-                var monthStart = trendStart.AddMonths(i);
-                var monthEnd = monthStart.AddMonths(1);
-                var key = (monthStart.Year, monthStart.Month);
-
-                var revenue = revenueByMonth.TryGetValue(key, out var rev) ? rev : 0;
-                var commissions = commissionsByMonth.TryGetValue(key, out var comm) ? comm : 0;
-                var costOfDevices = deviceCosts
-                    .Where(r => r.StartDate >= monthStart && r.StartDate < monthEnd)
-                    .Sum(r => r.BuyingPrice);
-                var opex = opexByMonthMap.TryGetValue(key, out var opexTotal) ? opexTotal : 0;
-
-                model.MonthlyTrend.Add(new FinancialsMonthRow
-                {
-                    MonthLabel = monthStart.ToString("MMM yyyy"),
-                    Revenue = revenue,
-                    CostOfDevices = costOfDevices,
-                    CommissionsPaid = commissions,
-                    OperatingExpenses = opex,
-                    NetBeforeTax = revenue - costOfDevices - commissions - opex,
-                    HasOperatingExpenses = opex > 0,
-                });
-            }
+            model.MonthlyTrend = await BuildMonthlyTrendAsync(FinancialsTrendMonths(fromDate, trendEnd), trendEnd, deviceCosts);
 
             // Balance sheet (best-effort -- see FinancialsViewModel's doc
             // comment on why this app has no Cash/Inventory figures to show).
@@ -1094,6 +1046,10 @@ namespace Ranalo.Services
         private static bool IsRestructured(DashboardAccountDetailRow r) =>
             r.IsManuallyRestructured || (r.ArrearsAmount < 0 && LockDays(r) <= 0);
 
+        // Paid the whole contract -- no longer an active account.
+        private static bool IsPaidOff(DashboardAccountDetailRow r) =>
+            r.FullContractValue > 0 && r.TotalPaid >= r.FullContractValue;
+
         private static bool PaidRecently(DashboardAccountDetailRow r) =>
             r.LastPaymentDate.HasValue && r.LastPaymentDate.Value >= DateTime.Now.AddDays(-RecentPaymentDays);
 
@@ -1215,7 +1171,8 @@ namespace Ranalo.Services
             List<DashboardAccountDetailRow> rows,
             Dictionary<string, decimal> revenueByDealer,
             Dictionary<string, decimal> commissionByDealer,
-            Dictionary<string, decimal> commissionDueByDealer) => rows
+            Dictionary<string, decimal> commissionDueByDealer,
+            AdminDashboardRules.PeriodWindow window) => rows
             .Where(r => !string.IsNullOrWhiteSpace(r.DealerName))
             .GroupBy(r => r.DealerName!)
             .Select(g =>
@@ -1225,8 +1182,20 @@ namespace Ranalo.Services
                 var arrears = g.Count(r => LockDays(r) > 7);
                 var activeDenominator = good + arrears;
                 var commissionPaid = commissionByDealer.TryGetValue(g.Key, out var cp) ? cp : 0;
+                // Behind: active, not restructured, over a week past lock.
+                var behind = g.Where(r => !IsPaidOff(r) && !IsRestructured(r) && LockDays(r) > 7).ToList();
+                var activeCount = g.Count(r => !IsPaidOff(r));
                 return new AdminDealerPerformance
                 {
+                    OpenCount = activeCount,
+                    CompletedCount = total - activeCount,
+                    BehindCount = behind.Count,
+                    BehindPct = activeCount > 0 ? Math.Round(100m * behind.Count / activeCount, 1) : 0,
+                    BehindAmount = behind.Sum(r => Math.Max(0, -r.ArrearsAmount)),
+                    BadCount = behind.Count(r => LockDays(r) > 90),
+                    BadPct = activeCount > 0 ? Math.Round(100m * behind.Count(r => LockDays(r) > 90) / activeCount, 1) : 0,
+                    RestructuredCount = g.Count(r => !IsPaidOff(r) && IsRestructured(r)),
+                    NewInPeriod = g.Count(r => r.StartDate >= window.From && r.StartDate < window.ToExclusive),
                     DealerName = g.Key,
                     Accounts = total,
                     ActivePct = activeDenominator > 0 ? Math.Round(100m * good / activeDenominator, 1) : 0,

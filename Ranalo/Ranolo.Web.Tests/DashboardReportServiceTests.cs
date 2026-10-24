@@ -124,7 +124,8 @@ namespace Ranolo.Web.Tests
         public Task<decimal> GetRevenueForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive) =>
             Task.FromResult(RevenueForPeriod?.Invoke(fromDate, toDateExclusive) ?? RevenueByDealerToReturn.Sum(r => r.RevenueThisMonth));
         public Task<decimal> GetCommissionsPaidForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive) => Task.FromResult(CommissionByDealerToReturn.Sum(c => c.CommissionPaidThisMonth));
-        public Task<List<DashboardDeviceCostRow>> GetDeviceCostsAsync() => Task.FromResult(new List<DashboardDeviceCostRow>());
+        public List<DashboardDeviceCostRow> DeviceCostsToReturn { get; set; } = new();
+        public Task<List<DashboardDeviceCostRow>> GetDeviceCostsAsync() => Task.FromResult(DeviceCostsToReturn);
         public Task<(decimal DealerOutstanding, decimal AgentOutstanding)> GetTotalCommissionsOutstandingAsync() => Task.FromResult(CommissionsOutstandingToReturn);
 
         public Task UpsertSnapshotKpiAsync(DashboardScope scope, decimal? revenueThisMonth, decimal? revenueGrowthPct, int? newThisMonth, int? totalAccounts)
@@ -431,9 +432,10 @@ namespace Ranolo.Web.Tests
 
             var result = await service.GetAdminDashboardAsync();
 
-            // Revenue is live (Financials definition), not the snapshot figure.
+            // Everything is live: the stale nightly snapshot is not used at all.
             Assert.That(result.RevenueThisMonth, Is.EqualTo(0m));
-            Assert.That(result.NonPayingAccountsChange, Is.EqualTo(-25));
+            Assert.That(result.TotalAccounts, Is.EqualTo(0));
+            Assert.That(result.NonPayingAccountsChange, Is.Null);
         }
 
         [Test]
@@ -447,10 +449,14 @@ namespace Ranolo.Web.Tests
             // period-filter dropdown's "Month" AJAX option already computes,
             // so the initial page load and a manual "Month" selection always
             // show the same number.
+            // TotalAccounts is the active (not paid off) accounts.
             var fakeRepo = new FakeDashboardReportRepository
             {
                 SnapshotToReturn = new DashboardSnapshotRow { TotalAccounts = 5000 },
-                LockClassificationToReturn = new DashboardLockClassificationRow { GoodCount = 3, SlowCount = 1, ArrearsCount = 2 },
+                AccountDetailsToReturn = Enumerable.Range(1, 6)
+                    .Select(i => new DashboardAccountDetailRow { AccountId = i, FullContractValue = 10_000m, TotalPaid = 1_000m })
+                    .Append(new DashboardAccountDetailRow { AccountId = 7, FullContractValue = 10_000m, TotalPaid = 10_000m })
+                    .ToList(),
                 RevenuePeriodToReturn = new DashboardRevenuePeriodRow
                 {
                     NewAccountsInPeriod = 4,
@@ -541,6 +547,7 @@ namespace Ranolo.Web.Tests
 
             Assert.That(result.DealerPerformance, Has.Count.EqualTo(1));
             Assert.That(result.DealerPerformance[0].DealerName, Is.EqualTo("Test Dealer"));
+            Assert.That(result.DealerPerformance[0].OpenCount + result.DealerPerformance[0].CompletedCount, Is.EqualTo(result.DealerPerformance[0].Accounts));
             Assert.That(result.DealerPerformance[0].Revenue, Is.EqualTo(50000m));
             Assert.That(result.DealerPerformance[0].CommissionPaid, Is.EqualTo(1000m));
             // Due is the dealer's live payable (CommissionPayees), not a copy of Paid; no commission accounts here.
@@ -555,12 +562,16 @@ namespace Ranolo.Web.Tests
         public async Task GetAdminDashboardAsync_WithAccountDetailRows_ComputesCostOfDevicesThisMonthFromBuyingPrice()
         {
             var now = DateTime.Now;
+            // Every device's cost (dealer-mapped or not), by contract start.
             var fakeRepo = new FakeDashboardReportRepository
             {
+                DeviceCostsToReturn = new()
+                {
+                    new() { StartDate = now, BuyingPrice = 15000m },
+                    new() { StartDate = now.AddMonths(-1).AddDays(-now.Day), BuyingPrice = 20000m },
+                },
                 AccountDetailsToReturn = new()
                 {
-                    new() { AccountId = 1, CustomerName = "This Month", DealerName = "Test Dealer", StartDate = now, BuyingPrice = 15000m },
-                    new() { AccountId = 2, CustomerName = "Last Month", DealerName = "Test Dealer", StartDate = now.AddMonths(-1), BuyingPrice = 20000m },
                     new() { AccountId = 3, CustomerName = "No Cost Recorded", DealerName = "Test Dealer", StartDate = now, BuyingPrice = null },
                 },
             };
@@ -569,6 +580,42 @@ namespace Ranolo.Web.Tests
             var result = await service.GetAdminDashboardAsync();
 
             Assert.That(result.CostOfDevicesThisMonth, Is.EqualTo(15000m));
+            Assert.That(result.Profit.CostOfDevices, Is.EqualTo(15000m));
+            Assert.That(result.MissingDeviceCostCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task GetAdminDashboardAsync_SplitsRestructuredOutOfArrears()
+        {
+            var now = DateTime.Now;
+            string Lock(int daysAgo) => now.AddDays(-daysAgo).ToString("yyyy-MM-dd HH:mm:ss");
+            var fakeRepo = new FakeDashboardReportRepository
+            {
+                AccountDetailsToReturn = new()
+                {
+                    // 20 days late, 2,000 behind -- arrears.
+                    new() { AccountId = 1, NextLockDateRaw = Lock(20), ArrearsAmount = -2_000m, FullContractValue = 20_000m, TotalPaid = 5_000m },
+                    // 120 days late -- arrears and bad.
+                    new() { AccountId = 2, NextLockDateRaw = Lock(120), ArrearsAmount = -6_000m, FullContractValue = 20_000m, TotalPaid = 1_000m },
+                    // Manually restructured and late -- restructured only, paid last week.
+                    new() { AccountId = 3, NextLockDateRaw = Lock(40), ArrearsAmount = -3_000m, FullContractValue = 20_000m, TotalPaid = 8_000m, IsManuallyRestructured = true, LastPaymentDate = now.AddDays(-7) },
+                    // Paid off -- not active.
+                    new() { AccountId = 4, NextLockDateRaw = Lock(200), ArrearsAmount = 0m, FullContractValue = 20_000m, TotalPaid = 20_000m },
+                },
+            };
+            var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
+
+            var result = await service.GetAdminDashboardAsync();
+
+            Assert.That(result.ActiveAccounts, Is.EqualTo(3));
+            Assert.That(result.ArrearsTrueCount, Is.EqualTo(2));
+            Assert.That(result.ArrearsTotal, Is.EqualTo(8_000m));
+            Assert.That(result.BadDebtCount, Is.EqualTo(1));
+            Assert.That(result.RestructuredCount, Is.EqualTo(1));
+            Assert.That(result.RestructuredBehind, Is.EqualTo(3_000m));
+            Assert.That(result.RestructuredBalance, Is.EqualTo(12_000m));
+            Assert.That(result.RestructuredPayingCount, Is.EqualTo(1));
+            Assert.That(result.CompletedContracts, Is.Empty, "paid off with no last payment date is not listed");
         }
 
         [Test]
@@ -602,13 +649,15 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
-        public async Task GetAdminDashboardAsync_WithCompletedContractRows_OverlaysThemWithDealerName()
+        public async Task GetAdminDashboardAsync_PaidOffAccounts_ListedLiveAsCompleted()
         {
             var fakeRepo = new FakeDashboardReportRepository
             {
-                CompletedContractsToReturn = new()
+                AccountDetailsToReturn = new()
                 {
-                    new() { CustomerName = "Test Customer", DealerName = "Test Dealer", ProductName = "Test Phone", CompletedDate = new DateTime(2026, 8, 28), TotalPaid = 19000, DurationMonths = 8 },
+                    new() { AccountId = 1, CustomerName = "Test Customer", DealerName = "Test Dealer", DeviceName = "Test Phone", FullContractValue = 19000, TotalPaid = 19000,
+                            StartDate = new DateTime(2026, 1, 1), LastPaymentDate = new DateTime(2026, 8, 28) },
+                    new() { AccountId = 2, CustomerName = "Still Paying", FullContractValue = 19000, TotalPaid = 9000, LastPaymentDate = new DateTime(2026, 8, 28) },
                 },
             };
             var service = new Ranalo.Services.DashboardReportService(fakeRepo, new FakeOperatingExpenseRepository());
@@ -618,6 +667,7 @@ namespace Ranolo.Web.Tests
             Assert.That(result.CompletedContracts, Has.Count.EqualTo(1));
             Assert.That(result.CompletedContracts[0].DealerName, Is.EqualTo("Test Dealer"));
             Assert.That(result.CompletedContracts[0].CompletedDate, Is.EqualTo("Aug 28"));
+            Assert.That(result.CompletedContracts[0].DurationMonths, Is.EqualTo(8));
         }
 
         [Test]
