@@ -444,10 +444,10 @@ namespace Ranalo.Services
                 // "At risk" = 90+ days old but the bonus is held (past lock
                 // date or no WooCommerce order); "upcoming" = 60-89 days in.
                 var breakdowns = commissionAccounts.Select(a => a.Commission).ToList();
-                model.CommissionPaidLifetime = breakdowns.Sum(b => b.AgentPaid);
+                model.CommissionPaidLifetime = breakdowns.Sum(b => b.AgentPaid + b.AgentPaidBeforeRules);
                 model.BonusEarnedAccountCount = breakdowns.Count(b => b.BonusEarned);
                 model.BonusAtRiskAccountCount = breakdowns.Count(b => b.BonusAtRisk);
-                var upcoming = commissionAccounts.Where(a =>
+                var upcoming = commissionAccounts.Where(a => !a.Commission.NoCommission &&
                     a.DaysSinceStart >= CommissionCalculator.BonusDays - 30 && a.DaysSinceStart < CommissionCalculator.BonusDays).ToList();
                 model.BonusUpcomingAccountCount = upcoming.Count;
                 model.BonusUpcomingValue = upcoming.Sum(a => a.Deposit * CommissionCalculator.AgentBonusRate);
@@ -923,6 +923,7 @@ namespace Ranalo.Services
                     ContractValue = a.TotalCost,
                     DaysPastLock = (int)Math.Max(0, Math.Floor(a.DaysPastLock)),
                     AgentBonusPaid = a.AgentBonusPaid,
+                    Exclusion = a.Exclusion,
                 })
                 .OrderBy(r => r.AgentName == null)
                 .ThenBy(r => r.AgentName)
@@ -948,7 +949,9 @@ namespace Ranalo.Services
                 Rows = rows,
                 Agent = SumPools(agentPools),
                 Dealer = SumPools(dealerPools),
-                MissingBuyingPriceCount = accounts.Count(a => !a.BuyingPrice.HasValue),
+                MissingBuyingPriceCount = accounts.Count(a => !a.BuyingPrice.HasValue && !a.Commission.NoCommission),
+                NoCommissionCount = accounts.Count(a => a.Commission.NoCommission),
+                RecoveringCount = accounts.Count(a => a.Commission.RecoverArrears),
             };
         }
 
@@ -973,7 +976,9 @@ namespace Ranalo.Services
                 .GroupBy(a => a.AccountId)
                 .ToDictionary(g => g.Key, g => g.First());
 
-            var agentAccounts = commissionAccounts.Where(a => a.AgentId.HasValue).ToList();
+            var agentAccounts = commissionAccounts
+                .Where(a => a.AgentId.HasValue && CommissionPayees.CountsFor(CommissionPayeeType.Agent, a))
+                .ToList();
             var perAgent = CommissionPayees.Agents(agentAccounts);
 
             var summary = new DashboardCommissionSummary
@@ -1058,7 +1063,7 @@ namespace Ranalo.Services
                 var dealer = CommissionPayees.Summarize(CommissionPayeeType.Dealer, dealerId, accounts);
                 model.CommissionReceived = dealer.Pool.Earned;
                 model.DealerCommissionOutstanding = dealer.Payable;
-                model.DealerCommissionAccountCount = accounts.Count(a => a.BuyingPrice.HasValue);
+                model.DealerCommissionAccountCount = accounts.Count(a => a.BuyingPrice.HasValue && !a.Commission.NoCommission);
                 model.DealerCommissionMissingCostCount = dealer.MissingBuyingPriceCount;
                 model.DealerCommissionWithheldForArrears = dealer.Pool.Withheld;
                 model.DealerCommissionSuspended = dealer.IsSuspended;

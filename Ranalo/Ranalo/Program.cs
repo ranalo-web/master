@@ -139,6 +139,7 @@ builder.Services.AddScoped<ILockCheckRepository, LockCheckRepository>();
 builder.Services.AddScoped<ICompletedContractRepository, CompletedContractRepository>();
 builder.Services.AddScoped<ICommissionPayoutService, CommissionPayoutService>();
 builder.Services.AddScoped<ICommissionPayoutRepository, CommissionPayoutRepository>();
+builder.Services.AddScoped<ICommissionExclusionRepository, CommissionExclusionRepository>();
 builder.Services.AddScoped<IDealerAllocationRepository, DealerAllocationRepository>();
 builder.Services.AddScoped<IAccountAssignmentRepository, AccountAssignmentRepository>();
 builder.Services.AddScoped<ICollectionsRepository, CollectionsRepository>();

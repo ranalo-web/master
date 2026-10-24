@@ -53,13 +53,14 @@ namespace Ranalo.Services
             if (type is null or CommissionPayeeType.Agent)
             {
                 groups.AddRange(accounts
-                    .Where(a => a.AgentId.HasValue)
+                    .Where(a => a.AgentId.HasValue && CommissionPayees.CountsFor(CommissionPayeeType.Agent, a))
                     .GroupBy(a => a.AgentId!.Value)
                     .Select(g => (CommissionPayeeType.Agent, g.Key, g.ToList())));
             }
             if (type is null or CommissionPayeeType.Dealer)
             {
                 groups.AddRange(accounts
+                    .Where(a => CommissionPayees.CountsFor(CommissionPayeeType.Dealer, a))
                     .GroupBy(a => a.DealerId)
                     .Select(g => (CommissionPayeeType.Dealer, g.Key, g.ToList())));
             }
@@ -451,10 +452,14 @@ namespace Ranalo.Services
         public Task<bool> ConfirmReceiptAsync(int payoutId, string payeeType, int payeeId, int confirmedByUserId) =>
             _payoutRepository.ConfirmReceiptAsync(payoutId, payeeType, payeeId, confirmedByUserId);
 
+        // No-commission (legacy) accounts are left off, apart from dealer
+        // accounts whose arrears are being recovered (they're deducted).
         private async Task<List<CommissionAccount>> GetPayeeAccountsAsync(string payeeType, int payeeId) =>
-            payeeType == CommissionPayeeType.Agent
-                ? (await _reportRepository.GetCommissionAccountsAsync(null, payeeId)).Where(a => a.AgentId == payeeId).ToList()
-                : await _reportRepository.GetCommissionAccountsAsync(payeeId);
+            (payeeType == CommissionPayeeType.Agent
+                ? (await _reportRepository.GetCommissionAccountsAsync(null, payeeId)).Where(a => a.AgentId == payeeId)
+                : await _reportRepository.GetCommissionAccountsAsync(payeeId))
+            .Where(a => CommissionPayees.CountsFor(payeeType, a))
+            .ToList();
 
         private static bool Contains(string? value, string term) =>
             value != null && value.Contains(term, StringComparison.OrdinalIgnoreCase);
