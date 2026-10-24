@@ -17,6 +17,18 @@ namespace Ranalo.Services
     public static class ScreeningRules
     {
         public const string ApprovedStatus = "approved";
+        public const string WaitingStatus = "approval-waiting";
+
+        // The approver's Waiting Approval list shows these two statuses only.
+        public static bool IsOnApprovalList(string? orderStatus) =>
+            string.Equals(orderStatus, WaitingStatus, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(orderStatus, ApprovedStatus, StringComparison.OrdinalIgnoreCase);
+
+        // Once the customer and a next of kin have both passed, the order is
+        // approved straight away -- the same as pressing Approve.
+        public static bool ShouldAutoApprove(string? orderStatus, ScreeningStatus status) =>
+            status == ScreeningStatus.Passed
+            && string.Equals(orderStatus, WaitingStatus, StringComparison.OrdinalIgnoreCase);
         public const int WelfareDueDay = 7;
         public const int WelfareOverdueDay = 30;
         public const int FirstMonthDays = 30;

@@ -69,6 +69,7 @@
                 <div class="nk-block-des text-soft">
                     <p>You have total @Model?.TotalRecords orders.</p>
                 </div>
+                <partial name="_FetchOrder" model="@("/orders")" />
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
                 <div class="toggle-wrap nk-block-tools-toggle">

@@ -138,6 +138,19 @@ namespace Ranalo.DataStore
             return count > 0;
         }
 
+        // The phone is chosen after screening, so the order usually has no
+        // IMEI: the enrolled one is saved to it. Never overwrites one.
+        public async Task<int> SetOrderImeiIfBlankAsync(long orderId, string imei)
+        {
+            const string query = @"
+                UPDATE [dbo].[Woo_Orders]
+                SET [IMEI] = @Imei,
+                    [DateModified] = GETDATE()
+                WHERE OrderID = @OrderID AND NULLIF(LTRIM(RTRIM([IMEI])), '') IS NULL";
+
+            return await _db.ExecuteAsync(query, new { Imei = imei.Trim(), OrderID = orderId });
+        }
+
         public async Task<int> UpdateMpesaForOrder(long orderId, string newMpesa)
         {
             try

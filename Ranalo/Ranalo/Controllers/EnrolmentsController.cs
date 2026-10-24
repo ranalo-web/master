@@ -330,10 +330,14 @@ namespace Ranalo.Controllers
                 response.Errors.Add("The National Id Number does not match the one on this order");
             }
 
-            if (order?.IMEI != enrolment.IMEI)
+            // No IMEI on the order is normal (screened before choosing a
+            // phone); it's saved to the order once the enrolment goes through.
+            var imeiError = order == null ? null : DeviceLockRules.CheckOrderImei(order.IMEI, enrolment.IMEI);
+            if (imeiError != null)
             {
-                response.Errors.Add("There IMEI Number does not match the one on this order");
+                response.Errors.Add(imeiError);
             }
+            var saveImeiToOrder = order != null && !DeviceLockRules.OrderHasImei(order.IMEI);
 
             // The order came without the deposit's M-Pesa code: the dealer
             // gives it here, the deposit check below confirms it, and it's
@@ -485,6 +489,10 @@ namespace Ranalo.Controllers
                     }
 
                     await SaveDepositCodeAsync(enrolment.OrderId, newDepositCode);
+                    if (saveImeiToOrder)
+                    {
+                        await SaveOrderImeiAsync(enrolment.OrderId, stock.IMEI);
+                    }
 
                     var auto = await TryAutoApproveAsync(stock);
                     TempData["EnrolmentMessage"] = $"Stock phone {stock.IMEI} sold on order {stock.OrderId}. "
@@ -531,6 +539,11 @@ namespace Ranalo.Controllers
 
                 response.Errors.Add("There was an sending device to Nouvapay or Knox. Please contact the system administrator.");
                 return await EnrolmentFormAsync(response, enrolment);
+            }
+
+            if (saveImeiToOrder && enrolment.Status != EnrolmentStatus.Error)
+            {
+                await SaveOrderImeiAsync(enrolment.OrderId, enrolment.IMEI);
             }
 
             // Screened order, deposit in full: no approver needed. Knox waits
@@ -582,6 +595,20 @@ namespace Ranalo.Controllers
             {
                 await _devices.UpdateMpesaForOrder(orderId, code);
                 TempData["EnrolmentError"] = $"The deposit code {code} was saved on order {orderId} here, but WooCommerce couldn't be updated. An admin should add it to the order in WooCommerce.";
+            }
+        }
+
+        // Best effort: the enrolment has gone through either way, and the
+        // phone's IMEI is on the enrolment and device records.
+        private async Task SaveOrderImeiAsync(long orderId, string imei)
+        {
+            try
+            {
+                await _devices.SetOrderImeiIfBlankAsync(orderId, imei);
+            }
+            catch (Exception)
+            {
+                TempData["EnrolmentError"] = $"Enrolled, but IMEI {imei} couldn't be saved on order {orderId}.";
             }
         }
 

@@ -16,6 +16,7 @@ namespace Ranalo.DataStore
 
         Task<bool> OrderNumberIsValidAsync(long orderId);
         Task<int> UpdateMpesaForOrder(long orderId, string newMpesa);
+        Task<int> SetOrderImeiIfBlankAsync(long orderId, string imei);
         Task<Device?> GetDeviceByAccountId(long accountId);
         Task<DevicesWithDealerViewModel> GetAllDevicesAsync(int? dealerId, int page, int pageSize, string searchTerm);
 
