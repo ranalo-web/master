@@ -105,7 +105,7 @@ namespace Ranalo.Services
 
         public static string SafeFileName(string fileName)
         {
-            var name = Path.GetFileName(fileName ?? "");
+            var name = (fileName ?? "").Split('\\', '/')[^1];
             var clean = new string(name.Where(c => !char.IsControl(c) && c is not ('"' or '\\' or '/')).ToArray()).Trim();
             if (clean.Length == 0) clean = "evidence";
             return clean.Length > 200 ? clean[^200..] : clean;
