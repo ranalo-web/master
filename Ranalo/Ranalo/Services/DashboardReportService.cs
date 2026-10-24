@@ -283,7 +283,7 @@ namespace Ranalo.Services
         // The Income Statement covers [fromDate, toDateExclusive) -- null
         // bounds mean unbounded (All Time). The *ThisMonth properties keep
         // their names but hold totals for the requested period; the monthly
-        // trend and balance sheet below are unaffected by the period.
+        // trend and balance sheet stand at the period's end (AsOfDate).
         public async Task<FinancialsViewModel> GetFinancialsAsync(DateTime? fromDate, DateTime? toDateExclusive)
         {
             var model = new FinancialsViewModel();
@@ -294,9 +294,12 @@ namespace Ranalo.Services
             model.RevenueThisMonth = await _repository.GetRevenueForPeriodAsync(fromDate, toDateExclusive);
             model.CommissionsPaidThisMonth = await _repository.GetCommissionsPaidForPeriodAsync(fromDate, toDateExclusive);
 
-            model.CostOfDevicesThisMonth = accountDetails
+            // Every device's cost, dealer-mapped or not -- the same devices
+            // revenue counts (accountDetails needs a dealer).
+            var deviceCosts = await _repository.GetDeviceCostsAsync();
+            model.CostOfDevicesThisMonth = deviceCosts
                 .Where(r => (fromDate == null || r.StartDate >= fromDate) && (toDateExclusive == null || r.StartDate < toDateExclusive))
-                .Sum(r => r.BuyingPrice ?? 0);
+                .Sum(r => r.BuyingPrice);
 
             // Point-in-time classification -- there's no historical recompute,
             // so this is the current bad-debt figure whatever the period.
@@ -305,28 +308,33 @@ namespace Ranalo.Services
 
             model.OperatingExpensesThisMonth = await _operatingExpenseRepository.GetTotalAsync(fromDate, toDateExclusive);
 
-            var thisMonthStart = new DateTime(now.Year, now.Month, 1);
-
             // Kenya's standard resident corporate income tax rate (KRA) --
             // confirmed current as of 2026, not a placeholder. No dividends
             // have been paid to date (confirmed by the business).
             model.TaxRatePct = 30m;
             model.DividendsPaidThisMonth = 0m;
 
-            // Monthly comparison chart (last 12 months). Cost of Devices is
-            // filtered in-memory from the already-fetched accountDetails
-            // (same pattern BuildDealerPerformance etc. already use) rather
-            // than a second query. Bad Debt and Tax are deliberately not
+            // The balance sheet and chart stand at the period's end date (or
+            // today, for All Time or a period still running).
+            var asOfExclusive = toDateExclusive.HasValue && toDateExclusive.Value < now.Date.AddDays(1)
+                ? toDateExclusive.Value
+                : now.Date.AddDays(1);
+            model.AsOfDate = asOfExclusive.AddDays(-1);
+
+            // Monthly comparison chart: the months of the period, ending at
+            // its end date. Cost of Devices is
+            // filtered in-memory from the already-fetched deviceCosts. Bad Debt and Tax are deliberately not
             // part of this trend -- see FinancialsMonthRow's doc comment.
-            const int trendMonths = 12;
-            var revenueByMonth = (await _repository.GetRevenueByMonthAsync(trendMonths))
+            var trendEnd = new DateTime(model.AsOfDate.Year, model.AsOfDate.Month, 1);
+            var trendMonths = FinancialsTrendMonths(fromDate, trendEnd);
+            var revenueByMonth = (await _repository.GetRevenueByMonthAsync(trendMonths, trendEnd))
                 .ToDictionary(r => (r.Year, r.Month), r => r.Total);
-            var commissionsByMonth = (await _repository.GetCommissionsPaidByMonthAsync(trendMonths))
+            var commissionsByMonth = (await _repository.GetCommissionsPaidByMonthAsync(trendMonths, trendEnd))
                 .ToDictionary(r => (r.Year, r.Month), r => r.Total);
-            var opexByMonth = await _operatingExpenseRepository.GetMonthlyTotalsAsync(trendMonths);
+            var opexByMonth = await _operatingExpenseRepository.GetMonthlyTotalsAsync(trendMonths, trendEnd);
             var opexByMonthMap = opexByMonth.ToDictionary(r => (r.Year, r.Month), r => r.Total);
 
-            var trendStart = thisMonthStart.AddMonths(-(trendMonths - 1));
+            var trendStart = trendEnd.AddMonths(-(trendMonths - 1));
             for (var i = 0; i < trendMonths; i++)
             {
                 var monthStart = trendStart.AddMonths(i);
@@ -335,9 +343,9 @@ namespace Ranalo.Services
 
                 var revenue = revenueByMonth.TryGetValue(key, out var rev) ? rev : 0;
                 var commissions = commissionsByMonth.TryGetValue(key, out var comm) ? comm : 0;
-                var costOfDevices = accountDetails
+                var costOfDevices = deviceCosts
                     .Where(r => r.StartDate >= monthStart && r.StartDate < monthEnd)
-                    .Sum(r => r.BuyingPrice ?? 0);
+                    .Sum(r => r.BuyingPrice);
                 var opex = opexByMonthMap.TryGetValue(key, out var opexTotal) ? opexTotal : 0;
 
                 model.MonthlyTrend.Add(new FinancialsMonthRow
@@ -365,19 +373,14 @@ namespace Ranalo.Services
             model.CommissionsPayableToAgents = CommissionPayees.Agents(commissionAccounts).Sum(a => a.Pool.Owed);
 
             // Retained Earnings: an approximation, not a precise accounting
-            // figure -- there's no real all-time ledger. All-time Revenue/
-            // Commissions come from a simple unfiltered SUM; all-time Cost
-            // of Devices sums BuyingPrice across every fetched account
-            // regardless of StartDate; Bad Debt uses the current (point-in-
-            // time) classification as the best available proxy for
-            // cumulative write-offs, since there's no historical recompute
-            // for it; Operating Expenses sums the trailing `trendMonths`
-            // months, which in practice is the table's entire history since
-            // it was only just created.
-            var allTimeRevenue = await _repository.GetAllTimeRevenueAsync();
-            var allTimeCommissions = await _repository.GetAllTimeCommissionsPaidAsync();
-            var allTimeCostOfDevices = accountDetails.Sum(r => r.BuyingPrice ?? 0);
-            var allTimeOperatingExpenses = opexByMonth.Sum(r => r.Total);
+            // figure -- there's no real all-time ledger. Everything from the
+            // start of the books up to the as-of date: revenue, commissions
+            // paid, operating expenses, and the cost of devices whose
+            // contracts started by then.
+            var allTimeRevenue = await _repository.GetRevenueForPeriodAsync(null, asOfExclusive);
+            var allTimeCommissions = await _repository.GetCommissionsPaidForPeriodAsync(null, asOfExclusive);
+            var allTimeCostOfDevices = deviceCosts.Where(r => r.StartDate < asOfExclusive).Sum(r => r.BuyingPrice);
+            var allTimeOperatingExpenses = await _operatingExpenseRepository.GetTotalAsync(null, asOfExclusive);
 
             // No bad-debt deduction: revenue is counted as cash received and
             // device cost when the contract starts, so an unpaid balance was
@@ -389,6 +392,19 @@ namespace Ranalo.Services
             model.RetainedEarningsAllTime = allTimeNetBeforeTax - allTimeTax;
 
             return model;
+        }
+
+        // Financials chart length: the months from the period's start to
+        // trendEnd. A period under two months (Week, Month) or All Time
+        // shows the 12 months to trendEnd; a long range its last 24.
+        public static int FinancialsTrendMonths(DateTime? fromDate, DateTime trendEnd)
+        {
+            if (fromDate == null)
+            {
+                return 12;
+            }
+            var months = (trendEnd.Year - fromDate.Value.Year) * 12 + trendEnd.Month - fromDate.Value.Month + 1;
+            return months < 2 ? 12 : Math.Min(months, 24);
         }
 
         public async Task<DealerDashboardViewModel> GetDealerDashboardAsync(int dealerId, int? agentUserId = null)

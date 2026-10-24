@@ -294,20 +294,22 @@ namespace Ranalo.DataStore
         // monthly comparison chart. Only months with at least one payment
         // get a row; GetFinancialsAsync fills any gaps the same way
         // OperatingExpenseRepository.GetMonthlyTotalsAsync does.
-        public async Task<List<DashboardMonthAmountRow>> GetRevenueByMonthAsync(int months)
+        public async Task<List<DashboardMonthAmountRow>> GetRevenueByMonthAsync(int months, DateTime? lastMonth = null)
         {
-            var rangeStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-(months - 1));
+            var endMonth = new DateTime((lastMonth ?? DateTime.Now).Year, (lastMonth ?? DateTime.Now).Month, 1);
+            var rangeStart = endMonth.AddMonths(-(months - 1));
+            var rangeEnd = endMonth.AddMonths(1);
 
             const string sql = @"
                 SELECT YEAR(kp.PaymentDateValue) AS Year, MONTH(kp.PaymentDateValue) AS Month, SUM(kp.AmountValue) AS Total
                 FROM KosePayments kp
-                WHERE kp.PaymentDateValue >= @RangeStart
+                WHERE kp.PaymentDateValue >= @RangeStart AND kp.PaymentDateValue < @RangeEnd
                   AND " + DevicePaymentFilter + @"
                 GROUP BY YEAR(kp.PaymentDateValue), MONTH(kp.PaymentDateValue)";
 
             try
             {
-                var rows = await _db.QueryAsync<DashboardMonthAmountRow>(sql, new { RangeStart = rangeStart });
+                var rows = await _db.QueryAsync<DashboardMonthAmountRow>(sql, new { RangeStart = rangeStart, RangeEnd = rangeEnd });
                 return rows.ToList();
             }
             catch (SqlException ex)
@@ -321,19 +323,21 @@ namespace Ranalo.DataStore
         // payout to a dealer, agent or collector (CommissionPayouts -- one
         // header per payment; its per-account lines in Dealer/Agent/
         // CollectorCommissionPayments add up to the same amount).
-        public async Task<List<DashboardMonthAmountRow>> GetCommissionsPaidByMonthAsync(int months)
+        public async Task<List<DashboardMonthAmountRow>> GetCommissionsPaidByMonthAsync(int months, DateTime? lastMonth = null)
         {
-            var rangeStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-(months - 1));
+            var endMonth = new DateTime((lastMonth ?? DateTime.Now).Year, (lastMonth ?? DateTime.Now).Month, 1);
+            var rangeStart = endMonth.AddMonths(-(months - 1));
+            var rangeEnd = endMonth.AddMonths(1);
 
             const string sql = @"
                 SELECT YEAR(PaidDate) AS Year, MONTH(PaidDate) AS Month, SUM(Amount) AS Total
                 FROM CommissionPayouts
-                WHERE PaidDate >= @RangeStart
+                WHERE PaidDate >= @RangeStart AND PaidDate < @RangeEnd
                 GROUP BY YEAR(PaidDate), MONTH(PaidDate)";
 
             try
             {
-                var rows = await _db.QueryAsync<DashboardMonthAmountRow>(sql, new { RangeStart = rangeStart });
+                var rows = await _db.QueryAsync<DashboardMonthAmountRow>(sql, new { RangeStart = rangeStart, RangeEnd = rangeEnd });
                 return rows.ToList();
             }
             catch (SqlException ex) when (IsMissingTable(ex))
@@ -421,6 +425,26 @@ namespace Ranalo.DataStore
             {
                 _logger.LogError(ex, "Revenue-for-period computation failed");
                 return 0;
+            }
+        }
+
+        public async Task<List<DashboardDeviceCostRow>> GetDeviceCostsAsync()
+        {
+            const string sql = @"
+                SELECT ci.StartDate, ci.BuyingPrice
+                FROM Contract_Info ci
+                INNER JOIN Devices d ON d.Id = ci.ID
+                WHERE ci.StartDate IS NOT NULL AND ci.BuyingPrice IS NOT NULL";
+
+            try
+            {
+                var rows = await _db.QueryAsync<DashboardDeviceCostRow>(sql);
+                return rows.ToList();
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Device costs computation failed");
+                return new List<DashboardDeviceCostRow>();
             }
         }
 

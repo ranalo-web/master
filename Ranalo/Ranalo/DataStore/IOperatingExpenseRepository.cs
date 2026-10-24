@@ -17,9 +17,9 @@ namespace Ranalo.DataStore
         Task<decimal> GetTotalAsync(DateTime? fromDate, DateTime? toDateExclusive);
 
         // One row per calendar month over the trailing `months` months
-        // (including the current one), oldest first -- months with no
+        // (ending at lastMonth, default the current one), oldest first -- months with no
         // logged expenses still get a row (Total = 0), so callers don't
         // have to fill gaps themselves.
-        Task<List<OperatingExpenseMonthlyTotal>> GetMonthlyTotalsAsync(int months);
+        Task<List<OperatingExpenseMonthlyTotal>> GetMonthlyTotalsAsync(int months, DateTime? lastMonth = null);
     }
 }

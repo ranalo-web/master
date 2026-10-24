@@ -16,6 +16,10 @@ namespace Ranalo.Models
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
 
+        // The day the balance sheet, age of debt and chart stand at: the
+        // period's last day, or today if the period is still running.
+        public DateTime AsOfDate { get; set; } = DateTime.Now.Date;
+
         // The reporting period's Income Statement inputs (named *ThisMonth
         // from when the page only showed the current month) -- same fields/formulas the
         // Admin Dashboard used before this section moved here. Derived

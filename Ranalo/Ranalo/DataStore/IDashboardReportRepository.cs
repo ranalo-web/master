@@ -42,12 +42,13 @@ namespace Ranalo.DataStore
         Task<List<DashboardDealerCommissionRow>> GetDealerCommissionPaidThisMonthByDealerAsync();
 
         // Company-wide revenue/commissions-paid, one row per calendar month
-        // over the trailing `months` months -- the Financials page's monthly
+        // over the trailing `months` months (ending at lastMonth, default
+        // this month) -- the Financials page's monthly
         // comparison chart. Same KosePayments/DealerCommissionPayments
         // sources as the "this month" queries above, just grouped by month
         // instead of filtered to the current one.
-        Task<List<DashboardMonthAmountRow>> GetRevenueByMonthAsync(int months);
-        Task<List<DashboardMonthAmountRow>> GetCommissionsPaidByMonthAsync(int months);
+        Task<List<DashboardMonthAmountRow>> GetRevenueByMonthAsync(int months, DateTime? lastMonth = null);
+        Task<List<DashboardMonthAmountRow>> GetCommissionsPaidByMonthAsync(int months, DateTime? lastMonth = null);
 
         // All-time (no date filter) totals for the Financials page's
         // best-effort Retained Earnings estimate.
@@ -63,6 +64,11 @@ namespace Ranalo.DataStore
         // count every DealerCommissionPayments row.
         Task<decimal> GetRevenueForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive);
         Task<decimal> GetCommissionsPaidForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive);
+
+        // Every started contract's device buying price -- Financials' Cost
+        // of devices. Like revenue, no Dealers join: a device with no dealer
+        // mapping still cost the business.
+        Task<List<DashboardDeviceCostRow>> GetDeviceCostsAsync();
 
         // Sum of DashboardSnapshot.DealerCommissionOutstanding/
         // CommissionOutstanding across every dealer row (WHERE DealerId IS
