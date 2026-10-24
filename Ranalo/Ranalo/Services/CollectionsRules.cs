@@ -88,6 +88,52 @@ namespace Ranalo.Services
         public static bool IsValidPromiseDate(DateTime? promisedDate, DateTime today) =>
             promisedDate == null || promisedDate.Value.Date >= today.Date;
 
+        // My Collections filters (2026-10-23). Worked on = the holder has
+        // logged a call since taking the account, or it's flagged "can't
+        // reach". Follow up = a call that's due a check: the promised date
+        // has passed, or, with no promise, FollowUpAfterDays since the call.
+        public const int FollowUpAfterDays = 7;
+
+        public static class Filter
+        {
+            public const string All = "all";
+            public const string Worked = "worked";
+            public const string NotWorked = "notworked";
+            public const string FollowUp = "followup";
+
+            public static string Clean(string? value) =>
+                value is Worked or NotWorked or FollowUp ? value : All;
+        }
+
+        public static bool HolderCalled(Ranalo.Models.CollectionCaseRow c) =>
+            c.LastCall != null
+            && c.LastCall.CollectorUserId == c.CollectorUserId
+            && (c.HeldSince == null || c.LastCall.CreatedAt >= c.HeldSince);
+
+        public static bool IsWorked(Ranalo.Models.CollectionCaseRow c) =>
+            HolderCalled(c) || c.OpenFlagCount > 0;
+
+        public static bool IsDueForFollowUp(Ranalo.Models.CollectionCaseRow c, DateTime today)
+        {
+            if (!HolderCalled(c)) return false;
+            var call = c.LastCall!;
+            return call.PromisedDate.HasValue
+                ? today.Date > call.PromisedDate.Value.Date
+                : today.Date >= call.CreatedAt.Date.AddDays(FollowUpAfterDays);
+        }
+
+        // A payment came in after the call.
+        public static bool PaidSinceCall(Ranalo.Models.CollectionCaseRow c) =>
+            c.LastCall != null && c.LastPaymentAt.HasValue && c.LastPaymentAt.Value > c.LastCall.CreatedAt;
+
+        public static bool MatchesFilter(Ranalo.Models.CollectionCaseRow c, string filter, DateTime today) => filter switch
+        {
+            Filter.Worked => IsWorked(c),
+            Filter.NotWorked => !IsWorked(c),
+            Filter.FollowUp => IsDueForFollowUp(c, today),
+            _ => true,
+        };
+
         // My Collections search: account number, customer or next-of-kin
         // name, or phone. Phones match on their last 9 digits, so 0712 345678,
         // 254712345678 and +254 712 345 678 are the same number.

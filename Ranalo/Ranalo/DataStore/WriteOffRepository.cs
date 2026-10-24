@@ -8,6 +8,7 @@ namespace Ranalo.DataStore
     {
         Task<int> ReinstatePaidAsync();
         Task<int> ProposeNoPaymentWriteOffsAsync(DateTime today);
+        Task<int> ProposeLostPhoneAsync(long accountNo, long contractId);
 
         Task<(List<WriteOffRow> Rows, int TotalRecords)> GetPageAsync(string status, string searchTerm, int page, int pageSize);
         Task<List<WriteOffStatusSummary>> GetSummaryAsync();
@@ -78,7 +79,7 @@ namespace Ranalo.DataStore
                     INNER JOIN Contract_Info ci ON ci.ContractID = wo.ContractId AND ci.ID = wo.AccountNo
                     INNER JOIN device_payments dp ON dp.AccountNo = wo.AccountNo
                     WHERE wo.ReinstatedDate IS NULL
-                      AND wo.Reason = 'NoPayment360'
+                      AND wo.Reason IN ('NoPayment360', 'LostPhone')
                       AND dp.PaymentDateValue >= wo.WrittenOffDate
                       AND (ci.EndDate IS NULL OR dp.PaymentDateValue < ci.EndDate)
                 )
@@ -149,6 +150,44 @@ namespace Ranalo.DataStore
                                     AND (wo.ReinstatedDate IS NULL OR wo.WrittenOffDate = due.CrossedDate))";
 
             return await _db.ExecuteAsync(sql, new { Days = DaysWithoutPayment, Today = today.Date }, commandTimeout: CheckTimeoutSeconds);
+        }
+
+        // A collector reported the customer lost the phone (2026-10-23):
+        // proposes (Pending) a LostPhone write-off of the open contract, dated
+        // today, for the admin team to review. The contract stays open and
+        // with its collector, and any later payment reinstates it
+        // (ReinstatePaidAsync) -- lost phones do turn up. 0 = the contract
+        // isn't open on this device, or already has an open write-off.
+        public async Task<int> ProposeLostPhoneAsync(long accountNo, long contractId)
+        {
+            var sql = @"
+                ;WITH " + DevicePaymentsCte + @",
+                paid AS (
+                    SELECT SUM(AmountValue) AS TotalPaid, MAX(PaymentDateValue) AS LastPaymentDate
+                    FROM device_payments
+                    WHERE AccountNo = @AccountNo
+                ),
+                c AS (
+                    SELECT TOP 1
+                        ci.ContractID,
+                        CAST(ci.ID AS BIGINT) AS AccountNo,
+                        CAST(ci.Deposit + ci.Daily * 30 * ci.Term_in_Months
+                             + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months
+                             + ci.Monthly * ci.Term_in_Months AS DECIMAL(18,2)) AS ContractValue
+                    FROM Contract_Info ci
+                    WHERE ci.ContractID = @ContractId AND ci.ID = @AccountNo AND ci.EndDate IS NULL
+                )
+                INSERT INTO WriteOffs
+                    (ContractId, AccountNo, Reason, WrittenOffDate, LastPaymentDate, ContractValue, TotalPaid, OutstandingBalance, Status)
+                SELECT
+                    c.ContractID, c.AccountNo, 'LostPhone', CAST(GETDATE() AS DATE), CAST(paid.LastPaymentDate AS DATE),
+                    c.ContractValue, ISNULL(paid.TotalPaid, 0), c.ContractValue - ISNULL(paid.TotalPaid, 0), 'Pending'
+                FROM c CROSS JOIN paid
+                WHERE NOT EXISTS (SELECT 1 FROM WriteOffs wo
+                                  WHERE wo.ContractId = c.ContractID
+                                    AND (wo.ReinstatedDate IS NULL OR wo.WrittenOffDate = CAST(GETDATE() AS DATE)))";
+
+            return await _db.ExecuteAsync(sql, new { AccountNo = accountNo, ContractId = contractId }, commandTimeout: CheckTimeoutSeconds);
         }
 
         // --- Review screen -------------------------------------------------

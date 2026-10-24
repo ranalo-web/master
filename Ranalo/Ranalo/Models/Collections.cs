@@ -210,6 +210,13 @@ namespace Ranalo.Models
         // cards always cover every account held; only the list is filtered.
         public string? Search { get; set; }
         public int HeldCount { get; set; }
+
+        // CollectionsRules.Filter; the counts are after the search.
+        public string Filter { get; set; } = Ranalo.Services.CollectionsRules.Filter.All;
+        public int MatchedCount { get; set; }
+        public int WorkedCount { get; set; }
+        public int NotWorkedCount { get; set; }
+        public int FollowUpCount { get; set; }
         public CollectorSummary Summary { get; set; } = new();
         public List<CollectionCaseRow> Cases { get; set; } = new();
         public List<CollectorCaseEarning> Earnings { get; set; } = new();

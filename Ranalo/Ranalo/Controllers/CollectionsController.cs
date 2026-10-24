@@ -39,7 +39,7 @@ namespace Ranalo.Controllers
         // Collector dashboard: the accounts they hold, what they've recovered
         // and earned. Also reachable by dealers/agents who are collectors too.
         [Route("collections-home/{page:int?}")]
-        public async Task<IActionResult> Index(string? search = null)
+        public async Task<IActionResult> Index(string? search = null, string? show = null)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -61,6 +61,14 @@ namespace Ranalo.Controllers
             model.HeldCount = model.Cases.Count;
             model.Search = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
             model.Cases = model.Cases.Where(c => CollectionsRules.MatchesSearch(c, model.Search)).ToList();
+
+            var today = DateTime.Today;
+            model.Filter = CollectionsRules.Filter.Clean(show);
+            model.MatchedCount = model.Cases.Count;
+            model.WorkedCount = model.Cases.Count(CollectionsRules.IsWorked);
+            model.NotWorkedCount = model.MatchedCount - model.WorkedCount;
+            model.FollowUpCount = model.Cases.Count(c => CollectionsRules.IsDueForFollowUp(c, today));
+            model.Cases = model.Cases.Where(c => CollectionsRules.MatchesFilter(c, model.Filter, today)).ToList();
             model.Payouts = await _payouts.GetPayoutsAsync(CommissionPayeeType.Collector, collectorUserId: settings.UserId, top: 10);
             return View(model);
         }
@@ -80,6 +88,41 @@ namespace Ranalo.Controllers
             var (ok, message) = await _collections.AddFlagAsync(caseId, settings.UserId, note);
             TempData[ok ? "CollectionsSuccess" : "CollectionsError"] = message;
             return accountNo.HasValue ? Redirect($"/customer-details/{accountNo}") : RedirectToAction("Index");
+        }
+
+        // "Phone lost" (2026-10-23): flags the account for the admin team and
+        // proposes a Lost phone write-off for them to review. The account
+        // stays with the collector; a payment later reinstates it.
+        [HttpPost]
+        [Route("collections/lost-phone")]
+        public async Task<IActionResult> ReportLostPhone(int caseId, long accountNo, string? note, [FromServices] DataStore.IWriteOffRepository writeOffs)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var open = await _collections.GetOpenCaseAsync(accountNo);
+            if (open == null || open.CaseId != caseId)
+            {
+                TempData["CollectionsError"] = "That account isn't in collections any more.";
+                return RedirectToAction("Index");
+            }
+
+            var clean = CollectionsRules.CleanNote(note);
+            var (ok, message) = await _collections.AddFlagAsync(caseId, settings.UserId, clean == null ? null : "Phone lost: " + clean);
+            if (!ok)
+            {
+                TempData["CollectionsError"] = message;
+                return RedirectToAction("Index");
+            }
+
+            var proposed = await writeOffs.ProposeLostPhoneAsync(accountNo, open.ContractId);
+            TempData["CollectionsSuccess"] = proposed > 0
+                ? "Lost phone reported. The admin team will review the write-off. The account stays with you, and if the customer pays again it comes back automatically."
+                : "Lost phone flagged for the admin team. This account already has a write-off waiting for review.";
+            return RedirectToAction("Index");
         }
 
         // "Spoke to customer" -- what was discussed, and any promised date.

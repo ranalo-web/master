@@ -81,28 +81,68 @@
         <div class="card card-bordered">
             <div class="card-inner border-bottom py-2 d-flex flex-wrap justify-content-between align-items-center" style="gap:.5rem;">
                 <h6 class="title mb-0">My accounts
-                    <span class="text-soft small fw-normal">@(Model.Search != null ? $"{Model.Cases.Count} of {Model.HeldCount}" : Model.HeldCount.ToString())</span>
+                    <span class="text-soft small fw-normal">@(Model.Search != null || Model.Filter != CollectionsRules.Filter.All ? $"{Model.Cases.Count} of {Model.HeldCount}" : Model.HeldCount.ToString())</span>
                 </h6>
                 @if (Model.HeldCount > 0)
                 {
                     <form method="get" action="/collections-home" class="d-flex" style="gap:.5rem;">
+                        @if (Model.Filter != CollectionsRules.Filter.All)
+                        {
+                            <input type="hidden" name="show" value="@Model.Filter" />
+                        }
                         <input type="search" name="search" class="form-control form-control-sm" style="min-width:220px;" value="@Model.Search"
                                placeholder="Name, account no or phone" aria-label="Search my accounts" />
                         <button type="submit" class="btn btn-sm btn-primary"><em class="icon ni ni-search"></em><span>Search</span></button>
                         @if (Model.Search != null)
                         {
-                            <a href="/collections-home" class="btn btn-sm btn-outline-light btn-white">Clear</a>
+                            <a href="/collections-home@(Model.Filter != CollectionsRules.Filter.All ? $"?show={Model.Filter}" : "")" class="btn btn-sm btn-outline-light btn-white">Clear</a>
                         }
                     </form>
                 }
             </div>
+            @if (Model.HeldCount > 0)
+            {
+                var filters = new[]
+                {
+                    (Key: CollectionsRules.Filter.All, Label: "All", Count: Model.MatchedCount, Title: "Every account you hold"),
+                    (Key: CollectionsRules.Filter.NotWorked, Label: "Not worked on", Count: Model.NotWorkedCount, Title: "No call logged since you got the account, and not flagged"),
+                    (Key: CollectionsRules.Filter.Worked, Label: "Worked on", Count: Model.WorkedCount, Title: "You've logged a call, or flagged it can't reach"),
+                    (Key: CollectionsRules.Filter.FollowUp, Label: "Follow up", Count: Model.FollowUpCount, Title: $"Promised date has passed, or {CollectionsRules.FollowUpAfterDays}+ days since your call -- check the promise was kept"),
+                };
+                <div class="card-inner border-bottom py-2 d-flex flex-wrap" style="gap:.5rem;">
+                    @foreach (var f in filters)
+                    {
+                        var query = new List<string>();
+                        if (f.Key != CollectionsRules.Filter.All) query.Add("show=" + f.Key);
+                        if (Model.Search != null) query.Add("search=" + Uri.EscapeDataString(Model.Search));
+                        var href = "/collections-home" + (query.Count > 0 ? "?" + string.Join("&", query) : "");
+                        var active = Model.Filter == f.Key;
+                        <a href="@href" title="@f.Title"
+                           class="btn btn-sm @(active ? (f.Key == CollectionsRules.Filter.FollowUp ? "btn-warning" : "btn-primary") : "btn-outline-light btn-white")">
+                            @f.Label <span class="badge @(active ? "bg-white text-dark" : "badge-dim bg-light text-dark") ms-1">@f.Count</span>
+                        </a>
+                    }
+                </div>
+            }
             @if (Model.HeldCount == 0)
             {
                 <div class="card-inner text-soft">No accounts are assigned to you right now.</div>
             }
-            else if (Model.Cases.Count == 0)
+            else if (Model.Cases.Count == 0 && Model.MatchedCount == 0)
             {
                 <div class="card-inner text-soft">None of your accounts match "@Model.Search". Search by customer or next-of-kin name, account number, or phone.</div>
+            }
+            else if (Model.Cases.Count == 0)
+            {
+                <div class="card-inner text-soft">
+                    @(Model.Filter switch
+                    {
+                        CollectionsRules.Filter.NotWorked => "You've worked on every account here.",
+                        CollectionsRules.Filter.Worked => "You haven't logged a call or flag on any of these yet.",
+                        CollectionsRules.Filter.FollowUp => "Nothing to follow up yet.",
+                        _ => "No accounts."
+                    })
+                </div>
             }
             else
             {
@@ -142,6 +182,17 @@
                                         @if (c.LastCall != null)
                                         {
                                             <span class="d-block small text-success"><em class="icon ni ni-chat"></em> Spoke @c.LastCall.CreatedAt.ToString("dd MMM"): @c.LastCall.Note@if (c.LastCall.PromisedDate.HasValue) { <text> · promised to pay by @c.LastCall.PromisedDate.Value.ToString("dd MMM")</text> }</span>
+                                            if (CollectionsRules.IsDueForFollowUp(c, DateTime.Today))
+                                            {
+                                                if (CollectionsRules.PaidSinceCall(c))
+                                                {
+                                                    <span class="badge badge-dim bg-success">Promise kept · paid @c.LastPaymentAt!.Value.ToString("dd MMM")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-dim bg-danger">@(c.LastCall.PromisedDate.HasValue ? "Promise not kept" : "No payment since call") · follow up</span>
+                                                }
+                                            }
                                         }
                                         @if (c.OpenFlagCount > 0) { <span class="d-block small text-warning"><em class="icon ni ni-flag"></em> Flagged: @c.LatestFlagNote</span> }
                                     </td>
@@ -157,6 +208,8 @@
                                                     data-case="@c.CaseId" data-name="@c.CustomerName">Spoke to customer</button>
                                             <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#flag-modal"
                                                     data-case="@c.CaseId" data-name="@c.CustomerName">Can't reach</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#lost-modal"
+                                                    data-case="@c.CaseId" data-account="@c.AccountNo" data-name="@c.CustomerName">Phone lost</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -267,8 +320,38 @@
     </div>
 </div>
 
+<div class="modal fade" tabindex="-1" id="lost-modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="/collections/lost-phone" data-saving>
+                <div class="modal-header">
+                    <h5 class="modal-title"><span id="lost-name"></span> lost the phone</h5>
+                    <a href="#" class="close" data-bs-dismiss="modal" aria-label="Close"><em class="icon ni ni-cross"></em></a>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="caseId" id="lost-case" />
+                    <input type="hidden" name="accountNo" id="lost-account" />
+                    <label class="form-label" for="lost-note">What happened?</label>
+                    <textarea class="form-control" name="note" id="lost-note" rows="3" maxlength="480" required
+                              placeholder="e.g. Stolen on 12 Oct, reported to police, OB number 45/10/2026"></textarea>
+                    <p class="text-soft small mt-2 mb-0">The admin team reviews it as a write-off. The account stays in the system and with you. If the phone turns up and the customer pays, it comes back automatically.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-secondary">Report lost phone</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
+        document.getElementById('lost-modal').addEventListener('show.bs.modal', function (e) {
+            var b = e.relatedTarget;
+            document.getElementById('lost-case').value = b.dataset.case;
+            document.getElementById('lost-account').value = b.dataset.account;
+            document.getElementById('lost-name').textContent = b.dataset.name || 'Customer';
+        });
         document.getElementById('flag-modal').addEventListener('show.bs.modal', function (e) {
             var b = e.relatedTarget;
             document.getElementById('flag-case').value = b.dataset.case;
