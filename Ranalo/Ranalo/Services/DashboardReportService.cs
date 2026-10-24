@@ -1182,6 +1182,8 @@ namespace Ranalo.Services
                 var activeCount = g.Count(r => !IsPaidOff(r));
                 return new AdminDealerPerformance
                 {
+                    OpenCount = activeCount,
+                    CompletedCount = total - activeCount,
                     BehindCount = behind.Count,
                     BehindPct = activeCount > 0 ? Math.Round(100m * behind.Count / activeCount, 1) : 0,
                     BehindAmount = behind.Sum(r => Math.Max(0, -r.ArrearsAmount)),

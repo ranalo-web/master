@@ -192,6 +192,11 @@ namespace Ranalo.Models
         public decimal CommissionDue { get; set; }
         public decimal PctOfTarget { get; set; }
 
+        // Accounts split: still paying vs paid off in full. Late/Bad %s are
+        // shares of OpenCount.
+        public int OpenCount { get; set; }
+        public int CompletedCount { get; set; }
+
         // More than 7 days past lock, restructured left out.
         public int BehindCount { get; set; }
         public decimal BehindPct { get; set; }

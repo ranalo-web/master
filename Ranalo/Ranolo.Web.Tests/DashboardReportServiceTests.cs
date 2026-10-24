@@ -547,6 +547,7 @@ namespace Ranolo.Web.Tests
 
             Assert.That(result.DealerPerformance, Has.Count.EqualTo(1));
             Assert.That(result.DealerPerformance[0].DealerName, Is.EqualTo("Test Dealer"));
+            Assert.That(result.DealerPerformance[0].OpenCount + result.DealerPerformance[0].CompletedCount, Is.EqualTo(result.DealerPerformance[0].Accounts));
             Assert.That(result.DealerPerformance[0].Revenue, Is.EqualTo(50000m));
             Assert.That(result.DealerPerformance[0].CommissionPaid, Is.EqualTo(1000m));
             // Due is the dealer's live payable (CommissionPayees), not a copy of Paid; no commission accounts here.

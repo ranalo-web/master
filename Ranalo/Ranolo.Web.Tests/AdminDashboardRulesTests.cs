@@ -83,9 +83,9 @@ namespace Ranolo.Web.Tests
                 Profit = new AdminProfit { Revenue = 100_000 },
                 DealerPerformance = new()
                 {
-                    new() { DealerName = "Risky", Accounts = 20, BehindPct = 45, BehindAmount = 90_000 },
-                    new() { DealerName = "Small", Accounts = 3, BehindPct = 90 },
-                    new() { DealerName = "Solid", Accounts = 50, BehindPct = 5, Revenue = 300_000 },
+                    new() { DealerName = "Risky", Accounts = 20, OpenCount = 20, BehindPct = 45, BehindAmount = 90_000 },
+                    new() { DealerName = "Small", Accounts = 30, OpenCount = 3, BehindPct = 90 },
+                    new() { DealerName = "Solid", Accounts = 50, OpenCount = 50, BehindPct = 5, Revenue = 300_000 },
                 },
             };
             var texts = AdminDashboardRules.BuildActions(m).Select(a => a.Text).ToList();

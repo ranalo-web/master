@@ -128,19 +128,19 @@ namespace Ranalo.Services
             }
 
             foreach (var d in m.DealerPerformance
-                .Where(d => d.Accounts >= MinDealerAccounts && d.BehindPct >= DealerBehindAlertPct)
+                .Where(d => d.OpenCount >= MinDealerAccounts && d.BehindPct >= DealerBehindAlertPct)
                 .OrderByDescending(d => d.BehindPct)
                 .Take(2))
             {
                 actions.Add(new()
                 {
                     Level = "danger",
-                    Text = $"{d.DealerName}: {d.BehindPct:0}% of their {d.Accounts:N0} accounts are more than 7 days late (KES {d.BehindAmount:N0}), {d.BadCount:N0} of them bad customers over 90 days. Review their sales before sending more stock.",
+                    Text = $"{d.DealerName}: {d.BehindPct:0}% of their {d.OpenCount:N0} open accounts are more than 7 days late (KES {d.BehindAmount:N0}), {d.BadCount:N0} of them bad customers over 90 days. Review their sales before sending more stock.",
                 });
             }
 
             var best = m.DealerPerformance
-                .Where(d => d.Accounts >= MinDealerAccounts && d.BehindPct < 20 && d.Revenue > 0)
+                .Where(d => d.OpenCount >= MinDealerAccounts && d.BehindPct < 20 && d.Revenue > 0)
                 .OrderByDescending(d => d.Revenue)
                 .FirstOrDefault();
             if (best != null)

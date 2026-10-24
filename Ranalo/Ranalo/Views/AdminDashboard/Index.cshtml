@@ -341,7 +341,8 @@
                             <tr>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Rank</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Accounts</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Still paying -- the late and bad percentages are shares of these">Open</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Paid off in full">Completed</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Accounts started @Model.PeriodLabel">New</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Revenue (month)</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Share of the dealer's open accounts more than 7 days past lock, restructured left out">Late %</th>
@@ -359,7 +360,8 @@
                                 <tr class="@(i >= tablePageSize ? "d-none" : "")" data-watchlist-row="dealers">
                                     <td>@d.Rank</td>
                                     <td><span class="fw-medium">@d.DealerName</span></td>
-                                    <td>@d.Accounts</td>
+                                    <td>@d.OpenCount</td>
+                                    <td class="text-success">@d.CompletedCount</td>
                                     <td>@d.NewInPeriod</td>
                                     <td>KES @d.Revenue.ToString("N0")</td>
                                     <td><span class="badge badge-dim @(d.BehindPct >= 30 ? "bg-danger" : d.BehindPct >= 15 ? "bg-warning" : "bg-success")">@d.BehindPct.ToString("0")%</span></td>
