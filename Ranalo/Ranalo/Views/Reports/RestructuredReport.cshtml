@@ -72,18 +72,23 @@
         return new string(initials);
     }
 
-    private string FormartUtcDate(string date)
+    // Knox's "dd-MM-yy HH:mm:ss UTC". A phone that never connected has no
+    // date (crashed the whole report); anything else is shown as it came.
+    private string FormartUtcDate(string? date)
     {
-        // Parse using exact format and culture
-        DateTime parsedDate = DateTime.ParseExact(
-            date.Replace(" UTC", ""),   // remove UTC label before parsing
-        "dd-MM-yy HH:mm:ss",
-        System.Globalization.CultureInfo.InvariantCulture,
-        System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal
-    );
+        if (string.IsNullOrWhiteSpace(date))
+        {
+            return "-";
+        }
 
-        // Format to desired output
-        return parsedDate.ToString("dd MMM yyyy HH:mm");
+        return DateTime.TryParseExact(
+                date.Replace(" UTC", "").Trim(),
+                "dd-MM-yy HH:mm:ss",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                out var parsedDate)
+            ? parsedDate.ToString("dd MMM yyyy HH:mm")
+            : date;
     }
 }
 
