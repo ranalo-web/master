@@ -58,7 +58,7 @@
                     }
                     else
                     {
-                        <p>Agent: 50% of the deposit upfront, plus 25% once the contract is 90 days old, not past its lock date and has a WooCommerce order. Dealer: 30% of (total paid &minus; buying price &minus; agent commission), growing with each payment. Whatever a customer is behind by is deducted from both. Accounts with no buying price earn no dealer commission until it is entered. <strong>Tap <em class="icon ni ni-chevron-right"></em> on any account to see exactly how it is worked out.</strong></p>
+                        <p>Agent: 50% of the deposit upfront, plus 25% once the contract is 90 days old, not past its lock date and has a WooCommerce order. Dealer: 30% of (total paid &minus; buying price &minus; agent commission), growing with each payment. Whatever a customer is behind by is deducted from both. Accounts with no buying price earn no dealer commission until it is entered. Legacy accounts (sold before the 1 Oct 2026 rules) earn no commission; while one is <em>recovering arrears</em>, what its customer is behind by is still deducted from the dealer. <strong>Tap <em class="icon ni ni-chevron-right"></em> on any account to see exactly how it is worked out.</strong></p>
                     }
                 </div>
             </div>
@@ -125,6 +125,16 @@
                         <span class="d-block text-soft small">Earned &minus; withheld &minus; paid</span>
                     </div></div>
                 </div>
+                @if (Model.NoCommissionCount > 0)
+                {
+                    <div class="col-6 col-lg-3">
+                        <div class="card card-bordered h-100"><div class="card-inner">
+                            <span class="sub-text">No commission (legacy)</span>
+                            <span class="d-block fs-5 fw-bold">@Model.NoCommissionCount</span>
+                            <span class="d-block text-soft small">@Model.RecoveringCount recovering arrears from the dealer</span>
+                        </div></div>
+                    </div>
+                }
                 <div class="col-6 col-lg-3">
                     <div class="card card-bordered h-100"><div class="card-inner">
                         <span class="sub-text">Missing buying price</span>
@@ -135,6 +145,36 @@
             }
         </div>
     </div>
+
+    @foreach (var m in Model.Messages)
+    {
+        <div class="alert alert-success">@m</div>
+    }
+    @foreach (var e in Model.Errors)
+    {
+        <div class="alert alert-danger">@e</div>
+    }
+
+    @if (Model.CanEditStatus)
+    {
+        <div class="nk-block">
+            <form method="get" action="/account-commissions" class="d-flex flex-wrap align-items-center" style="gap:.5rem;">
+                <select name="status" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+                    <option value="" selected="@(Model.StatusFilter == null)">All accounts (@Model.TotalAccounts)</option>
+                    <option value="@Ranalo.Models.CommissionStatus.Qualifies" selected="@(Model.StatusFilter == Ranalo.Models.CommissionStatus.Qualifies)">Earning commission</option>
+                    <option value="@Ranalo.Models.CommissionStatus.NoCommission" selected="@(Model.StatusFilter == Ranalo.Models.CommissionStatus.NoCommission)">No commission</option>
+                    <option value="@Ranalo.Models.CommissionStatus.Recover" selected="@(Model.StatusFilter == Ranalo.Models.CommissionStatus.Recover)">Recovering arrears</option>
+                </select>
+                <input type="search" name="q" value="@Model.Search" class="form-control form-control-sm" style="width:auto; min-width:220px;" placeholder="Account, contract, customer, dealer, agent" />
+                <button type="submit" class="btn btn-sm btn-primary">Search</button>
+                @if (Model.StatusFilter != null || Model.Search != null)
+                {
+                    <a href="/account-commissions" class="link link-primary small">Clear</a>
+                    <span class="text-soft small">@Model.Rows.Count of @Model.TotalAccounts accounts</span>
+                }
+            </form>
+        </div>
+    }
 
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
@@ -183,6 +223,7 @@
                                     var r = Model.Rows[i];
                                     var c = r.Commission;
                                     var noAgent = r.AgentName == null;
+                                    var legacy = c.NoCommission;
                                     <tr class="@(i >= pageSize ? "d-none" : "") @(i < previewOpen ? "wl-open" : "")" data-watchlist-row="@key">
                                         <td>
                                             <div class="d-flex align-items-start" style="gap:.5rem;">
@@ -190,6 +231,10 @@
                                                 <div>
                                                     <a href="/account-details/@r.AccountId" class="fw-medium">@r.CustomerName</a>
                                                     <span class="d-block sub-text"><span class="text-body">@(r.ProductName ?? "Unknown device")</span> &middot; AC: @r.AccountId &middot; @r.DaysSinceStart days</span>
+                                                    @if (legacy)
+                                                    {
+                                                        <span class="badge badge-dim @(c.RecoverArrears ? "bg-warning" : "bg-secondary")">@c.NoCommissionReason: @(c.RecoverArrears ? "no commission, recovering arrears" : "no commission")</span>
+                                                    }
                                                 </div>
                                             </div>
                                         </td>
@@ -202,7 +247,7 @@
                                             <td class="wl-md">@(noAgent ? "Direct sale" : r.AgentName)</td>
                                         }
                                         <td class="wl-md">KES @r.Deposit.ToString("N0")</td>
-                                        @if (noAgent)
+                                        @if (noAgent || legacy)
                                         {
                                             <td class="text-soft wl-md">-</td>
                                             <td class="text-soft wl-md">-</td>
@@ -234,7 +279,16 @@
                                         @if (!agentView)
                                         {
                                             <td class="wl-md">KES @r.TotalPaid.ToString("N0")</td>
-                                            @if (r.BuyingPrice.HasValue)
+                                            @if (legacy)
+                                            {
+                                                <td class="wl-md">@(r.BuyingPrice.HasValue ? "KES " + r.BuyingPrice.Value.ToString("N0") : "-")</td>
+                                                <td class="text-soft wl-md">-</td>
+                                                <td class="text-soft wl-md">-</td>
+                                                <td class="wl-md @(c.DealerArrearsDeducted > 0 ? "text-danger" : "text-soft")">@(c.RecoverArrears ? "KES " + c.DealerArrearsDeducted.ToString("N0") : "-")</td>
+                                                <td class="text-soft wl-md">-</td>
+                                                <td class="fw-medium @(c.DealerBalance < 0 ? "text-danger" : "text-soft")">@(c.RecoverArrears ? "KES " + c.DealerBalance!.Value.ToString("N0") : "-")</td>
+                                            }
+                                            else if (r.BuyingPrice.HasValue)
                                             {
                                                 <td class="wl-md">KES @r.BuyingPrice.Value.ToString("N0")</td>
                                                 <td class="wl-md @(c.DealerBase < 0 ? "text-danger" : "")">KES @c.DealerBase!.Value.ToString("N0")</td>
@@ -290,6 +344,39 @@
                                                     </div>
                                                 </div>
 
+                                                @if (legacy)
+                                                {
+                                                    <div class="col-12 col-lg-8">
+                                                        <h6 class="overline-title text-soft mb-2">Commission</h6>
+                                                        <p class="mb-2">
+                                                            <strong>@c.NoCommissionReason account: no commission for @(agentView ? "you" : "the agent or the dealer").</strong>
+                                                            @if (c.NoCommissionReason == Ranalo.Models.CommissionExclusionReason.Legacy)
+                                                            {
+                                                                <span>It was sold before the 1 Oct 2026 commission rules, and its commission was settled under the old way of working it out.</span>
+                                                            }
+                                                        </p>
+                                                        @if (!agentView)
+                                                        {
+                                                            <div class="wl-line"><span>Paid to the agent before</span><span>KES @c.AgentPaidBeforeRules.ToString("N0")</span></div>
+                                                            <div class="wl-line"><span>Paid to the dealer before</span><span>KES @c.DealerPaidBeforeRules.ToString("N0")</span></div>
+                                                            @if (c.RecoverArrears)
+                                                            {
+                                                                <div class="wl-line wl-total"><span>Recovering from the dealer</span><span class="@(c.DealerArrearsDeducted > 0 ? "text-danger" : "text-success")">KES @c.DealerArrearsDeducted.ToString("N0")</span></div>
+                                                                <div class="wl-note">What the customer is behind by is deducted from the dealer's commission on their other accounts. It goes down as the customer pays, and never takes more than the dealer has earned.</div>
+                                                            }
+                                                            else
+                                                            {
+                                                                <div class="wl-note">Not in any commission total. Its arrears aren't being recovered from the dealer.</div>
+                                                            }
+                                                        }
+                                                        @if (r.Exclusion != null)
+                                                        {
+                                                            <div class="wl-note mt-2">Set @(r.Exclusion.SetByName is { Length: > 0 } who ? "by " + who : "by the legacy script") on @r.Exclusion.SetAtUtc.ToLocalTime().ToString("dd MMM yyyy")@(string.IsNullOrWhiteSpace(r.Exclusion.Notes) ? "" : ": " + r.Exclusion.Notes)</div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
                                                 <div class="col-12 col-lg-4">
                                                     <h6 class="overline-title text-soft mb-2">@(agentView ? "Your commission" : "Agent commission") &mdash; how it's worked out</h6>
                                                     @if (noAgent)
@@ -385,6 +472,44 @@
                                                             </ol>
                                                             <div class="wl-line wl-total"><span>@(c.DealerBalance >= 0 ? "Still to be paid" : "Held back (more than earned)")</span><span class="@(c.DealerBalance < 0 ? "text-danger" : "text-success")">KES @c.DealerBalance!.Value.ToString("N0")</span></div>
                                                         }
+                                                    </div>
+                                                }
+                                                }
+
+                                                @if (Model.CanEditStatus && long.TryParse(r.ContractId, out var statusContractId))
+                                                {
+                                                    var current = Ranalo.Models.CommissionStatus.Of(r.Exclusion);
+                                                    <div class="col-12">
+                                                        <form method="post" action="/account-commissions/status" class="d-flex flex-wrap align-items-end border-top pt-3" style="gap:.5rem;">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="contractId" value="@statusContractId" />
+                                                            <input type="hidden" name="accountId" value="@r.AccountId" />
+                                                            <input type="hidden" name="filter" value="@Model.StatusFilter" />
+                                                            <input type="hidden" name="q" value="@Model.Search" />
+                                                            <div>
+                                                                <label class="form-label small mb-1">Commission (admin)</label>
+                                                                <select name="status" class="form-select form-select-sm">
+                                                                    @foreach (var st in new[] { Ranalo.Models.CommissionStatus.Qualifies, Ranalo.Models.CommissionStatus.NoCommission, Ranalo.Models.CommissionStatus.Recover })
+                                                                    {
+                                                                        <option value="@st" selected="@(st == current)">@Ranalo.Models.CommissionStatus.Label(st)</option>
+                                                                    }
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label class="form-label small mb-1">Reason</label>
+                                                                <select name="reason" class="form-select form-select-sm">
+                                                                    @foreach (var why in Ranalo.Models.CommissionExclusionReason.All)
+                                                                    {
+                                                                        <option value="@why" selected="@(why == (r.Exclusion?.Reason ?? Ranalo.Models.CommissionExclusionReason.Legacy))">@why</option>
+                                                                    }
+                                                                </select>
+                                                            </div>
+                                                            <div class="flex-grow-1" style="min-width:200px;">
+                                                                <label class="form-label small mb-1">Note (why; kept in the log)</label>
+                                                                <input type="text" name="notes" maxlength="500" required class="form-control form-control-sm" />
+                                                            </div>
+                                                            <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                                        </form>
                                                     </div>
                                                 }
                                             </div>

@@ -1625,6 +1625,9 @@ namespace Ranalo.DataStore
 
             // The contract's latest collections case, if it has ever had one.
             public CollectionTerms? Collections { get; set; }
+
+            // Set when the contract earns no commission (legacy etc.).
+            public CommissionExclusion? Exclusion { get; set; }
         }
 
         // The raw per-account commission inputs used by every commission
@@ -1756,7 +1759,38 @@ namespace Ranalo.DataStore
                     }
                 }
             }
+
+            var exclusions = await GetCommissionExclusionsAsync();
+            if (exclusions.Count > 0)
+            {
+                foreach (var r in rows)
+                {
+                    if (long.TryParse(r.ContractId, out var cid) && exclusions.TryGetValue(cid, out var x))
+                    {
+                        r.Exclusion = x;
+                    }
+                }
+            }
             return rows;
+        }
+
+        // Contracts that earn no commission (Database/Commissions/005), keyed
+        // by ContractID. Empty until that script has been run.
+        public async Task<Dictionary<long, CommissionExclusion>> GetCommissionExclusionsAsync()
+        {
+            const string sql = @"
+                SELECT x.ContractId, x.Reason, x.RecoverArrears, x.Notes, x.SetByUserId,
+                       LTRIM(RTRIM(ISNULL(u.[Name], '') + ' ' + ISNULL(u.[LastName], ''))) AS SetByName, x.SetAtUtc
+                FROM CommissionExclusions x
+                LEFT JOIN Users u ON u.UserId = x.SetByUserId";
+            try
+            {
+                return (await _db.QueryAsync<CommissionExclusion>(sql)).ToDictionary(x => x.ContractId);
+            }
+            catch (SqlException ex) when (IsMissingTable(ex))
+            {
+                return new Dictionary<long, CommissionExclusion>();
+            }
         }
 
         private class CollectionTermsRow : CollectionTerms
@@ -1839,6 +1873,7 @@ namespace Ranalo.DataStore
                 AgentPaid = r.AgentPaid,
                 DealerPaid = r.DealerPaid,
                 HasWooOrder = r.HasWooOrder,
+                Exclusion = r.Exclusion,
             });
 
         // A single agent's own Commission card (Agent Dashboard), live.
@@ -1859,7 +1894,7 @@ namespace Ranalo.DataStore
                 var now = DateTime.Now;
 
                 return rows
-                    .Where(r => r.AssignedAgentId.HasValue)
+                    .Where(r => r.AssignedAgentId.HasValue && r.Exclusion == null)
                     .Select(r =>
                     {
                         var b = Breakdown(r, now);
@@ -1909,6 +1944,7 @@ namespace Ranalo.DataStore
                     Imei = r.Imei,
                     AgentBonusPaid = r.AgentBonusPaid,
                     Commission = Breakdown(r, now),
+                    Exclusion = r.Exclusion,
                 }).ToList();
             }
             catch (SqlException ex)
@@ -1931,7 +1967,7 @@ namespace Ranalo.DataStore
             var paidLifetime = rows.Sum(r => r.AgentPaid);
             var earned = breakdowns.Count(b => b.BonusEarned);
             var atRisk = breakdowns.Count(b => b.BonusAtRisk);
-            var upcoming = rows.Count(r => r.DaysSinceStart >= CommissionCalculator.BonusDays - 30 && r.DaysSinceStart < CommissionCalculator.BonusDays);
+            var upcoming = rows.Count(r => r.Exclusion == null && r.DaysSinceStart >= CommissionCalculator.BonusDays - 30 && r.DaysSinceStart < CommissionCalculator.BonusDays);
 
             return (paidLifetime, earned, atRisk, upcoming);
         }
@@ -1961,7 +1997,7 @@ namespace Ranalo.DataStore
 
                         // Agent side: pooled per agent (direct sales have no agent).
                         var perAgent = breakdowns
-                            .Where(x => x.Row.AssignedAgentId.HasValue)
+                            .Where(x => x.Row.AssignedAgentId.HasValue && x.Row.Exclusion == null)
                             .GroupBy(x => x.Row.AssignedAgentId!.Value)
                             .Select(g => CommissionCalculator.PoolAgent(g.Select(x => x.Commission)))
                             .ToList();
@@ -1979,9 +2015,10 @@ namespace Ranalo.DataStore
                             // never offset what another agent is owed.
                             CommissionOutstanding = perAgent.Sum(a => a.Owed),
                             DealerCommissionOutstanding = dealerPool.Owed,
-                            CommissionAccountCount = dealerGroup.Count(r => r.AssignedAgentId.HasValue),
-                            DealerCommissionAccountCount = dealerGroup.Count(r => r.BuyingPrice.HasValue),
-                            DealerCommissionMissingCostCount = dealerGroup.Count(r => !r.BuyingPrice.HasValue),
+                            // No-commission (legacy) accounts aren't counted.
+                            CommissionAccountCount = dealerGroup.Count(r => r.AssignedAgentId.HasValue && r.Exclusion == null),
+                            DealerCommissionAccountCount = dealerGroup.Count(r => r.BuyingPrice.HasValue && r.Exclusion == null),
+                            DealerCommissionMissingCostCount = dealerGroup.Count(r => !r.BuyingPrice.HasValue && r.Exclusion == null),
                             CommissionWithheldForArrears = perAgent.Sum(a => a.Withheld),
                             DealerCommissionWithheldForArrears = dealerPool.Withheld,
                         };

@@ -527,8 +527,10 @@ namespace Ranalo.Controllers
             ViewBag.PreviewExpandRows = expand ? 3 : 0;
 
             AccountCommissionRow Row(long id, string customer, string product, string? agentName, int days, decimal deposit,
-                decimal totalPaid, decimal? buyingPrice, bool pastLock, decimal arrears, decimal agentPaid, decimal dealerPaid) => new()
+                decimal totalPaid, decimal? buyingPrice, bool pastLock, decimal arrears, decimal agentPaid, decimal dealerPaid,
+                CommissionExclusion? exclusion = null) => new()
             {
+                Exclusion = exclusion,
                 AccountId = id,
                 ContractId = (id % 1000).ToString(),
                 CustomerName = customer,
@@ -547,8 +549,14 @@ namespace Ranalo.Controllers
                 {
                     Deposit = deposit, DaysSinceStart = days, IsPastLockDate = pastLock, Arrears = -arrears,
                     TotalPaid = totalPaid, BuyingPrice = buyingPrice, HasAgent = agentName != null, HasWooOrder = id % 2 == 1,
-                    AgentPaid = agentPaid, DealerPaid = dealerPaid,
+                    AgentPaid = agentPaid, DealerPaid = dealerPaid, Exclusion = exclusion,
                 }),
+            };
+            CommissionExclusion Legacy(bool recover) => new()
+            {
+                Reason = CommissionExclusionReason.Legacy, RecoverArrears = recover, SetAtUtc = DateTime.UtcNow,
+                SetByName = recover ? "Preview Admin" : null,
+                Notes = recover ? "Recovering legacy arrears" : "Sold before the 1 Oct 2026 commission rules; paid under the old calculators",
             };
 
             var rows = new List<AccountCommissionRow>
@@ -557,6 +565,8 @@ namespace Ranalo.Controllers
                 Row(9711946, "Kevin Otieno", "Tecno Spark 20 Pro", "John Mwangi", 104, 4000, 9800, 11000, true, 1400, 2000, 0),
                 Row(9800123, "Faith Wambui", "Infinix Hot 40i", "John Mwangi", 45, 2500, 4100, 8500, false, 0, 0, 0),
                 Row(9800456, "Samuel Kiprono", "Redmi 13C", null, 130, 3500, 16000, null, false, 0, 0, 0),
+                Row(8100321, "Peter Legacy", "Samsung Galaxy A05", "John Mwangi", 300, 3000, 9000, 9000, true, 6200, 1500, 900, Legacy(true)),
+                Row(8100654, "Ann Legacy", "Tecno Pop 8", "John Mwangi", 250, 2500, 12000, 7000, false, 0, 1250, 600, Legacy(false)),
             };
             if (agent)
             {
@@ -570,7 +580,11 @@ namespace Ranalo.Controllers
                 Rows = rows,
                 Agent = Services.CommissionCalculator.PoolAgent(rows.Where(r => r.AgentName != null).Select(r => r.Commission)),
                 Dealer = Services.CommissionCalculator.PoolDealer(rows.Select(r => r.Commission)),
-                MissingBuyingPriceCount = rows.Count(r => !r.BuyingPrice.HasValue),
+                MissingBuyingPriceCount = rows.Count(r => !r.BuyingPrice.HasValue && !r.Commission.NoCommission),
+                NoCommissionCount = rows.Count(r => r.Commission.NoCommission),
+                RecoveringCount = rows.Count(r => r.Commission.RecoverArrears),
+                CanEditStatus = !agent,
+                TotalAccounts = rows.Count,
             };
 
             return View("~/Views/AccountCommissions/Index.cshtml", model);
