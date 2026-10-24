@@ -2,6 +2,8 @@
 using Ranalo.Configuration;
 using Ranalo.DataStore.DataModels;
 using Ranalo.Services;
+using Ranalo.Woocommece.Api.Models;
+using Ranalo.Woocommece.Api.Services;
 
 namespace Ranalo.Controllers
 {
@@ -12,13 +14,17 @@ namespace Ranalo.Controllers
         private readonly IUserService _userService;
         private readonly IDashboardReportService _dashboardReportService;
         private readonly ICustomerScreeningService _screening;
+        private readonly ISyncService _sync;
+        private readonly ILogger<ApproverController> _logger;
         public ApproverController(IApplicationReportService applicationReportService, IUserService userService, IDashboardReportService dashboardReportService,
-            ICustomerScreeningService screening)
+            ICustomerScreeningService screening, ISyncService sync, ILogger<ApproverController> logger)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
             _dashboardReportService = dashboardReportService;
             _screening = screening;
+            _sync = sync;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -77,6 +83,61 @@ namespace Ranalo.Controllers
             var allAwaitngApproval = await _applicationReportService.GetAwaitingApprovalOrders(searchTerm.Trim(), page, pageSize);
             ViewData["OrdersStatus"] = "Waiting Approval";
             return View("~/Views/Approver/Index.cshtml", allAwaitngApproval);
+        }
+
+        // Pull one order from WooCommerce now instead of waiting for the sync:
+        // added if it's missing here, refreshed (status etc.) if it isn't.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("fetch-order")]
+        public async Task<IActionResult> FetchOrder(int orderId, string? returnTo = null)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (settings.RoleId != UserRole.Admin && settings.RoleId != UserRole.Approver)
+            {
+                return RedirectToAction("Index", "Approver");
+            }
+
+            // Back to whichever orders page the button was on.
+            var back = returnTo == "/orders" ? "/orders" : "/approver-orders";
+
+            if (orderId <= 0)
+            {
+                TempData["FetchOrderError"] = "Enter the WooCommerce order number.";
+                return Redirect(back);
+            }
+
+            try
+            {
+                var order = await _sync.OrderById(orderId);
+                if (order.OrderID != orderId)
+                {
+                    TempData["FetchOrderError"] = $"Order {orderId} wasn't found on WooCommerce.";
+                    return Redirect(back);
+                }
+
+                if (await _sync.CreateOrderAsync(new List<WooOrder> { order }) == 0)
+                {
+                    TempData["FetchOrderError"] = $"Order {orderId} was found on WooCommerce but couldn't be saved. Please try again.";
+                    return Redirect(back);
+                }
+
+                TempData["FetchOrderMessage"] = ScreeningRules.IsOnApprovalList(order.Status)
+                    ? $"Order {orderId} fetched from WooCommerce (status: {order.Status})."
+                    : $"Order {orderId} fetched from WooCommerce. Its status there is \"{order.Status}\", so it isn't on the Waiting Approval list.";
+                return Redirect($"/order-details/{orderId}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fetching order {OrderId} from WooCommerce failed", orderId);
+                TempData["FetchOrderError"] = $"Couldn't reach WooCommerce for order {orderId}. Please try again.";
+                return Redirect(back);
+            }
         }
 
         [HttpPost]

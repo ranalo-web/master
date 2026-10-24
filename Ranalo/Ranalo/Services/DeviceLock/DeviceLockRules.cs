@@ -213,6 +213,17 @@ namespace Ranalo.Services.DeviceLock
             return onAnotherOrder ? $"M-Pesa code {entered} is already the deposit on another order." : null;
         }
 
+        // The order's IMEI. The customer applies and is screened before
+        // choosing a phone, so the WooCommerce order usually has no IMEI:
+        // the dealer gives it at enrolment and it's saved to the order. If
+        // the order already names a phone, the enrolled one must match it.
+        public static bool OrderHasImei(string? orderImei) => !string.IsNullOrWhiteSpace(orderImei);
+
+        public static string? CheckOrderImei(string? orderImei, string? entered) =>
+            OrderHasImei(orderImei) && !string.Equals(orderImei!.Trim(), entered?.Trim(), StringComparison.Ordinal)
+                ? $"This order is for IMEI {orderImei!.Trim()}, not {entered?.Trim()}. Check the phone, or ask an admin to correct the order."
+                : null;
+
         public static DepositCheckResult CheckDeposit(
             string? mpesaDepositRef,
             string? accountNo,

@@ -1,0 +1,17 @@
+@* Fetch one order from WooCommerce now (ApproverController.FetchOrder).
+   Admins and approvers only. The model is the page to come back to on an error. *@
+@model string
+@if (ViewBag.IsAdmin == true || ViewBag.IsApprover == true)
+{
+    <form action="/fetch-order" method="post" class="d-flex flex-wrap align-items-center mt-2" style="gap:.5rem;" title="Pull an order from WooCommerce now instead of waiting for the sync">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnTo" value="@Model" />
+        <input type="number" name="orderId" class="form-control" placeholder="Order no." min="1" required style="width:140px;">
+        <button type="submit" class="btn btn-primary"><em class="icon ni ni-download"></em><span>Fetch order</span></button>
+        <span class="text-soft small">Missing an order? Fetch it from WooCommerce.</span>
+    </form>
+    @if (TempData["FetchOrderError"] is string fetchOrderError)
+    {
+        <div class="alert alert-danger mt-2 mb-0">@fetchOrderError</div>
+    }
+}

@@ -15,10 +15,14 @@ namespace Ranalo.Controllers
         private const int NotesMaxLength = 1000;
 
         private readonly ICustomerScreeningService _screening;
+        private readonly IApplicationReportService _orders;
+        private readonly ILogger<CustomerCallsController> _logger;
 
-        public CustomerCallsController(ICustomerScreeningService screening)
+        public CustomerCallsController(ICustomerScreeningService screening, IApplicationReportService orders, ILogger<CustomerCallsController> logger)
         {
             _screening = screening;
+            _orders = orders;
+            _logger = logger;
         }
 
         private static bool CanCall(User settings) =>
@@ -80,6 +84,27 @@ namespace Ranalo.Controllers
 
             await _screening.LogScreeningCallAsync(call);
             TempData["ScreeningMessage"] = "Call logged.";
+
+            // The call that completes screening approves the order.
+            var order = await _orders.GetOrderByOrderIdAsync(call.OrderId);
+            if (order != null)
+            {
+                var screening = await _screening.GetOrderScreeningAsync(call.OrderId, order.DateCreated);
+                if (ScreeningRules.ShouldAutoApprove(order.Status, screening.Status))
+                {
+                    try
+                    {
+                        await _orders.ApproveOrderAsync(call.OrderId);
+                        TempData["ScreeningMessage"] = "Call logged. Screening passed, so the order is now approved and can be enrolled.";
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Auto-approving order {OrderId} after screening failed", call.OrderId);
+                        TempData["ScreeningError"] = "Screening passed, but the order couldn't be approved automatically. Press Approve.";
+                    }
+                }
+            }
+
             return Redirect($"/order-details/{call.OrderId}");
         }
 

@@ -73,7 +73,8 @@ namespace Ranalo.Woocommece.Api.DataStore
         SET [Status] = @Status,
             [DateModified] = GETDATE(),
             [TotalAmount] = @TotalAmount,
-            [IMEI] = @IMEI,
+            -- A blank IMEI from WooCommerce keeps the one saved at enrolment.
+            [IMEI] = COALESCE(NULLIF(LTRIM(RTRIM(@IMEI)), ''), [IMEI]),
             [DealerRef] = @DealerRef,
             [MpesaDepositRef] = @MpesaDepositRef,
             [DailySalePrice] = @DailySalePrice,

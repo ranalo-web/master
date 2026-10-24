@@ -35,6 +35,10 @@
 }
 
 <div class="nk-content-body">
+    @if (TempData["FetchOrderMessage"] is string fetchOrderMessage)
+    {
+        <div class="alert alert-info alert-icon"><em class="icon ni ni-download"></em>@fetchOrderMessage</div>
+    }
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between g-3">
             <div class="nk-block-head-content">
@@ -43,7 +47,15 @@
                     <p>Customer infomation when the order was made</p>
                 </div>
             </div>
-            <div class="nk-block-head-content">
+            <div class="nk-block-head-content d-flex flex-wrap" style="gap:.5rem;">
+                @if (ViewBag.IsAdmin == true || ViewBag.IsApprover == true)
+                {
+                    <form action="/fetch-order" method="post" title="Update this order with what WooCommerce has now">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="orderId" value="@Model.OrderID" />
+                        <button type="submit" class="btn btn-outline-primary"><em class="icon ni ni-reload"></em><span>Refresh from WooCommerce</span></button>
+                    </form>
+                }
                 <a href="/@ViewBag.BackLink" class="btn btn-outline-light bg-white d-none d-sm-inline-flex"><em class="icon ni ni-arrow-left"></em><span>Back</span></a>
                 <a href="/ViewBag.BackLink" class="btn btn-icon btn-outline-light bg-white d-inline-flex d-sm-none"><em class="icon ni ni-arrow-left"></em></a>
             </div>
