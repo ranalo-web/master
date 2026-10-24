@@ -1,3 +1,5 @@
+using Ranalo.Models;
+
 namespace Ranalo.Services
 {
     // The single commission formula for the whole app. Every commission
@@ -32,6 +34,13 @@ namespace Ranalo.Services
     //             and any new shortfall once returned), for agent and dealer.
     //   Agent bonus     = only what was already paid; the rest is cancelled.
     //   Dealer base     = counts only payments made outside collections.
+    //
+    // No commission (CommissionInputs.Exclusion set; legacy accounts etc.)
+    //   Nothing is earned by the agent or the dealer, and what was paid under
+    //   the old rules is left out of every total (kept only for display).
+    //   Recover arrears on: the shortfall is still deducted from the dealer,
+    //   so it reduces what the dealer is owed on their other accounts. The
+    //   pool never takes more than the dealer earned.
     public static class CommissionCalculator
     {
         public const decimal AgentUpfrontRate = 0.50m;
@@ -41,6 +50,11 @@ namespace Ranalo.Services
 
         public static CommissionBreakdown Calculate(CommissionInputs i)
         {
+            if (i.Exclusion != null)
+            {
+                return NoCommission(i, i.Exclusion);
+            }
+
             var trueArrears = i.Arrears < 0 ? -i.Arrears : 0;
             var terms = i.Collections;
             var inCollections = terms != null;
@@ -92,6 +106,32 @@ namespace Ranalo.Services
                 DealerPaid = i.DealerPaid,
                 DealerNet = dealerNet,
                 DealerBalance = dealerBalance,
+            };
+        }
+
+        private static CommissionBreakdown NoCommission(CommissionInputs i, CommissionExclusion x)
+        {
+            var trueArrears = i.Arrears < 0 ? -i.Arrears : 0;
+            var terms = i.Collections;
+            var deducted = !x.RecoverArrears ? 0
+                : terms != null ? CollectionsRules.Deduction(terms, trueArrears) : trueArrears;
+
+            return new CommissionBreakdown
+            {
+                IsPastLockDate = i.IsPastLockDate,
+                HasWooOrder = i.HasWooOrder,
+                TrueArrears = trueArrears,
+                InCollections = terms != null,
+                CollectionsReturned = terms?.IsReturned ?? false,
+                NoCommission = true,
+                NoCommissionReason = x.Reason,
+                RecoverArrears = x.RecoverArrears,
+                AgentPaidBeforeRules = i.AgentPaid,
+                DealerPaidBeforeRules = i.DealerPaid,
+                DealerCommission = 0,
+                DealerArrearsDeducted = deducted,
+                DealerNet = -deducted,
+                DealerBalance = -deducted,
             };
         }
 
@@ -148,6 +188,9 @@ namespace Ranalo.Services
 
         // Set when the contract has been in collections: its latest case.
         public CollectionTerms? Collections { get; set; }
+
+        // Set when the contract earns no commission (legacy etc.).
+        public CommissionExclusion? Exclusion { get; set; }
     }
 
     public class CommissionBreakdown
@@ -190,6 +233,16 @@ namespace Ranalo.Services
         public decimal DealerPaid { get; set; }
         public decimal? DealerNet { get; set; }
         public decimal? DealerBalance { get; set; }
+
+        // No commission for anyone (legacy etc.): every earned and paid
+        // figure above is 0. With RecoverArrears the dealer arrears are
+        // still deducted. The *BeforeRules figures are what was paid under
+        // the old rules, for display only.
+        public bool NoCommission { get; set; }
+        public string? NoCommissionReason { get; set; }
+        public bool RecoverArrears { get; set; }
+        public decimal AgentPaidBeforeRules { get; set; }
+        public decimal DealerPaidBeforeRules { get; set; }
     }
 
     public class CommissionPool

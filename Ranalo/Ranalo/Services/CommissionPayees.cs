@@ -15,6 +15,12 @@ namespace Ranalo.Services
         public static bool InArrears(CommissionAccount a) =>
             a.Commission.InCollections || CommissionPayoutRules.IsInDefault(a.DaysPastLock);
 
+        // Whether an account belongs on this payee's commission at all. A
+        // no-commission (legacy) account is left out, except on the dealer's
+        // side while its arrears are being recovered from the dealer.
+        public static bool CountsFor(string payeeType, CommissionAccount a) =>
+            !a.Commission.NoCommission || (payeeType == CommissionPayeeType.Dealer && a.Commission.RecoverArrears);
+
         public static PayoutAccount ToPayoutAccount(string payeeType, CommissionAccount a)
         {
             var c = a.Commission;
@@ -27,15 +33,19 @@ namespace Ranalo.Services
                 Upfront = isAgent ? c.AgentUpfront : c.DealerCommission ?? 0,
                 Deducted = isAgent ? c.AgentArrearsDeducted : c.DealerArrearsDeducted,
                 Paid = isAgent ? c.AgentPaid : c.DealerPaid,
-                BonusPaid = isAgent ? a.AgentBonusPaid : 0,
+                BonusPaid = isAgent && !c.NoCommission ? a.AgentBonusPaid : 0,
             };
         }
 
         public static CommissionPayeeSummary Summarize(string payeeType, int payeeId, IReadOnlyCollection<CommissionAccount> accounts)
         {
             var isAgent = payeeType == CommissionPayeeType.Agent;
-            var inArrears = accounts.Count(InArrears);
-            var rate = CommissionPayoutRules.DefaultRatePct(accounts.Count, inArrears);
+            // The default rate is judged on accounts that earn commission
+            // only: a dealer's legacy book (even while its arrears are being
+            // recovered) never suspends them.
+            var earning = accounts.Where(a => !a.Commission.NoCommission).ToList();
+            var inArrears = earning.Count(InArrears);
+            var rate = CommissionPayoutRules.DefaultRatePct(earning.Count, inArrears);
             var suspended = CommissionPayoutRules.IsSuspended(rate);
             var pool = isAgent
                 ? CommissionCalculator.PoolAgent(accounts.Select(a => a.Commission))
@@ -51,7 +61,7 @@ namespace Ranalo.Services
                     ? accounts.Select(a => a.AgentName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? $"Agent {payeeId}"
                     : dealerNames.FirstOrDefault() ?? $"Dealer {payeeId}",
                 DealerName = isAgent ? string.Join(", ", dealerNames) : null,
-                Accounts = accounts.Count,
+                Accounts = earning.Count,
                 AccountsInArrears = inArrears,
                 DefaultRatePct = rate,
                 IsSuspended = suspended,
@@ -61,18 +71,20 @@ namespace Ranalo.Services
                 BonusDue = isAgent ? payout.Sum(CommissionPayoutRules.UnpaidBonus) : 0,
                 BonusHeldCount = isAgent ? accounts.Count(a => a.Commission.BonusAtRisk) : 0,
                 BonusHeldNoWooOrderCount = isAgent ? accounts.Count(a => a.Commission.BonusHeldNoWooOrder) : 0,
-                MissingBuyingPriceCount = isAgent ? 0 : accounts.Count(a => !a.BuyingPrice.HasValue),
+                MissingBuyingPriceCount = isAgent ? 0 : earning.Count(a => !a.BuyingPrice.HasValue),
             };
         }
 
-        // One summary per agent (accounts with no agent are direct sales and skipped).
+        // One summary per agent (accounts with no agent are direct sales and
+        // skipped, as are no-commission accounts).
         public static List<CommissionPayeeSummary> Agents(IEnumerable<CommissionAccount> accounts) => accounts
-            .Where(a => a.AgentId.HasValue)
+            .Where(a => a.AgentId.HasValue && CountsFor(CommissionPayeeType.Agent, a))
             .GroupBy(a => a.AgentId!.Value)
             .Select(g => Summarize(CommissionPayeeType.Agent, g.Key, g.ToList()))
             .ToList();
 
         public static List<CommissionPayeeSummary> Dealers(IEnumerable<CommissionAccount> accounts) => accounts
+            .Where(a => CountsFor(CommissionPayeeType.Dealer, a))
             .GroupBy(a => a.DealerId)
             .Select(g => Summarize(CommissionPayeeType.Dealer, g.Key, g.ToList()))
             .ToList();

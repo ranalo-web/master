@@ -27,6 +27,9 @@ namespace Ranalo.Models
         // Of Commission.AgentPaid, what was paid against the bonus; the rest was upfront.
         public decimal AgentBonusPaid { get; set; }
         public Ranalo.Services.CommissionBreakdown Commission { get; set; } = new();
+
+        // Set when the account earns no commission (legacy etc.).
+        public CommissionExclusion? Exclusion { get; set; }
     }
 
     // One row of the Account Commissions page. The figures come from
@@ -51,6 +54,7 @@ namespace Ranalo.Models
         public decimal? ContractValue { get; set; }
         public int DaysPastLock { get; set; }
         public decimal AgentBonusPaid { get; set; }
+        public CommissionExclusion? Exclusion { get; set; }
     }
 
     public class AccountCommissionsViewModel
@@ -62,10 +66,24 @@ namespace Ranalo.Models
 
         public List<AccountCommissionRow> Rows { get; set; } = new();
 
+        // Status filter (CommissionStatus.*, null = all) and search, admin only.
+        public string? StatusFilter { get; set; }
+        public string? Search { get; set; }
+        public int TotalAccounts { get; set; }
+        public List<string> Messages { get; set; } = new();
+        public List<string> Errors { get; set; } = new();
+
         // Pooled like the dashboard cards: arrears on one account reduce what
         // is owed on the others, and Owed is never below 0.
         public Ranalo.Services.CommissionPool Agent { get; set; } = new();
         public Ranalo.Services.CommissionPool Dealer { get; set; } = new();
         public int MissingBuyingPriceCount { get; set; }
+
+        // Legacy etc.: earn no commission; Recovering = arrears still deducted from the dealer.
+        public int NoCommissionCount { get; set; }
+        public int RecoveringCount { get; set; }
+
+        // Admins can change an account's commission status from the page.
+        public bool CanEditStatus { get; set; }
     }
 }
