@@ -97,20 +97,22 @@ namespace Ranalo.DataStore
             }
         }
 
-        public async Task<List<OperatingExpenseMonthlyTotal>> GetMonthlyTotalsAsync(int months)
+        public async Task<List<OperatingExpenseMonthlyTotal>> GetMonthlyTotalsAsync(int months, DateTime? lastMonth = null)
         {
-            var rangeStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-(months - 1));
+            var endMonth = new DateTime((lastMonth ?? DateTime.Now).Year, (lastMonth ?? DateTime.Now).Month, 1);
+            var rangeStart = endMonth.AddMonths(-(months - 1));
+            var rangeEnd = endMonth.AddMonths(1);
 
             const string sql = @"
                 SELECT YEAR(ExpenseDate) AS Year, MONTH(ExpenseDate) AS Month, SUM(Amount) AS Total
                 FROM OperatingExpenses
-                WHERE RemovedAtUtc IS NULL AND ExpenseDate >= @RangeStart
+                WHERE RemovedAtUtc IS NULL AND ExpenseDate >= @RangeStart AND ExpenseDate < @RangeEnd
                 GROUP BY YEAR(ExpenseDate), MONTH(ExpenseDate)";
 
             List<OperatingExpenseMonthlyTotal> rows;
             try
             {
-                rows = (await _db.QueryAsync<OperatingExpenseMonthlyTotal>(sql, new { RangeStart = rangeStart })).ToList();
+                rows = (await _db.QueryAsync<OperatingExpenseMonthlyTotal>(sql, new { RangeStart = rangeStart, RangeEnd = rangeEnd })).ToList();
             }
             catch (SqlException ex) when (IsMissingTable(ex))
             {

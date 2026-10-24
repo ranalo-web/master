@@ -88,10 +88,15 @@ namespace Ranalo.Controllers
             model.FromDate = period == "custom" ? from : fromDate;
             model.ToDate = period == "custom" ? to : toDateExclusive?.AddDays(-1);
 
+            // The age of debt and balance sheet stand at the end of a past
+            // custom range, else today.
+            var kenyaToday = DateTime.UtcNow.AddHours(3).Date;
+            model.AsOfDate = period == "custom" && to!.Value.Date < kenyaToday ? to.Value.Date : kenyaToday;
+
             try
             {
                 model.WriteOffs = await _writeOffRepository.GetPeriodSummaryAsync(fromDate, toDateExclusive);
-                model.LoanBookAgeing = await _writeOffRepository.GetLoanBookAgeingAsync(DateTime.UtcNow.AddHours(3).Date);
+                model.LoanBookAgeing = await _writeOffRepository.GetLoanBookAgeingAsync(model.AsOfDate);
             }
             catch (Exception ex)
             {

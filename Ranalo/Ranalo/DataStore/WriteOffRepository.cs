@@ -493,6 +493,9 @@ namespace Ranalo.DataStore
         // approved, not-reinstated write-off are their own "Written off"
         // bucket (off the loan book); ones awaiting review are "Pending
         // write-off". Same payment rules as the write-off check.
+        // `today` can be a past date (Financials' To date): only payments,
+        // contracts and write-offs up to that day count, so the book is as
+        // it stood then (write-off status is today's -- no review history).
         public async Task<List<LoanBookAgeBucket>> GetLoanBookAgeingAsync(DateTime today)
         {
             var sql = @"
@@ -500,6 +503,7 @@ namespace Ranalo.DataStore
                 paid AS (
                     SELECT AccountNo, SUM(AmountValue) AS TotalPaid, MAX(PaymentDateValue) AS LastPaymentDate
                     FROM device_payments
+                    WHERE PaymentDateValue < DATEADD(DAY, 1, @Today)
                     GROUP BY AccountNo
                 ),
                 open_contracts AS (
@@ -509,11 +513,14 @@ namespace Ranalo.DataStore
                              + ci.Monthly * ci.Term_in_Months AS DECIMAL(18,2)) - ISNULL(paid.TotalPaid, 0) AS Outstanding,
                         DATEDIFF(DAY, CAST(COALESCE(paid.LastPaymentDate, ci.StartDate) AS DATE), @Today) AS DaysSince,
                         (SELECT TOP 1 wo.Status FROM WriteOffs wo
-                         WHERE wo.ContractId = ci.ContractID AND wo.AccountNo = ci.ID AND wo.ReinstatedDate IS NULL
+                         WHERE wo.ContractId = ci.ContractID AND wo.AccountNo = ci.ID
+                           AND wo.WrittenOffDate <= @Today
+                           AND (wo.ReinstatedDate IS NULL OR wo.ReinstatedDate > @Today)
                          ORDER BY wo.WrittenOffDate DESC) AS OpenWriteOffStatus
                     FROM Contract_Info ci
                     LEFT JOIN paid ON paid.AccountNo = ci.ID
-                    WHERE ci.EndDate IS NULL
+                    WHERE (ci.EndDate IS NULL OR ci.EndDate >= DATEADD(DAY, 1, @Today))
+                      AND (ci.StartDate IS NULL OR ci.StartDate < DATEADD(DAY, 1, @Today))
                       AND (ci.StartDate IS NOT NULL OR paid.LastPaymentDate IS NOT NULL)
                 ),
                 bucketed AS (

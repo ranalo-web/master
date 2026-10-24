@@ -10,4 +10,12 @@ namespace Ranalo.Models
         public int Month { get; set; }
         public decimal Total { get; set; }
     }
+
+    // One contract's device cost by start date -- Financials' Cost of
+    // devices (IDashboardReportRepository.GetDeviceCostsAsync).
+    public class DashboardDeviceCostRow
+    {
+        public DateTime StartDate { get; set; }
+        public decimal BuyingPrice { get; set; }
+    }
 }

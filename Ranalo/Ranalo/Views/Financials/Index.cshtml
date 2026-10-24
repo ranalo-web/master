@@ -32,6 +32,11 @@
     var periodRange = Model.FromDate.HasValue && Model.ToDate.HasValue
         ? $"{Model.FromDate.Value:dd MMM yyyy} – {Model.ToDate.Value:dd MMM yyyy}"
         : "all recorded history";
+    var isToday = Model.AsOfDate.Date >= DateTime.UtcNow.AddHours(3).Date;
+    var asOfLabel = isToday ? "as of today" : $"as at {Model.AsOfDate:dd MMM yyyy}";
+    var trendRange = Model.MonthlyTrend.Count > 0
+        ? $"{Model.MonthlyTrend.First().MonthLabel} – {Model.MonthlyTrend.Last().MonthLabel}"
+        : "";
 }
 
 <div class="nk-content-body">
@@ -40,32 +45,41 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Financials</h3>
                 <div class="nk-block-des text-soft">
-                    <p>Income statement, monthly trend, and balance sheet -- everything on this page is live except where noted.</p>
+                    <p>Income statement, write-offs, age of debt, monthly trend and balance sheet for the dates below.</p>
                 </div>
             </div>
             <div class="nk-block-head-content">
-                <ul class="nk-block-tools g-3">
-                    <li>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-outline-light btn-white dropdown-toggle" data-bs-toggle="dropdown">
-                                <em class="icon ni ni-calendar"></em><span>@Model.PeriodLabel</span>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end">
-                                <ul class="link-list-opt no-bdr">
-                                    <li><a href="@PeriodLink("all")"><span>All Time</span></a></li>
-                                    <li><a href="@PeriodLink("week")"><span>Week</span></a></li>
-                                    <li><a href="@PeriodLink("month")"><span>Month</span></a></li>
-                                    <li><a href="@PeriodLink("ytd")"><span>Year to Date</span></a></li>
-                                    <li><a href="@PeriodLink("year")"><span>Last 12 Months</span></a></li>
-                                    <li><a href="#financials-custom-range" data-bs-toggle="modal"><span>Custom Range…</span></a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <a href="/operating-expenses" class="btn btn-outline-primary"><em class="icon ni ni-wallet-out"></em><span>Log an Expense</span></a>
-                    </li>
-                </ul>
+                <a href="/operating-expenses" class="btn btn-outline-primary"><em class="icon ni ni-wallet-out"></em><span>Log an Expense</span></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-inner py-3">
+                <form action="/financials" method="get" class="d-flex flex-wrap align-items-end g-2" style="gap:.75rem;">
+                    <input type="hidden" name="period" value="custom" />
+                    <div>
+                        <label class="form-label mb-1" for="financials-from">From</label>
+                        <input type="date" name="from" id="financials-from" class="form-control" required
+                               value="@(Model.FromDate?.ToString("yyyy-MM-dd") ?? "")" />
+                    </div>
+                    <div>
+                        <label class="form-label mb-1" for="financials-to">To</label>
+                        <input type="date" name="to" id="financials-to" class="form-control" required
+                               value="@(Model.ToDate?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.AddHours(3).ToString("yyyy-MM-dd"))" />
+                    </div>
+                    <button type="submit" class="btn btn-primary"><em class="icon ni ni-filter"></em><span>Apply</span></button>
+                    <div class="btn-group flex-wrap ms-md-auto" role="group" aria-label="Quick periods">
+                        @foreach (var (key, label) in new[] { ("week", "Week"), ("month", "Month"), ("ytd", "Year to Date"), ("year", "Last 12 Months"), ("all", "All Time") })
+                        {
+                            <a href="@PeriodLink(key)" class="btn btn-sm @(Model.Period == key ? "btn-primary" : "btn-outline-light btn-white")">@label</a>
+                        }
+                    </div>
+                </form>
+                <div class="text-soft small mt-2">
+                    Showing <span class="fw-medium">@periodRange</span>. Age of debt and balance sheet are @asOfLabel.
+                </div>
             </div>
         </div>
     </div>
@@ -248,7 +262,7 @@
                         <div class="card-title-group mb-3">
                             <div class="card-title">
                                 <h6 class="title">Age of Debt</h6>
-                                <p class="text-soft">Open contracts still owing, by days since the last payment -- as of today</p>
+                                <p class="text-soft">Open contracts still owing, by days since the last payment -- @asOfLabel</p>
                             </div>
                         </div>
                         @if (!Model.WriteOffsUnavailable)
@@ -287,7 +301,7 @@
                 <div class="card-title-group mb-3">
                     <div class="card-title">
                         <h6 class="title">Monthly Comparison</h6>
-                        <p class="text-soft">Revenue, direct costs, and operating expenses -- last 12 months. Excludes bad debt and tax (point-in-time figures, not reconstructable per past month).</p>
+                        <p class="text-soft">Revenue, direct costs, and operating expenses -- @trendRange. Excludes bad debt and tax (point-in-time figures, not reconstructable per past month).</p>
                     </div>
                 </div>
                 <div style="height:300px;">
@@ -315,7 +329,7 @@
                 <div class="card-title-group mb-3">
                     <div class="card-title">
                         <h6 class="title">Balance Sheet <span class="badge badge-dim bg-warning" title="This app has no cash/bank ledger or device-inventory tracking, so this does not balance to zero -- it shows what's real and labels what isn't tracked.">Best-effort</span></h6>
-                        <p class="text-soft">Assets, liabilities &amp; equity -- as of today</p>
+                        <p class="text-soft">Assets, liabilities &amp; equity -- @asOfLabel</p>
                     </div>
                 </div>
                 <div class="row g-gs">
@@ -347,7 +361,7 @@
                         </div>
                     </div>
                     <div class="col-12 col-md-4">
-                        <h6 class="overline-title text-soft mb-2">Liabilities</h6>
+                        <h6 class="overline-title text-soft mb-2">Liabilities@(isToday ? "" : " (today -- no payout history)")</h6>
                         <div class="d-flex justify-content-between py-2 border-bottom">
                             <span>Commissions payable to dealers</span>
                             <span class="fw-medium">KES @Model.CommissionsPayableToDealers.ToString("N0")</span>
@@ -364,7 +378,7 @@
                     <div class="col-12 col-md-4">
                         <h6 class="overline-title text-soft mb-2">Equity</h6>
                         <div class="d-flex justify-content-between py-2 border-bottom">
-                            <span>Retained earnings (all-time estimate)</span>
+                            <span>Retained earnings (estimate, to @Model.AsOfDate.ToString("dd MMM yyyy"))</span>
                             <span class="fw-medium">KES @Model.RetainedEarningsAllTime.ToString("N0")</span>
                         </div>
                         <div class="d-flex justify-content-between py-2 fw-bold">
@@ -379,38 +393,6 @@
             </div>
         </div>
     </div><!-- .nk-block -->
-</div>
-
-<div class="modal fade" tabindex="-1" id="financials-custom-range">
-    <div class="modal-dialog modal-sm" role="document">
-        <div class="modal-content">
-            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                <em class="icon ni ni-cross"></em>
-            </button>
-            <div class="modal-header">
-                <h5 class="modal-title">Custom Range</h5>
-            </div>
-            <form action="/financials" method="get">
-                <input type="hidden" name="period" value="custom" />
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label" for="financials-from">From</label>
-                        <input type="date" name="from" id="financials-from" class="form-control" required
-                               value="@(Model.Period == "custom" ? Model.FromDate?.ToString("yyyy-MM-dd") : new DateTime(DateTime.Now.Year - 1, 1, 1).ToString("yyyy-MM-dd"))" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="financials-to">To</label>
-                        <input type="date" name="to" id="financials-to" class="form-control" required
-                               value="@(Model.Period == "custom" ? Model.ToDate?.ToString("yyyy-MM-dd") : new DateTime(DateTime.Now.Year - 1, 12, 31).ToString("yyyy-MM-dd"))" />
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-danger">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Apply</button>
-                </div>
-            </form>
-        </div>
-    </div>
 </div>
 
 @section Scripts {
