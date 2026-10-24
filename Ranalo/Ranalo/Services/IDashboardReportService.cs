@@ -4,7 +4,7 @@ namespace Ranalo.Services
 {
     public interface IDashboardReportService
     {
-        Task<AdminDashboardViewModel> GetAdminDashboardAsync();
+        Task<AdminDashboardViewModel> GetAdminDashboardAsync(string? period = null);
 
         // Financials page (Income Statement, monthly comparison chart,
         // best-effort balance sheet) -- moved off the Admin Dashboard onto
