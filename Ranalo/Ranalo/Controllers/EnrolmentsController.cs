@@ -256,7 +256,7 @@ namespace Ranalo.Controllers
                 settings.RoleId is UserRole.Admin or UserRole.Approver)
             {
                 await _enrolmentService.CreateDeviceFromKnox(existingEnrolment);
-                await _contracts.TryCreateAsync(existingEnrolment.OrderId);
+                await _contracts.TryCreateAsync(existingEnrolment.OrderId, existingEnrolment.AccountId);
             }
 
 
@@ -531,7 +531,7 @@ namespace Ranalo.Controllers
                     enrolment.Updated = DateTime.UtcNow;
                     enrolment.UpdatedBy = "NOUVAPAY";
                     await _enrolmentService.UpdateEnrolmentasync(enrolment);
-                    await _contracts.TryCreateAsync(enrolment.OrderId);
+                    await _contracts.TryCreateAsync(enrolment.OrderId, enrolment.AccountId);
                 }
             }
             catch (Exception)

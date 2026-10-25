@@ -287,6 +287,12 @@ namespace Ranalo.Woocommece.Api.DataStore
             await _db.QueryFirstOrDefaultAsync<ContractCreateDto>(
                 ContractEligibleSql + " AND wo.OrderID = @OrderId;", new { OrderId = orderId });
 
+        // An account's orders, as soon as a payment comes in or is assigned
+        // to it (AccountRefreshWorker, 2026-10-25).
+        public async Task<List<ContractCreateDto>> GetContractEligibleOrdersForAccount(long accountNo) =>
+            (await _db.QueryAsync<ContractCreateDto>(
+                ContractEligibleSql + " AND d.Id = @AccountNo;", new { AccountNo = accountNo })).ToList();
+
         // The contract goes on the account the deposit belongs to: where
         // it was assigned (Assign Payments) if it was, else the account
         // the customer typed on M-Pesa. Knox/PayTrigger accounts are the

@@ -7,7 +7,7 @@ namespace Ranalo.ScheduledServices
 
         private readonly ILogger<ScheduledTaskCreateContractOrders> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly TimeSpan _interval = TimeSpan.FromMinutes(120); // Run every 30 min
+        private readonly TimeSpan _interval = TimeSpan.FromMinutes(10); // Safety net: AccountRefreshWorker does most as soon as a payment lands
 
         public ScheduledTaskCreateContractOrders(
             ILogger<ScheduledTaskCreateContractOrders> logger,

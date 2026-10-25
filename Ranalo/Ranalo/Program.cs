@@ -94,6 +94,7 @@ builder.Services.AddScoped<ISyncLogsRepository, SyncLogsRepository>();
 builder.Services.AddScoped<IWooOrderProductRepository, WooOrderProductRepository>();
 builder.Services.AddScoped<ISyncService, SyncService>();
 builder.Services.AddScoped<IOrderContractService, OrderContractService>();
+builder.Services.AddSingleton<IAccountRefreshQueue, AccountRefreshQueue>();
 builder.Services.AddScoped<IStatementUploadRepository, StatementUploadRepository>();
 builder.Services.AddScoped<IKosePaymentsRepository, KosePaymentsRepository>();
 
@@ -213,7 +214,11 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService<ScheduledAutoRestructureMessages>();
         builder.Services.AddHostedService<ScheduledLockRestructured>();
         builder.Services.AddHostedService<ScheduledTaskLockAutoRestructured>();
-        builder.Services.AddHostedService<ScheduledLockPaying>();
+        // One instance: AccountRefreshWorker runs the same lock-date update for a
+        // single account as soon as it pays.
+        builder.Services.AddSingleton<ScheduledLockPaying>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<ScheduledLockPaying>());
+        builder.Services.AddHostedService<AccountRefreshWorker>();
         builder.Services.AddHostedService<ScheduledDailyPaymentSummary>();
 
         // Runs nightly at 4 AM UTC alongside the other scheduled jobs above

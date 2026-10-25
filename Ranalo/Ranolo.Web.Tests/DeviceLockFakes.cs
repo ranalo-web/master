@@ -288,7 +288,7 @@ namespace Ranolo.Web.Tests
     {
         public List<long> Orders { get; } = new();
 
-        public Task<bool> TryCreateAsync(long orderId)
+        public Task<bool> TryCreateAsync(long orderId, long accountNo)
         {
             Orders.Add(orderId);
             return Task.FromResult(true);

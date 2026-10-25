@@ -73,9 +73,11 @@ namespace Ranalo.ScheduledServices
             IApplicationReportService applicationReportService, 
             IPaymentsRepository paymentsRepository,
             IEnrolmentService enrolmentService,
-            IReadOnlySet<long>? lostStolenLocked = null)
+            IReadOnlySet<long>? lostStolenLocked = null,
+            int? accountId = null)
         {
-            var records = await applicationReportService.GetStatusReportByDealer(null, null, 1, ReportPaging.All, ""); ;
+            // accountId: just that account, as soon as it's paid (AccountRefreshWorker).
+            var records = await applicationReportService.GetStatusReportByDealer(accountId, null, 1, ReportPaging.All, ""); ;
 
             // Get all restructured records to remove from the auto restructure list
 

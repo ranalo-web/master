@@ -117,7 +117,7 @@ namespace Ranalo.Woocommece.Api.Services
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
 
                 return 0;
@@ -192,6 +192,22 @@ namespace Ranalo.Woocommece.Api.Services
         {
             var order = await _wooOrderProductRepository.GetContractEligibleOrder(orderId);
             return order != null && !string.IsNullOrEmpty(order.FirstName) && await CreateContractSingle(order);
+        }
+
+        // As soon as a payment comes in or is assigned to an account: any
+        // order of that account's that now qualifies.
+        public async Task<List<string>> CreateContractsForAccountAsync(long accountNo)
+        {
+            var accountsNos = new List<string>();
+            foreach (var order in await _wooOrderProductRepository.GetContractEligibleOrdersForAccount(accountNo))
+            {
+                if (!string.IsNullOrEmpty(order.FirstName) && await CreateContractSingle(order))
+                {
+                    accountsNos.Add(order.AccountNo);
+                }
+            }
+
+            return accountsNos;
         }
 
         // false = not created: the account isn't a number or has no device.
@@ -1044,7 +1060,7 @@ namespace Ranalo.Woocommece.Api.Services
 
                 return results;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 var foo = jsonString;
                 throw;

@@ -29,15 +29,18 @@ namespace Ranalo.Controllers
         private const int MaxBodyBytes = 16 * 1024;
 
         private readonly IKosePaymentsRepository _payments;
+        private readonly IAccountRefreshQueue _refresh;
         private readonly SafaricomC2BSettings _settings;
         private readonly ILogger<SafaricomC2BController> _logger;
 
         public SafaricomC2BController(
             IKosePaymentsRepository payments,
+            IAccountRefreshQueue refresh,
             IOptions<SafaricomC2BSettings> options,
             ILogger<SafaricomC2BController> logger)
         {
             _payments = payments;
+            _refresh = refresh;
             _settings = options.Value;
             _logger = logger;
         }
@@ -101,6 +104,9 @@ namespace Ranalo.Controllers
                 if (added)
                 {
                     await SaveDetailsAsync(body.Value, record.MpesaCode);
+
+                    // Contract and lock date now, not at the next scheduled run.
+                    _refresh.Enqueue(record.AccountNo);
                 }
             }
             catch (Exception ex)
