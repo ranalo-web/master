@@ -321,7 +321,7 @@ namespace Ranalo.Controllers
             {
                 await _applicationReportService.CreateRestructuredAsync(restructureToSave);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
 
                 throw;

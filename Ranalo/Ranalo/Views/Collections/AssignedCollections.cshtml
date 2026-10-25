@@ -15,8 +15,6 @@
 {
     private string SetStatusBadge(int notPaid)
     {
-        var statusClass = "";
-
         if (notPaid == 1)
         {
             return "badge badge-dim bg-danger";
@@ -25,8 +23,6 @@
         {
             return "badge badge-dim bg-success";
         }
-
-        return statusClass;
     }
 
     private string SetStatusText(int notPaid) => notPaid == 1 ? "Not Paying (7d+)" : "Paying";

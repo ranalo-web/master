@@ -75,7 +75,7 @@ namespace Ranalo.Services.DeviceLock
             if (updated != null && updated.Status == EnrolmentStatus.Approved)
             {
                 await _enrolmentService.CreateDeviceFromKnox(updated);
-                await _contracts.TryCreateAsync(updated.OrderId);
+                await _contracts.TryCreateAsync(updated.OrderId, updated.AccountId);
             }
 
             return result;

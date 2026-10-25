@@ -14,14 +14,17 @@ namespace Ranalo.Controllers
         private readonly IEnrolmentService _enrolmentService;
         private readonly ILogger<PaymentsController> _logger;
         private readonly IStatementUploadRepository _uploads;
+        private readonly IAccountRefreshQueue _refresh;
         public PaymentsController(IPaymentsService paymentsService,
             IApplicationReportService applicationReportService,
             IUserService userService,
             IEnrolmentService enrolmentService,
             ILogger<PaymentsController> logger,
-            IStatementUploadRepository uploads)
+            IStatementUploadRepository uploads,
+            IAccountRefreshQueue refresh)
         {
             _uploads = uploads;
+            _refresh = refresh;
             _paymentsService = paymentsService;
             _applicationReportService = applicationReportService;
             _userService = userService;
@@ -313,6 +316,8 @@ namespace Ranalo.Controllers
                     : RedirectToAction("AssignedPayments", "Payments");
             }
 
+            // The deposit may be what the contract was waiting for.
+            _refresh.Enqueue(accountNo);
             TempData["AssignSuccess"] = $"Payment {mpesaCode?.Trim()} assigned to account {accountNo?.Trim()}.";
             return RedirectToAction("AssignedPayments", "Payments");
         }

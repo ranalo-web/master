@@ -140,7 +140,7 @@ namespace Ranalo.Woocommece.Api.DataStore
 
                 return response;
             }
-            catch (Exception ex) 
+            catch (Exception) 
             {
 
                 throw;

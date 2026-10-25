@@ -424,7 +424,7 @@ namespace Ranalo.Services.DeviceLock
             // Approved and unlocked: the contract now, not at the next scheduled run.
             if (_contracts != null)
             {
-                await _contracts.TryCreateAsync(enrolment.OrderId);
+                await _contracts.TryCreateAsync(enrolment.OrderId, enrolment.AccountId);
             }
         }
 
