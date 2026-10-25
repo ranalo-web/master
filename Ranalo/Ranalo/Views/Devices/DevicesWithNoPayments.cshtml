@@ -24,8 +24,6 @@
 
     private string SetLockStatusBadge(bool status)
     {
-        var statusClass = "";
-
         if (status == true)
         {
             return "badge badge-dim bg-danger";
@@ -34,8 +32,6 @@
         {
             return "badge badge-dim bg-success";
         }
-
-        return statusClass;
     }
 
     private string SetLockStatusTextBadge(bool status)

@@ -321,7 +321,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("reallocate-account")]
-        public async Task<IActionResult> ReAllocateAccount(long accountno, long oldAccountno, string name)
+        public IActionResult ReAllocateAccount(long accountno, long oldAccountno, string name)
         {
             return View();
             //var settings = HttpContext.Items["UserSettings"] as User;

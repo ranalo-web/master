@@ -114,7 +114,7 @@ namespace Ranalo.DataStore
                                WHERE ID IN @Ids
                                 AND EndDate IS NULL";
 
-            var results = _db.Query<(int ID, string FirstName)>(query, new { Ids = validIds });
+            var results = await _db.QueryAsync<(int ID, string FirstName)>(query, new { Ids = validIds });
 
             // Convert back to original string account numbers for consistency
             var dict = results
@@ -170,7 +170,7 @@ namespace Ranalo.DataStore
                     await _db.ExecuteAsync(updatePaymentSql, new { MpesaCode = record.PhoneNumber, Id = messageId });
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
 
                 throw;

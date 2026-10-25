@@ -300,7 +300,7 @@ namespace Ranalo.Services
             deviceGroupId ??= 0;
             var result = await _applicationReportRepository.GetPaymentSummaryAsync(accountId, deviceGroupId.Value, page, pageSize, searchTerm, agentUserId);
 
-            List<MobileStatusReport> mobileStatusReports = await SetMobileStatusRecords(false, false, accountId, deviceGroupId, page, pageSize, searchTerm, result);
+            List<MobileStatusReport> mobileStatusReports = SetMobileStatusRecords(false, false, accountId, deviceGroupId, page, pageSize, searchTerm, result);
 
             return new StatusReportViewModel()
             {
@@ -313,7 +313,7 @@ namespace Ranalo.Services
 
         }
 
-        private async Task<List<MobileStatusReport>> SetMobileStatusRecords(bool isInArrears, bool notPaidIn90, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, PaymentsViewModel result)
+        private List<MobileStatusReport> SetMobileStatusRecords(bool isInArrears, bool notPaidIn90, int? accountId, int? deviceGroupId, int page, int pageSize, string searchTerm, PaymentsViewModel result)
         {
             var mobileStatusReports = new List<MobileStatusReport>();
             //Get payment Summary
@@ -435,7 +435,7 @@ namespace Ranalo.Services
                     );
 
                     // Apply your business transformation (IsInArrears calc)
-                    return await SetMobileStatusRecords(isInArrears, notPaid90, accountId, deviceGroupId, pageNumber, pageSize, searchTerm, result);
+                    return SetMobileStatusRecords(isInArrears, notPaid90, accountId, deviceGroupId, pageNumber, pageSize, searchTerm, result);
                 }
             );
 

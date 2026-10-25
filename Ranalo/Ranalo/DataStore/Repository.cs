@@ -53,7 +53,7 @@ namespace Ranalo.DataStore
 
                 return newUser; // now it has the generated UserId
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // log exception if needed
                 throw;
@@ -72,7 +72,7 @@ namespace Ranalo.DataStore
 
                 return newUser; // now it has the generated UserId
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // log exception if needed
                 throw;
@@ -388,7 +388,7 @@ namespace Ranalo.DataStore
                 // Save changes to the database
                 await _context.SaveChangesAsync();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // log exception if needed
                 throw;

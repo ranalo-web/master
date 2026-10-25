@@ -32,7 +32,7 @@ namespace Ranalo.DataStore
 
                 return newEnrolment; // now it has the generated UserId
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // log exception if needed
                 throw;
@@ -51,7 +51,7 @@ namespace Ranalo.DataStore
 
                 return updateEnrolment; // now it has the generated UserId
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // log exception if needed
                 throw;
