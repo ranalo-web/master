@@ -1,0 +1,73 @@
+@using Ranalo.Services
+@model List<ApprovedWithoutContract>
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Approved, No Contract</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Enrolments approved more than @((int)DepositSafeguards.ContractGrace.TotalMinutes) minutes ago that still have no contract. Without one, payments don't move the lock date and the phone relocks. Each row says what's stopping it.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        @if (!Model.Any())
+        {
+            <div class="card card-bordered">
+                <div class="card-inner text-center text-soft">
+                    <em class="icon ni ni-check-circle" style="font-size:2rem;"></em>
+                    <p class="mt-2 mb-0">Every approved enrolment has a contract.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card card-bordered">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Account</th>
+                                <th>Order</th>
+                                <th>Approved</th>
+                                <th>Deposit code on order</th>
+                                <th>What's stopping it</th>
+                                <th>Recent payments on the account</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model)
+                            {
+                                <tr>
+                                    <td><a href="/account-details/@row.OrderId" class="fw-medium">@row.FirstName @row.LastName</a><div class="text-soft small">@row.DeviceBrand</div></td>
+                                    <td>@row.AccountId</td>
+                                    <td>@row.OrderId</td>
+                                    <td>@row.ApprovedDate.ToString("dd/MM/yyyy HH:mm") UTC</td>
+                                    <td><code>@(row.DepositCode ?? "none")</code></td>
+                                    <td style="white-space:normal; min-width:260px;">@DepositSafeguards.WhyNoContract(row)</td>
+                                    <td style="white-space:nowrap;">
+                                        @if (!row.RecentPayments.Any())
+                                        {
+                                            <span class="text-soft">None in 30 days</span>
+                                        }
+                                        @foreach (var p in row.RecentPayments)
+                                        {
+                                            <div><code>@p.MpesaCode</code> Ksh @p.Amount.ToString("N0") <span class="text-soft small">@p.PaidAt.ToString("dd/MM h:mm tt")</span></div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>
