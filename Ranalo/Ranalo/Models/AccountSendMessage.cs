@@ -7,6 +7,8 @@
         public decimal UnitsLeft { get; set; }
         public decimal NewDaily { get; set; }
         public string? MessageText { get; set; }
+        // Transsion popups only; Nuovo and Knox messages have no title.
+        public string? MessageTitle { get; set; }
         public DateTime AutoLockDatePmtR { get; set; }
         public string? Imei { get; set; }
     }

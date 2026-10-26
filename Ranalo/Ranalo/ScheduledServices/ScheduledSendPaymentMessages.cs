@@ -3,6 +3,9 @@ using Newtonsoft.Json;
 using Ranalo.Calculator.Logic.Models;
 using Ranalo.DataStore;
 using Ranalo.Models;
+using Ranalo.PayTrigger;
+using Ranalo.PayTrigger.Models;
+using Ranalo.Services;
 using Ranalo.SumsungKnox;
 using Ranalo.SumsungKnox.Models;
 using Ranalo.Woocommece.Api.Services;
@@ -39,7 +42,8 @@ namespace Ranalo.ScheduledServices
                     {
                         var syncService = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
                         var knoxGuardClient = scope.ServiceProvider.GetRequiredService<IKnoxGuardClient>();
-                        var inactiveUsers = await SendAsync(syncService, knoxGuardClient);
+                        var payTrigger = scope.ServiceProvider.GetRequiredService<IPayTriggerClient>();
+                        var inactiveUsers = await SendAsync(syncService, knoxGuardClient, payTrigger);
                         foreach (var order in inactiveUsers)
                         {
                             _logger.LogInformation("Sent payment message for : {AccountNo} with MpesaCode : {PhoneNumber}", order.AccountNo, order.PhoneNumber);
@@ -65,7 +69,7 @@ namespace Ranalo.ScheduledServices
 
 
 
-        public async Task<List<MessageLog>> SendAsync(IPaymentsRepository paymentRepository, IKnoxGuardClient knoxGuardClient)
+        public async Task<List<MessageLog>> SendAsync(IPaymentsRepository paymentRepository, IKnoxGuardClient knoxGuardClient, IPayTriggerClient payTrigger)
         {
 
             var df = new List<MessageLog>();
@@ -89,6 +93,15 @@ namespace Ranalo.ScheduledServices
             if(knoxPayments.Any())
             {
                 await SendKnoxPaymentMessages(knoxGuardClient, paymentRepository, df, knoxPayments);
+            }
+
+            var transsionPayments = dtPayments
+                .Where(m => m.LockGroup == 3)
+                .ToList();
+
+            if (transsionPayments.Any())
+            {
+                await SendTranssionPaymentMessages(payTrigger, df, transsionPayments, DateTime.Now);
             }
 
             // Print results
@@ -128,6 +141,61 @@ namespace Ranalo.ScheduledServices
                     Message = str_message,
                     MessageError = responseString,
                     MessageStatus = "sent",
+                    MessageType = "Payment",
+                    PhoneNumber = payment.MpesaCode
+                });
+            }
+        }
+
+        // Transsion: a PayTrigger popup. Payments only drop out of this job
+        // once logged (MessageId), and Transsion ones never were before
+        // 2026-10-25 -- so any older than a day are logged as skipped, not
+        // sent, rather than popping up weeks-old payments.
+        public static readonly TimeSpan TranssionPaymentMaxAge = TimeSpan.FromDays(1);
+
+        private static async Task SendTranssionPaymentMessages(IPayTriggerClient payTrigger, List<MessageLog> df, List<PaymentMessage> transsionPayments, DateTime now)
+        {
+            foreach (var payment in transsionPayments)
+            {
+                var text = CustomerMessages.PaymentReceivedText(payment.FirstName, payment.AmountValue,
+                    payment.AccountNo, payment.MpesaCode, payment.PaymentDateValue);
+
+                string status;
+                string result;
+                if (now - payment.PaymentDateValue > TranssionPaymentMaxAge)
+                {
+                    status = "skipped";
+                    result = "Older than a day when Transsion messages started; not sent.";
+                }
+                else
+                {
+                    try
+                    {
+                        var response = await payTrigger.SendPushInfoAsync(new SendPushInfoRequest
+                        {
+                            Imei = payment.Imei,
+                            Title = CustomerMessages.PaymentReceivedTitle,
+                            Content = CustomerMessages.Clip(text, CustomerMessages.ContentLimit),
+                            PushType = 1 // popup
+                        });
+                        status = response.IsSuccess ? "sent" : "failed";
+                        result = $"{response.Code} {response.Message}";
+                    }
+                    catch (Exception ex)
+                    {
+                        status = "failed";
+                        result = ex.Message;
+                    }
+                }
+
+                df.Add(new MessageLog()
+                {
+                    AccountNo = payment.AccountNo,
+                    DateSent = DateTime.UtcNow,
+                    Id = Guid.NewGuid(),
+                    Message = text,
+                    MessageError = result,
+                    MessageStatus = status,
                     MessageType = "Payment",
                     PhoneNumber = payment.MpesaCode
                 });
@@ -196,11 +264,7 @@ namespace Ranalo.ScheduledServices
 
         private static string MessageBody(string firstName, decimal amount, string accountNo, string mpesa, DateTime paymentDate)
         {
-            return $"Dear {firstName}, we've received your payment of Ksh {amount}, " +
-                                                      $"for your account no {accountNo}.<br>" +
-                                                      $"Mpesa Code: {mpesa}<br>" +
-                                                      $"Payment Date: {paymentDate}<br>" +
-                                                      $"Thank you - Ranalo Credit";
+            return CustomerMessages.ForNuovoKnox(CustomerMessages.PaymentReceivedText(firstName, amount, accountNo, mpesa, paymentDate));
         }
 
         private static List<dynamic> LoadOrphanedPayments()

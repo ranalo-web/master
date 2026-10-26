@@ -256,7 +256,7 @@ namespace Ranalo.Services.DeviceLock
             }
 
             var firstLock = UtcNow.Add(TranssionEnrolmentWorkflow.FirstUnlockPeriod);
-            var (ok, reply) = await SendKnoxLockAsync(e, firstLock, "Device lock message");
+            var (ok, reply) = await SendKnoxLockAsync(e, firstLock, CustomerMessages.LockScreenText(e.AccountId));
             e.KnoxResponse = reply;
             e.UpdatedBy = "KNOX";
             e.Updated = UtcNow;

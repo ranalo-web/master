@@ -72,6 +72,7 @@ namespace Ranalo.ScheduledServices
 
             var accountMessages = new List<AccountSendMessage>();
             var knoxReminders = new List<AccountSendMessage>();
+            var transsionReminders = new List<AccountSendMessage>();
             records?.StatusReports?.RemoveAll(a => a.Arrears > 0 && a.LoanBalance < 0);
 
             foreach (var account in records.StatusReports)
@@ -96,6 +97,10 @@ namespace Ranalo.ScheduledServices
                 {
                     knoxReminders.Add(accountMessage);
                 }
+                else if (account.LockGroup == 3)
+                {
+                    transsionReminders.Add(accountMessage);
+                }
                 else 
                 {
                     accountMessages.Add(accountMessage);
@@ -110,6 +115,10 @@ namespace Ranalo.ScheduledServices
             if (knoxReminders.Any())
             {
                 await syncService.RunRemindersKnoxAsync(knoxReminders, paymentsRepository, knoxGuardClient);
+            }
+            if (transsionReminders.Any())
+            {
+                await syncService.RunRemindersTranssionAsync(transsionReminders, paymentsRepository);
             }
 
             return accountMessages;

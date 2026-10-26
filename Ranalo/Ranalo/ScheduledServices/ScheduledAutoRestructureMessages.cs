@@ -98,6 +98,7 @@ namespace Ranalo.ScheduledServices
             
             var accountMessages = new List<AccountSendMessage>();
             var knoxReminders = new List<AccountSendMessage>();
+            var transsionReminders = new List<AccountSendMessage>();
             //Not sure why this removes negative arrears
             //records.Records.RemoveAll(a => a.ArrearsR > 0);
             if (autoRestructured != null && autoRestructured.Any())
@@ -124,6 +125,10 @@ namespace Ranalo.ScheduledServices
                     {
                         knoxReminders.Add(accountMessage);
                     }
+                    else if (account.LockGroup == 3)
+                    {
+                        transsionReminders.Add(accountMessage);
+                    }
                     else
                     {
                         accountMessages.Add(accountMessage);
@@ -138,6 +143,10 @@ namespace Ranalo.ScheduledServices
                 if (knoxReminders.Any())
                 {
                     await syncService.RunRemindersKnoxAsync(knoxReminders, paymentsRepository, knoxGuardClient);
+                }
+                if (transsionReminders.Any())
+                {
+                    await syncService.RunRemindersTranssionAsync(transsionReminders, paymentsRepository);
                 }
 
             }
