@@ -157,8 +157,9 @@ namespace Ranalo.ScheduledServices
         {
             foreach (var payment in transsionPayments)
             {
-                var text = CustomerMessages.PaymentReceivedText(payment.FirstName, payment.AmountValue,
+                var message = CustomerMessages.PaymentReceived(payment.FirstName, payment.AmountValue,
                     payment.AccountNo, payment.MpesaCode, payment.PaymentDateValue);
+                var text = message.Full;
 
                 string status;
                 string result;
@@ -174,8 +175,8 @@ namespace Ranalo.ScheduledServices
                         var response = await payTrigger.SendPushInfoAsync(new SendPushInfoRequest
                         {
                             Imei = payment.Imei,
-                            Title = CustomerMessages.PaymentReceivedTitle,
-                            Content = CustomerMessages.Clip(text, CustomerMessages.ContentLimit),
+                            Title = CustomerMessages.Clip(message.Title, CustomerMessages.TitleLimit),
+                            Content = CustomerMessages.Clip(message.Content, CustomerMessages.ContentLimit),
                             PushType = 1 // popup
                         });
                         status = response.IsSuccess ? "sent" : "failed";
@@ -264,7 +265,7 @@ namespace Ranalo.ScheduledServices
 
         private static string MessageBody(string firstName, decimal amount, string accountNo, string mpesa, DateTime paymentDate)
         {
-            return CustomerMessages.ForNuovoKnox(CustomerMessages.PaymentReceivedText(firstName, amount, accountNo, mpesa, paymentDate));
+            return CustomerMessages.ForNuovoKnox(CustomerMessages.PaymentReceived(firstName, amount, accountNo, mpesa, paymentDate));
         }
 
         private static List<dynamic> LoadOrphanedPayments()

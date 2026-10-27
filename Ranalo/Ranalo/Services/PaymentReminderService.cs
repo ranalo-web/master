@@ -98,8 +98,9 @@ namespace Ranalo.Services
                     continue;
                 }
 
-                rec.MessageTitle = CustomerMessages.ReminderTitle(reminder.Value);
-                rec.MessageText = CustomerMessages.LockReminderText(rec.FirstName, rec.AccountId, rec.NewDaily, reminder.Value);
+                var message = CustomerMessages.Reminder(rec.FirstName, rec.AccountId, rec.NewDaily, reminder.Value);
+                rec.MessageTitle = message.Title;
+                rec.MessageText = message.Content;
                 due.Add(rec);
             }
             return due;
@@ -120,7 +121,7 @@ namespace Ranalo.Services
 
                 foreach (var rec in records)
                 {
-                    var message = CustomerMessages.ForNuovoKnox(rec.MessageText ?? "");
+                    var message = CustomerMessages.ForNuovoKnox(WithTitle(rec));
                     var body = JsonConvert.SerializeObject(new
                     {
                         message_text = message,
@@ -141,7 +142,7 @@ namespace Ranalo.Services
             var logs = new List<MessageLog>();
             foreach (var rec in records)
             {
-                var message = CustomerMessages.ForNuovoKnox(rec.MessageText ?? "");
+                var message = CustomerMessages.ForNuovoKnox(WithTitle(rec));
                 var response = await knoxGuardClient.SendMessageAsync(new SendMessageRequest()
                 {
                     DeviceUid = rec.Imei,
@@ -186,6 +187,10 @@ namespace Ranalo.Services
 
             await SaveLogsAsync(logs, paymentsRepository);
         }
+
+        // Nuovo and Knox have no title: it goes first, as its own line.
+        private static string WithTitle(AccountSendMessage rec) =>
+            string.IsNullOrEmpty(rec.MessageTitle) ? rec.MessageText ?? "" : rec.MessageTitle + "\n" + rec.MessageText;
 
         private static MessageLog Log(string? accountNo, string message, string messageType, bool sent, string result) => new()
         {

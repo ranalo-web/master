@@ -3,10 +3,11 @@ using Ranalo.Models;
 
 namespace Ranalo.Services
 {
-    // Every message we send to a customer's phone, in one place (2026-10-25).
-    // Text is built with "\n" line breaks: Transsion popups take it as it is,
-    // Nuovo and Knox get <br> instead (ForNuovoKnox). Kept free of I/O so it
-    // can be unit tested.
+    // Every message we send to a customer's phone, in one place (2026-10-25,
+    // reworded 2026-10-27). Each is a title plus a few short lines, built with
+    // "\n": Transsion shows them as a popup (title + content), Nuovo and Knox
+    // have no title so get both as one text with <br> (ForNuovoKnox). Kept
+    // free of I/O so it can be unit tested.
     public static class CustomerMessages
     {
         public const string Paybill = "4090703";
@@ -16,6 +17,17 @@ namespace Ranalo.Services
         // PayTrigger's limits for a popup.
         public const int TitleLimit = 80;
         public const int ContentLimit = 500;
+
+        // Lock dates (Devices, AutoLockDate) are UTC; M-Pesa payment times
+        // (KosePayments.PaymentDateValue) are already Kenya time. Kenya has
+        // no daylight saving.
+        public static readonly TimeSpan KenyaOffset = TimeSpan.FromHours(3);
+
+        public record Message(string Title, string Content)
+        {
+            // One text for Nuovo and Knox, which have no title.
+            public string Full => Title + "\n" + Content;
+        }
 
         public enum LockReminder { In6Hours, In4Hours, In2Hours, In1Hour, UnderAnHour }
 
@@ -36,64 +48,69 @@ namespace Ranalo.Services
 
         public static string ReminderTitle(LockReminder reminder) => reminder switch
         {
-            LockReminder.In6Hours => "Payment reminder",
-            LockReminder.In4Hours => "Payment reminder: phone locks in 4 hours",
-            LockReminder.In2Hours => "Urgent: phone locks in 2 hours",
-            LockReminder.In1Hour => "Final notice: phone locks in 1 hour",
-            _ => "Final notice: phone locks soon",
+            LockReminder.In6Hours => "Reminder: your phone locks in about 6 hours",
+            LockReminder.In4Hours => "Reminder: your phone locks in about 4 hours",
+            LockReminder.In2Hours => "Urgent: your phone locks in about 2 hours",
+            LockReminder.In1Hour => "Final notice: your phone locks in about 1 hour",
+            _ => "Final notice: your phone locks in under an hour",
         };
 
-        private static string ReminderOpening(LockReminder reminder) => reminder switch
-        {
-            LockReminder.In6Hours => "Friendly reminder: your phone will lock in about 6 hours unless we receive your payment.",
-            LockReminder.In4Hours => "Reminder: your phone will lock in about 4 hours unless we receive your payment.",
-            LockReminder.In2Hours => "Urgent: your phone will lock in about 2 hours unless we receive your payment.",
-            LockReminder.In1Hour => "Final notice: your phone will lock in about 1 hour unless we receive your payment.",
-            _ => "Final notice: your phone will lock in less than an hour unless we receive your payment.",
-        };
-
-        public static string LockReminderText(string? firstName, long accountNo, decimal amount, LockReminder reminder) =>
-            Lines(
-                $"Hi {Name(firstName)}, {ReminderOpening(reminder)}",
-                "Pay with M-Pesa:",
-                $"Paybill: {Paybill}",
+        // Time left, not the clock time: "about 2 hours" can't be misread
+        // across time zones or if the popup is opened late.
+        public static Message Reminder(string? firstName, long accountNo, decimal amount, LockReminder reminder) =>
+            new(ReminderTitle(reminder), Lines(
+                $"Hi {Name(firstName)}, pay Ksh {Money(amount)} or more to keep your phone working.",
+                "",
+                $"M-Pesa Paybill: {Paybill}",
                 $"Account: {accountNo}",
+                "",
+                "Already paid? Ignore this message.",
+                $"Help: {HelpLine}"));
+
+        public static Message PaymentReceived(string? firstName, decimal amount, string? accountNo, string? mpesaCode, DateTime paidAtKenyaTime) =>
+            new($"Thank you! Ksh {Money(amount)} received", Lines(
+                $"Hi {Name(firstName)}, we've received your payment.",
+                "",
                 $"Amount: Ksh {Money(amount)}",
-                "Already paid? No need to do anything.",
-                $"Help: {HelpLine} - {SignOff}");
-
-        public const string PaymentReceivedTitle = "Payment received";
-
-        public static string PaymentReceivedText(string? firstName, decimal amount, string? accountNo, string? mpesaCode, DateTime paidAt) =>
-            Lines(
-                $"Hi {Name(firstName)}, thank you! We've received Ksh {Money(amount)} for account {accountNo}.",
                 $"M-Pesa code: {mpesaCode}",
-                $"Date: {paidAt.ToString("dd/MM/yyyy h:mm tt", CultureInfo.InvariantCulture)}",
-                SignOff);
+                $"Account: {accountNo}",
+                $"Paid: {When(paidAtKenyaTime)}",
+                "",
+                $"Keep paying daily to keep your phone working. - {SignOff}"));
 
-        public const string SummaryTitle = "Your account summary";
-
-        public static string SummaryText(MobileStatusReport record, DateTime contractEnds, DateTime now)
+        // Arrears below zero = behind; zero or more = up to date or ahead.
+        public static Message Summary(MobileStatusReport record, DateTime? nextLockUtc, DateTime contractEnds)
         {
-            // Arrears below zero = behind; zero or more = up to date or ahead.
             var arrears = record.Arrears;
+            var title = arrears < 0
+                ? $"Your account: Ksh {Money(Math.Abs(arrears))} behind"
+                : "Your account: up to date";
             var standing = arrears < 0
-                ? $"Arrears: Ksh {Money(Math.Abs(arrears))}"
+                ? $"Behind by: Ksh {Money(Math.Abs(arrears))}"
                 : $"Paid ahead: Ksh {Money(arrears)}";
 
             var owed = record.TotalLoan + record.Deposit;
             var percentPaid = owed > 0 ? Math.Round(record.TotalPaid / owed * 100, 0) : 0;
 
-            return Lines(
-                $"Hi {Name(record.FirstName)}, your summary for account {record.AccountNo} at {now.ToString("dd/MM/yyyy h:mm tt", CultureInfo.InvariantCulture)}:",
+            var lines = new List<string>
+            {
+                $"Hi {Name(record.FirstName)}, here's account {record.AccountNo} today.",
+                "",
                 $"Paid this week: Ksh {Money(record.TotalWeekPaid)}",
                 standing,
-                $"Next lock date: {record.NextLockDate?.Replace("T", " ")}",
-                $"Total paid: Ksh {Money(record.TotalPaid)} ({percentPaid}%)",
-                $"Loan balance: Ksh {Money(record.LoanBalance)}",
-                $"Contract ends: {contractEnds.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}",
-                $"Last payment: {record.LastPaymentDate?.ToString("dd/MM/yyyy h:mm tt", CultureInfo.InvariantCulture)} ({record.LastPaidMpesa})",
-                $"Pay: Paybill {Paybill}, account {record.AccountNo}. Help: {HelpLine}");
+            };
+            if (nextLockUtc != null)
+            {
+                lines.Add($"Phone locks: {When(nextLockUtc.Value + KenyaOffset)}");
+            }
+            lines.Add($"Paid so far: Ksh {Money(record.TotalPaid)} of {Money(owed)} ({percentPaid}%)");
+            lines.Add($"Balance: Ksh {Money(record.LoanBalance)}");
+            lines.Add($"Contract ends: {contractEnds.ToString("d MMM yyyy", CultureInfo.InvariantCulture)}");
+            lines.Add("");
+            lines.Add($"Pay: Paybill {Paybill}, account {record.AccountNo}");
+            lines.Add($"Help: {HelpLine}");
+
+            return new(title, Lines(lines.ToArray()));
         }
 
         // Knox lock screen: what the customer sees on a locked phone.
@@ -103,16 +120,25 @@ namespace Ranalo.Services
         // Nuovo and Knox show <br> as a line break.
         public static string ForNuovoKnox(string text) => text.Replace("\n", "<br>");
 
+        public static string ForNuovoKnox(Message message) => ForNuovoKnox(message.Full);
+
         // Clipped to PayTrigger's limit rather than refused.
         public static string Clip(string text, int limit) =>
             text.Length <= limit ? text : text[..(limit - 1)] + "…";
 
         private static string Lines(params string[] lines) => string.Join("\n", lines);
 
+        // Names arrive as typed ("JANE", "jane"); show "Jane".
         private static string Name(string? firstName) =>
-            string.IsNullOrWhiteSpace(firstName) ? "Customer" : firstName.Trim();
+            string.IsNullOrWhiteSpace(firstName)
+                ? "Customer"
+                : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(firstName.Trim().ToLowerInvariant());
 
         private static string Money(decimal amount) =>
             amount.ToString("#,##0.##", CultureInfo.InvariantCulture);
+
+        // "Tue 28 Oct, 12:31 PM"
+        private static string When(DateTime at) =>
+            at.ToString("ddd d MMM, h:mm tt", CultureInfo.InvariantCulture);
     }
 }

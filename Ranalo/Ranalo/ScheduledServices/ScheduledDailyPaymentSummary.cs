@@ -110,7 +110,8 @@ namespace Ranalo.ScheduledServices
             {
                 foreach (var account in autoRestructured)
                 {
-                    DateTime nextLock = DateTimeFormat(account.NextLockDateIsoFormat); 
+                    DateTime nextLock = DateTimeFormat(account.NextLockDateIsoFormat);
+                    var summary = Summary(account, nextLock);
 
                     var accountMessage = new AccountSendMessage()
                     {
@@ -119,8 +120,8 @@ namespace Ranalo.ScheduledServices
                         NewDaily = account.NewDaily,
                         AutoLockDatePmtR = nextLock,
                         Imei = account.ImeiNo,
-                        MessageTitle = CustomerMessages.SummaryTitle,
-                        MessageText = MessageText(account)
+                        MessageTitle = summary.Title,
+                        MessageText = summary.Content
                     };
 
                     if (account.LockGroup == 2)
@@ -154,10 +155,11 @@ namespace Ranalo.ScheduledServices
             return accountMessages;
         }
 
-        private string MessageText(MobileStatusReport record)
+        // NextLockDateIsoFormat is UTC; the message shows it in Kenya time.
+        private static CustomerMessages.Message Summary(MobileStatusReport record, DateTime nextLockUtc)
         {
             var contractEnds = CalculateContractEndDate(record.FirstPaymentDate.ToString(), record.TermInMonths);
-            return CustomerMessages.SummaryText(record, contractEnds, DateTime.Now);
+            return CustomerMessages.Summary(record, nextLockUtc, contractEnds);
         }
 
         private static DateTime DateTimeFormat(string firstPaidDate)
