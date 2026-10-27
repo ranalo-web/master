@@ -125,6 +125,12 @@ namespace Ranalo.Services
                     var responseText =
                         await response.Content.ReadAsStringAsync();
 
+                    // For payment receipts ("unlocked until").
+                    if (response.IsSuccessStatusCode)
+                    {
+                        foreach (var d in slice) LockDateBook.Record(d.AccountId, d.AutoLockDate);
+                    }
+
                     logger.LogInformation(
                         "Received response for batch " +
                         "{BatchNumber}/{BatchCount}. " +

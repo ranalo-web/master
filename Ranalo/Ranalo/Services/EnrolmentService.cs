@@ -327,6 +327,8 @@ namespace Ranalo.Services
 
                     await _kosePaymentsRepository.UpdateDeviceToDatabaseAsync(existingDevice);
                 }
+
+                LockDateBook.Record(device.AccountId, device.AutoLockDate);
             }
 
         }
@@ -352,7 +354,15 @@ namespace Ranalo.Services
                     NextRepayTime = unixSeconds
                 };
 
-                await _payTriggerClient.UpdateRepayInfoAsync(request);
+                // A refusal (e.g. 40001/40003, IP not whitelisted) used to be
+                // ignored and our row marked unlocked anyway. Keep the row as it
+                // was, as LockDevicesKnox does.
+                var response = await _payTriggerClient.UpdateRepayInfoAsync(request);
+                if (!response.IsSuccess)
+                {
+                    device.Result = $"PayTrigger {response.Code} {response.Message}";
+                    continue;
+                }
 
                 var existingDevice = await _kosePaymentsRepository.GetDeviceByAccountId(device.AccountId);
 
@@ -365,6 +375,8 @@ namespace Ranalo.Services
 
                     await _kosePaymentsRepository.UpdateDeviceToDatabaseAsync(existingDevice);
                 }
+
+                LockDateBook.Record(device.AccountId, device.AutoLockDate);
             }
         }
 

@@ -59,6 +59,7 @@ namespace Ranalo.DataStore
 	                        PaymentDateValue,
 	                        d.ImeiNo as Imei,
 	                        d.LockGroup,
+	                        kp.Created AS ReceivedAtUtc,
 	                        ISNULL(kp.FirstName, 'Customer') as FirstName
                         FROM KosePayments kp
                         LEFT JOIN Devices d on d.Id = kp.AccountNoBigint

@@ -67,8 +67,13 @@ namespace Ranalo.Services
                 "Already paid? Ignore this message.",
                 $"Help: {HelpLine}"));
 
-        public static Message PaymentReceived(string? firstName, decimal amount, string? accountNo, string? mpesaCode, DateTime paidAtKenyaTime) =>
-            new($"Thank you! Ksh {Money(amount)} received", Lines(
+        // unlockedUntilUtc: the phone's new lock date once this payment has
+        // been counted (LockDateBook), or null when that isn't known yet.
+        public static Message PaymentReceived(string? firstName, decimal amount, string? accountNo, string? mpesaCode,
+            DateTime paidAtKenyaTime, DateTime? unlockedUntilUtc = null)
+        {
+            var lines = new List<string>
+            {
                 $"Hi {Name(firstName)}, we've received your payment.",
                 "",
                 $"Amount: Ksh {Money(amount)}",
@@ -76,7 +81,36 @@ namespace Ranalo.Services
                 $"Account: {accountNo}",
                 $"Paid: {When(paidAtKenyaTime)}",
                 "",
-                $"Keep paying daily to keep your phone working. - {SignOff}"));
+            };
+            lines.Add(unlockedUntilUtc != null
+                ? $"Your phone is unlocked until {When(unlockedUntilUtc.Value + KenyaOffset)}. Pay daily to keep it working."
+                : "Keep paying daily to keep your phone working.");
+            lines.Add(SignOff);
+
+            return new($"Thank you! Ksh {Money(amount)} received", Lines(lines.ToArray()));
+        }
+
+        // Once, when the contract starts and the phone is enrolled
+        // (ScheduledMilestoneMessages).
+        public static Message Welcome(string? firstName, long accountNo, decimal daily) =>
+            new("Welcome to Ranalo Credit", Lines(
+                $"Hi {Name(firstName)}, your phone is ready to use.",
+                "",
+                $"Pay Ksh {Money(daily)} a day to keep it working. Pay a few days at once if you like: your phone stays unlocked for longer.",
+                "",
+                $"M-Pesa Paybill: {Paybill}",
+                $"Account: {accountNo}",
+                "",
+                $"We'll send a reminder before it locks. Help: {HelpLine}"));
+
+        // Once, when the contract is paid off (ScheduledMilestoneMessages).
+        public static Message FullyPaid(string? firstName, long accountNo) =>
+            new("Congratulations! Your phone is fully paid", Lines(
+                $"Hi {Name(firstName)}, you've paid off account {accountNo}. The phone is yours.",
+                "",
+                "It won't lock again. We'll remove our lock software from it soon.",
+                "",
+                $"Thank you for choosing {SignOff}. Help: {HelpLine}"));
 
         // Arrears below zero = behind; zero or more = up to date or ahead.
         public static Message Summary(MobileStatusReport record, DateTime? nextLockUtc, DateTime contractEnds)

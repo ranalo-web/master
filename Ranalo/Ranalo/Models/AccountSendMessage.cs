@@ -11,5 +11,7 @@
         public string? MessageTitle { get; set; }
         public DateTime AutoLockDatePmtR { get; set; }
         public string? Imei { get; set; }
+        // Only for PaymentReminderService.SendToEachProviderAsync: 1 Nuovo, 2 Knox, 3 Transsion.
+        public int LockGroup { get; set; }
     }
 }

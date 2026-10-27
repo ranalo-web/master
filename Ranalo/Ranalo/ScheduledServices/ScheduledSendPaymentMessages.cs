@@ -8,6 +8,7 @@ using Ranalo.PayTrigger.Models;
 using Ranalo.Services;
 using Ranalo.SumsungKnox;
 using Ranalo.SumsungKnox.Models;
+using Microsoft.Extensions.Options;
 using Ranalo.Woocommece.Api.Services;
 using System.Net.Http.Headers;
 using System.Text;
@@ -43,7 +44,8 @@ namespace Ranalo.ScheduledServices
                         var syncService = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
                         var knoxGuardClient = scope.ServiceProvider.GetRequiredService<IKnoxGuardClient>();
                         var payTrigger = scope.ServiceProvider.GetRequiredService<IPayTriggerClient>();
-                        var inactiveUsers = await SendAsync(syncService, knoxGuardClient, payTrigger);
+                        var popupSettings = scope.ServiceProvider.GetService<IOptions<PayTriggerSettings>>()?.Value;
+                        var inactiveUsers = await SendAsync(syncService, knoxGuardClient, payTrigger, popupSettings);
                         foreach (var order in inactiveUsers)
                         {
                             _logger.LogInformation("Sent payment message for : {AccountNo} with MpesaCode : {PhoneNumber}", order.AccountNo, order.PhoneNumber);
@@ -69,13 +71,18 @@ namespace Ranalo.ScheduledServices
 
 
 
-        public async Task<List<MessageLog>> SendAsync(IPaymentsRepository paymentRepository, IKnoxGuardClient knoxGuardClient, IPayTriggerClient payTrigger)
+        public async Task<List<MessageLog>> SendAsync(IPaymentsRepository paymentRepository, IKnoxGuardClient knoxGuardClient, IPayTriggerClient payTrigger,
+            PayTriggerSettings? popupSettings = null)
         {
 
             var df = new List<MessageLog>();
             var dtPayments = await paymentRepository.GetAllPaymentsForMessagesAsync();
 
             if (dtPayments == null) return df;
+
+            // A receipt waits (unlogged, so it comes back next run) until the
+            // lock jobs have counted the payment, to say "unlocked until".
+            dtPayments = ReadyToSend(dtPayments, DateTime.UtcNow);
 
             var nouvaPayments = dtPayments
                 .Where(m => m.LockGroup == 1)
@@ -101,7 +108,7 @@ namespace Ranalo.ScheduledServices
 
             if (transsionPayments.Any())
             {
-                await SendTranssionPaymentMessages(payTrigger, df, transsionPayments, DateTime.Now);
+                await SendTranssionPaymentMessages(payTrigger, popupSettings, df, transsionPayments, DateTime.Now);
             }
 
             // Print results
@@ -113,6 +120,24 @@ namespace Ranalo.ScheduledServices
             return df;
         }
 
+        // The payments whose receipt can go now, each with its "unlocked
+        // until" date when known (PaymentReceipt.Decide).
+        public static List<PaymentMessage> ReadyToSend(List<PaymentMessage> payments, DateTime nowUtc)
+        {
+            var ready = new List<PaymentMessage>();
+            foreach (var payment in payments)
+            {
+                var lastLock = long.TryParse(payment.AccountNo, out var accountId) ? LockDateBook.Get(accountId) : null;
+                var (timing, unlockedUntil) = PaymentReceipt.Decide(payment.ReceivedAtUtc, lastLock, nowUtc);
+                if (timing == PaymentReceipt.Timing.Send)
+                {
+                    payment.UnlockedUntilUtc = unlockedUntil;
+                    ready.Add(payment);
+                }
+            }
+            return ready;
+        }
+
         private async Task SendKnoxPaymentMessages(IKnoxGuardClient knoxGuardClient, IPaymentsRepository paymentRepository, List<MessageLog> df, List<PaymentMessage> knoxPayments)
         {
 
@@ -122,7 +147,8 @@ namespace Ranalo.ScheduledServices
                 payment.AmountValue,
                 payment.AccountNo,
                 payment.MpesaCode,
-                payment.PaymentDateValue);
+                payment.PaymentDateValue,
+                payment.UnlockedUntilUtc);
 
                 var message = new SendMessageRequest()
                 {
@@ -153,12 +179,12 @@ namespace Ranalo.ScheduledServices
         // sent, rather than popping up weeks-old payments.
         public static readonly TimeSpan TranssionPaymentMaxAge = TimeSpan.FromDays(1);
 
-        private static async Task SendTranssionPaymentMessages(IPayTriggerClient payTrigger, List<MessageLog> df, List<PaymentMessage> transsionPayments, DateTime now)
+        private static async Task SendTranssionPaymentMessages(IPayTriggerClient payTrigger, PayTriggerSettings? popupSettings, List<MessageLog> df, List<PaymentMessage> transsionPayments, DateTime now)
         {
             foreach (var payment in transsionPayments)
             {
                 var message = CustomerMessages.PaymentReceived(payment.FirstName, payment.AmountValue,
-                    payment.AccountNo, payment.MpesaCode, payment.PaymentDateValue);
+                    payment.AccountNo, payment.MpesaCode, payment.PaymentDateValue, payment.UnlockedUntilUtc);
                 var text = message.Full;
 
                 string status;
@@ -172,13 +198,7 @@ namespace Ranalo.ScheduledServices
                 {
                     try
                     {
-                        var response = await payTrigger.SendPushInfoAsync(new SendPushInfoRequest
-                        {
-                            Imei = payment.Imei,
-                            Title = CustomerMessages.Clip(message.Title, CustomerMessages.TitleLimit),
-                            Content = CustomerMessages.Clip(message.Content, CustomerMessages.ContentLimit),
-                            PushType = 1 // popup
-                        });
+                        var response = await payTrigger.SendPushInfoAsync(PayTriggerPopup.For(payment.Imei, message, popupSettings));
                         status = response.IsSuccess ? "sent" : "failed";
                         result = $"{response.Code} {response.Message}";
                     }
@@ -212,7 +232,8 @@ namespace Ranalo.ScheduledServices
                 amount = (p.AmountValue < 0) ? 0 : p.AmountValue,
                 payment_date = p.PaymentDateValue,
                 mpesa_code = p.MpesaCode,
-                First_Name = p.FirstName
+                First_Name = p.FirstName,
+                unlocked_until = p.UnlockedUntilUtc
             }).ToList();
 
             if (!validatedList.Any())
@@ -231,7 +252,7 @@ namespace Ranalo.ScheduledServices
 
                     foreach (var row in validatedList)
                     {
-                        string str_message = MessageBody(row.First_Name, row.amount, row.account_no, row.mpesa_code, row.payment_date);
+                        string str_message = MessageBody(row.First_Name, row.amount, row.account_no, row.mpesa_code, row.payment_date, row.unlocked_until);
 
                         var body_msg = new
                         {
@@ -263,9 +284,9 @@ namespace Ranalo.ScheduledServices
             }
         }
 
-        private static string MessageBody(string firstName, decimal amount, string accountNo, string mpesa, DateTime paymentDate)
+        private static string MessageBody(string? firstName, decimal amount, string? accountNo, string? mpesa, DateTime paymentDate, DateTime? unlockedUntilUtc)
         {
-            return CustomerMessages.ForNuovoKnox(CustomerMessages.PaymentReceived(firstName, amount, accountNo, mpesa, paymentDate));
+            return CustomerMessages.ForNuovoKnox(CustomerMessages.PaymentReceived(firstName, amount, accountNo, mpesa, paymentDate, unlockedUntilUtc));
         }
 
         private static List<dynamic> LoadOrphanedPayments()
