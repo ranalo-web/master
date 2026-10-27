@@ -117,7 +117,8 @@ namespace Ranalo.ScheduledServices
                     var dailyAll = ((account.Daily) + (account.Weekly / 7) + (account.Monthly / 30));
                     var unitsLeft = SafeDivide(account.Arrears, dailyAll);
 
-                    var now = DateTime.Now;
+                    // UTC, whatever the server's clock (LockTime).
+                    var now = DateTime.UtcNow;
                     var autoLockDatePmt = now.AddSeconds(Convert.ToDouble(unitsLeft * 60 * 60 * 24));
 
                     var lockDevice = new LockTransaction()

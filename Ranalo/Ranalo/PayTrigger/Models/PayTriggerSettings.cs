@@ -9,5 +9,10 @@ namespace Ranalo.PayTrigger.Models
     {
         public string BaseUrl { get; set; } = null!;
         public string ApiKey { get; set; } = null!;
+
+        // The "Pay with M-Pesa" button on popups: the app it opens (deeplinkPkg)
+        // and, if needed, the link inside it (deeplink). No package = no button.
+        public string? MpesaAppPackage { get; set; }
+        public string? MpesaDeeplink { get; set; }
     }
 }

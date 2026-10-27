@@ -165,6 +165,7 @@ builder.Services.AddScoped<IEnrolmentRepository, EnrolmentRepository>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IDeviceLockRepository, DeviceLockRepository>();
 builder.Services.AddScoped<IDepositSafeguardsRepository, DepositSafeguardsRepository>();
+builder.Services.AddScoped<IMilestoneMessagesRepository, MilestoneMessagesRepository>();
 builder.Services.AddScoped<IDeviceRemovalTaskRepository, DeviceRemovalTaskRepository>();
 builder.Services.AddScoped<IEnrolmentCheckService, EnrolmentCheckService>();
 builder.Services.AddScoped<ITranssionEnrolmentWorkflow, TranssionEnrolmentWorkflow>();
@@ -221,6 +222,7 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService(sp => sp.GetRequiredService<ScheduledLockPaying>());
         builder.Services.AddHostedService<AccountRefreshWorker>();
         builder.Services.AddHostedService<ScheduledDailyPaymentSummary>();
+        builder.Services.AddHostedService<ScheduledMilestoneMessages>();
 
         // Runs nightly at 4 AM UTC alongside the other scheduled jobs above
         // (see the class comment for exactly which snapshot fields it

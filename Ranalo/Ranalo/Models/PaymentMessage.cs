@@ -10,5 +10,10 @@
         public string? MpesaCode { get; set; }
         public string? Imei { get; set; }
         public int LockGroup { get; set; }
+        // KosePayments.Created: when the payment reached us, UTC.
+        public DateTime? ReceivedAtUtc { get; set; }
+        // Not from the database: the lock date once this payment was counted
+        // (PaymentReceipt.Decide).
+        public DateTime? UnlockedUntilUtc { get; set; }
     }
 }

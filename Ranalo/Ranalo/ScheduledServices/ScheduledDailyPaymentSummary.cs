@@ -16,8 +16,16 @@ namespace Ranalo.ScheduledServices
         private readonly ILogger<ScheduledDailyPaymentSummary> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
 
-        // Run at 3 AM UTC daily
-        private static readonly TimeSpan RunTimeUtc = new TimeSpan(11, 15, 0);
+        // A weekly update: Sundays at 6 PM Kenya time (15:00 UTC). It ran
+        // daily at 11:15 UTC until 2026-10-27.
+        private const DayOfWeek RunDay = DayOfWeek.Sunday;
+        private static readonly TimeSpan RunTimeUtc = new TimeSpan(15, 0, 0);
+
+        public static DateTime NextRunUtc(DateTime utcNow)
+        {
+            var next = utcNow.Date.AddDays(((int)RunDay - (int)utcNow.DayOfWeek + 7) % 7).Add(RunTimeUtc);
+            return next <= utcNow ? next.AddDays(7) : next;
+        }
 
         public ScheduledDailyPaymentSummary(
             ILogger<ScheduledDailyPaymentSummary> logger,
@@ -29,22 +37,17 @@ namespace Ranalo.ScheduledServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Daily Payment Summary service started at {time} (UTC)", DateTime.UtcNow);
+            _logger.LogInformation("Weekly Payment Summary service started at {time} (UTC)", DateTime.UtcNow);
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 DateTime utcNow = DateTime.UtcNow;
 
-                DateTime nextRunUtc = utcNow.Date.Add(RunTimeUtc);
-
-                if (nextRunUtc <= utcNow)
-                {
-                    nextRunUtc = nextRunUtc.AddDays(1);
-                }
+                DateTime nextRunUtc = NextRunUtc(utcNow);
 
                 TimeSpan delay = nextRunUtc - utcNow;
 
-                _logger.LogInformation("Next scheduled Daily Payment Summary run: {next}", nextRunUtc);
+                _logger.LogInformation("Next scheduled Weekly Payment Summary run: {next}", nextRunUtc);
 
                 try
                 {
@@ -58,7 +61,7 @@ namespace Ranalo.ScheduledServices
 
                 try
                 {
-                    _logger.LogInformation("Executing Daily Payment Summary at {time} (UTC)", DateTime.UtcNow);
+                    _logger.LogInformation("Executing Weekly Payment Summary at {time} (UTC)", DateTime.UtcNow);
 
                     using var scope = _scopeFactory.CreateScope();
 
@@ -71,16 +74,16 @@ namespace Ranalo.ScheduledServices
 
                     foreach (var order in inactiveUsers)
                     {
-                        _logger.LogInformation("Daily Payment Summary sent to {user}", order.AccountId);
+                        _logger.LogInformation("Weekly Payment Summary sent to {user}", order.AccountId);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error running Daily Payment Summary job.");
+                    _logger.LogError(ex, "Error running Weekly Payment Summary job.");
                 }
             }
 
-            _logger.LogInformation("Daily Payment Summary service stopped at {time} (UTC)", DateTime.UtcNow);
+            _logger.LogInformation("Weekly Payment Summary service stopped at {time} (UTC)", DateTime.UtcNow);
         }
         private async Task<List<AccountSendMessage>?> Process(IPaymentReminderService paymentReminder, 
             IApplicationReportService applicationReportService, 
@@ -110,7 +113,8 @@ namespace Ranalo.ScheduledServices
             {
                 foreach (var account in autoRestructured)
                 {
-                    DateTime nextLock = DateTimeFormat(account.NextLockDateIsoFormat); 
+                    DateTime nextLock = DateTimeFormat(account.NextLockDateIsoFormat);
+                    var summary = Summary(account, nextLock);
 
                     var accountMessage = new AccountSendMessage()
                     {
@@ -119,8 +123,8 @@ namespace Ranalo.ScheduledServices
                         NewDaily = account.NewDaily,
                         AutoLockDatePmtR = nextLock,
                         Imei = account.ImeiNo,
-                        MessageTitle = CustomerMessages.SummaryTitle,
-                        MessageText = MessageText(account)
+                        MessageTitle = summary.Title,
+                        MessageText = summary.Content
                     };
 
                     if (account.LockGroup == 2)
@@ -154,10 +158,11 @@ namespace Ranalo.ScheduledServices
             return accountMessages;
         }
 
-        private string MessageText(MobileStatusReport record)
+        // NextLockDateIsoFormat is UTC; the message shows it in Kenya time.
+        private static CustomerMessages.Message Summary(MobileStatusReport record, DateTime nextLockUtc)
         {
             var contractEnds = CalculateContractEndDate(record.FirstPaymentDate.ToString(), record.TermInMonths);
-            return CustomerMessages.SummaryText(record, contractEnds, DateTime.Now);
+            return CustomerMessages.Summary(record, nextLockUtc, contractEnds);
         }
 
         private static DateTime DateTimeFormat(string firstPaidDate)

@@ -5,6 +5,7 @@ using Ranalo.PayTrigger;
 using Ranalo.PayTrigger.Models;
 using Ranalo.SumsungKnox;
 using Ranalo.SumsungKnox.Models;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -18,14 +19,23 @@ namespace Ranalo.Services
         public const string NuovoMessageUrl = "https://app.nuovopay.com/dm/api/v1/payment_reminders/send_message.json";
         public const string NuovoToken = "Token 8efccf09d4874f88ba2a62f5db8d8efc";
 
-        // PayTrigger pushType: 1 = popup.
-        private const int Popup = 1;
-
         private readonly IPayTriggerClient _payTrigger;
+        private readonly PayTriggerSettings? _popupSettings;
 
-        public PaymentReminderService(IPayTriggerClient payTrigger)
+        public PaymentReminderService(IPayTriggerClient payTrigger, IOptions<PayTriggerSettings>? popupSettings = null)
         {
             _payTrigger = payTrigger;
+            _popupSettings = popupSettings?.Value;
+        }
+
+        // One message per account, each to its own lock provider (Welcome,
+        // FullyPaid). Logged per account, sent or failed.
+        public async Task SendToEachProviderAsync(List<AccountSendMessage> records, string messageType,
+            IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient)
+        {
+            await SendNuovoAsync(records.Where(r => r.LockGroup is not (2 or 3)).ToList(), messageType, paymentsRepository);
+            await SendKnoxAsync(records.Where(r => r.LockGroup == 2).ToList(), messageType, paymentsRepository, knoxGuardClient);
+            await SendTranssionAsync(records.Where(r => r.LockGroup == 3).ToList(), messageType, paymentsRepository);
         }
 
         public async Task<List<AccountSendMessage>> RunRemindersAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository)
@@ -85,10 +95,10 @@ namespace Ranalo.Services
         }
 
         // The accounts a reminder is due for now, each with its wording.
-        // Lock dates are on the server's clock (DateTime.Now), as before.
+        // Lock dates are UTC (LockTime).
         private static List<AccountSendMessage> WithReminderText(List<AccountSendMessage> records)
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             var due = new List<AccountSendMessage>();
             foreach (var rec in records)
             {
@@ -98,8 +108,9 @@ namespace Ranalo.Services
                     continue;
                 }
 
-                rec.MessageTitle = CustomerMessages.ReminderTitle(reminder.Value);
-                rec.MessageText = CustomerMessages.LockReminderText(rec.FirstName, rec.AccountId, rec.NewDaily, reminder.Value);
+                var message = CustomerMessages.Reminder(rec.FirstName, rec.AccountId, rec.NewDaily, reminder.Value);
+                rec.MessageTitle = message.Title;
+                rec.MessageText = message.Content;
                 due.Add(rec);
             }
             return due;
@@ -120,7 +131,7 @@ namespace Ranalo.Services
 
                 foreach (var rec in records)
                 {
-                    var message = CustomerMessages.ForNuovoKnox(rec.MessageText ?? "");
+                    var message = CustomerMessages.ForNuovoKnox(WithTitle(rec));
                     var body = JsonConvert.SerializeObject(new
                     {
                         message_text = message,
@@ -141,7 +152,7 @@ namespace Ranalo.Services
             var logs = new List<MessageLog>();
             foreach (var rec in records)
             {
-                var message = CustomerMessages.ForNuovoKnox(rec.MessageText ?? "");
+                var message = CustomerMessages.ForNuovoKnox(WithTitle(rec));
                 var response = await knoxGuardClient.SendMessageAsync(new SendMessageRequest()
                 {
                     DeviceUid = rec.Imei,
@@ -165,13 +176,8 @@ namespace Ranalo.Services
                 bool sent;
                 try
                 {
-                    var response = await _payTrigger.SendPushInfoAsync(new SendPushInfoRequest
-                    {
-                        Imei = rec.Imei,
-                        Title = CustomerMessages.Clip(rec.MessageTitle ?? CustomerMessages.SignOff, CustomerMessages.TitleLimit),
-                        Content = message,
-                        PushType = Popup
-                    });
+                    var response = await _payTrigger.SendPushInfoAsync(PayTriggerPopup.For(rec.Imei,
+                        new CustomerMessages.Message(rec.MessageTitle ?? CustomerMessages.SignOff, rec.MessageText ?? ""), _popupSettings));
                     sent = response.IsSuccess;
                     result = $"{response.Code} {response.Message}";
                 }
@@ -186,6 +192,10 @@ namespace Ranalo.Services
 
             await SaveLogsAsync(logs, paymentsRepository);
         }
+
+        // Nuovo and Knox have no title: it goes first, as its own line.
+        private static string WithTitle(AccountSendMessage rec) =>
+            string.IsNullOrEmpty(rec.MessageTitle) ? rec.MessageText ?? "" : new CustomerMessages.Message(rec.MessageTitle, rec.MessageText ?? "").Full;
 
         private static MessageLog Log(string? accountNo, string message, string messageType, bool sent, string result) => new()
         {

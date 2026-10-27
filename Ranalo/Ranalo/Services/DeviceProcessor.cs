@@ -83,8 +83,7 @@ namespace Ranalo.Services
                                             d.AccountId,
 
                                         auto_lock_date =
-                                            d.AutoLockDate.ToString(
-                                                "dd/MM/yyyy'T'HH:mm:ss")
+                                            LockTime.ForNuovo(d.AutoLockDate)
                                     })
                         };
 
@@ -124,6 +123,12 @@ namespace Ranalo.Services
 
                     var responseText =
                         await response.Content.ReadAsStringAsync();
+
+                    // For payment receipts ("unlocked until").
+                    if (response.IsSuccessStatusCode)
+                    {
+                        foreach (var d in slice) LockDateBook.Record(d.AccountId, d.AutoLockDate);
+                    }
 
                     logger.LogInformation(
                         "Received response for batch " +
@@ -392,8 +397,7 @@ namespace Ranalo.Services
                                     device.AccountId,
 
                                 auto_lock_date =
-                                    device.AutoLockDate.ToString(
-                                        "dd/MM/yyyy'T'HH:mm:ss")
+                                    LockTime.ForNuovo(device.AutoLockDate)
                             }
                     };
 
