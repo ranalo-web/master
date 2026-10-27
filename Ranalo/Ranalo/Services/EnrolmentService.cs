@@ -282,8 +282,7 @@ namespace Ranalo.Services
                 // Get the enrolment our link to the record 
                 var enrolment = await _enrolmentRepository.GetByAccountIdAsync(device.AccountId);
 
-                long unixTimestamp = new DateTimeOffset(device.AutoLockDate)
-                    .ToUnixTimeMilliseconds();
+                long unixTimestamp = LockTime.UnixMillis(device.AutoLockDate);
 
                 var request = new DeviceActionsRequest
                 {
@@ -345,7 +344,7 @@ namespace Ranalo.Services
                 // Get the enrolment our link to the record
                 var enrolment = await _enrolmentRepository.GetByAccountIdAsync(device.AccountId);
 
-                long unixSeconds = new DateTimeOffset(device.AutoLockDate).ToUnixTimeSeconds();
+                long unixSeconds = LockTime.UnixSeconds(device.AutoLockDate);
                 long unixMillis = unixSeconds * 1000;
 
                 var request = new PayTriggerModels.UpdateRepayInfoRequest

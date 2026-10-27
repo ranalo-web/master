@@ -54,9 +54,40 @@ namespace Ranolo.Web.Tests
             var message = Reminder("Jane", 12345678, 1234.5m, LockReminder.In6Hours);
             var lines = message.Content.Split('\n');
 
-            Assert.That(lines, Does.Contain("M-Pesa Paybill: 4090703"));
-            Assert.That(lines, Does.Contain("Account: 12345678"));
+            Assert.That(lines, Does.Contain("M-Pesa > Lipa na M-Pesa > Pay Bill"));
+            Assert.That(lines, Does.Contain("Business no: 4090703"));
+            Assert.That(lines, Does.Contain("Account no: 12345678"));
             Assert.That(message.Content, Does.Contain("Ksh 1,234.5"));
+        }
+
+        [Test]
+        public void Reminder_with_no_daily_rate_never_asks_for_Ksh_0()
+        {
+            // Weekly and monthly payers have Daily = 0.
+            var message = Reminder("Jane", 12345678, 0m, LockReminder.In2Hours);
+
+            Assert.That(message.Content, Does.Not.Contain("Ksh 0"));
+            Assert.That(message.Content, Does.Contain("make a payment now"));
+        }
+
+        [Test]
+        public void Summary_when_behind_says_how_much_catches_up()
+        {
+            Assert.That(Summary(Record(), null, Now).Content.Split('\n'), Does.Contain("Pay Ksh 150 to catch up."));
+
+            var ahead = Record();
+            ahead.Arrears = 80m;
+            Assert.That(Summary(ahead, null, Now).Content, Does.Not.Contain("catch up"));
+        }
+
+        [Test]
+        public void Lock_screen_gives_paybill_account_and_help()
+        {
+            var text = LockScreenText(12345678);
+
+            Assert.That(text, Does.Contain("Pay Bill 4090703"));
+            Assert.That(text, Does.Contain("account no 12345678"));
+            Assert.That(text, Does.Contain(HelpLine));
         }
 
         [Test]
@@ -72,7 +103,7 @@ namespace Ranolo.Web.Tests
         {
             var message = PaymentReceived("Jane", 300m, "12345678", "TJK12AB34C", new DateTime(2026, 10, 27, 14, 10, 0));
 
-            Assert.That(message.Title, Is.EqualTo("Thank you! Ksh 300 received"));
+            Assert.That(message.Title, Is.EqualTo("Payment received: Ksh 300"));
             Assert.That(message.Content, Does.Contain("M-Pesa code: TJK12AB34C"));
             // Payment times are Kenya time already: shown as they are.
             Assert.That(message.Content, Does.Contain("Paid: Tue 27 Oct, 2:10 PM"));
@@ -92,19 +123,22 @@ namespace Ranolo.Web.Tests
         {
             var record = Record();
             var behind = Summary(record, null, Now);
-            Assert.That(behind.Title, Is.EqualTo("Your account: Ksh 150 behind"));
+            Assert.That(behind.Title, Is.EqualTo("Your weekly update: Ksh 150 behind"));
             Assert.That(behind.Content, Does.Contain("Behind by: Ksh 150"));
 
             record.Arrears = 80m;
             var ahead = Summary(record, null, Now);
-            Assert.That(ahead.Title, Is.EqualTo("Your account: up to date"));
+            Assert.That(ahead.Title, Is.EqualTo("Your weekly update: up to date"));
             Assert.That(ahead.Content, Does.Contain("Paid ahead: Ksh 80"));
         }
 
         [Test]
-        public void Summary_shows_progress_against_the_total()
+        public void Summary_shows_progress_as_a_percentage_only()
         {
-            Assert.That(Summary(Record(), null, Now).Content, Does.Contain("Paid so far: Ksh 9,000 of 24,000 (38%)"));
+            var lines = Summary(Record(), null, Now).Content.Split('\n');
+
+            Assert.That(lines, Does.Contain("Paid so far: 38%"));
+            Assert.That(lines.Single(l => l.StartsWith("Paid so far")), Does.Not.Contain("24,000"));
         }
 
         [Test]
@@ -112,14 +146,14 @@ namespace Ranolo.Web.Tests
         {
             var record = new MobileStatusReport { AccountNo = 1, FirstName = "Jane" };
 
-            Assert.That(Summary(record, null, Now).Content, Does.Contain("(0%)"));
+            Assert.That(Summary(record, null, Now).Content, Does.Contain("Paid so far: 0%"));
         }
 
         [Test]
         public void Nuovo_and_Knox_get_the_title_first_and_br_line_breaks()
         {
             Assert.That(ForNuovoKnox("a\nb"), Is.EqualTo("a<br>b"));
-            Assert.That(ForNuovoKnox(new Message("Title", "a\nb")), Is.EqualTo("Title<br>a<br>b"));
+            Assert.That(ForNuovoKnox(new Message("Title", "a\nb")), Is.EqualTo("Title<br><br>a<br>b"));
         }
 
         [Test]

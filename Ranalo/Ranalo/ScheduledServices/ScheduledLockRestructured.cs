@@ -147,7 +147,7 @@ namespace Ranalo.ScheduledServices
         public static DateTime? NextLockDate(RestructuredRecord r, DateTime now) =>
             r.ArrearsR > 0
                 ? r.AutoLockDatePmtR
-                : RestructureCalculator.AutoLockDate(r.AutoNewDaily, r.PaidLast24Hours, r.LastPaymentDate, now);
+                : RestructureCalculator.AutoLockDate(r.AutoNewDaily, r.PaidLast24Hours, LockTime.KenyaToUtc(r.LastPaymentDate), now);
 
         bool NeedsUpdate(string? kenyanTimestamp)
         {

@@ -6,7 +6,8 @@ namespace Ranalo.Services
     // Every message we send to a customer's phone, in one place (2026-10-25,
     // reworded 2026-10-27). Each is a title plus a few short lines, built with
     // "\n": Transsion shows them as a popup (title + content), Nuovo and Knox
-    // have no title so get both as one text with <br> (ForNuovoKnox). Kept
+    // have no title so get both as one text with <br> (ForNuovoKnox). Every
+    // message that asks for money gives the M-Pesa menu path (HowToPay). Kept
     // free of I/O so it can be unit tested.
     public static class CustomerMessages
     {
@@ -25,8 +26,9 @@ namespace Ranalo.Services
 
         public record Message(string Title, string Content)
         {
-            // One text for Nuovo and Knox, which have no title.
-            public string Full => Title + "\n" + Content;
+            // One text for Nuovo and Knox, which have no title: the title,
+            // a blank line, then the message.
+            public string Full => Title + "\n\n" + Content;
         }
 
         public enum LockReminder { In6Hours, In4Hours, In2Hours, In1Hour, UnderAnHour }
@@ -56,16 +58,22 @@ namespace Ranalo.Services
         };
 
         // Time left, not the clock time: "about 2 hours" can't be misread
-        // across time zones or if the popup is opened late.
-        public static Message Reminder(string? firstName, long accountNo, decimal amount, LockReminder reminder) =>
-            new(ReminderTitle(reminder), Lines(
-                $"Hi {Name(firstName)}, pay Ksh {Money(amount)} or more to keep your phone working.",
-                "",
-                $"M-Pesa Paybill: {Paybill}",
-                $"Account: {accountNo}",
-                "",
-                "Already paid? Ignore this message.",
-                $"Help: {HelpLine}"));
+        // across time zones or if the popup is opened late. amount is the
+        // daily rate; weekly and monthly payers can have 0 there.
+        public static Message Reminder(string? firstName, long accountNo, decimal amount, LockReminder reminder)
+        {
+            var ask = amount > 0
+                ? $"Hi {Name(firstName)}, pay Ksh {Money(amount)} now to keep your phone working for another day. Pay more to stay unlocked longer."
+                : $"Hi {Name(firstName)}, make a payment now to keep your phone working.";
+
+            var lines = new List<string> { ask, "" };
+            lines.AddRange(HowToPay(accountNo));
+            lines.Add("");
+            lines.Add("Already paid? You can ignore this.");
+            lines.Add(Help);
+
+            return new(ReminderTitle(reminder), Lines(lines.ToArray()));
+        }
 
         // unlockedUntilUtc: the phone's new lock date once this payment has
         // been counted (LockDateBook), or null when that isn't known yet.
@@ -74,51 +82,68 @@ namespace Ranalo.Services
         {
             var lines = new List<string>
             {
-                $"Hi {Name(firstName)}, we've received your payment.",
+                $"Thank you, {Name(firstName)}. We've received your payment.",
                 "",
                 $"Amount: Ksh {Money(amount)}",
                 $"M-Pesa code: {mpesaCode}",
-                $"Account: {accountNo}",
+                $"Account no: {accountNo}",
                 $"Paid: {When(paidAtKenyaTime)}",
                 "",
             };
-            lines.Add(unlockedUntilUtc != null
-                ? $"Your phone is unlocked until {When(unlockedUntilUtc.Value + KenyaOffset)}. Pay daily to keep it working."
-                : "Keep paying daily to keep your phone working.");
+            if (unlockedUntilUtc != null)
+            {
+                lines.Add($"Phone unlocked until: {When(unlockedUntilUtc.Value + KenyaOffset)}");
+                lines.Add("Pay again before then to keep it working.");
+            }
+            else
+            {
+                lines.Add("Keep paying daily to keep your phone working.");
+            }
+            lines.Add("");
+            lines.Add(Help);
             lines.Add(SignOff);
 
-            return new($"Thank you! Ksh {Money(amount)} received", Lines(lines.ToArray()));
+            return new($"Payment received: Ksh {Money(amount)}", Lines(lines.ToArray()));
         }
 
         // Once, when the contract starts and the phone is enrolled
         // (ScheduledMilestoneMessages).
-        public static Message Welcome(string? firstName, long accountNo, decimal daily) =>
-            new("Welcome to Ranalo Credit", Lines(
+        public static Message Welcome(string? firstName, long accountNo, decimal daily)
+        {
+            var lines = new List<string>
+            {
                 $"Hi {Name(firstName)}, your phone is ready to use.",
                 "",
-                $"Pay Ksh {Money(daily)} a day to keep it working. Pay a few days at once if you like: your phone stays unlocked for longer.",
+                $"Your payment: Ksh {Money(daily)} a day",
+                "Pay every day to keep it working. Pay for a few days at once and it stays unlocked for longer.",
                 "",
-                $"M-Pesa Paybill: {Paybill}",
-                $"Account: {accountNo}",
-                "",
-                $"We'll send a reminder before it locks. Help: {HelpLine}"));
+            };
+            lines.AddRange(HowToPay(accountNo));
+            lines.Add("");
+            lines.Add("We'll remind you before it locks.");
+            lines.Add(Help);
+
+            return new("Welcome to Ranalo Credit", Lines(lines.ToArray()));
+        }
 
         // Once, when the contract is paid off (ScheduledMilestoneMessages).
         public static Message FullyPaid(string? firstName, long accountNo) =>
             new("Congratulations! Your phone is fully paid", Lines(
-                $"Hi {Name(firstName)}, you've paid off account {accountNo}. The phone is yours.",
+                $"Hi {Name(firstName)}, you've finished paying account {accountNo}. The phone is yours.",
                 "",
-                "It won't lock again. We'll remove our lock software from it soon.",
+                "It won't lock again. We'll remove our lock app from it soon; you don't need to do anything.",
                 "",
-                $"Thank you for choosing {SignOff}. Help: {HelpLine}"));
+                $"Thank you for choosing {SignOff}.",
+                Help));
 
+        // The weekly update, Sunday evening (ScheduledDailyPaymentSummary).
         // Arrears below zero = behind; zero or more = up to date or ahead.
         public static Message Summary(MobileStatusReport record, DateTime? nextLockUtc, DateTime contractEnds)
         {
             var arrears = record.Arrears;
             var title = arrears < 0
-                ? $"Your account: Ksh {Money(Math.Abs(arrears))} behind"
-                : "Your account: up to date";
+                ? $"Your weekly update: Ksh {Money(Math.Abs(arrears))} behind"
+                : "Your weekly update: up to date";
             var standing = arrears < 0
                 ? $"Behind by: Ksh {Money(Math.Abs(arrears))}"
                 : $"Paid ahead: Ksh {Money(arrears)}";
@@ -128,28 +153,33 @@ namespace Ranalo.Services
 
             var lines = new List<string>
             {
-                $"Hi {Name(record.FirstName)}, here's account {record.AccountNo} today.",
+                $"Hi {Name(record.FirstName)}, here's account {record.AccountNo} this week.",
                 "",
-                $"Paid this week: Ksh {Money(record.TotalWeekPaid)}",
                 standing,
             };
             if (nextLockUtc != null)
             {
                 lines.Add($"Phone locks: {When(nextLockUtc.Value + KenyaOffset)}");
             }
-            lines.Add($"Paid so far: Ksh {Money(record.TotalPaid)} of {Money(owed)} ({percentPaid}%)");
+            lines.Add($"Paid this week: Ksh {Money(record.TotalWeekPaid)}");
+            lines.Add($"Paid so far: {percentPaid}%");
             lines.Add($"Balance: Ksh {Money(record.LoanBalance)}");
             lines.Add($"Contract ends: {contractEnds.ToString("d MMM yyyy", CultureInfo.InvariantCulture)}");
             lines.Add("");
-            lines.Add($"Pay: Paybill {Paybill}, account {record.AccountNo}");
-            lines.Add($"Help: {HelpLine}");
+            if (arrears < 0)
+            {
+                lines.Add($"Pay Ksh {Money(Math.Abs(arrears))} to catch up.");
+            }
+            lines.Add($"Pay: M-Pesa Pay Bill {Paybill}, account no {record.AccountNo}");
+            lines.Add(Help);
 
             return new(title, Lines(lines.ToArray()));
         }
 
         // Knox lock screen: what the customer sees on a locked phone.
         public static string LockScreenText(long accountNo) =>
-            $"Your phone is locked. Pay with M-Pesa Paybill {Paybill}, account {accountNo}, to unlock it. Help: {HelpLine}";
+            $"This phone is locked. To unlock it, pay with M-Pesa: Pay Bill {Paybill}, account no {accountNo}. " +
+            $"Keep the phone on and connected to the internet so it can unlock. Help: call {HelpLine}";
 
         // Nuovo and Knox show <br> as a line break.
         public static string ForNuovoKnox(string text) => text.Replace("\n", "<br>");
@@ -159,6 +189,17 @@ namespace Ranalo.Services
         // Clipped to PayTrigger's limit rather than refused.
         public static string Clip(string text, int limit) =>
             text.Length <= limit ? text : text[..(limit - 1)] + "…";
+
+        // The M-Pesa menu path, in the words the menu uses.
+        private static IEnumerable<string> HowToPay(long accountNo) => new[]
+        {
+            "How to pay:",
+            "M-Pesa > Lipa na M-Pesa > Pay Bill",
+            $"Business no: {Paybill}",
+            $"Account no: {accountNo}",
+        };
+
+        private static string Help => $"Help: call {HelpLine}";
 
         private static string Lines(params string[] lines) => string.Join("\n", lines);
 

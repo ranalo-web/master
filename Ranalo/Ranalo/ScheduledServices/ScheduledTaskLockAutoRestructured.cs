@@ -119,7 +119,8 @@ namespace Ranalo.ScheduledServices
                         AccountId = account.AccountNo,
                         FirstName = account.FirstName,
                         NewDaily = account.NewDaily,
-                        AutoLockDate = account.LastPaymentDate != null ? account.LastPaymentDate.Value.AddHours(30) : DateTime.UtcNow
+                        // The payment time is Kenya time; lock dates are UTC (LockTime).
+                        AutoLockDate = account.LastPaymentDate != null ? LockTime.KenyaToUtc(account.LastPaymentDate.Value).AddHours(30) : DateTime.UtcNow
                     };
 
                     if (account.LockGroup == 2)

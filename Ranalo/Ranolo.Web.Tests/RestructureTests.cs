@@ -143,7 +143,9 @@ namespace Ranolo.Web.Tests
         [Test]
         public void ManualJob_BehindButPaysTheAutoNewDaily_FallsBackToAuto()
         {
-            Assert.That(ScheduledLockRestructured.NextLockDate(Record(-500m, 80m, 80m), Now), Is.EqualTo(Now.AddHours(29)));
+            // LastPaymentDate (an hour ago) is Kenya time, 3 hours ahead of
+            // UTC: 30h from it is 26h from now in UTC.
+            Assert.That(ScheduledLockRestructured.NextLockDate(Record(-500m, 80m, 80m), Now), Is.EqualTo(Now.AddHours(26)));
         }
 
         [Test]

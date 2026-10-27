@@ -13,8 +13,8 @@ namespace Ranalo.Services
 
         private static readonly ConcurrentDictionary<long, Entry> Entries = new();
 
-        // autoLockDate is on the server's clock (DateTime.Now), as the lock
-        // jobs build it. Fully paid (far future) and unset dates are skipped.
+        // autoLockDate is UTC (LockTime). Fully paid (far future) and unset
+        // dates are skipped.
         public static void Record(long accountId, DateTime autoLockDate, DateTime? sentAtUtc = null)
         {
             if (autoLockDate == DateTime.MinValue || autoLockDate.Year >= 9999)
@@ -22,7 +22,7 @@ namespace Ranalo.Services
                 return;
             }
 
-            var lockAtUtc = autoLockDate.Kind == DateTimeKind.Utc ? autoLockDate : autoLockDate.ToUniversalTime();
+            var lockAtUtc = LockTime.AsUtc(autoLockDate);
             Entries[accountId] = new Entry(lockAtUtc, sentAtUtc ?? DateTime.UtcNow);
         }
 

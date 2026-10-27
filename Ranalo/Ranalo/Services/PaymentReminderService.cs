@@ -95,10 +95,10 @@ namespace Ranalo.Services
         }
 
         // The accounts a reminder is due for now, each with its wording.
-        // Lock dates are on the server's clock (DateTime.Now), as before.
+        // Lock dates are UTC (LockTime).
         private static List<AccountSendMessage> WithReminderText(List<AccountSendMessage> records)
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             var due = new List<AccountSendMessage>();
             foreach (var rec in records)
             {
@@ -195,7 +195,7 @@ namespace Ranalo.Services
 
         // Nuovo and Knox have no title: it goes first, as its own line.
         private static string WithTitle(AccountSendMessage rec) =>
-            string.IsNullOrEmpty(rec.MessageTitle) ? rec.MessageText ?? "" : rec.MessageTitle + "\n" + rec.MessageText;
+            string.IsNullOrEmpty(rec.MessageTitle) ? rec.MessageText ?? "" : new CustomerMessages.Message(rec.MessageTitle, rec.MessageText ?? "").Full;
 
         private static MessageLog Log(string? accountNo, string message, string messageType, bool sent, string result) => new()
         {

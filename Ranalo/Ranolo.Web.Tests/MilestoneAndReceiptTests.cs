@@ -81,7 +81,7 @@ namespace Ranolo.Web.Tests
         {
             var message = PaymentReceived("Jane", 300m, "1", "X", Now, new DateTime(2026, 10, 29, 9, 30, 0));
 
-            Assert.That(message.Content, Does.Contain("Your phone is unlocked until Thu 29 Oct, 12:30 PM."));
+            Assert.That(message.Content.Split('\n'), Does.Contain("Phone unlocked until: Thu 29 Oct, 12:30 PM"));
             Assert.That(PaymentReceived("Jane", 300m, "1", "X", Now).Content, Does.Contain("Keep paying daily"));
         }
     }
@@ -95,7 +95,7 @@ namespace Ranolo.Web.Tests
 
             Assert.That(messages.Select(m => m.Title.Length), Is.All.LessThanOrEqualTo(TitleLimit));
             Assert.That(messages.Select(m => m.Content.Length), Is.All.LessThanOrEqualTo(ContentLimit));
-            Assert.That(messages[0].Content, Does.Contain("Ksh 127.35 a day"));
+            Assert.That(messages[0].Content, Does.Contain("Your payment: Ksh 127.35 a day"));
             Assert.That(messages[1].Content, Does.Contain("The phone is yours"));
         }
 

@@ -271,9 +271,10 @@ namespace Ranalo.Controllers
 
             await SetViewBags(settings, "collector");
 
+            // The date picked is Kenya time; lock dates are UTC (LockTime).
             DateTime finalDate = string.IsNullOrWhiteSpace(lockDate)
-            ? DateTime.Now
-            : DateTime.Parse(lockDate);
+            ? DateTime.UtcNow
+            : LockTime.KenyaToUtc(DateTime.Parse(lockDate));
 
             var lockTransaction = new LockTransaction()
             {
