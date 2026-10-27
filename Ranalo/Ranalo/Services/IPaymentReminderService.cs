@@ -14,5 +14,9 @@ namespace Ranalo.Services
 
         Task<List<AccountSendMessage>> RunKnoxPaymentsSummariesAsync(List<AccountSendMessage> records,
             IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient);
+
+        // Transsion (LockGroup 3): PayTrigger popups.
+        Task RunRemindersTranssionAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository);
+        Task<List<AccountSendMessage>> RunTranssionPaymentsSummariesAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository);
     }
 }

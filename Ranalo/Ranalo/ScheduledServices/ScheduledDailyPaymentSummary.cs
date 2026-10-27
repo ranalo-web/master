@@ -104,6 +104,7 @@ namespace Ranalo.ScheduledServices
 
             var accountMessages = new List<AccountSendMessage>();
             var knoxReminders = new List<AccountSendMessage>();
+            var transsionReminders = new List<AccountSendMessage>();
             //Not sure why this removes negative arrears
             if (autoRestructured != null && autoRestructured.Any())
             {
@@ -118,12 +119,17 @@ namespace Ranalo.ScheduledServices
                         NewDaily = account.NewDaily,
                         AutoLockDatePmtR = nextLock,
                         Imei = account.ImeiNo,
+                        MessageTitle = CustomerMessages.SummaryTitle,
                         MessageText = MessageText(account)
                     };
 
                     if (account.LockGroup == 2)
                     {
                         knoxReminders.Add(accountMessage);
+                    }
+                    else if (account.LockGroup == 3)
+                    {
+                        transsionReminders.Add(accountMessage);
                     }
                     else
                     {
@@ -139,6 +145,10 @@ namespace Ranalo.ScheduledServices
                 {
                     await paymentReminder.RunKnoxPaymentsSummariesAsync(knoxReminders, paymentsRepository, knoxGuardClient);
                 }
+                if (transsionReminders.Any())
+                {
+                    await paymentReminder.RunTranssionPaymentsSummariesAsync(transsionReminders, paymentsRepository);
+                }
             }
 
             return accountMessages;
@@ -146,27 +156,8 @@ namespace Ranalo.ScheduledServices
 
         private string MessageText(MobileStatusReport record)
         {
-            // ---- Build message text ----
-            string arrearsText = Convert.ToDecimal(record.Arrears) < 0
-                ? $"Arrears Ksh: {Math.Round(Convert.ToDecimal(record.Arrears), 2)}"
-                : $"Balance Ksh: {Math.Round(Convert.ToDecimal(record.Arrears), 2)}";
-
-            string message =
-                $"Dear {record.FirstName}, " +
-                $"In the last week you repaid a total of KShs {record.TotalWeekPaid} " +
-                $"on your Account No: {record.AccountNo}. " +
-                $"Your summary at {DateTime.Now:HH:mm:ss 'on' dddd, MMMM dd, yyyy} is as follows:<br>" +
-                $"{arrearsText}<br>" +
-                $"Next Lock Date: {record?.NextLockDate?.ToString().Replace("T", " ")}<br>" +
-                $"Total Repaid Ksh: {record?.TotalPaid}<br>" +
-                $"Percentage Repaid: {Math.Round((decimal)((record?.TotalPaid / (record.TotalLoan + record.Deposit)) * 100), 2)}%<br>" +
-                $"Loan Bal Ksh: {record.LoanBalance}<br>" +
-                $"Contract End Date: {(CalculateContractEndDate(record.FirstPaymentDate.ToString(), record.TermInMonths)).ToString("dd/MM/yyyy")}<br>" +
-                $"Latest M-Pesa transaction:<br>" +
-                $"Date: {record.LastPaymentDate}<br>" +
-                $"Code: {record.LastPaidMpesa}";
-
-            return message;
+            var contractEnds = CalculateContractEndDate(record.FirstPaymentDate.ToString(), record.TermInMonths);
+            return CustomerMessages.SummaryText(record, contractEnds, DateTime.Now);
         }
 
         private static DateTime DateTimeFormat(string firstPaidDate)

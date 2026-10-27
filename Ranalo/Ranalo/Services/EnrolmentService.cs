@@ -300,7 +300,7 @@ namespace Ranalo.Services
                     {
                         Action = "lock",
                         Timestamp = unixTimestamp,
-                        Message = "Device lock message"
+                        Message = CustomerMessages.LockScreenText(device.AccountId)
                     }
                 }
                 };
