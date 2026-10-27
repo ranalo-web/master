@@ -164,6 +164,7 @@ builder.Services.AddScoped<IEnrolmentRepository, EnrolmentRepository>();
 //Services/DeviceLock/DeviceLockRules.cs and Database/DeviceLock/001.
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IDeviceLockRepository, DeviceLockRepository>();
+builder.Services.AddScoped<IDepositSafeguardsRepository, DepositSafeguardsRepository>();
 builder.Services.AddScoped<IDeviceRemovalTaskRepository, DeviceRemovalTaskRepository>();
 builder.Services.AddScoped<IEnrolmentCheckService, EnrolmentCheckService>();
 builder.Services.AddScoped<ITranssionEnrolmentWorkflow, TranssionEnrolmentWorkflow>();

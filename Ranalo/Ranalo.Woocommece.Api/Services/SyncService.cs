@@ -67,6 +67,7 @@ namespace Ranalo.Woocommece.Api.Services
                     var existingOrder = await _wooOrderRepository.GetByOrderIdAsync(order.OrderID);
                     if (existingOrder != null)
                     {
+                        order.MpesaDepositRef = await DepositCodeToSaveAsync(existingOrder.MpesaDepositRef, order.MpesaDepositRef);
                         await _wooOrderRepository.UpdateAsync(order);
                         continue;
                     }
@@ -183,6 +184,22 @@ namespace Ranalo.Woocommece.Api.Services
             }
 
             return accountsNos;
+        }
+
+        // See DepositCodeGuard: a received deposit code isn't replaced by one
+        // that isn't.
+        private async Task<string?> DepositCodeToSaveAsync(string? existing, string? incoming)
+        {
+            if (DepositCodeGuard.Same(existing, incoming))
+            {
+                return incoming;
+            }
+
+            var existingReceived = !string.IsNullOrWhiteSpace(existing)
+                && await _wooOrderRepository.GetAccountDetailsByMpesa(existing.Trim()) != null;
+            var incomingReceived = !string.IsNullOrWhiteSpace(incoming)
+                && await _wooOrderRepository.GetAccountDetailsByMpesa(incoming.Trim()) != null;
+            return DepositCodeGuard.CodeToSave(existing, incoming, existingReceived, incomingReceived);
         }
 
         // As soon as an enrolment is approved: that order's contract, if it

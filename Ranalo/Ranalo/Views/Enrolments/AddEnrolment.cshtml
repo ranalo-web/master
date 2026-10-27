@@ -161,6 +161,10 @@
                                                    placeholder="e.g. UJEJ79VIED">
                                         </div>
                                         <div class="form-note">Only if the order doesn't have it. The deposit must be paid to the customer's account.</div>
+                                        <div id="depositChoices" class="mt-2" hidden>
+                                            <div class="form-note mb-1">Payments on this account &mdash; tap the deposit instead of typing it:</div>
+                                            <div id="depositChoiceList" class="d-flex flex-wrap" style="gap:6px;"></div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -198,3 +202,43 @@
         </div>
     </div><!-- .card-preview -->
 </div><!-- .nk-block -->
+
+<script>
+    // Deposit picker (DepositSafeguards): once the ID number is in, lists the
+    // payments on that account that can be this order's deposit, so the
+    // dealer taps the code rather than typing it (I/1, O/0 mix-ups).
+    (function () {
+        var account = document.getElementById('accountId');
+        var order = document.getElementById('orderId');
+        var code = document.getElementById('mpesaCode');
+        var box = document.getElementById('depositChoices');
+        var list = document.getElementById('depositChoiceList');
+        if (!account || !code || !box || !list) return;
+
+        function load() {
+            var id = (account.value || '').trim();
+            if (id.length < 6) { box.hidden = true; return; }
+            var url = '/enrolments/deposit-choices?accountId=' + encodeURIComponent(id)
+                + '&orderId=' + encodeURIComponent((order && order.value || '0').trim() || '0');
+            fetch(url, { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : []; })
+                .then(function (payments) {
+                    list.innerHTML = '';
+                    payments.forEach(function (p) {
+                        var b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'btn btn-sm btn-outline-primary';
+                        b.textContent = p.code + ' · Ksh ' + Number(p.amount).toLocaleString() + ' · ' + p.paidAt;
+                        b.addEventListener('click', function () { code.value = p.code; });
+                        list.appendChild(b);
+                    });
+                    box.hidden = payments.length === 0;
+                })
+                .catch(function () { box.hidden = true; });
+        }
+
+        account.addEventListener('change', load);
+        if (order) order.addEventListener('change', load);
+        load();
+    })();
+</script>
