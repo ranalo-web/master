@@ -1,6 +1,6 @@
 namespace Ranalo.Models
 {
-    // Admin Dashboard "Are we making money?" figures for one period -- the
+    // Admin Dashboard "Portfolio Snapshot" profit figures for one period -- the
     // same lines and rules as the Financials Income Statement: cash in, less
     // device cost (at contract start), commissions paid, operating expenses
     // and 30% tax on a profit.

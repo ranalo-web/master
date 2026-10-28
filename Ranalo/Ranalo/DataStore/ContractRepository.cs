@@ -409,7 +409,8 @@ namespace Ranalo.DataStore
 		                                        SUM(AmountValue) AS Last24hrPaidAmount
 	                                        INTO #PTable24hrs
 	                                        FROM #ValidPayments
-	                                        WHERE PaymentDateValue >= DATEADD(HOUR, -24, GETDATE())
+	                                        -- PaymentDateValue is Kenya time; the database clock is UTC.
+	                                        WHERE PaymentDateValue >= DATEADD(HOUR, -24, DATEADD(HOUR, 3, SYSUTCDATETIME()))
 	                                        GROUP BY AccountNo;
 
 	                                        CREATE INDEX IX_PTable24hrs_AccountNo ON #PTable24hrs(AccountNo);

@@ -126,6 +126,8 @@ namespace Ranolo.Web.Tests
         public Task<decimal> GetCommissionsPaidForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive) => Task.FromResult(CommissionByDealerToReturn.Sum(c => c.CommissionPaidThisMonth));
         public List<DashboardDeviceCostRow> DeviceCostsToReturn { get; set; } = new();
         public Task<List<DashboardDeviceCostRow>> GetDeviceCostsAsync() => Task.FromResult(DeviceCostsToReturn);
+        public List<ContractLossCostRow> LossCostsToReturn { get; set; } = new();
+        public Task<List<ContractLossCostRow>> GetContractLossCostsAsync() => Task.FromResult(LossCostsToReturn);
         public Task<(decimal DealerOutstanding, decimal AgentOutstanding)> GetTotalCommissionsOutstandingAsync() => Task.FromResult(CommissionsOutstandingToReturn);
 
         public Task UpsertSnapshotKpiAsync(DashboardScope scope, decimal? revenueThisMonth, decimal? revenueGrowthPct, int? newThisMonth, int? totalAccounts)

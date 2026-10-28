@@ -247,9 +247,13 @@
                                         @Model.WriteOffs.MissingCostCount.ToString("N0") written-off account(s) have no device cost recorded, so they're left out of the real loss -- <a href="/cost-backfill">Device Cost Backfill</a>.
                                     </div>
                                 }
-                                <div class="d-flex justify-content-between py-2">
+                                <div class="d-flex justify-content-between py-2 border-bottom">
                                     <span>Reinstated (customer paid again)</span>
                                     <span class="fw-medium text-success">@Model.WriteOffs.ReinstatedCount.ToString("N0") &middot; KES @Model.WriteOffs.ReinstatedBalance.ToString("N0") back on the book</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-2" title="Today, all periods: of what defaulted phones cost us (phone + commissions + repossession), the share not recovered by the deposit, payments and resale. Defaulted = approved write-offs, plus open accounts over 90 days past lock (restructured left out). Weighted by phone cost.">
+                                    <span>Loss given default (today)</span>
+                                    <span class="fw-bold @(Model.Lgd.LgdPct >= 40 ? "text-danger" : Model.Lgd.LgdPct >= 20 ? "text-warning" : "text-success")">@Model.Lgd.LgdPct.ToString("0")% &middot; <span class="fw-normal text-soft">KES @Model.Lgd.Loss.ToString("N0") on @Model.Lgd.Defaulted.ToString("N0") accounts</span></span>
                                 </div>
                             </div>
                         }

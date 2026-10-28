@@ -18,4 +18,15 @@ namespace Ranalo.Models
         public DateTime StartDate { get; set; }
         public decimal BuyingPrice { get; set; }
     }
+
+    // One contract's loss-given-default inputs beyond the account row
+    // (IDashboardReportRepository.GetContractLossCostsAsync).
+    public class ContractLossCostRow
+    {
+        public long ContractId { get; set; }
+        public decimal CommissionsPaid { get; set; }
+        public decimal RepossessionCost { get; set; }
+        public decimal ResaleValue { get; set; }
+        public bool IsWrittenOff { get; set; }
+    }
 }
