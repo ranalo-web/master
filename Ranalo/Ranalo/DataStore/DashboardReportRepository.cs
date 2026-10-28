@@ -448,6 +448,41 @@ namespace Ranalo.DataStore
             }
         }
 
+        // Same commission and recovery sources as the write-off register's
+        // real loss (WriteOffRepository.GetPageAsync).
+        public async Task<List<ContractLossCostRow>> GetContractLossCostsAsync()
+        {
+            const string sql = @"
+                SELECT ci.ContractID AS ContractId,
+                    ISNULL(dc.Amount, 0) + ISNULL(ac.Amount, 0) AS CommissionsPaid,
+                    ISNULL(rec.RepossessionCost, 0) AS RepossessionCost,
+                    ISNULL(rec.ResaleValue, 0) AS ResaleValue,
+                    CAST(CASE WHEN wo.Id IS NOT NULL THEN 1 ELSE 0 END AS BIT) AS IsWrittenOff
+                FROM Contract_Info ci
+                LEFT JOIN (SELECT ContractId, SUM(AmountPaid) AS Amount FROM DealerCommissionPayments GROUP BY ContractId) dc
+                    ON dc.ContractId = ci.ContractID
+                LEFT JOIN (SELECT ContractId, SUM(AmountPaid) AS Amount FROM AgentCommissionPayments GROUP BY ContractId) ac
+                    ON ac.ContractId = ci.ContractID
+                LEFT JOIN (SELECT OldContractId, SUM(RepossessionCost) AS RepossessionCost, SUM(ResaleValue) AS ResaleValue
+                           FROM DeviceRecoveries GROUP BY OldContractId) rec
+                    ON rec.OldContractId = ci.ContractID
+                OUTER APPLY (SELECT TOP 1 w.Id FROM WriteOffs w
+                             WHERE w.ContractId = ci.ContractID AND w.AccountNo = ci.ID
+                               AND w.Status = 'Approved' AND w.ReinstatedDate IS NULL) wo
+                WHERE dc.Amount IS NOT NULL OR ac.Amount IS NOT NULL OR rec.OldContractId IS NOT NULL OR wo.Id IS NOT NULL";
+
+            try
+            {
+                var rows = await _db.QueryAsync<ContractLossCostRow>(sql);
+                return rows.ToList();
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Contract loss costs query failed");
+                return new List<ContractLossCostRow>();
+            }
+        }
+
         public async Task<decimal> GetCommissionsPaidForPeriodAsync(DateTime? fromDate, DateTime? toDateExclusive)
         {
             const string sql = @"
@@ -946,6 +981,7 @@ namespace Ranalo.DataStore
         private class AccountDetailQueryRow
         {
             public long AccountId { get; set; }
+            public long ContractId { get; set; }
             public string CustomerName { get; set; } = "";
             public int? AssignedAgentId { get; set; }
             public string? AgentName { get; set; }
@@ -998,6 +1034,7 @@ namespace Ranalo.DataStore
                 )
                 SELECT
                     ci.ID AS AccountId,
+                    ci.ContractID AS ContractId,
                     ci.First_Name AS CustomerName,
                     ci.AssignedAgentId,
                     agentUser.[Name] + ' ' + agentUser.[LastName] AS AgentName,
@@ -1070,6 +1107,7 @@ namespace Ranalo.DataStore
                 return rows.Select(row => new DashboardAccountDetailRow
                 {
                     AccountId = row.AccountId,
+                    ContractId = row.ContractId,
                     CustomerName = row.CustomerName,
                     AssignedAgentId = row.AssignedAgentId,
                     AgentName = row.AgentName,

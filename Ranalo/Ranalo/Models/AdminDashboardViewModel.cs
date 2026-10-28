@@ -8,7 +8,7 @@ namespace Ranalo.Models
         public string PeriodLabel { get; set; } = "this month";
         public string PriorLabel { get; set; } = "same days last month";
 
-        // Are we making money? This period and the comparison period.
+        // Portfolio Snapshot: profit this period and the comparison period.
         public AdminProfit Profit { get; set; } = new();
         public AdminProfit PriorProfit { get; set; } = new();
 
@@ -42,6 +42,9 @@ namespace Ranalo.Models
         // share of a contract that has to be collected to cover the phone.
         public decimal RepaymentRatePct { get; set; }
         public decimal BreakEvenCollectionPct { get; set; }
+
+        // Loss given default across all defaulted accounts (Services/LossGivenDefault.cs).
+        public Ranalo.Services.LossGivenDefault.Summary Lgd { get; set; } = Ranalo.Services.LossGivenDefault.Summary.None;
         public int MissingDeviceCostCount { get; set; }
 
         // Write-offs dated in the period, and waiting for review.
@@ -208,6 +211,9 @@ namespace Ranalo.Models
         public decimal BadPct { get; set; }
         public int RestructuredCount { get; set; }
         public int NewInPeriod { get; set; }
+
+        // Loss given default on this dealer's defaulted accounts.
+        public Ranalo.Services.LossGivenDefault.Summary Lgd { get; set; } = Ranalo.Services.LossGivenDefault.Summary.None;
     }
 
     // Same metrics as the Dealer Dashboard's agent rows, plus the dealer.

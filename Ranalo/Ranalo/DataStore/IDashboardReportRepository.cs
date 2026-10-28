@@ -70,6 +70,11 @@ namespace Ranalo.DataStore
         // mapping still cost the business.
         Task<List<DashboardDeviceCostRow>> GetDeviceCostsAsync();
 
+        // Loss-given-default inputs per contract that has any: commissions
+        // paid on it, repossession cost and resale value, and whether it has
+        // an approved write-off not reinstated (Services/LossGivenDefault.cs).
+        Task<List<ContractLossCostRow>> GetContractLossCostsAsync();
+
         // Sum of DashboardSnapshot.DealerCommissionOutstanding/
         // CommissionOutstanding across every dealer row (WHERE DealerId IS
         // NOT NULL) -- the Financials page's balance sheet liabilities.

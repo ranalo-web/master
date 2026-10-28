@@ -12,6 +12,9 @@ namespace Ranalo.Models
         public WriteOffPeriodSummary WriteOffs { get; set; } = new();
         public List<LoanBookAgeBucket> LoanBookAgeing { get; set; } = new();
         public bool WriteOffsUnavailable { get; set; }
+
+        // Loss given default today, whatever the period (Services/LossGivenDefault.cs).
+        public Ranalo.Services.LossGivenDefault.Summary Lgd { get; set; } = Ranalo.Services.LossGivenDefault.Summary.None;
         public string PeriodLabel { get; set; } = "Month";
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }

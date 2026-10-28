@@ -1352,7 +1352,8 @@ namespace Ranalo.DataStore
                                 RealAccountNo AS AccountNo,
                                 SUM(TRY_CAST(Amount AS DECIMAL(18,2))) AS Total_Last24Hours
                             FROM Payments
-                            WHERE PaymentDateValue >= DATEADD(HOUR, -24, GETDATE())
+                            -- PaymentDateValue is Kenya time; the database clock is UTC.
+                            WHERE PaymentDateValue >= DATEADD(HOUR, -24, DATEADD(HOUR, 3, SYSUTCDATETIME()))
                             GROUP BY RealAccountNo
                         ),
 
@@ -1564,12 +1565,14 @@ PaymentStats AS
 
         SUM(AmountValue) AS TotalPaid,
 
+        -- PaymentDateValue is Kenya time; the database clock is UTC.
+
         SUM(CASE 
-            WHEN PaymentDateValue >= DATEADD(HOUR,-24,GETDATE()) 
+            WHEN PaymentDateValue >= DATEADD(HOUR, -24, DATEADD(HOUR, 3, SYSUTCDATETIME())) 
             THEN AmountValue END) AS Last24hrPaidAmount,
 
         SUM(CASE 
-            WHEN PaymentDateValue >= DATEADD(DAY,-7,GETDATE()) 
+            WHEN PaymentDateValue >= DATEADD(DAY, -7, DATEADD(HOUR, 3, SYSUTCDATETIME())) 
             THEN AmountValue END) AS LastWeekPaidAmount,
 
         MAX(CASE WHEN rnFirst = 1 THEN PaymentDateValue END) AS FirstPaidDate,
@@ -2505,9 +2508,11 @@ FROM
 
                                 MAX(PaymentDateValue) AS Last_Payment_Date,
 
+                                -- PaymentDateValue is Kenya time; the database clock is UTC.
+
                                 SUM(
                                     CASE 
-                                        WHEN PaymentDateValue >= DATEADD(HOUR,-24,GETDATE())
+                                        WHEN PaymentDateValue >= DATEADD(HOUR, -24, DATEADD(HOUR, 3, SYSUTCDATETIME()))
                                         THEN Amount
                                         ELSE 0
                                     END

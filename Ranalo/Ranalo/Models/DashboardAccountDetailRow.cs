@@ -9,6 +9,9 @@ namespace Ranalo.Models
     public class DashboardAccountDetailRow
     {
         public long AccountId { get; set; }
+        // Contract_Info.ContractID: an account can have more than one
+        // contract (repossessed and resold).
+        public long ContractId { get; set; }
         public string CustomerName { get; set; } = "";
         public int? AssignedAgentId { get; set; }
         public string? AgentName { get; set; }

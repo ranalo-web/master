@@ -97,6 +97,7 @@ namespace Ranalo.Controllers
             {
                 model.WriteOffs = await _writeOffRepository.GetPeriodSummaryAsync(fromDate, toDateExclusive);
                 model.LoanBookAgeing = await _writeOffRepository.GetLoanBookAgeingAsync(model.AsOfDate);
+                model.Lgd = await _dashboardReportService.GetLossGivenDefaultAsync();
             }
             catch (Exception ex)
             {

@@ -92,6 +92,11 @@ namespace Ranalo.Services
             var inArrears = normal.Where(r => LockDays(r) > 0 && r.ArrearsAmount < 0).ToList();
             var bad = inArrears.Where(r => LockDays(r) > 90).ToList();
 
+            // Loss given default: these bad accounts plus approved write-offs.
+            var defaulted = DefaultedAccounts(accountDetails, bad, await LossCostsAsync());
+            model.Lgd = LossGivenDefault.Summarise(defaulted);
+            var lgdByDealer = LossGivenDefault.ByDealer(defaulted);
+
             model.ActiveAccounts = active.Count;
             model.TotalAccounts = active.Count;
             model.ArrearsTotal = inArrears.Sum(r => -r.ArrearsAmount);
@@ -144,7 +149,7 @@ namespace Ranalo.Services
             model.DealerCommissionPayable = dealerCommission.Sum(d => d.Payable);
             model.DealerCommissionHeld = dealerCommission.Where(d => d.IsSuspended).Sum(d => d.Pool.Owed);
 
-            model.DealerPerformance = BuildAdminDealerPerformance(accountDetails, revenueByDealer, commissionByDealer, commissionDueByDealer, window);
+            model.DealerPerformance = BuildAdminDealerPerformance(accountDetails, revenueByDealer, commissionByDealer, commissionDueByDealer, window, lgdByDealer);
             model.AgentPerformance = BuildAdminAgentPerformance(accountDetails);
             model.Collections = BuildCollections(accountDetails);
             (model.CommissionSummary, model.CommissionAccounts) = BuildCommissions(commissionAccounts, accountDetails);
@@ -1172,7 +1177,8 @@ namespace Ranalo.Services
             Dictionary<string, decimal> revenueByDealer,
             Dictionary<string, decimal> commissionByDealer,
             Dictionary<string, decimal> commissionDueByDealer,
-            AdminDashboardRules.PeriodWindow window) => rows
+            AdminDashboardRules.PeriodWindow window,
+            Dictionary<string, LossGivenDefault.Summary> lgdByDealer) => rows
             .Where(r => !string.IsNullOrWhiteSpace(r.DealerName))
             .GroupBy(r => r.DealerName!)
             .Select(g =>
@@ -1203,11 +1209,48 @@ namespace Ranalo.Services
                     CommissionPaid = commissionPaid,
                     CommissionDue = commissionDueByDealer.TryGetValue(g.Key, out var due) ? due : 0,
                     PctOfTarget = total > 0 ? Math.Round(100m * (total - arrears) / total, 1) : 0,
+                    Lgd = lgdByDealer.TryGetValue(g.Key, out var lgd) ? lgd : LossGivenDefault.Summary.None,
                 };
             })
             .OrderByDescending(d => d.Accounts)
             .Select((d, i) => { d.Rank = i + 1; return d; })
             .ToList();
+
+        // Loss given default today, for Financials: the same accounts and
+        // rules as the Admin Dashboard's.
+        public async Task<LossGivenDefault.Summary> GetLossGivenDefaultAsync()
+        {
+            var rows = await _repository.GetDealerAccountDetailsAsync(null);
+            var bad = rows.Where(r => !IsPaidOff(r) && !IsRestructured(r)
+                                      && LockDays(r) > 90 && r.ArrearsAmount < 0).ToList();
+            return LossGivenDefault.Summarise(DefaultedAccounts(rows, bad, await LossCostsAsync()));
+        }
+
+        private async Task<Dictionary<long, ContractLossCostRow>> LossCostsAsync() =>
+            (await _repository.GetContractLossCostsAsync())
+                .GroupBy(c => c.ContractId).ToDictionary(g => g.Key, g => g.First());
+
+        // Defaulted accounts for loss given default: the dashboard's bad
+        // accounts (open, not restructured, over 90 days past lock) and any
+        // contract with an approved write-off not reinstated. Paid is
+        // everything the customer paid on the account, deposit included.
+        public static List<LossGivenDefault.Account> DefaultedAccounts(
+            List<DashboardAccountDetailRow> rows,
+            List<DashboardAccountDetailRow> bad,
+            Dictionary<long, ContractLossCostRow> lossCosts)
+        {
+            var badContracts = bad.Select(r => r.ContractId).ToHashSet();
+            return rows
+                .Where(r => badContracts.Contains(r.ContractId)
+                            || (lossCosts.TryGetValue(r.ContractId, out var c) && c.IsWrittenOff))
+                .Select(r =>
+                {
+                    lossCosts.TryGetValue(r.ContractId, out var c);
+                    return new LossGivenDefault.Account(r.DealerName, r.BuyingPrice, r.TotalPaid,
+                        c?.CommissionsPaid ?? 0, c?.RepossessionCost ?? 0, c?.ResaleValue ?? 0, c?.IsWrittenOff ?? false);
+                })
+                .ToList();
+        }
 
         // My Contracts: every active account, current status/next-due from
         // the same lock classification as everywhere else on this page.
