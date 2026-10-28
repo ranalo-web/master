@@ -8,13 +8,19 @@
     // No bad-debt deduction here: revenue is cash received and device cost is
     // counted at contract start, so an unpaid balance was never income. The
     // real cost of bad accounts is shown in the Write-offs card instead.
-    var operatingProfit = grossProfit;
-    var ebt = operatingProfit - Model.OperatingExpensesThisMonth;
+    // EBIT is after operating expenses; there are no interest costs, so
+    // EBT = EBIT. (Until 2026-10-28 EBIT was shown before opex, so the
+    // operating margin equalled the gross margin.)
+    var operatingProfit = grossProfit - Model.OperatingExpensesThisMonth;
+    var ebt = operatingProfit;
     var taxThisMonth = Math.Max(0, ebt) * Model.TaxRatePct / 100;
     var netProfitAfterTax = ebt - taxThisMonth;
     var retainedEarnings = netProfitAfterTax - Model.DividendsPaidThisMonth;
 
     var grossMarginPct = Model.RevenueThisMonth > 0 ? grossProfit / Model.RevenueThisMonth * 100 : 0;
+    // Write-off losses already sit inside device cost (counted at contract
+    // start); adding them back shows what the product earns before credit.
+    var grossMarginBeforeLossesPct = Model.RevenueThisMonth > 0 ? (grossProfit + Model.WriteOffs.RealLoss) / Model.RevenueThisMonth * 100 : 0;
     var operatingMarginPct = Model.RevenueThisMonth > 0 ? operatingProfit / Model.RevenueThisMonth * 100 : 0;
     var netMarginPct = Model.RevenueThisMonth > 0 ? netProfitAfterTax / Model.RevenueThisMonth * 100 : 0;
     var costToIncomeRatio = Model.RevenueThisMonth > 0 ? (Model.CostOfDevicesThisMonth + totalCommissionsPaid + Model.OperatingExpensesThisMonth) / Model.RevenueThisMonth * 100 : 0;
@@ -113,15 +119,15 @@
                                 <span class="fw-medium">KES @grossProfit.ToString("N0")</span>
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="fw-medium">Operating Profit (EBIT)</span>
-                                <span class="fw-medium">KES @operatingProfit.ToString("N0")</span>
-                            </div>
-                            <div class="d-flex justify-content-between py-2 border-bottom">
                                 <span class="text-soft">Less: Operating expenses</span>
                                 <span class="text-danger">(@Model.OperatingExpensesThisMonth.ToString("N0"))</span>
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="fw-medium">Profit Before Tax (EBT)</span>
+                                <span class="fw-medium">Operating Profit (EBIT)</span>
+                                <span class="fw-medium">KES @operatingProfit.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span class="fw-medium" title="No interest or finance costs are recorded, so this equals EBIT">Profit Before Tax (EBT)</span>
                                 <span class="fw-medium">KES @ebt.ToString("N0")</span>
                             </div>
                             <div class="d-flex justify-content-between py-2 border-bottom">
@@ -163,6 +169,13 @@
                             </div>
                             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                                 <div>
+                                    <div class="fw-medium">Gross Margin before credit losses</div>
+                                    <div class="text-soft" style="font-size:11px;" title="Write-off losses are already inside device cost, so the gross margin above is after them. Adding them back separates what the product earns from what credit losses cost.">(Gross profit + real loss on write-offs in the period) &divide; revenue</div>
+                                </div>
+                                <span class="fw-bold">@grossMarginBeforeLossesPct.ToString("0.0")%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
                                     <div class="fw-medium">Operating Margin</div>
                                     <div class="text-soft" style="font-size:11px;">EBIT &divide; revenue</div>
                                 </div>
@@ -185,7 +198,7 @@
                             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                                 <div>
                                     <div class="fw-medium">Bad Debt Ratio</div>
-                                    <div class="text-soft" style="font-size:11px;">Real loss on write-offs in the period &divide; revenue</div>
+                                    <div class="text-soft" style="font-size:11px;" title="Not deducted in the income statement: revenue is cash received and the device cost is already counted when the contract starts, so this would count the same loss twice">Real loss on write-offs in the period &divide; revenue (for information, already inside device cost)</div>
                                 </div>
                                 <span class="fw-bold @(badDebtRatio <= 10 ? "text-success" : "text-danger")">@badDebtRatio.ToString("0.0")%</span>
                             </div>
@@ -199,7 +212,7 @@
                             <div class="d-flex justify-content-between align-items-center py-2">
                                 <div>
                                     <div class="fw-medium">Retention Ratio</div>
-                                    <div class="text-soft" style="font-size:11px;">Retained earnings &divide; net profit</div>
+                                    <div class="text-soft" style="font-size:11px;">Profit retained &divide; net profit (1 &minus; payout ratio)</div>
                                 </div>
                                 <span class="fw-bold">@retentionRatio.ToString("0.0")%</span>
                             </div>
@@ -251,9 +264,12 @@
                                     <span>Reinstated (customer paid again)</span>
                                     <span class="fw-medium text-success">@Model.WriteOffs.ReinstatedCount.ToString("N0") &middot; KES @Model.WriteOffs.ReinstatedBalance.ToString("N0") back on the book</span>
                                 </div>
-                                <div class="d-flex justify-content-between py-2" title="Today, all periods: of what defaulted phones cost us (phone + commissions + repossession), the share not recovered by the deposit, payments and resale. Defaulted = approved write-offs, plus open accounts over 90 days past lock (restructured left out). Weighted by phone cost.">
-                                    <span>Loss given default (today)</span>
-                                    <span class="fw-bold @(Model.Lgd.LgdPct >= 40 ? "text-danger" : Model.Lgd.LgdPct >= 20 ? "text-warning" : "text-success")">@Model.Lgd.LgdPct.ToString("0")% &middot; <span class="fw-normal text-soft">KES @Model.Lgd.Loss.ToString("N0") on @Model.Lgd.Defaulted.ToString("N0") accounts</span></span>
+                                <div class="d-flex justify-content-between py-2" title="Today, whatever the period. Defaulted = written off, or more than 90 days past lock (restructured included), and no payment in the last 30 days. Real loss = phone cost + commissions + repossession cost - deposit, payments and resale, never below 0. LGD = real loss / what we put in.">
+                                    <span>Real loss on defaulted accounts (today)</span>
+                                    <span class="fw-bold text-danger">KES @Model.Lgd.Loss.ToString("N0") &middot; <span class="@(Model.Lgd.LgdPct >= 40 ? "text-danger" : Model.Lgd.LgdPct >= 20 ? "text-warning" : "text-success")">LGD @Model.Lgd.LgdPct.ToString("0")%</span></span>
+                                </div>
+                                <div class="pb-2 text-soft small">
+                                    @Model.Lgd.LossMaking.ToString("N0") of @Model.Lgd.Defaulted.ToString("N0") defaulted accounts are real losses; they paid @Model.Lgd.PaidPctOfContract.ToString("0")% of their contracts. Not counted, still paying: @Model.LgdLeftOut.Paying.ToString("N0").
                                 </div>
                             </div>
                         }

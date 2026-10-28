@@ -43,6 +43,9 @@ namespace Ranalo.Services
         public const int MinDealerAccounts = 10;
         public const decimal DealerBehindAlertPct = 30;
 
+        // Defaulted accounts a dealer needs before their LGD is named.
+        public const int MinDefaultsForDealerLgd = 5;
+
         public static List<AdminAction> BuildActions(AdminDashboardViewModel m)
         {
             var actions = new List<AdminAction>();
@@ -124,6 +127,25 @@ namespace Ranalo.Services
                     Level = cushion < 10 ? "danger" : "info",
                     Text = $"Customers have paid {m.RepaymentRatePct:0}% of what's due so far. A phone is paid for once {m.BreakEvenCollectionPct:0}% of its contract is collected"
                         + (cushion < 10 ? " -- too little cushion: tighten approvals and deposits." : $", a {cushion:0}-point cushion."),
+                });
+            }
+
+            // Loss given default: the whole book today, whatever the period.
+            var lgd = m.Lgd;
+            if (lgd.LossMaking > 0)
+            {
+                var worst = m.DealerPerformance
+                    .Where(d => d.Lgd.Defaulted >= MinDefaultsForDealerLgd && d.Lgd.Cost > 0)
+                    .OrderByDescending(d => d.Lgd.LgdPct)
+                    .FirstOrDefault();
+                actions.Add(new()
+                {
+                    Level = lgd.LgdPct >= 40 ? "danger" : lgd.LgdPct >= 20 ? "warning" : "info",
+                    Text = $"Defaults have cost us KES {lgd.Loss:N0} so far, {lgd.LgdPct:0}% of what we put into those phones (loss given default, all time)."
+                        + $" {lgd.LossMaking:N0} of {lgd.Defaulted:N0} defaulted customers stopped before paying back their cost; on average they paid {lgd.PaidPctOfContract:0}% of their contract against the {m.BreakEvenCollectionPct:0}% break-even."
+                        + (worst != null ? $" Highest: {worst.DealerName} at {worst.Lgd.LgdPct:0}%." : ""),
+                    Link = "/write-offs",
+                    LinkText = "Write-offs",
                 });
             }
 

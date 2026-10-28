@@ -92,9 +92,11 @@ namespace Ranalo.Services
             var inArrears = normal.Where(r => LockDays(r) > 0 && r.ArrearsAmount < 0).ToList();
             var bad = inArrears.Where(r => LockDays(r) > 90).ToList();
 
-            // Loss given default: these bad accounts plus approved write-offs.
-            var defaulted = DefaultedAccounts(accountDetails, bad, await LossCostsAsync());
+            // Loss given default: over 90 days past lock (restructured
+            // included) plus approved write-offs, less anyone still paying.
+            var (defaulted, lgdLeftOut) = DefaultedAccounts(accountDetails, Over90DaysPastLock(accountDetails), await LossCostsAsync(), KenyaNow());
             model.Lgd = LossGivenDefault.Summarise(defaulted);
+            model.LgdLeftOut = lgdLeftOut;
             var lgdByDealer = LossGivenDefault.ByDealer(defaulted);
 
             model.ActiveAccounts = active.Count;
@@ -1218,38 +1220,57 @@ namespace Ranalo.Services
 
         // Loss given default today, for Financials: the same accounts and
         // rules as the Admin Dashboard's.
-        public async Task<LossGivenDefault.Summary> GetLossGivenDefaultAsync()
+        public async Task<(LossGivenDefault.Summary Summary, LossGivenDefault.LeftOut LeftOut)> GetLossGivenDefaultAsync()
         {
             var rows = await _repository.GetDealerAccountDetailsAsync(null);
-            var bad = rows.Where(r => !IsPaidOff(r) && !IsRestructured(r)
-                                      && LockDays(r) > 90 && r.ArrearsAmount < 0).ToList();
-            return LossGivenDefault.Summarise(DefaultedAccounts(rows, bad, await LossCostsAsync()));
+            var (defaulted, leftOut) = DefaultedAccounts(rows, Over90DaysPastLock(rows), await LossCostsAsync(), KenyaNow());
+            return (LossGivenDefault.Summarise(defaulted), leftOut);
         }
 
         private async Task<Dictionary<long, ContractLossCostRow>> LossCostsAsync() =>
             (await _repository.GetContractLossCostsAsync())
                 .GroupBy(c => c.ContractId).ToDictionary(g => g.Key, g => g.First());
 
-        // Defaulted accounts for loss given default: the dashboard's bad
-        // accounts (open, not restructured, over 90 days past lock) and any
-        // contract with an approved write-off not reinstated. Paid is
-        // everything the customer paid on the account, deposit included.
-        public static List<LossGivenDefault.Account> DefaultedAccounts(
+        // Payment dates are Kenya time.
+        private static DateTime KenyaNow() => DateTime.UtcNow + CustomerMessages.KenyaOffset;
+
+        // Open accounts over 90 days past lock and behind, restructured or
+        // not: a restructured customer who stopped paying is a loss too.
+        public static List<DashboardAccountDetailRow> Over90DaysPastLock(List<DashboardAccountDetailRow> rows) =>
+            rows.Where(r => !IsPaidOff(r) && LockDays(r) > 90 && r.ArrearsAmount < 0).ToList();
+
+        // Defaulted accounts for loss given default: open accounts over 90
+        // days past lock (Over90DaysPastLock) and any contract with an
+        // approved write-off not reinstated. Anyone who paid in the last
+        // LossGivenDefault.PayingDays is still paying, so not a loss yet,
+        // and is left out -- except repossessed write-offs, whose phone now
+        // belongs to a new customer. Paid is everything the customer paid
+        // on the account, deposit included.
+        public static (List<LossGivenDefault.Account> Defaulted, LossGivenDefault.LeftOut LeftOut) DefaultedAccounts(
             List<DashboardAccountDetailRow> rows,
-            List<DashboardAccountDetailRow> bad,
-            Dictionary<long, ContractLossCostRow> lossCosts)
+            List<DashboardAccountDetailRow> over90Days,
+            Dictionary<long, ContractLossCostRow> lossCosts,
+            DateTime nowKenya)
         {
-            var badContracts = bad.Select(r => r.ContractId).ToHashSet();
-            return rows
-                .Where(r => badContracts.Contains(r.ContractId)
+            var over90Contracts = over90Days.Select(r => r.ContractId).ToHashSet();
+            var candidates = rows
+                .Where(r => over90Contracts.Contains(r.ContractId)
                             || (lossCosts.TryGetValue(r.ContractId, out var c) && c.IsWrittenOff))
-                .Select(r =>
-                {
-                    lossCosts.TryGetValue(r.ContractId, out var c);
-                    return new LossGivenDefault.Account(r.DealerName, r.BuyingPrice, r.TotalPaid,
-                        c?.CommissionsPaid ?? 0, c?.RepossessionCost ?? 0, c?.ResaleValue ?? 0, c?.IsWrittenOff ?? false);
-                })
+                .Select(r => (Row: r, Costs: lossCosts.GetValueOrDefault(r.ContractId)))
                 .ToList();
+
+            var paying = candidates
+                .Where(x => x.Costs?.WriteOffReason != "Repossessed"
+                            && x.Row.LastPaymentDate >= nowKenya.AddDays(-LossGivenDefault.PayingDays))
+                .ToList();
+
+            var defaulted = candidates.Except(paying)
+                .Select(x => new LossGivenDefault.Account(x.Row.DealerName, x.Row.BuyingPrice, x.Row.TotalPaid,
+                    x.Costs?.ResaleValue ?? 0, x.Costs?.IsWrittenOff ?? false, x.Row.FullContractValue,
+                    x.Costs?.CommissionsPaid ?? 0, x.Costs?.RepossessionCost ?? 0))
+                .ToList();
+
+            return (defaulted, new LossGivenDefault.LeftOut(paying.Count(x => IsRestructured(x.Row)), paying.Count));
         }
 
         // My Contracts: every active account, current status/next-due from

@@ -102,5 +102,36 @@ namespace Ranolo.Web.Tests
             var action = AdminDashboardRules.BuildActions(m).Single(a => a.Text.StartsWith("Customers have paid"));
             Assert.That(action.Level, Is.EqualTo("danger"));
         }
+
+        [Test]
+        public void Actions_SummariseLossGivenDefault_AndNameTheWorstDealer()
+        {
+            var m = new AdminDashboardViewModel
+            {
+                BreakEvenCollectionPct = 39,
+                Lgd = new(321, 188, 133, 0, 3_988_491m, 1_756_201m, 251, 2_686_675m, 10_178_917m),
+                DealerPerformance = new()
+                {
+                    new() { DealerName = "Mali Mali", Lgd = new(12, 0, 12, 0, 254_232m, 180_132m, 12) },
+                    new() { DealerName = "Tiny", Lgd = new(1, 0, 1, 0, 41_500m, 41_300m, 1) },
+                    new() { DealerName = "Lucky", Lgd = new(103, 71, 32, 0, 1_176_232m, 384_086m, 70) },
+                },
+            };
+
+            var action = AdminDashboardRules.BuildActions(m).Single(a => a.Text.StartsWith("Defaults have cost us"));
+
+            Assert.That(action.Level, Is.EqualTo("danger"));
+            Assert.That(action.Text, Does.Contain("KES 1,756,201").And.Contain("44%").And.Contain("all time"));
+            Assert.That(action.Text, Does.Contain("251 of 321").And.Contain("26% of their contract").And.Contain("39% break-even"));
+            Assert.That(action.Text, Does.Contain("Highest: Mali Mali at 71%"), "Tiny has too few defaults to name");
+        }
+
+        [Test]
+        public void Actions_NoLossGivenDefaultLine_WithoutRealLosses()
+        {
+            var texts = AdminDashboardRules.BuildActions(new AdminDashboardViewModel()).Select(a => a.Text);
+
+            Assert.That(texts, Has.None.StartsWith("Defaults have cost us"));
+        }
     }
 }

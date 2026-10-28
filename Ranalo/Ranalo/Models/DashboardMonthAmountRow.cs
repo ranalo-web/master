@@ -28,5 +28,8 @@ namespace Ranalo.Models
         public decimal RepossessionCost { get; set; }
         public decimal ResaleValue { get; set; }
         public bool IsWrittenOff { get; set; }
+
+        // The write-off's reason (NoPayment360, Repossessed, Fraud, LostPhone), when written off.
+        public string? WriteOffReason { get; set; }
     }
 }

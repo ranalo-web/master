@@ -15,6 +15,7 @@ namespace Ranalo.Models
 
         // Loss given default today, whatever the period (Services/LossGivenDefault.cs).
         public Ranalo.Services.LossGivenDefault.Summary Lgd { get; set; } = Ranalo.Services.LossGivenDefault.Summary.None;
+        public Ranalo.Services.LossGivenDefault.LeftOut LgdLeftOut { get; set; } = Ranalo.Services.LossGivenDefault.LeftOut.None;
         public string PeriodLabel { get; set; } = "Month";
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
