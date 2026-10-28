@@ -13,7 +13,7 @@ namespace Ranalo.Services
         Task<FinancialsViewModel> GetFinancialsAsync(DateTime? fromDate, DateTime? toDateExclusive);
 
         // Loss given default today (Services/LossGivenDefault.cs), same as the Admin Dashboard.
-        Task<LossGivenDefault.Summary> GetLossGivenDefaultAsync();
+        Task<(LossGivenDefault.Summary Summary, LossGivenDefault.LeftOut LeftOut)> GetLossGivenDefaultAsync();
 
         // agentUserId narrows every account-level query down to just that
         // agent's own book (Contract_Info.AssignedAgentId) instead of the

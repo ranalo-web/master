@@ -45,6 +45,7 @@ namespace Ranalo.Models
 
         // Loss given default across all defaulted accounts (Services/LossGivenDefault.cs).
         public Ranalo.Services.LossGivenDefault.Summary Lgd { get; set; } = Ranalo.Services.LossGivenDefault.Summary.None;
+        public Ranalo.Services.LossGivenDefault.LeftOut LgdLeftOut { get; set; } = Ranalo.Services.LossGivenDefault.LeftOut.None;
         public int MissingDeviceCostCount { get; set; }
 
         // Write-offs dated in the period, and waiting for review.

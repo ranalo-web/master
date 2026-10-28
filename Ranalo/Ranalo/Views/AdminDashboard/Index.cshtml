@@ -67,14 +67,7 @@
                                 <span class="@(netUp ? "text-success" : "text-danger")"><em class="icon ni ni-arrow-long-@(netUp ? "up" : "down")"></em>@Kes(cur.NetProfit - prior.NetProfit) vs @Model.PriorLabel</span>
                             }
                         </div>
-                        <div class="text-soft small mb-2">@cur.MarginPct.ToString("0.0")% margin &middot; @(cur.ProfitBeforeTax >= 0 ? $"KES {cur.ProfitBeforeTax:N0} above costs" : $"KES {-cur.ProfitBeforeTax:N0} more cash needed to break even")</div>
-                        @{ var lgd = Model.Lgd; }
-                        <div class="d-flex flex-wrap align-items-baseline mb-3 pt-2 border-top" style="column-gap:.5rem;"
-                             title="Of what defaulted phones cost us (phone + commissions + repossession), the share not recovered by the deposit, payments and resale. Defaulted = approved write-offs, plus open accounts over 90 days past lock (restructured left out). Weighted by phone cost.">
-                            <span class="small fw-medium">Loss given default</span>
-                            <span class="fs-5 fw-bold @(lgd.LgdPct >= 40 ? "text-danger" : lgd.LgdPct >= 20 ? "text-warning" : "text-success")">@lgd.LgdPct.ToString("0")%</span>
-                            <span class="text-soft small">KES @lgd.Loss.ToString("N0") lost on @lgd.Defaulted.ToString("N0") defaulted accounts (@lgd.WrittenOff.ToString("N0") written off, @lgd.Over90Days.ToString("N0") over 90 days)@(lgd.MissingCost > 0 ? $"; {lgd.MissingCost:N0} have no phone cost recorded" : "") &middot; a phone is paid for at @Model.BreakEvenCollectionPct.ToString("0")% of its contract</span>
-                        </div>
+                        <div class="text-soft small mb-3">@cur.MarginPct.ToString("0.0")% margin &middot; @(cur.ProfitBeforeTax >= 0 ? $"KES {cur.ProfitBeforeTax:N0} above costs" : $"KES {-cur.ProfitBeforeTax:N0} more cash needed to break even")</div>
 
                         <table class="table table-sm mb-0" style="font-size:13px;">
                             <thead>
@@ -357,7 +350,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Open accounts more than 90 days past lock, restructured left out">Bad customers</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Bad customers as a share of the dealer's open accounts">Bad %</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Restructured</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Loss given default: of what this dealer's defaulted phones cost us, the share not recovered (deposit and payments included). Defaulted = written off, or open and over 90 days past lock">LGD</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Loss given default, all time (not the date filter): real loss on this dealer's defaulted accounts (phone, commissions and repossession, less deposit, payments and resale) as a share of what we put in. Defaulted = written off or over 90 days past lock, and no payment in the last 30 days">LGD</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Dealer commission paid this month / payable now after arrears (0 while suspended)">Commission Paid / Payable</th>
                             </tr>
                         </thead>
@@ -377,9 +370,9 @@
                                     <td class="@(d.BadCount > 0 ? "text-danger fw-bold" : "text-soft")">@d.BadCount</td>
                                     <td><span class="badge badge-dim @(d.BadPct >= 15 ? "bg-danger" : d.BadPct >= 5 ? "bg-warning" : "bg-success")">@d.BadPct.ToString("0")%</span></td>
                                     <td class="text-info">@d.RestructuredCount</td>
-                                    @if (d.Lgd.PhoneCost > 0)
+                                    @if (d.Lgd.Cost > 0)
                                     {
-                                        <td data-sort="@d.Lgd.LgdPct" title="KES @d.Lgd.Loss.ToString("N0") lost on @d.Lgd.Defaulted defaulted"><span class="badge badge-dim @(d.Lgd.LgdPct >= 40 ? "bg-danger" : d.Lgd.LgdPct >= 20 ? "bg-warning" : "bg-success")">@d.Lgd.LgdPct.ToString("0")%</span></td>
+                                        <td data-sort="@d.Lgd.LgdPct" title="KES @d.Lgd.Loss.ToString("N0") real loss; @d.Lgd.LossMaking of @d.Lgd.Defaulted defaulted are losses; they paid @d.Lgd.PaidPctOfContract.ToString("0")% of their contracts"><span class="badge badge-dim @(d.Lgd.LgdPct >= 40 ? "bg-danger" : d.Lgd.LgdPct >= 20 ? "bg-warning" : "bg-success")">@d.Lgd.LgdPct.ToString("0")%</span></td>
                                     }
                                     else
                                     {

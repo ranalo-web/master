@@ -457,7 +457,8 @@ namespace Ranalo.DataStore
                     ISNULL(dc.Amount, 0) + ISNULL(ac.Amount, 0) AS CommissionsPaid,
                     ISNULL(rec.RepossessionCost, 0) AS RepossessionCost,
                     ISNULL(rec.ResaleValue, 0) AS ResaleValue,
-                    CAST(CASE WHEN wo.Id IS NOT NULL THEN 1 ELSE 0 END AS BIT) AS IsWrittenOff
+                    CAST(CASE WHEN wo.Id IS NOT NULL THEN 1 ELSE 0 END AS BIT) AS IsWrittenOff,
+                    wo.Reason AS WriteOffReason
                 FROM Contract_Info ci
                 LEFT JOIN (SELECT ContractId, SUM(AmountPaid) AS Amount FROM DealerCommissionPayments GROUP BY ContractId) dc
                     ON dc.ContractId = ci.ContractID
@@ -466,7 +467,7 @@ namespace Ranalo.DataStore
                 LEFT JOIN (SELECT OldContractId, SUM(RepossessionCost) AS RepossessionCost, SUM(ResaleValue) AS ResaleValue
                            FROM DeviceRecoveries GROUP BY OldContractId) rec
                     ON rec.OldContractId = ci.ContractID
-                OUTER APPLY (SELECT TOP 1 w.Id FROM WriteOffs w
+                OUTER APPLY (SELECT TOP 1 w.Id, w.Reason FROM WriteOffs w
                              WHERE w.ContractId = ci.ContractID AND w.AccountNo = ci.ID
                                AND w.Status = 'Approved' AND w.ReinstatedDate IS NULL) wo
                 WHERE dc.Amount IS NOT NULL OR ac.Amount IS NOT NULL OR rec.OldContractId IS NOT NULL OR wo.Id IS NOT NULL";
