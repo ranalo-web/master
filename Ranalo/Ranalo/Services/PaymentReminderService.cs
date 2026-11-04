@@ -40,16 +40,16 @@ namespace Ranalo.Services
 
         public async Task<List<AccountSendMessage>> RunRemindersAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository)
         {
-            var due = WithReminderText(records);
+            var due = await DueRemindersAsync(records, paymentsRepository);
             await SendNuovoAsync(due, "Reminder", paymentsRepository);
             return due;
         }
 
-        public Task RunRemindersKnoxAsync(List<AccountSendMessage> knoxReminders, IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient) =>
-            SendKnoxAsync(WithReminderText(knoxReminders), "Reminder", paymentsRepository, knoxGuardClient);
+        public async Task RunRemindersKnoxAsync(List<AccountSendMessage> knoxReminders, IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient) =>
+            await SendKnoxAsync(await DueRemindersAsync(knoxReminders, paymentsRepository), "Reminder", paymentsRepository, knoxGuardClient);
 
-        public Task RunRemindersTranssionAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository) =>
-            SendTranssionAsync(WithReminderText(records), "Reminder", paymentsRepository);
+        public async Task RunRemindersTranssionAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository) =>
+            await SendTranssionAsync(await DueRemindersAsync(records, paymentsRepository), "Reminder", paymentsRepository);
 
         public async Task<List<AccountSendMessage>> RunPaymentsSummariesAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository)
         {
@@ -94,27 +94,61 @@ namespace Ranalo.Services
             return records;
         }
 
-        // The accounts a reminder is due for now, each with its wording.
-        // Lock dates are UTC (LockTime).
-        private static List<AccountSendMessage> WithReminderText(List<AccountSendMessage> records)
+        // A reminder already sent to an account isn't sent again within this
+        // gap (the jobs run every 2 hours). Until 2026-11-04 a failing job
+        // re-ran every few seconds and sent the same reminder hundreds of
+        // times a day; three jobs can also pick up the same account.
+        public static readonly TimeSpan ReminderRepeatGap = TimeSpan.FromMinutes(100);
+
+        // A lock date the lock jobs sent the phone is trusted for this long.
+        public static readonly TimeSpan LockDateBookMaxAge = TimeSpan.FromDays(1);
+
+        private static async Task<List<AccountSendMessage>> DueRemindersAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository)
         {
             var now = DateTime.UtcNow;
+            var recent = await paymentsRepository.GetSentMessagesSinceAsync("Reminder", now - ReminderRepeatGap);
+            return WithReminderText(records, recent, now);
+        }
+
+        // The accounts a reminder is due for now, each with its wording, less
+        // those already sent that reminder (recent: Reminder logs from the
+        // last ReminderRepeatGap). Lock dates are UTC (LockTime). The lock
+        // date is the one the phone was last sent (LockDateBook) when known,
+        // else the job's own estimate.
+        public static List<AccountSendMessage> WithReminderText(List<AccountSendMessage> records, IReadOnlyCollection<MessageLog> recent, DateTime now)
+        {
             var due = new List<AccountSendMessage>();
+            var picked = new HashSet<long>();
             foreach (var rec in records)
             {
-                var reminder = CustomerMessages.ReminderFor(rec.AutoLockDatePmtR, now);
-                if (reminder == null)
+                var sentLock = LockDateBook.Get(rec.AccountId);
+                var lockAt = sentLock != null && now - sentLock.SentAtUtc <= LockDateBookMaxAge ? sentLock.LockAtUtc : rec.AutoLockDatePmtR;
+
+                var reminder = CustomerMessages.ReminderFor(lockAt, now);
+                if (reminder == null || !picked.Add(rec.AccountId))
                 {
                     continue;
                 }
 
                 var message = CustomerMessages.Reminder(rec.FirstName, rec.AccountId, rec.NewDaily, reminder.Value);
+                if (AlreadySent(rec, message.Title, recent))
+                {
+                    continue;
+                }
+
                 rec.MessageTitle = message.Title;
                 rec.MessageText = message.Content;
                 due.Add(rec);
             }
             return due;
         }
+
+        // Nuovo and Transsion logs carry the account number, Knox the IMEI;
+        // every format starts with the title.
+        private static bool AlreadySent(AccountSendMessage rec, string title, IEnumerable<MessageLog> recent) =>
+            recent.Any(log =>
+                (log.AccountNo == rec.AccountId.ToString() || (!string.IsNullOrEmpty(rec.Imei) && log.AccountNo == rec.Imei))
+                && log.Message?.StartsWith(title) == true);
 
         private static async Task SendNuovoAsync(List<AccountSendMessage> records, string messageType, IPaymentsRepository paymentsRepository)
         {
@@ -138,9 +172,17 @@ namespace Ranalo.Services
                         device_ids = new[] { rec.AccountId }
                     });
 
-                    var response = await client.PostAsync(NuovoMessageUrl, new StringContent(body, Encoding.UTF8, "application/json"));
-                    logs.Add(Log(rec.AccountId.ToString(), message, messageType, response.IsSuccessStatusCode,
-                        response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync() : response.StatusCode.ToString()));
+                    // One failed send is logged and the rest still go.
+                    try
+                    {
+                        var response = await client.PostAsync(NuovoMessageUrl, new StringContent(body, Encoding.UTF8, "application/json"));
+                        logs.Add(Log(rec.AccountId.ToString(), message, messageType, response.IsSuccessStatusCode,
+                            response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync() : response.StatusCode.ToString()));
+                    }
+                    catch (Exception ex)
+                    {
+                        logs.Add(Log(rec.AccountId.ToString(), message, messageType, false, ex.Message));
+                    }
                 }
             }
 
@@ -152,15 +194,34 @@ namespace Ranalo.Services
             var logs = new List<MessageLog>();
             foreach (var rec in records)
             {
-                var message = CustomerMessages.ForNuovoKnox(WithTitle(rec));
-                var response = await knoxGuardClient.SendMessageAsync(new SendMessageRequest()
+                var message = CustomerMessages.ForKnox(WithTitle(rec));
+                // Knox needs the IMEI. Without one, log it under the account
+                // (MessageLogs.AccountNo can't be NULL: that insert failing
+                // is what stopped the restructured reminder job, 2026-11-04).
+                if (string.IsNullOrWhiteSpace(rec.Imei))
                 {
-                    DeviceUid = rec.Imei,
-                    Message = message,
-                    Tel = "0001112233444"
-                });
+                    logs.Add(Log(rec.AccountId.ToString(), message, messageType, false, "No IMEI for this Knox phone; not sent."));
+                    continue;
+                }
 
-                logs.Add(Log(rec.Imei, message, messageType, response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync()));
+                // One failed send (a token or network error) is logged and
+                // the rest still go.
+                try
+                {
+                    var response = await knoxGuardClient.SendMessageAsync(new SendMessageRequest()
+                    {
+                        DeviceUid = rec.Imei,
+                        Message = message,
+                        Tel = "0001112233444"
+                    });
+
+                    var reply = await response.Content.ReadAsStringAsync();
+                    logs.Add(Log(rec.Imei, message, messageType, response.IsSuccessStatusCode && KnoxReply.Accepted(reply), reply));
+                }
+                catch (Exception ex)
+                {
+                    logs.Add(Log(rec.Imei, message, messageType, false, ex.Message));
+                }
             }
 
             await SaveLogsAsync(logs, paymentsRepository);
@@ -187,13 +248,16 @@ namespace Ranalo.Services
                     result = ex.Message;
                 }
 
-                logs.Add(Log(rec.AccountId.ToString(), message, messageType, sent, result));
+                // Logged with its title, like Nuovo and Knox, so a repeat can be spotted (AlreadySent).
+                var logged = string.IsNullOrEmpty(rec.MessageTitle) ? message : new CustomerMessages.Message(rec.MessageTitle, message).Full;
+                logs.Add(Log(rec.AccountId.ToString(), logged, messageType, sent, result));
             }
 
             await SaveLogsAsync(logs, paymentsRepository);
         }
 
         // Nuovo and Knox have no title: it goes first, as its own line.
+        // The text still has "\n"; each provider formats it (ForNuovoKnox, ForKnox).
         private static string WithTitle(AccountSendMessage rec) =>
             string.IsNullOrEmpty(rec.MessageTitle) ? rec.MessageText ?? "" : new CustomerMessages.Message(rec.MessageTitle, rec.MessageText ?? "").Full;
 
