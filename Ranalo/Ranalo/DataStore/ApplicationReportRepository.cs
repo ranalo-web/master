@@ -2238,23 +2238,32 @@ FROM
                     r.First_Name AS FirstName,
                     CAST(ISNULL(dl.Locked, 0) AS bit) AS Locked
                 FROM Restructured r
-                -- Payments after the agreed date (KosePayments, re-pointed by OrphanedPayments)
+                -- Payments after the agreed date (KosePayments, re-pointed by OrphanedPayments).
+                -- Paid straight to the account, or re-pointed to it: two lookups
+                -- that can seek IX_KosePayments_AccountDate, where filtering on
+                -- COALESCE(op, kp) scanned every payment once per account
+                -- (15 s and SQL timeouts, 2026-11-04; now ~10 ms, same rows).
                 OUTER APPLY (
-                    SELECT 
+                    SELECT
                         SUM(vp.AmountValue) AS TotalPaidR,
                         MIN(vp.PaymentDateValue) AS FirstResPaymentDate,
                         MAX(vp.PaymentDateValue) AS LastResPaymentDate
                     FROM (
-                        SELECT 
-                            COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
-                            kp.AmountValue,
-                            kp.PaymentDateValue
+                        SELECT kp.AmountValue, kp.PaymentDateValue
                         FROM KosePayments kp
-                        LEFT JOIN OrphanedPayments op 
+                        LEFT JOIN OrphanedPayments op
+                            ON op.MpesaCode = kp.MpesaCode
+                        WHERE kp.AccountNoBigint = r.AccountNo
+                            AND kp.PaymentDateValue > r.Date_Agreed
+                            AND op.AccountNoBigint IS NULL
+                        UNION ALL
+                        SELECT kp.AmountValue, kp.PaymentDateValue
+                        FROM OrphanedPayments op
+                        JOIN KosePayments kp
                             ON kp.MpesaCode = op.MpesaCode
+                        WHERE op.AccountNoBigint = r.AccountNo
+                            AND kp.PaymentDateValue > r.Date_Agreed
                     ) vp
-                    WHERE vp.AccountNo = r.AccountNo
-                        AND vp.PaymentDateValue > r.Date_Agreed
                 ) pay
                 -- Current lock state of the device on this account
                 OUTER APPLY (
