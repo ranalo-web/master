@@ -75,9 +75,10 @@ namespace Ranalo.Controllers
                 UploadedByName = settings.KnownAs,
             };
 
+            var payments = new List<PaymentTransaction>();
             try
             {
-                var payments = RanaloXlsmUploadParser.Parse(file);
+                payments = RanaloXlsmUploadParser.Parse(file);
                 (upload.PeriodFrom, upload.PeriodTo) = StatementUploadRules.Period(payments);
                 var mapped = payments.Any() ? _paymentsService.MapXlsPayments(payments) : new();
                 var inserted = mapped.Any() ? (await _paymentsService.CreatePayments(mapped))?.Count ?? 0 : 0;
@@ -112,13 +113,27 @@ namespace Ranalo.Controllers
             }
 
             // For the Statement Uploads report. A failure here never undoes the import.
+            var uploadId = 0;
             try
             {
-                await _uploads.AddAsync(upload);
+                uploadId = await _uploads.AddAsync(upload);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Couldn't record the statement upload {FileName} (has StatementUploads/001 been run?)", file.FileName);
+            }
+
+            // Its receipts, so the report can show payments we have that it doesn't.
+            if (uploadId > 0 && upload.Error == null && payments.Any())
+            {
+                try
+                {
+                    await _uploads.SaveReceiptsAsync(uploadId, payments.Select(p => p.ReceiptNo));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Couldn't save the receipts of statement upload {FileName} (has StatementUploads/002 been run?)", file.FileName);
+                }
             }
 
             return RedirectToAction("AllPayments", "Payments");
@@ -143,7 +158,22 @@ namespace Ranalo.Controllers
             var uploads = await _uploads.GetAllAsync();
             var firstRecorded = uploads.Count == 0 ? (DateTime?)null : uploads.Min(u => u.UploadedAtUtc);
             var earlier = await _uploads.GetEarlierImportsAsync(firstRecorded);
-            return View(StatementUploadRules.Build(uploads, earlier, DateTime.UtcNow.AddHours(3).Date));
+
+            // Payments we have that no uploaded statement does. Left out
+            // (the rest of the page still shows) until StatementUploads/002 is run.
+            var notOnStatement = new List<NotOnStatementPayment>();
+            try
+            {
+                var kept = (await _uploads.GetUploadIdsWithReceiptsAsync()).ToHashSet();
+                foreach (var u in uploads) u.ReceiptsKept = kept.Contains(u.Id);
+                if (kept.Count > 0) notOnStatement = await _uploads.GetNotOnStatementAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Couldn't compare payments with uploaded statements (has StatementUploads/002 been run?)");
+            }
+
+            return View(StatementUploadRules.Build(uploads, earlier, DateTime.UtcNow.AddHours(3).Date, notOnStatement));
         }
 
         [Route("allpayments/{page:int?}")]

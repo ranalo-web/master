@@ -104,5 +104,34 @@ namespace Ranolo.Web.Tests
             Assert.That(model.MissedFound, Is.EqualTo(5));
             Assert.That(model.Gaps, Is.Empty);
         }
+
+        // In the system, not on statement (2026-11-04).
+        [TestCase(" uk4s36ehj2 ", "UK4S36EHJ2")]
+        [TestCase("UK4S36EHJ2", "UK4S36EHJ2")]
+        [TestCase(null, "")]
+        public void Receipts_are_kept_trimmed_and_upper_case(string? raw, string kept)
+        {
+            Assert.That(StatementUploadRules.CleanReceipt(raw), Is.EqualTo(kept));
+        }
+
+        [Test]
+        public void Not_on_statement_needs_an_upload_that_kept_its_receipts()
+        {
+            var old = Up("2026-10-01", "2026-10-10");
+            Assert.That(StatementUploadRules.Build(new() { old }, new(), new DateTime(2026, 11, 4)).CanCompare, Is.False);
+
+            var kept = Up("2026-10-11", "2026-10-20");
+            kept.ReceiptsKept = true;
+            var missing = new List<NotOnStatementPayment>
+            {
+                new() { MpesaCode = "UK1", Amount = 150m },
+                new() { MpesaCode = "UK2", Amount = 70.5m },
+            };
+            var model = StatementUploadRules.Build(new() { old, kept }, new(), new DateTime(2026, 11, 4), missing);
+
+            Assert.That(model.CanCompare, Is.True);
+            Assert.That(model.NotOnStatement, Has.Count.EqualTo(2));
+            Assert.That(model.NotOnStatementTotal, Is.EqualTo(220.5m));
+        }
     }
 }

@@ -43,7 +43,7 @@
 
     <div class="nk-block">
         <div class="row g-2">
-            <div class="col-6 col-lg-3">
+            <div class="col-6 col-lg">
                 <div class="card card-bordered h-100 @(behind ? "border-warning" : "")">
                     <div class="card-inner p-3">
                         <div class="small text-soft">Checked up to</div>
@@ -59,7 +59,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-lg-3">
+            <div class="col-6 col-lg">
                 <div class="card card-bordered h-100 @(Model.Gaps.Any() ? "border-danger" : "")">
                     <div class="card-inner p-3">
                         <div class="small text-soft">Gaps</div>
@@ -68,7 +68,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-lg-3">
+            <div class="col-6 col-lg">
                 <div class="card card-bordered h-100">
                     <div class="card-inner p-3">
                         <div class="small text-soft">Statements uploaded</div>
@@ -77,7 +77,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-lg-3">
+            <div class="col-6 col-lg">
                 <div class="card card-bordered h-100">
                     <div class="card-inner p-3">
                         <div class="small text-soft">Missed payments found</div>
@@ -85,6 +85,25 @@
                         <div class="small text-soft">Added by these uploads</div>
                     </div>
                 </div>
+            </div>
+            <div class="col-12 col-lg">
+                <a href="#not-on-statement" class="card card-bordered h-100 text-reset @(Model.NotOnStatement.Any() ? "border-danger" : "")">
+                    <div class="card-inner p-3">
+                        <div class="small text-soft">In the system, not on statement</div>
+                        @if (!Model.CanCompare)
+                        {
+                            <div class="fs-5 fw-bold text-soft">—</div>
+                            <div class="small text-soft">Upload a statement to check</div>
+                        }
+                        else
+                        {
+                            <div class="fs-5 fw-bold @(Model.NotOnStatement.Any() ? "text-danger" : "text-soft")">@Model.NotOnStatement.Count.ToString("N0")</div>
+                            <div class="small @(Model.NotOnStatement.Any() ? "text-danger fw-medium" : "text-success fw-medium")">
+                                @(Model.NotOnStatement.Any() ? $"Ksh {Model.NotOnStatementTotal:N0} · see them below" : "All on the statement")
+                            </div>
+                        }
+                    </div>
+                </a>
             </div>
         </div>
     </div>
@@ -167,6 +186,80 @@
             </div>
         </div>
     }
+
+    <div class="nk-block" id="not-on-statement">
+        <div class="card card-bordered @(Model.NotOnStatement.Any() ? "border-danger" : "")">
+            <div class="card-inner card-inner-md">
+                <div class="d-flex flex-wrap justify-content-between align-items-center" style="gap:6px;">
+                    <h6 class="title mb-0">In the system, not on statement</h6>
+                    @if (Model.NotOnStatement.Any())
+                    {
+                        <span class="badge bg-danger">@Model.NotOnStatement.Count.ToString("N0") · Ksh @Model.NotOnStatementTotal.ToString("N0")</span>
+                    }
+                </div>
+                <p class="small text-soft mb-0 mt-1">
+                    Payments recorded here, dated inside an uploaded statement's period, whose M-Pesa code isn't on any uploaded
+                    statement: entered by hand, a test, a duplicate or another paybill. Check each one on M-Pesa.
+                    Statements uploaded before 04 Nov 2026 didn't keep their receipts; upload them again to include them.
+                </p>
+            </div>
+            <div class="card-inner p-0 border-top">
+                <div class="table-responsive" style="max-height:480px;overflow-y:auto;">
+                    <table class="table mb-0" style="white-space:nowrap;">
+                        <thead>
+                            <tr>
+                                <th class="wl-th">Paid</th>
+                                <th class="wl-th">M-Pesa code</th>
+                                <th class="wl-th">Account</th>
+                                <th class="wl-th text-end">Amount</th>
+                                <th class="wl-th d-none d-md-table-cell">Came in by</th>
+                                <th class="wl-th d-none d-lg-table-cell">Added</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.CanCompare)
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-soft py-4">
+                                        Nothing to compare yet. Upload a statement and its payments are checked against what's recorded here.
+                                    </td>
+                                </tr>
+                            }
+                            else if (!Model.NotOnStatement.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-success py-4">
+                                        <em class="icon ni ni-check-circle"></em> Every payment in the uploaded periods is on the statement.
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var p in Model.NotOnStatement)
+                            {
+                                <tr>
+                                    <td>@p.PaidAt.ToString("dd MMM yyyy, HH:mm")</td>
+                                    <td class="fw-medium">@p.MpesaCode</td>
+                                    <td>
+                                        @if (p.AccountNo.HasValue)
+                                        {
+                                            <a href="/account-details/@p.AccountNo">@p.AccountNo</a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-soft">—</span>
+                                        }
+                                        <div class="small text-soft">@p.FirstName</div>
+                                    </td>
+                                    <td class="text-end">@p.Amount.ToString("N0")</td>
+                                    <td class="d-none d-md-table-cell text-soft">@p.Source</td>
+                                    <td class="d-none d-lg-table-cell small text-soft">@p.AddedAtUtc.AddHours(3).ToString("dd MMM, HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="nk-block">
         <div class="card card-bordered">
