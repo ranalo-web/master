@@ -67,10 +67,8 @@ namespace Ranalo.DataStore
                 FROM Contract_Info ci
                 JOIN Devices d ON d.Id = ci.ID
                 WHERE ci.EndDate >= @Since
-                  AND (SELECT ISNULL(SUM(kp.AmountValue), 0)
-                       FROM KosePayments kp
-                       LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
-                       WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = ci.ID)
+                  AND (SELECT ISNULL(SUM(p.AmountValue), 0)
+                       FROM " + AccountPaymentsSql.For("ci.ID") + @" p)
                       >= ci.Deposit + ci.Daily * 30 * ci.Term_in_Months
                          + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months + ci.Monthly * ci.Term_in_Months - @Tolerance" + NotYetSent,
                 new { Since = endedSince, MessageType = FullyPaidType, MaxFailures = maxFailures,

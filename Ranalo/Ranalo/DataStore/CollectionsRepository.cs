@@ -400,12 +400,10 @@ namespace Ranalo.DataStore
 
         public async Task<List<KosePayments>> GetRecentPaymentsAsync(long accountNo, int take)
         {
-            const string sql = @"
-                SELECT TOP (@Take) kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
-                FROM KosePayments kp
-                LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
-                WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = @AccountNo
-                ORDER BY kp.PaymentDateValue DESC";
+            var sql = @"
+                SELECT TOP (@Take) p.MpesaCode, p.AmountValue, p.PaymentDateValue
+                FROM " + AccountPaymentsSql.For("@AccountNo") + @" p
+                ORDER BY p.PaymentDateValue DESC";
 
             return (await _db.QueryAsync<KosePayments>(sql, new { AccountNo = accountNo, Take = take })).ToList();
         }

@@ -55,12 +55,10 @@ namespace Ranalo.DataStore
                 -- agreed (as the Restructured page works it out).
                 OUTER APPLY (SELECT TOP 1 rr.Date_Agreed, rr.Amount_Res FROM RestructuredRecords rr
                              WHERE rr.AccountNo = d.Id ORDER BY rr.Date_Agreed DESC) rs
-                OUTER APPLY (SELECT SUM(kp.AmountValue) AS PaidSinceAgreed
-                             FROM KosePayments kp
-                             LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
+                OUTER APPLY (SELECT SUM(pa.AmountValue) AS PaidSinceAgreed
+                             FROM " + AccountPaymentsSql.For("d.Id") + @" pa
                              WHERE rs.Date_Agreed IS NOT NULL
-                               AND COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = d.Id
-                               AND kp.PaymentDateValue > rs.Date_Agreed) rp
+                               AND pa.PaymentDateValue > rs.Date_Agreed) rp
                 WHERE ISNULL(d.LockGroup, 1) = 1", commandTimeout: 120)).ToList();
 
         public async Task LogAsync(long accountNo, string action, bool success, string? result, int? userId) =>
@@ -90,7 +88,7 @@ namespace Ranalo.DataStore
                   AND (SELECT COUNT(*) FROM Contract_Info x WHERE x.ID = ci.ID AND x.EndDate IS NULL) = 1",
                 new { AccountNo = accountNo, Tolerance = Ranalo.Services.LockCheckRules.PaidTolerance }) == 1;
 
-        private const string EndContractSql = @"
+        private static readonly string EndContractSql = @"
                 UPDATE ci SET EndDate = COALESCE(po.PaidOffAt, GETDATE())
                 FROM Contract_Info ci
                 OUTER APPLY (
@@ -98,10 +96,7 @@ namespace Ranalo.DataStore
                     FROM (
                         SELECT p.PaymentDateValue,
                                SUM(p.AmountValue) OVER (ORDER BY p.PaymentDateValue, p.MpesaCode ROWS UNBOUNDED PRECEDING) AS RunningPaid
-                        FROM (SELECT kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
-                              FROM KosePayments kp
-                              LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
-                              WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = ci.ID) p
+                        FROM " + AccountPaymentsSql.For("ci.ID") + @" p
                     ) x
                     WHERE x.RunningPaid >= ci.Deposit + ci.Daily * 30 * ci.Term_in_Months
                                            + ci.Weekly * (30.0 / 7.0) * ci.Term_in_Months + ci.Monthly * ci.Term_in_Months - @Tolerance

@@ -1331,17 +1331,9 @@ namespace Ranalo.DataStore
                         -- 1. Payments (Unified source table)
                         -- ============================================================
                         Payments AS (
-                            SELECT
-                                kp.Id,
-                                kp.MpesaCode,
-                                kp.Amount,
-                                kp.AmountValue,
-                                kp.PaymentDateValue,
-                                COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS RealAccountNo
-                            FROM KosePayments kp
-                            LEFT JOIN OrphanedPayments op 
-                                ON op.MpesaCode = kp.MpesaCode
-                            WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = @AccountId
+                            SELECT p.Id, p.MpesaCode, p.Amount, p.AmountValue, p.PaymentDateValue,
+                                   p.AccountNo AS RealAccountNo
+                            FROM " + AccountPaymentsSql.For("@AccountId") + @" p
                         ),
 
                         -- ============================================================
@@ -1753,24 +1745,16 @@ FROM
         {
             var offset = (page - 1) * pageSize;
 
-            var sql = @"SELECT kp.Id,
-                            TRY_CAST(LTRIM(RTRIM(COALESCE(op.AccountNoBigint, kp.AccountNoBigint))) AS BIGINT) AS AccountNo,
-                            kp.MpesaCode,
-                            kp.Amount,
-                            kp.PaymentDate,
-                            kp.Amount AS AmountValue,
-                            kp.PaymentDateValue
-                FROM [dbo].[KosePayments] kp
-                LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
-                WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = @AccountNo
-                ORDER BY [PaymentDateValue] DESC
-                OFFSET @Offset ROWS 
+            var sql = @"SELECT p.Id, p.AccountNo, p.MpesaCode, p.Amount, p.PaymentDate,
+                            p.Amount AS AmountValue, p.PaymentDateValue
+                FROM " + AccountPaymentsSql.For("@AccountNo") + @" p
+                ORDER BY p.PaymentDateValue DESC
+                OFFSET @Offset ROWS
                 FETCH NEXT @pageSize ROWS ONLY";
             var payments = await _db.QueryAsync<KosePayments>(sql, new { AccountNo = customerAccount, offset, pageSize });
 
-            var countSql = @"SELECT COUNT(*)
-                FROM [dbo].[KosePayments] 
-                WHERE [AccountNoBigint] = @AccountNo";
+            // Counts the same payments as the page, re-pointed ones included.
+            var countSql = "SELECT COUNT(*) FROM " + AccountPaymentsSql.For("@AccountNo") + " p";
 
             var totalRecords = await _db.QuerySingleAsync<int>(countSql, new { AccountNo = customerAccount });
 
