@@ -705,6 +705,11 @@ namespace Ranalo.Services
                 record.LockGroup =
                     paymentSummary.LockGroup;
 
+                // Knox reminders go to the IMEI; without it every restructured
+                // Knox reminder failed to log and stopped the job (2026-11-04).
+                record.ImeiNo =
+                    paymentSummary.ImeiNo;
+
                 record.LoanBalance = _calculatorService.CalculateOutstandingAmount(paymentSummary.Deposit,
                     paymentSummary.Daily, paymentSummary.Weekly, paymentSummary.Monthly, paymentSummary.TotalPaid, paymentSummary.TermsInMonths);
 

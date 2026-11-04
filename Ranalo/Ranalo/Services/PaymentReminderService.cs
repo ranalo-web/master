@@ -195,6 +195,15 @@ namespace Ranalo.Services
             foreach (var rec in records)
             {
                 var message = CustomerMessages.ForKnox(WithTitle(rec));
+                // Knox needs the IMEI. Without one, log it under the account
+                // (MessageLogs.AccountNo can't be NULL: that insert failing
+                // is what stopped the restructured reminder job, 2026-11-04).
+                if (string.IsNullOrWhiteSpace(rec.Imei))
+                {
+                    logs.Add(Log(rec.AccountId.ToString(), message, messageType, false, "No IMEI for this Knox phone; not sent."));
+                    continue;
+                }
+
                 // One failed send (a token or network error) is logged and
                 // the rest still go.
                 try
