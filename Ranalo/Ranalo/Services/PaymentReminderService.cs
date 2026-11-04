@@ -38,18 +38,37 @@ namespace Ranalo.Services
             await SendTranssionAsync(records.Where(r => r.LockGroup == 3).ToList(), messageType, paymentsRepository);
         }
 
-        public async Task<List<AccountSendMessage>> RunRemindersAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository)
+        // The three reminder jobs (active lock, auto-restructured,
+        // restructured) start together every 2 hours and can list the same
+        // phone. Each checks MessageLogs and then sends, so one at a time:
+        // the next one sees what the last one logged (2026-11-04, a Knox
+        // phone got the same reminder twice 1.5 s apart).
+        private static readonly SemaphoreSlim ReminderGate = new(1, 1);
+
+        private static async Task<List<AccountSendMessage>> OneAtATime(List<AccountSendMessage> records,
+            IPaymentsRepository paymentsRepository, Func<List<AccountSendMessage>, Task> send)
         {
-            var due = await DueRemindersAsync(records, paymentsRepository);
-            await SendNuovoAsync(due, "Reminder", paymentsRepository);
-            return due;
+            await ReminderGate.WaitAsync();
+            try
+            {
+                var due = await DueRemindersAsync(records, paymentsRepository);
+                await send(due);
+                return due;
+            }
+            finally
+            {
+                ReminderGate.Release();
+            }
         }
 
+        public async Task<List<AccountSendMessage>> RunRemindersAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository) =>
+            await OneAtATime(records, paymentsRepository, due => SendNuovoAsync(due, "Reminder", paymentsRepository));
+
         public async Task RunRemindersKnoxAsync(List<AccountSendMessage> knoxReminders, IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient) =>
-            await SendKnoxAsync(await DueRemindersAsync(knoxReminders, paymentsRepository), "Reminder", paymentsRepository, knoxGuardClient);
+            await OneAtATime(knoxReminders, paymentsRepository, due => SendKnoxAsync(due, "Reminder", paymentsRepository, knoxGuardClient));
 
         public async Task RunRemindersTranssionAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository) =>
-            await SendTranssionAsync(await DueRemindersAsync(records, paymentsRepository), "Reminder", paymentsRepository);
+            await OneAtATime(records, paymentsRepository, due => SendTranssionAsync(due, "Reminder", paymentsRepository));
 
         public async Task<List<AccountSendMessage>> RunPaymentsSummariesAsync(List<AccountSendMessage> records, IPaymentsRepository paymentsRepository)
         {
