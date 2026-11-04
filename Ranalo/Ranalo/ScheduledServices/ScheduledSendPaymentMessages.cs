@@ -52,17 +52,19 @@ namespace Ranalo.ScheduledServices
                             // Possibly send email reminders, clean up data, etc.
                         }
                     }
-
-                    // Wait until next run
-                    await Task.Delay(_interval, stoppingToken);
-                }
-                catch (TaskCanceledException)
-                {
-                    // Ignore when shutting down
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error while running scheduled task Create contracts.");
+                }
+
+                try
+                {
+                    await Task.Delay(_interval, stoppingToken);
+                }
+                catch (TaskCanceledException)
+                {
+                    // Shutting down.
                 }
             }
 
@@ -143,12 +145,12 @@ namespace Ranalo.ScheduledServices
 
             foreach (var payment in knoxPayments)
             {
-                string str_message = MessageBody(payment.FirstName,
+                string str_message = CustomerMessages.ForKnox(CustomerMessages.PaymentReceived(payment.FirstName,
                 payment.AmountValue,
                 payment.AccountNo,
                 payment.MpesaCode,
                 payment.PaymentDateValue,
-                payment.UnlockedUntilUtc);
+                payment.UnlockedUntilUtc));
 
                 var message = new SendMessageRequest()
                 {
@@ -157,8 +159,22 @@ namespace Ranalo.ScheduledServices
                     Tel = "0001112233444"
 
                 };
-                var messageResponse = await knoxGuardClient.SendMessageAsync(message);
-                var responseString = await messageResponse.Content.ReadAsStringAsync();
+                // One failed send is logged as failed (as Transsion's are),
+                // so it doesn't stop the rest or come back every run.
+                string status;
+                string responseString;
+                try
+                {
+                    var messageResponse = await knoxGuardClient.SendMessageAsync(message);
+                    responseString = await messageResponse.Content.ReadAsStringAsync();
+                    status = messageResponse.IsSuccessStatusCode && KnoxReply.Accepted(responseString) ? "sent" : "failed";
+                }
+                catch (Exception ex)
+                {
+                    responseString = ex.Message;
+                    status = "failed";
+                }
+
                 df.Add(new MessageLog()
                 {
                     AccountNo = payment.AccountNo,
@@ -166,7 +182,7 @@ namespace Ranalo.ScheduledServices
                     Id = Guid.NewGuid(),
                     Message = str_message,
                     MessageError = responseString,
-                    MessageStatus = "sent",
+                    MessageStatus = status,
                     MessageType = "Payment",
                     PhoneNumber = payment.MpesaCode
                 });
@@ -263,9 +279,21 @@ namespace Ranalo.ScheduledServices
                         var jsonBody = JsonConvert.SerializeObject(body_msg);
                         var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
 
-                        // Send POST request (optional mock response)
-                        var response = client.PostAsync("https://app.nuovopay.com/dm/api/v1/payment_reminders/send_message.json", content).Result;
-                        var resText = response.IsSuccessStatusCode ? response.Content.ReadAsStringAsync().Result : "Response placeholder";
+                        // One failed send is logged as failed, so it doesn't
+                        // stop the rest or come back every run.
+                        string status;
+                        string resText;
+                        try
+                        {
+                            var response = client.PostAsync("https://app.nuovopay.com/dm/api/v1/payment_reminders/send_message.json", content).Result;
+                            resText = response.IsSuccessStatusCode ? response.Content.ReadAsStringAsync().Result : response.StatusCode.ToString();
+                            status = response.IsSuccessStatusCode ? "sent" : "failed";
+                        }
+                        catch (Exception ex)
+                        {
+                            resText = ex.Message;
+                            status = "failed";
+                        }
 
                         df.Add(new MessageLog()
                         {
@@ -274,7 +302,7 @@ namespace Ranalo.ScheduledServices
                             Id = Guid.NewGuid(),
                             Message = str_message,
                             MessageError = resText,
-                            MessageStatus = "sent",
+                            MessageStatus = status,
                             MessageType = "Payment",
                             PhoneNumber = row.mpesa_code
                         });

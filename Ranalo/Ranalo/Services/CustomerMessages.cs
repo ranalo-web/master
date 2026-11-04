@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Ranalo.Models;
 
 namespace Ranalo.Services
@@ -8,7 +9,7 @@ namespace Ranalo.Services
     // "\n": Transsion shows them as a popup (title + content), Nuovo and Knox
     // have no title so get both as one text with <br> (ForNuovoKnox). Every
     // message that asks for money gives the M-Pesa menu path (HowToPay). Kept
-    // free of I/O so it can be unit tested.
+    // free of I/O so it can be unit tested. Knox can't take <br>: ForKnox.
     public static class CustomerMessages
     {
         public const string Paybill = "4090703";
@@ -181,10 +182,31 @@ namespace Ranalo.Services
             $"This phone is locked. To unlock it, pay with M-Pesa: Pay Bill {Paybill}, account no {accountNo}. " +
             $"Keep the phone on and connected to the internet so it can unlock. Help: call {HelpLine}";
 
-        // Nuovo and Knox show <br> as a line break.
+        // Nuovo shows <br> as a line break.
         public static string ForNuovoKnox(string text) => text.Replace("\n", "<br>");
 
         public static string ForNuovoKnox(Message message) => ForNuovoKnox(message.Full);
+
+        // Knox has refused < > | ` ^ \ in a message since 2026-10-22 (and
+        // ~ = for a while), so <br> too: every Knox message failed. Lines are
+        // joined with " - " instead, blank lines dropped, and a line ending
+        // in ":" runs on into the next.
+        public static readonly char[] KnoxNotAllowed = { '<', '>', '|', '`', '^', '\\', '~', '=' };
+
+        public static string ForKnox(string text)
+        {
+            var result = new StringBuilder();
+            foreach (var raw in text.Replace(" > ", ", then ").Split('\n'))
+            {
+                var line = new string(raw.Where(c => !KnoxNotAllowed.Contains(c)).ToArray()).Trim();
+                if (line.Length == 0) continue;
+                if (result.Length > 0) result.Append(result[^1] == ':' ? " " : " - ");
+                result.Append(line);
+            }
+            return result.ToString();
+        }
+
+        public static string ForKnox(Message message) => ForKnox(message.Full);
 
         // Clipped to PayTrigger's limit rather than refused.
         public static string Clip(string text, int limit) =>

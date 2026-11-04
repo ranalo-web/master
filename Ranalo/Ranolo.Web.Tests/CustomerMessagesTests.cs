@@ -150,10 +150,39 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
-        public void Nuovo_and_Knox_get_the_title_first_and_br_line_breaks()
+        public void Nuovo_gets_the_title_first_and_br_line_breaks()
         {
             Assert.That(ForNuovoKnox("a\nb"), Is.EqualTo("a<br>b"));
             Assert.That(ForNuovoKnox(new Message("Title", "a\nb")), Is.EqualTo("Title<br><br>a<br>b"));
+        }
+
+        [Test]
+        public void Knox_gets_the_title_first_and_dash_separators()
+        {
+            Assert.That(ForKnox(new Message("Title", "a\n\nb")), Is.EqualTo("Title - a - b"));
+            Assert.That(ForKnox("How to pay:\nM-Pesa > Lipa na M-Pesa > Pay Bill"),
+                Is.EqualTo("How to pay: M-Pesa, then Lipa na M-Pesa, then Pay Bill"));
+        }
+
+        [Test]
+        public void No_Knox_message_has_a_character_Knox_refuses()
+        {
+            var record = Record();
+            var messages = new List<Message>
+            {
+                Summary(record, Now, Now.AddMonths(12)),
+                PaymentReceived(record.FirstName, 200m, "12345678", "TJK12AB34C", Now, Now.AddDays(1)),
+                PaymentReceived("a<b>|c`^\\~=", 200m, "12345678", "TJK12AB34C", Now),
+                Welcome(record.FirstName, 12345678, 100m),
+                FullyPaid(record.FirstName, 12345678),
+            };
+            messages.AddRange(Enum.GetValues<LockReminder>().Select(r => Reminder(record.FirstName, 12345678, 75m, r)));
+
+            foreach (var text in messages.Select(ForKnox))
+            {
+                Assert.That(text.IndexOfAny(KnoxNotAllowed), Is.EqualTo(-1), text);
+                Assert.That(text, Does.Not.Contain("\n"));
+            }
         }
 
         [Test]

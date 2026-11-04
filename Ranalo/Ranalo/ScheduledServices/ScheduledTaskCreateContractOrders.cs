@@ -38,17 +38,19 @@ namespace Ranalo.ScheduledServices
                             // Possibly send email reminders, clean up data, etc.
                         }
                     }
-
-                    // Wait until next run
-                    await Task.Delay(_interval, stoppingToken);
-                }
-                catch (TaskCanceledException)
-                {
-                    // Ignore when shutting down
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error while running scheduled task Create contracts.");
+                }
+
+                try
+                {
+                    await Task.Delay(_interval, stoppingToken);
+                }
+                catch (TaskCanceledException)
+                {
+                    // Shutting down.
                 }
             }
 

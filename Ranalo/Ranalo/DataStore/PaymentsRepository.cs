@@ -127,6 +127,19 @@ namespace Ranalo.DataStore
             return dict;
         }
 
+        // DateSent is UTC (MessageLog is written with DateTime.UtcNow).
+        public async Task<List<MessageLog>> GetSentMessagesSinceAsync(string messageType, DateTime sinceUtc)
+        {
+            var sql = @"SELECT AccountNo, Message, DateSent, MessageType, MessageStatus
+                        FROM MessageLogs
+                        WHERE MessageType = @messageType
+                          AND MessageStatus = 'sent'
+                          AND DateSent >= @sinceUtc";
+
+            var logs = await _db.QueryAsync<MessageLog>(sql, new { messageType, sinceUtc });
+            return logs.ToList();
+        }
+
         public async Task CreateMessageLogAsync(MessageLog record)
         {
             try

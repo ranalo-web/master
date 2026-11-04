@@ -45,17 +45,19 @@ namespace Ranalo.ScheduledServices
                         }
                         
                     }
-
-                    // Wait until next run
-                    await Task.Delay(_interval, stoppingToken);
-                }
-                catch (TaskCanceledException)
-                {
-                    // Ignore when shutting down
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error while running scheduled task.");
+                }
+
+                try
+                {
+                    await Task.Delay(_interval, stoppingToken);
+                }
+                catch (TaskCanceledException)
+                {
+                    // Shutting down.
                 }
             }
 
