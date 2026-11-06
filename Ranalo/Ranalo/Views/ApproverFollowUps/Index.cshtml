@@ -1,0 +1,113 @@
+@using Ranalo.DataStore
+@using Ranalo.Models
+@using Ranalo.Services
+@model List<(ApproverFollowUp F, CollectionContractStanding? S)>
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var status = (string)ViewBag.Status;
+    string Kenya(DateTime? utc) => utc.HasValue ? utc.Value.AddHours(3).ToString("dd MMM yyyy, HH:mm") : "—";
+    var tabs = new[] { (ApproverFollowUpRules.Open, "With approvers"), (ApproverFollowUpRules.ToCollections, "Sent to collections"), (ApproverFollowUpRules.Closed, "Closed (30 days)") };
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <h3 class="nk-block-title page-title">Follow-ups</h3>
+        <div class="nk-block-des text-soft">
+            <p>Accounts behind with no payment for @CollectionsRules.EligibleDaysWithoutPayment days come here first, every few hours, for the approvers to sort out before a collector. When you can't, send it to collections and an admin gives it to a collector. Each closes by itself when the customer pays again, a collections case opens, or the contract ends.</p>
+        </div>
+    </div>
+
+    @if (ViewBag.Message is string message) { <div class="alert alert-success">@message</div> }
+    @if (ViewBag.Error is string error) { <div class="alert alert-danger">@error</div> }
+
+    <ul class="nav nav-tabs mb-3">
+        @foreach (var (value, label) in tabs)
+        {
+            <li class="nav-item"><a class="nav-link @(status == value ? "active" : "")" href="/approver-follow-ups?status=@value">@label</a></li>
+        }
+    </ul>
+
+    <div class="card card-bordered">
+        <div class="card-inner p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th class="wl-th">Account</th>
+                            <th class="wl-th">Behind</th>
+                            <th class="wl-th d-none d-md-table-cell">No payment for</th>
+                            <th class="wl-th">Latest</th>
+                            <th class="wl-th"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr><td colspan="5" class="text-center text-soft py-4">Nothing here.</td></tr>
+                        }
+                        @foreach (var (f, s) in Model)
+                        {
+                            <tr>
+                                <td style="white-space:nowrap;">
+                                    <a href="/account-details/@f.AccountNo">@f.AccountNo</a>
+                                    <div class="small text-soft">@s?.CustomerName</div>
+                                    <div class="small text-soft">@s?.ProductName</div>
+                                    <div class="small text-soft">@s?.DealerName</div>
+                                </td>
+                                <td style="white-space:nowrap;">
+                                    KES @((s?.Shortfall ?? f.ShortfallAtAdd).ToString("N0"))
+                                    <div class="small text-soft">Added @Kenya(f.AddedAtUtc)</div>
+                                </td>
+                                <td class="d-none d-md-table-cell" style="white-space:nowrap;">
+                                    @(s?.DaysSinceLastPayment ?? f.DaysWithoutPaymentAtAdd) days
+                                    <div class="small text-soft">Last paid @(s?.LastPaymentDate?.ToString("dd MMM yyyy") ?? "never")</div>
+                                </td>
+                                <td style="min-width:220px;">
+                                    @if (f.TakenBy != null) { <div class="small"><b>@f.TakenBy</b> has it</div> }
+                                    @if (f.LastNote != null)
+                                    {
+                                        <div class="small">@f.LastNote</div>
+                                        <div class="small text-soft">@f.LastNoteBy, @Kenya(f.LastNoteAtUtc)@(f.PromisedDate.HasValue ? $" · promised {f.PromisedDate:dd MMM}" : "")</div>
+                                    }
+                                    @if (f.SentToCollectionsAtUtc.HasValue) { <div class="small text-warning">Sent to collections by @f.SentBy, @Kenya(f.SentToCollectionsAtUtc)</div> }
+                                    @if (f.CloseReason != null) { <span class="badge bg-light text-dark">@f.CloseReason</span> <span class="small text-soft">@Kenya(f.ClosedAtUtc)</span> }
+                                </td>
+                                <td style="min-width:260px;">
+                                    @if (f.Status == ApproverFollowUpRules.Open)
+                                    {
+                                        @if (f.TakenBy == null)
+                                        {
+                                            <form method="post" action="/approver-follow-ups/take" class="mb-1">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@f.Id" />
+                                                <button class="btn btn-sm btn-primary" type="submit">Take it</button>
+                                            </form>
+                                        }
+                                        <form method="post" action="/approver-follow-ups/note" class="mb-1">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@f.Id" />
+                                            <input name="note" class="form-control form-control-sm mb-1" placeholder="What happened on the call" required />
+                                            <div class="d-flex" style="gap:6px;">
+                                                <input name="promised" type="date" class="form-control form-control-sm" title="Promised to pay on (optional)" />
+                                                <button class="btn btn-sm btn-outline-primary" type="submit">Save note</button>
+                                            </div>
+                                        </form>
+                                        <form method="post" action="/approver-follow-ups/to-collections">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@f.Id" />
+                                            <input type="hidden" name="accountNo" value="@f.AccountNo" />
+                                            <button class="btn btn-sm btn-outline-danger" type="submit"
+                                                    onclick="return confirm('Send @f.AccountNo to collections? An admin will give it to a collector.');">Send to collections</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

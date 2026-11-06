@@ -43,13 +43,17 @@ namespace Ranalo.Services
         private readonly IDealerAllocationRepository _dealers;
         private readonly ILogger<CollectionsService> _logger;
 
+        private readonly IApproverFollowUpRepository? _followUps;
+
         public CollectionsService(ICollectionsRepository repository, IDashboardReportRepository reportRepository,
-            IDealerAllocationRepository dealers, ILogger<CollectionsService> logger)
+            IDealerAllocationRepository dealers, ILogger<CollectionsService> logger,
+            IApproverFollowUpRepository? followUps = null)
         {
             _repository = repository;
             _reportRepository = reportRepository;
             _dealers = dealers;
             _logger = logger;
+            _followUps = followUps;
         }
 
         // A user who can be handed accounts: a Collector login, or another
@@ -82,9 +86,26 @@ namespace Ranalo.Services
                 model.DueForReassignmentCount = cases.Count(c => c.DueForReassignment);
                 model.OpenFlagCount = flags.Count;
 
+                // Accounts the Approvers are still working on aren't in the
+                // pool (ApproverFollowUpRules); ones they've sent back are.
+                var withApprovers = new HashSet<long>();
+                if (_followUps != null)
+                {
+                    try
+                    {
+                        withApprovers = (await _followUps.GetActiveAsync())
+                            .Where(f => f.Status == ApproverFollowUpRules.Open).Select(f => f.ContractId).ToHashSet();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Couldn't read approver follow-ups (has Collections/003 been run?); pool shown without them.");
+                    }
+                }
+
                 var pool = standings
                     .Where(s => CollectionsRules.IsEligible(s.Shortfall, s.DaysSinceLastPayment))
                     .Where(s => !cases.Any(c => c.Status == CollectionCaseStatus.Open && c.ContractId == s.ContractId))
+                    .Where(s => !withApprovers.Contains(s.ContractId))
                     .ToList();
                 model.PoolCount = pool.Count;
 

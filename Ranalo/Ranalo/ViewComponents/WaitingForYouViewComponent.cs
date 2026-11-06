@@ -20,6 +20,8 @@ namespace Ranalo.ViewComponents
                 "SELECT COUNT(*) FROM SelfRestructures WHERE Status = 'Active' AND ReviewedAtUtc IS NULL"),
             ("Phones to release", "Fully paid: approve removing each from its lock provider.", "/pending-tasks", "ni-check-round-cut",
                 "SELECT COUNT(*) FROM DeviceRemovalTasks WHERE Status IN ('Pending', 'Failed')"),
+            ("Give to a collector", "Approvers couldn't sort these out: in the pool to assign.", "/collections-admin?tab=pool", "ni-user-check",
+                "SELECT COUNT(*) FROM ApproverFollowUps WHERE Status = 'ToCollections'"),
             ("Collector flags", "Raised by collectors on their cases.", "/collections-admin?tab=flags", "ni-flag",
                 "SELECT COUNT(*) FROM CollectionFlags WHERE ResolvedAt IS NULL"),
             ("Customer app locked", "Customers who emailed in to be unlocked.", "/customer-app?show=locked", "ni-mobile",
