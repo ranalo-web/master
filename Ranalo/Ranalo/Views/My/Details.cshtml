@@ -1,0 +1,27 @@
+@model MyDetailsForm
+@{
+    ViewBag.Title = "My details";
+    ViewBag.Tab = "details";
+}
+
+<h1>My details</h1>
+
+@if (Model.Problems.Any())
+{
+    <div class="note bad">@foreach (var p in Model.Problems) { <div>@p</div> }</div>
+}
+else if (Model.Missing.Any())
+{
+    <div class="note warn">Please add your @string.Join(", ", Model.Missing). We need them to reach you and to match your payments.</div>
+}
+
+<form method="post" action="/my/details" class="card">
+    @Html.AntiForgeryToken()
+    <label for="Email">Email</label>
+    <input id="Email" name="Email" type="email" value="@Model.Email" autocomplete="email" required />
+    <label for="Phone">M-Pesa number</label>
+    <input id="Phone" name="Phone" value="@Model.Phone" inputmode="tel" autocomplete="tel" placeholder="0712 345 678" required />
+    <label for="NationalId">National ID number</label>
+    <input id="NationalId" name="NationalId" value="@Model.NationalId" required />
+    <button class="btn" type="submit">Save</button>
+</form>

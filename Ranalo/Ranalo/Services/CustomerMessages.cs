@@ -137,6 +137,16 @@ namespace Ranalo.Services
                 $"Thank you for choosing {SignOff}.",
                 Help));
 
+        // A plan the customer chose in the app has started (SelfRestructureService).
+        public static Message PlanStarted(string? firstName, long accountNo, decimal daily) =>
+            new("Your payment plan has started", Lines(
+                $"Hi {Name(firstName)}, your plan on account {accountNo} has started: Ksh {Money(daily)} a day until your phone is paid.",
+                "",
+                "Your phone opens shortly and stays open while you pay each day. Miss days and it locks until you catch up.",
+                "",
+                $"Pay: M-Pesa Pay Bill {Paybill}, account no {accountNo}",
+                Help));
+
         // The weekly update, Sunday evening (ScheduledDailyPaymentSummary).
         // Arrears below zero = behind; zero or more = up to date or ahead.
         public static Message Summary(MobileStatusReport record, DateTime? nextLockUtc, DateTime contractEnds)
@@ -226,12 +236,12 @@ namespace Ranalo.Services
         private static string Lines(params string[] lines) => string.Join("\n", lines);
 
         // Names arrive as typed ("JANE", "jane"); show "Jane".
-        private static string Name(string? firstName) =>
+        public static string Name(string? firstName) =>
             string.IsNullOrWhiteSpace(firstName)
                 ? "Customer"
                 : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(firstName.Trim().ToLowerInvariant());
 
-        private static string Money(decimal amount) =>
+        public static string Money(decimal amount) =>
             amount.ToString("#,##0.##", CultureInfo.InvariantCulture);
 
         // "Tue 28 Oct, 12:31 PM"

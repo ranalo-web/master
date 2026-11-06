@@ -1,0 +1,49 @@
+@model MyPayForm
+@{
+    ViewBag.Title = "Pay";
+    ViewBag.Tab = "pay";
+    string Ksh(decimal v) => "Ksh " + CustomerMessages.Money(v);
+}
+
+<h1>Pay</h1>
+
+@if (Model.Message != null)
+{
+    <div class="note @(Model.Sent ? "good" : "bad")">@Model.Message</div>
+}
+
+@if (Model.Account.Locked && Model.Account.UnlockFor24h is > 0)
+{
+    <div class="note bad">Your phone is locked. Paying <b>@Ksh(Model.Account.UnlockFor24h.Value)</b> today opens it for 24 hours.</div>
+}
+@if (Model.Account.Behind > 0)
+{
+    <p>You're <b>@Ksh(Model.Account.Behind)</b> behind. Paying that brings you up to date.</p>
+}
+else if (Model.Account.Daily > 0)
+{
+    <p>Your daily amount is <b>@Ksh(Model.Account.Daily)</b>. Paying ahead keeps your phone open longer.</p>
+}
+
+@if (Model.CanPrompt)
+{
+    <form method="post" action="/my/pay" class="card">
+        @Html.AntiForgeryToken()
+        <label for="Amount">Amount (Ksh)</label>
+        <input id="Amount" name="Amount" value="@Model.Amount.ToString("0")" inputmode="numeric" pattern="[0-9]*" required />
+        <label for="Phone">M-Pesa number</label>
+        <input id="Phone" name="Phone" value="@Model.Phone" inputmode="tel" autocomplete="tel" required />
+        <button class="btn" type="submit">Send M-Pesa prompt</button>
+        <p class="muted" style="margin-bottom:0;">You'll get a prompt on that phone. Enter your M-Pesa PIN to pay account @Model.Account.AccountNo.</p>
+    </form>
+}
+
+<div class="card">
+    <h2>Or pay with M-Pesa yourself</h2>
+    <ol class="steps">
+        <li>M-Pesa, then Lipa na M-Pesa, then Pay Bill</li>
+        <li>Business no: <b>4090703</b></li>
+        <li>Account no: <b>@Model.Account.AccountNo</b></li>
+        <li>Amount, then your PIN</li>
+    </ol>
+</div>

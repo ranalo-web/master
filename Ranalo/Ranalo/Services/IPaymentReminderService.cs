@@ -22,5 +22,9 @@ namespace Ranalo.Services
         // Each record to its own provider by LockGroup (welcome, fully paid).
         Task SendToEachProviderAsync(List<AccountSendMessage> records, string messageType,
             IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient);
+
+        // Customer app login code to the financed phone; the code is never logged.
+        Task<bool> SendLoginCodeAsync(AccountSendMessage rec, string code,
+            IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient);
     }
 }

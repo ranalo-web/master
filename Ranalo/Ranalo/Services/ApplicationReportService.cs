@@ -363,7 +363,7 @@ namespace Ranalo.Services
                         SaleWeek = DateTime.Now, //Ask Eddie Whats this????
                         Weekly = payment.Weekly,
                         LoanBalance = _calculatorService.CalculateOutstandingAmount(payment.Deposit, payment.Daily, payment.Weekly, payment.Monthly, payment.TotalPaid, payment.TermsInMonths),
-                        TotalLoan = payment.Daily * 30 * payment.TermsInMonths,
+                        TotalLoan = ContractMath.TotalLoan(payment.Daily, payment.Weekly, payment.Monthly, payment.TermsInMonths),
                         NumberDaysLifeTime = _calculatorService.CalculateNoDaysLeft(payment.FirstPaidDate, (double)payment.TermsInMonths),
                         NextLockDate = payment.NextLockDate,
                         Status = payment.Status,

@@ -1,0 +1,27 @@
+@model MyCodeForm
+@{ ViewBag.Title = "Enter your code"; }
+
+<h1>Enter your code</h1>
+<p class="muted">We sent a 6-digit code to your Ranalo phone for account <b>@Model.Account</b>. It arrives as a message from Ranalo on that phone and works for 10 minutes.</p>
+
+@if (Model.Message != null)
+{
+    <div class="note @(Model.Message.StartsWith("A code was sent") ? "warn" : "bad")">@Model.Message</div>
+}
+
+<form method="post" action="/my/code" class="card">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="Account" value="@Model.Account" />
+    <label for="Code">Code</label>
+    <input id="Code" name="Code" class="code-input" inputmode="numeric" autocomplete="one-time-code"
+           maxlength="7" pattern="[0-9 ]*" required autofocus />
+    <button class="btn" type="submit">Sign in</button>
+</form>
+
+<form method="post" action="/my/code/resend">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="account" value="@Model.Account" />
+    <button class="btn ghost" type="submit">Send a new code</button>
+</form>
+
+<p class="muted">No message? Make sure the phone is on and has data or Wi-Fi, then send a new code. <a href="/my/login">Use a different account number</a>.</p>

@@ -1,0 +1,29 @@
+@model List<Ranalo.ViewComponents.WaitingForYouViewComponent.Item>
+@if (Model.Any())
+{
+    <div class="nk-block">
+        <div class="card card-bordered border-warning">
+            <div class="card-inner">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="title mb-0"><em class="icon ni ni-bell text-warning"></em> Waiting for you</h6>
+                    <span class="badge bg-warning">@Model.Sum(i => i.Count).ToString("N0")</span>
+                </div>
+                <div class="row g-2">
+                    @foreach (var i in Model)
+                    {
+                        <div class="col-sm-6 col-xl">
+                            <a href="@i.Link" class="d-flex align-items-center p-2 rounded border text-reset h-100" style="gap:10px;text-decoration:none;">
+                                <em class="icon ni @i.Icon fs-3 text-primary"></em>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">@i.Label <span class="badge rounded-pill bg-danger ms-1">@i.Count.ToString("N0")</span></div>
+                                    <div class="small text-soft">@i.Hint</div>
+                                </div>
+                                <em class="icon ni ni-chevron-right text-soft"></em>
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
