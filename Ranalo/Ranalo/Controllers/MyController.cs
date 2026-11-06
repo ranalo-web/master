@@ -252,7 +252,15 @@ namespace Ranalo.Controllers
             var (access, redirect) = await SignedInAsync();
             if (redirect != null) return redirect;
 
-            var target = await _access.GetTargetAsync(access!.AccountNo);
+            // Opening the Inbox sees everything; what was new is still marked as new on this visit.
+            ViewBag.SeenBefore = access!.InboxSeenUtc;
+            if (!Previewing)
+            {
+                try { await _access.MarkInboxSeenAsync(access.AccountNo); } catch (Exception ex) { _logger.LogWarning(ex, "Inbox seen not saved (has Customers/005 been run?)"); }
+            }
+            ViewBag.Unread = 0;
+
+            var target = await _access.GetTargetAsync(access.AccountNo);
             var messages = await _access.GetMessagesAsync(access.AccountNo, target?.Imei, 100);
             return View(messages.Select(CustomerAppRules.InboxItem).ToList());
         }
@@ -390,8 +398,52 @@ namespace Ranalo.Controllers
             // Keeps an app in use signed in.
             _session.SignIn(Response, access.AccountNo, access.SessionStamp);
 
+            await SetNoticesAsync(access);
             if (needsDetails && CustomerAppRules.Missing(access).Any()) return (access, RedirectToAction(nameof(Details)));
             return (access, null);
+        }
+
+        // New messages since the Inbox was last opened: the count on the
+        // Inbox tab and the pop-up. A first visit counts the last 7 days.
+        private async Task<(int Count, MessageLog? Newest)> NewMessagesAsync(CustomerAccess access)
+        {
+            try
+            {
+                var target = await _access.GetTargetAsync(access.AccountNo);
+                return await _access.GetNewMessagesAsync(access.AccountNo, target?.Imei, access.InboxSeenUtc ?? DateTime.UtcNow.AddDays(-7));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Couldn't count new messages for {Account}", access.AccountNo);
+                return (0, null);
+            }
+        }
+
+        private async Task SetNoticesAsync(CustomerAccess access)
+        {
+            var (count, newest) = await NewMessagesAsync(access);
+            ViewBag.Unread = count;
+            if (newest != null)
+            {
+                var item = CustomerAppRules.InboxItem(newest);
+                ViewBag.NewestNotice = new { item.Title, item.Kind, At = newest.DateSent?.Ticks ?? 0 };
+            }
+        }
+
+        // Checked by the app every minute while it's open: a pop-up when a
+        // new message has been saved since the page loaded.
+        [HttpGet("my/notifications")]
+        public async Task<IActionResult> Notifications()
+        {
+            var signedIn = _session.Read(Request);
+            if (signedIn == null) return Json(new { unread = 0 });
+            var access = await _access.GetAsync(signedIn.Value.AccountNo);
+            if (access == null || access.Locked || access.SessionStamp != signedIn.Value.Stamp) return Json(new { unread = 0 });
+
+            var (count, newest) = await NewMessagesAsync(access);
+            if (newest == null) return Json(new { unread = count });
+            var item = CustomerAppRules.InboxItem(newest);
+            return Json(new { unread = count, title = item.Title, kind = item.Kind, at = newest.DateSent?.Ticks ?? 0 });
         }
 
         private async Task<MyAccountView?> AccountAsync(long accountNo)

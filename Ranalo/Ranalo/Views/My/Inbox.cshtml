@@ -2,6 +2,8 @@
 @{
     ViewBag.Title = "Inbox";
     ViewBag.Tab = "inbox";
+    // New since the Inbox was last opened (Kenya time, as the messages are shown).
+    var seenKenya = ((ViewBag.SeenBefore as DateTime?) ?? DateTime.UtcNow.AddDays(-7)).AddHours(3);
 }
 
 <h1>Inbox</h1>
@@ -16,6 +18,7 @@
     <details class="card msg">
         <summary>
             <span class="kind">@m.Kind</span>
+            @if (m.SentAtKenya > seenKenya) { <span class="new">New</span> }
             <span class="when">@m.SentAtKenya.ToString("d MMM, h:mm tt")</span>
             <div class="title">@m.Title</div>
         </summary>
@@ -38,6 +41,7 @@
     .msg .kind { display: inline-block; font-size: 12px; font-weight: 700; color: var(--brand); background: var(--peach);
         border-radius: 999px; padding: 2px 10px; }
     .msg .when { float: right; font-size: 13px; color: var(--soft); }
+    .msg .new { display: inline-block; font-size: 12px; font-weight: 700; color: #fff; background: var(--bad); border-radius: 999px; padding: 2px 8px; margin-left: 4px; }
     .msg .title { font-weight: 700; margin-top: 8px; }
     .msg .body { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 15px; }
     .msg .body div { margin: 2px 0; }

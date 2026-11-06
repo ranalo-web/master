@@ -2,6 +2,8 @@
     // The customer app's own layout: nothing from the staff site, built for
     // a phone first. Signed-in pages pass ViewBag.Tab for the bottom bar.
     var tab = ViewBag.Tab as string;
+    var unread = ViewBag.Unread is int u ? u : 0;
+    dynamic? newest = ViewBag.NewestNotice;
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -64,6 +66,16 @@
         td { padding: 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
         td:last-child { text-align: right; }
         .code-input { letter-spacing: 10px; text-align: center; font-size: 26px; font-weight: 700; }
+        .tabs a b { position: relative; }
+        .dot { position: absolute; top: -4px; right: -14px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+            background: var(--bad); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+        .toast { position: fixed; left: 12px; right: 12px; top: calc(12px + env(safe-area-inset-top)); z-index: 50; max-width: 536px; margin: 0 auto;
+            background: var(--brand); color: #fff; border-left: 6px solid var(--peach); border-radius: 12px; padding: 12px 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.25); text-decoration: none; display: block; }
+        .toast[hidden] { display: none; }
+        .toast-kind { display: inline-block; font-size: 12px; font-weight: 700; color: var(--brand); background: var(--peach); border-radius: 999px; padding: 1px 8px; }
+        .toast-title { display: block; font-weight: 700; margin-top: 6px; }
+        .toast-hint { display: block; font-size: 13px; opacity: .8; }
     </style>
 </head>
 <body>
@@ -90,9 +102,53 @@
             <a href="/my" class="@(tab == "home" ? "on" : "")"><b>⌂</b>Account</a>
             <a href="/my/pay" class="@(tab == "pay" ? "on" : "")"><b>＋</b>Pay</a>
             <a href="/my/statement" class="@(tab == "statement" ? "on" : "")"><b>☰</b>Statement</a>
-            <a href="/my/inbox" class="@(tab == "inbox" ? "on" : "")"><b>✉</b>Inbox</a>
+            <a href="/my/inbox" class="@(tab == "inbox" ? "on" : "")"><b>✉@if (unread > 0) {<span class="dot" id="inbox-count">@(unread > 99 ? "99+" : unread.ToString())</span>}</b>Inbox</a>
             <a href="/my/details" class="@(tab == "details" ? "on" : "")"><b>☺</b>Details</a>
         </nav>
+    }
+    @if (tab != null && ViewBag.Preview is not true)
+    {
+        @* New messages: a pop-up for each new one, once (remembered in this
+           browser), and a check every minute while the app is open. *@
+        <a id="toast" class="toast" href="/my/inbox" hidden>
+            <span class="toast-kind" id="toast-kind"></span>
+            <span class="toast-title" id="toast-title"></span>
+            <span class="toast-hint">Tap to read</span>
+        </a>
+        <script>
+            (function () {
+                var key = 'ranalo.lastNotice';
+                function seen() { try { return Number(localStorage.getItem(key) || 0); } catch (e) { return 0; } }
+                function remember(at) { try { localStorage.setItem(key, String(at)); } catch (e) { } }
+                function show(n) {
+                    if (!n || !n.at || n.at <= seen() || location.pathname === '/my/inbox') return;
+                    remember(n.at);
+                    document.getElementById('toast-kind').textContent = n.kind || 'Message';
+                    document.getElementById('toast-title').textContent = n.title || 'New message from Ranalo';
+                    var t = document.getElementById('toast');
+                    t.hidden = false;
+                    setTimeout(function () { t.hidden = true; }, 8000);
+                    var badge = document.getElementById('inbox-count');
+                    if (n.unread && badge) badge.textContent = n.unread > 99 ? '99+' : n.unread;
+                }
+                @if (newest != null)
+                {
+                    <text>show({ title: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string)newest.Title)), kind: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string)newest.Kind)), at: @newest.At, unread: @unread });</text>
+                }
+                if (location.pathname === '/my/inbox') { remember(Date.now() * 10000 + 621355968000000000); }
+                setInterval(function () {
+                    if (document.hidden) return;
+                    fetch('/my/notifications', { credentials: 'same-origin', cache: 'no-store' })
+                        .then(function (r) { return r.ok ? r.json() : null; })
+                        .then(function (n) {
+                            if (!n) return;
+                            if (n.unread > 0 && !document.getElementById('inbox-count')) location.reload();
+                            else show(n);
+                        })
+                        .catch(function () { });
+                }, 60000);
+            })();
+        </script>
     }
 </body>
 </html>

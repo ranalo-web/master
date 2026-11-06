@@ -21,6 +21,8 @@ namespace Ranalo.DataStore
         Task<int?> GetLatestEndedContractIdAsync(long accountNo);
         Task<List<MessageLog>> GetMessagesAsync(long accountNo, string? imei, int take);
         Task<List<MessageToEmail>> GetMessagesToEmailAsync(int take);
+        Task<(int Count, MessageLog? Newest)> GetNewMessagesAsync(long accountNo, string? imei, DateTime sinceUtc);
+        Task MarkInboxSeenAsync(long accountNo);
         Task<CustomerAccess?> GetAsync(long accountNo);
         Task<List<CustomerAccessRow>> ListAsync(bool lockedOnly, string? search);
         Task<bool> UnlockAsync(long accountNo, int userId, string note);
@@ -184,6 +186,21 @@ namespace Ranalo.DataStore
                     UnlockedAtUtc = SYSUTCDATETIME(), UnlockedByUserId = @UserId, UnlockNote = LEFT(@Note, 400)
                 WHERE AccountNo = @AccountNo AND LockedAtUtc IS NOT NULL",
                 new { AccountNo = accountNo, UserId = userId, Note = note }) == 1;
+
+        // Messages sent to the phone since the customer last opened the
+        // Inbox: how many, and the newest (for the pop-up).
+        public async Task<(int Count, MessageLog? Newest)> GetNewMessagesAsync(long accountNo, string? imei, DateTime sinceUtc)
+        {
+            var args = new { Account = accountNo.ToString(), Imei = string.IsNullOrWhiteSpace(imei) ? accountNo.ToString() : imei, Since = sinceUtc };
+            const string where = "AccountNo IN (@Account, @Imei) AND MessageType <> 'LoginCode' AND DateSent > @Since";
+            var count = await _db.ExecuteScalarAsync<int>($"SELECT COUNT(*) FROM MessageLogs WHERE {where}", args);
+            var newest = count == 0 ? null : await _db.QueryFirstOrDefaultAsync<MessageLog>(
+                $"SELECT TOP 1 Id, AccountNo, MessageType, Message, DateSent, MessageStatus FROM MessageLogs WHERE {where} ORDER BY DateSent DESC", args);
+            return (count, newest);
+        }
+
+        public async Task MarkInboxSeenAsync(long accountNo) =>
+            await _db.ExecuteAsync("UPDATE CustomerAccess SET InboxSeenUtc = SYSUTCDATETIME() WHERE AccountNo = @AccountNo", new { AccountNo = accountNo });
 
         public async Task SetEmailedUpToAsync(long accountNo, DateTime upToUtc) =>
             await _db.ExecuteAsync(@"

@@ -137,6 +137,16 @@ namespace Ranalo.Services
                 $"Thank you for choosing {SignOff}.",
                 Help));
 
+        // A plan the customer chose in the app has started (SelfRestructureService).
+        public static Message PlanStarted(string? firstName, long accountNo, decimal daily) =>
+            new("Your payment plan has started", Lines(
+                $"Hi {Name(firstName)}, your plan on account {accountNo} has started: Ksh {Money(daily)} a day until your phone is paid.",
+                "",
+                "Your phone opens shortly and stays open while you pay each day. Miss days and it locks until you catch up.",
+                "",
+                $"Pay: M-Pesa Pay Bill {Paybill}, account no {accountNo}",
+                Help));
+
         // The weekly update, Sunday evening (ScheduledDailyPaymentSummary).
         // Arrears below zero = behind; zero or more = up to date or ahead.
         public static Message Summary(MobileStatusReport record, DateTime? nextLockUtc, DateTime contractEnds)

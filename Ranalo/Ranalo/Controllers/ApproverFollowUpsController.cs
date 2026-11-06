@@ -33,6 +33,9 @@ namespace Ranalo.Controllers
                 : (await _collections.GetStandingsAsync(rows.Select(r => r.AccountNo).ToList())).GroupBy(s => s.ContractId).ToDictionary(g => g.Key, g => g.First());
 
             ViewBag.Status = status;
+            // Every note so far; until Collections/004 is run there is no history, only the latest.
+            try { ViewBag.Notes = await _followUps.GetNotesAsync(rows.Select(r => r.Id).ToList()); }
+            catch (Exception ex) { _logger.LogWarning(ex, "No follow-up note history (has Collections/004 been run?)"); }
             ViewBag.Message = TempData["FollowUpMessage"] as string;
             ViewBag.Error = TempData["FollowUpError"] as string;
             return View(rows.Select(r => (r, standings.GetValueOrDefault(r.ContractId))).ToList());
@@ -74,10 +77,10 @@ namespace Ranalo.Controllers
 
         [HttpPost("approver-follow-ups/to-collections")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToCollections(int id, long accountNo)
+        public async Task<IActionResult> ToCollections(int id, long accountNo, string? note)
         {
             if (!Allowed(out var user, out var redirect)) return redirect!;
-            if (await _followUps.SendToCollectionsAsync(id, user!.UserId))
+            if (await _followUps.SendToCollectionsAsync(id, user!.UserId, CollectionsRules.CleanNote(note)))
             {
                 _logger.LogInformation("Approver follow-up {Id} ({Account}) sent to collections by {User}", id, accountNo, user.KnownAs);
                 TempData["FollowUpMessage"] = $"{accountNo} sent to collections: it's back in the pool for an admin to give to a collector.";

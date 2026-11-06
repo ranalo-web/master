@@ -123,6 +123,7 @@ namespace Ranalo.Services
                     "Summary" => "Weekly update",
                     "FullyPaid" => "Fully paid",
                     "Welcome" => "Welcome",
+                    "PlanStarted" => "Payment plan",
                     _ => "Message",
                 },
                 title,

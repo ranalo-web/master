@@ -36,7 +36,9 @@ namespace Ranalo.DataStore
         Task CloseAsync(int id, string reason);
         Task<bool> TakeAsync(int id, int userId);
         Task<bool> NoteAsync(int id, int userId, string note, DateTime? promised);
-        Task<bool> SendToCollectionsAsync(int id, int userId);
+        Task<bool> SendToCollectionsAsync(int id, int userId, string? note);
+        Task<Dictionary<int, List<FollowUpNote>>> GetNotesAsync(IReadOnlyCollection<int> followUpIds);
+        Task<int> CopyNotesToCaseAsync(int followUpId, int caseId);
     }
 
     public class ApproverFollowUpRepository : IApproverFollowUpRepository
@@ -90,16 +92,68 @@ namespace Ranalo.DataStore
                 UPDATE ApproverFollowUps SET TakenByUserId = @UserId, TakenAtUtc = SYSUTCDATETIME()
                 WHERE Id = @Id AND Status = 'Open'", new { Id = id, UserId = userId }) == 1;
 
+        // Latest note on the row, and every note in the history
+        // (Collections/004) -- the history is what the collector gets.
         public async Task<bool> NoteAsync(int id, int userId, string note, DateTime? promised) =>
-            await _db.ExecuteAsync(@"
+            await _db.ExecuteScalarAsync<int>(@"
                 UPDATE ApproverFollowUps
                 SET LastNote = LEFT(@Note, 500), LastNoteAtUtc = SYSUTCDATETIME(), LastNoteByUserId = @UserId, PromisedDate = @Promised,
                     TakenByUserId = COALESCE(TakenByUserId, @UserId), TakenAtUtc = COALESCE(TakenAtUtc, SYSUTCDATETIME())
-                WHERE Id = @Id AND Status = 'Open'", new { Id = id, UserId = userId, Note = note, Promised = promised }) == 1;
+                WHERE Id = @Id AND Status = 'Open';
+                IF @@ROWCOUNT = 1
+                BEGIN
+                    INSERT INTO ApproverFollowUpNotes (FollowUpId, Note, PromisedDate, ByUserId, AtUtc)
+                    VALUES (@Id, LEFT(@Note, 500), @Promised, @UserId, SYSUTCDATETIME());
+                    SELECT 1;
+                END
+                ELSE SELECT 0;", new { Id = id, UserId = userId, Note = note, Promised = promised }) == 1;
 
-        public async Task<bool> SendToCollectionsAsync(int id, int userId) =>
-            await _db.ExecuteAsync(@"
-                UPDATE ApproverFollowUps SET Status = 'ToCollections', SentToCollectionsAtUtc = SYSUTCDATETIME(), SentByUserId = @UserId
-                WHERE Id = @Id AND Status = 'Open'", new { Id = id, UserId = userId }) == 1;
+        // The note is optional; when given it goes into the history too.
+        public async Task<bool> SendToCollectionsAsync(int id, int userId, string? note) =>
+            await _db.ExecuteScalarAsync<int>(@"
+                UPDATE ApproverFollowUps SET Status = 'ToCollections', SentToCollectionsAtUtc = SYSUTCDATETIME(), SentByUserId = @UserId,
+                       LastNote = COALESCE(LEFT(@Note, 500), LastNote),
+                       LastNoteAtUtc = CASE WHEN @Note IS NULL THEN LastNoteAtUtc ELSE SYSUTCDATETIME() END,
+                       LastNoteByUserId = CASE WHEN @Note IS NULL THEN LastNoteByUserId ELSE @UserId END
+                WHERE Id = @Id AND Status = 'Open';
+                IF @@ROWCOUNT = 1
+                BEGIN
+                    IF @Note IS NOT NULL
+                        INSERT INTO ApproverFollowUpNotes (FollowUpId, Note, ByUserId, AtUtc)
+                        VALUES (@Id, LEFT('Sent to collections: ' + @Note, 500), @UserId, SYSUTCDATETIME());
+                    SELECT 1;
+                END
+                ELSE SELECT 0;", new { Id = id, UserId = userId, Note = note }) == 1;
+
+        public async Task<Dictionary<int, List<FollowUpNote>>> GetNotesAsync(IReadOnlyCollection<int> followUpIds) =>
+            followUpIds.Count == 0 ? new()
+            : (await _db.QueryAsync<FollowUpNote>(@"
+                SELECT n.FollowUpId, n.Note, CAST(n.PromisedDate AS DATETIME2) AS PromisedDate, n.AtUtc, u.KnownAs AS By
+                FROM ApproverFollowUpNotes n LEFT JOIN Users u ON u.UserId = n.ByUserId
+                WHERE n.FollowUpId IN @Ids ORDER BY n.AtUtc", new { Ids = followUpIds }))
+                .GroupBy(n => n.FollowUpId).ToDictionary(g => g.Key, g => g.ToList());
+
+        // Every approver note goes onto the collections case, by its author
+        // and time, marked as the approvers'. Once only (CopiedToCaseId).
+        public async Task<int> CopyNotesToCaseAsync(int followUpId, int caseId) =>
+            await _db.ExecuteScalarAsync<int>(@"
+                UPDATE ApproverFollowUps SET CopiedToCaseId = @CaseId WHERE Id = @Id AND CopiedToCaseId IS NULL;
+                IF @@ROWCOUNT = 1 AND OBJECT_ID('dbo.CollectionCallNotes') IS NOT NULL
+                BEGIN
+                    INSERT INTO CollectionCallNotes (CaseId, CollectorUserId, Note, PromisedDate, CreatedAt)
+                    SELECT @CaseId, n.ByUserId, LEFT('[Approvers] ' + n.Note, 500), n.PromisedDate, n.AtUtc
+                    FROM ApproverFollowUpNotes n WHERE n.FollowUpId = @Id ORDER BY n.AtUtc;
+                    SELECT @@ROWCOUNT;
+                END
+                ELSE SELECT 0;", new { Id = followUpId, CaseId = caseId });
+    }
+
+    public class FollowUpNote
+    {
+        public int FollowUpId { get; set; }
+        public string Note { get; set; } = "";
+        public DateTime? PromisedDate { get; set; }
+        public DateTime AtUtc { get; set; }
+        public string? By { get; set; }
     }
 }

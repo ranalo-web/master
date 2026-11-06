@@ -30,6 +30,17 @@ namespace Ranalo.ViewComponents
                 "SELECT COUNT(*) FROM LockRecoveries WHERE Status NOT IN ('Closed', 'NotCatchable', 'MovedToTranssion', 'MovedToKnox')"),
         };
 
+        // The approvers' own list (Approver Dashboard).
+        private static readonly (string Label, string Hint, string Link, string Icon, string Sql)[] ApproverChecks =
+        {
+            ("Follow-ups to pick up", "Behind, no payment for 90 days: nobody has taken them yet.", "/approver-follow-ups", "ni-call-alt",
+                "SELECT COUNT(*) FROM ApproverFollowUps WHERE Status = 'Open' AND TakenByUserId IS NULL"),
+            ("Promises due", "Customers who promised to pay by today: check they did.", "/approver-follow-ups", "ni-calendar-check",
+                "SELECT COUNT(*) FROM ApproverFollowUps WHERE Status = 'Open' AND PromisedDate <= CAST(DATEADD(HOUR, 3, SYSUTCDATETIME()) AS DATE)"),
+            ("Customer app locked", "Customers who emailed in to be unlocked.", "/customer-app?show=locked", "ni-mobile",
+                "SELECT COUNT(*) FROM CustomerAccess WHERE LockedAtUtc IS NOT NULL"),
+        };
+
         private readonly IDbConnection _db;
         private readonly ILogger<WaitingForYouViewComponent> _logger;
 
@@ -39,10 +50,10 @@ namespace Ranalo.ViewComponents
             _logger = logger;
         }
 
-        public async Task<IViewComponentResult> InvokeAsync()
+        public async Task<IViewComponentResult> InvokeAsync(bool forApprover = false)
         {
             var items = new List<Item>();
-            foreach (var c in Checks)
+            foreach (var c in forApprover ? ApproverChecks : Checks)
             {
                 try
                 {

@@ -20,14 +20,24 @@ namespace Ranalo.Services
         private readonly ISelfRestructureRepository _plans;
         private readonly ILostStolenRepository _lostStolen;
         private readonly IAccountRefreshQueue _refresh;
+        private readonly IPaymentReminderService? _messages;
+        private readonly ICustomerAccessRepository? _access;
+        private readonly IPaymentsRepository? _paymentsRepository;
+        private readonly Ranalo.SumsungKnox.IKnoxGuardClient? _knox;
         private readonly ILogger<SelfRestructureService> _logger;
 
         public SelfRestructureService(ISelfRestructureRepository plans, ILostStolenRepository lostStolen,
-            IAccountRefreshQueue refresh, ILogger<SelfRestructureService> logger)
+            IAccountRefreshQueue refresh, ILogger<SelfRestructureService> logger,
+            IPaymentReminderService? messages = null, ICustomerAccessRepository? access = null,
+            IPaymentsRepository? paymentsRepository = null, Ranalo.SumsungKnox.IKnoxGuardClient? knox = null)
         {
             _plans = plans;
             _lostStolen = lostStolen;
             _refresh = refresh;
+            _messages = messages;
+            _access = access;
+            _paymentsRepository = paymentsRepository;
+            _knox = knox;
             _logger = logger;
         }
 
@@ -108,6 +118,7 @@ namespace Ranalo.Services
                                 started++;
                                 _logger.LogInformation("Self-service plan started: {Account} Ksh {Daily}/day", plan.AccountNo, plan.Daily);
                                 _refresh.Enqueue(plan.AccountNo.ToString());
+                                await TellThePhoneAsync(plan);
                             }
                             break;
                     }
@@ -119,5 +130,33 @@ namespace Ranalo.Services
             }
             return started;
         }
+
+        // "Your payment plan has started", to the phone through its own
+        // provider; logged like every message, so it's in the app's Inbox.
+        // The plan has started whatever happens here.
+        private async Task TellThePhoneAsync(SelfRestructure plan)
+        {
+            if (_messages == null || _access == null || _paymentsRepository == null || _knox == null) return;
+            try
+            {
+                var target = await _access.GetTargetAsync(plan.AccountNo);
+                if (target == null) return;
+                var message = CustomerMessages.PlanStarted(target.FirstName, plan.AccountNo, plan.Daily);
+                await _messages.SendToEachProviderAsync(new List<AccountSendMessage>
+                {
+                    new()
+                    {
+                        AccountId = plan.AccountNo, FirstName = target.FirstName, Imei = target.Imei, LockGroup = target.LockGroup,
+                        MessageTitle = message.Title, MessageText = message.Content,
+                    },
+                }, PlanStartedType, _paymentsRepository, _knox);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Plan started on {Account}, but the message to the phone failed.", plan.AccountNo);
+            }
+        }
+
+        public const string PlanStartedType = "PlanStarted";
     }
 }

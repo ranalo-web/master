@@ -83,6 +83,12 @@
         </div>
     </div>
 
+    @if (ViewBag.IsApprover is true)
+    {
+        @* What the approvers have to act on (WaitingForYouViewComponent). *@
+        @await Component.InvokeAsync("WaitingForYou", new { forApprover = true })
+    }
+
     <div class="nk-block">
         <div class="row g-gs">
             @{

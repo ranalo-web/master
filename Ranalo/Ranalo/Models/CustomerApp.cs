@@ -13,6 +13,8 @@ namespace Ranalo.Models
         public string? LockedReason { get; set; }
         public string SessionStamp { get; set; } = "";
         public DateTime? LastLoginUtc { get; set; }
+        // Customers/005: messages after this are new (count and pop-up).
+        public DateTime? InboxSeenUtc { get; set; }
 
         public bool Locked => LockedAtUtc.HasValue;
     }

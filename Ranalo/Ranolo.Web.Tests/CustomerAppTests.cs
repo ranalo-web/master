@@ -305,6 +305,21 @@ namespace Ranolo.Web.Tests
             Assert.That(session.Read(request), Is.Null);
         }
 
+        [Test]
+        public void The_plan_started_message_fits_every_provider_and_reads_in_the_inbox()
+        {
+            var message = CustomerMessages.PlanStarted("JANE", 1234567, 69m);
+
+            Assert.That(message.Title.Length, Is.LessThanOrEqualTo(CustomerMessages.TitleLimit));
+            Assert.That(message.Content.Length, Is.LessThanOrEqualTo(CustomerMessages.ContentLimit));
+            Assert.That(CustomerMessages.ForKnox(message).IndexOfAny(CustomerMessages.KnoxNotAllowed), Is.EqualTo(-1));
+
+            var item = CustomerAppRules.InboxItem(new MessageLog { Message = CustomerMessages.ForNuovoKnox(message), MessageType = SelfRestructureService.PlanStartedType, MessageStatus = "sent", DateSent = Now });
+            Assert.That(item.Kind, Is.EqualTo("Payment plan"));
+            Assert.That(item.Title, Is.EqualTo("Your payment plan has started"));
+            Assert.That(item.Lines, Has.Some.Contains("Ksh 69 a day"));
+        }
+
         // ---------- my.ranalocredit.com ----------
 
         [TestCase("my.ranalocredit.com", true)]

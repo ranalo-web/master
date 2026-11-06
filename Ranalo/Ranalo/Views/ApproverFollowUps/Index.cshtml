@@ -6,6 +6,7 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
     var status = (string)ViewBag.Status;
     string Kenya(DateTime? utc) => utc.HasValue ? utc.Value.AddHours(3).ToString("dd MMM yyyy, HH:mm") : "—";
+    var notes = ViewBag.Notes as Dictionary<int, List<FollowUpNote>> ?? new();
     var tabs = new[] { (ApproverFollowUpRules.Open, "With approvers"), (ApproverFollowUpRules.ToCollections, "Sent to collections"), (ApproverFollowUpRules.Closed, "Closed (30 days)") };
 }
 
@@ -15,7 +16,7 @@
     <div class="nk-block-head nk-block-head-sm">
         <h3 class="nk-block-title page-title">Follow-ups</h3>
         <div class="nk-block-des text-soft">
-            <p>Accounts behind with no payment for @CollectionsRules.EligibleDaysWithoutPayment days come here first, every few hours, for the approvers to sort out before a collector. When you can't, send it to collections and an admin gives it to a collector. Each closes by itself when the customer pays again, a collections case opens, or the contract ends.</p>
+            <p>Accounts behind with no payment for @CollectionsRules.EligibleDaysWithoutPayment days come here first, every few hours, for the approvers to sort out before a collector. When you can't, send it to collections and an admin gives it to a collector; every note here goes onto the collector's case. Each closes by itself when the customer pays again, a collections case opens, or the contract ends.</p>
         </div>
     </div>
 
@@ -71,6 +72,15 @@
                                         <div class="small">@f.LastNote</div>
                                         <div class="small text-soft">@f.LastNoteBy, @Kenya(f.LastNoteAtUtc)@(f.PromisedDate.HasValue ? $" · promised {f.PromisedDate:dd MMM}" : "")</div>
                                     }
+                                    @if (notes.TryGetValue(f.Id, out var history) && history.Count > 1)
+                                    {
+                                        <details class="small mt-1"><summary class="text-primary">All @history.Count notes</summary>
+                                            @foreach (var n in history)
+                                            {
+                                                <div class="mt-1">@n.Note<div class="text-soft">@n.By, @Kenya(n.AtUtc)@(n.PromisedDate.HasValue ? $" · promised {n.PromisedDate:dd MMM}" : "")</div></div>
+                                            }
+                                        </details>
+                                    }
                                     @if (f.SentToCollectionsAtUtc.HasValue) { <div class="small text-warning">Sent to collections by @f.SentBy, @Kenya(f.SentToCollectionsAtUtc)</div> }
                                     @if (f.CloseReason != null) { <span class="badge bg-light text-dark">@f.CloseReason</span> <span class="small text-soft">@Kenya(f.ClosedAtUtc)</span> }
                                 </td>
@@ -98,6 +108,7 @@
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@f.Id" />
                                             <input type="hidden" name="accountNo" value="@f.AccountNo" />
+                                            <input name="note" class="form-control form-control-sm mb-1" placeholder="Note for the collector (optional)" />
                                             <button class="btn btn-sm btn-outline-danger" type="submit"
                                                     onclick="return confirm('Send @f.AccountNo to collections? An admin will give it to a collector.');">Send to collections</button>
                                         </form>

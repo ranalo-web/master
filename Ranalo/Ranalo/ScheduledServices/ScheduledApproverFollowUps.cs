@@ -50,8 +50,10 @@ namespace Ranalo.ScheduledServices
         public static async Task<(int Added, int Closed)> SyncAsync(ICollectionsRepository collections, IApproverFollowUpRepository followUps)
         {
             var standings = (await collections.GetStandingsAsync()).GroupBy(s => s.ContractId).ToDictionary(g => g.Key, g => g.First());
-            var openCases = (await collections.GetCasesAsync())
-                .Where(c => c.Status == CollectionCaseStatus.Open).Select(c => c.ContractId).ToHashSet();
+            var openCaseIds = (await collections.GetCasesAsync())
+                .Where(c => c.Status == CollectionCaseStatus.Open)
+                .GroupBy(c => c.ContractId).ToDictionary(g => g.Key, g => g.Max(c => c.CaseId));
+            var openCases = openCaseIds.Keys.ToHashSet();
             var active = await followUps.GetActiveAsync();
 
             var closed = 0;
@@ -60,6 +62,11 @@ namespace Ranalo.ScheduledServices
                 var reason = ApproverFollowUpRules.CloseReason(standings.GetValueOrDefault(f.ContractId), openCases.Contains(f.ContractId));
                 if (reason != null)
                 {
+                    // Gone to a collector: the approvers' notes go onto the case first.
+                    if (reason == ApproverFollowUpRules.InCollections)
+                    {
+                        await followUps.CopyNotesToCaseAsync(f.Id, openCaseIds[f.ContractId]);
+                    }
                     await followUps.CloseAsync(f.Id, reason);
                     closed++;
                 }

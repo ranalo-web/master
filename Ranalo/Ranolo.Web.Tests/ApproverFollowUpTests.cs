@@ -49,13 +49,19 @@ namespace Ranolo.Web.Tests
                 Standing(2, 5000m, 120),   // already with approvers -> left
                 Standing(3, 5000m, 2),     // with approvers, just paid -> closed Paying
                 Standing(4, 5000m, 150),   // collections case open -> not added
+                Standing(6, 5000m, 150),   // with approvers, now a collections case -> notes copied, closed
             };
-            var cases = new List<CollectionCaseRow> { new() { ContractId = 4, Status = CollectionCaseStatus.Open } };
+            var cases = new List<CollectionCaseRow>
+            {
+                new() { CaseId = 400, ContractId = 4, Status = CollectionCaseStatus.Open },
+                new() { CaseId = 600, ContractId = 6, Status = CollectionCaseStatus.Open },
+            };
             var active = new List<ApproverFollowUp>
             {
                 new() { Id = 20, ContractId = 2, Status = ApproverFollowUpRules.Open },
                 new() { Id = 30, ContractId = 3, Status = ApproverFollowUpRules.Open },
                 new() { Id = 50, ContractId = 5, Status = ApproverFollowUpRules.ToCollections }, // contract ended
+                new() { Id = 60, ContractId = 6, Status = ApproverFollowUpRules.ToCollections },
             };
 
             var (collections, _) = InterfaceFake<ICollectionsRepository>.Create(new()
@@ -65,18 +71,21 @@ namespace Ranolo.Web.Tests
             });
             var addedContracts = new List<long>();
             var closed = new List<(int, string)>();
+            var copied = new List<(int FollowUp, int Case)>();
             var (followUps, _) = InterfaceFake<IApproverFollowUpRepository>.Create(new()
             {
                 ["GetActiveAsync"] = _ => Task.FromResult(active),
                 ["CloseAsync"] = a => { closed.Add(((int)a![0]!, (string)a[1]!)); return Task.CompletedTask; },
                 ["AddAsync"] = a => { addedContracts.Add((long)a![1]!); return Task.FromResult(true); },
+                ["CopyNotesToCaseAsync"] = a => { copied.Add(((int)a![0]!, (int)a[1]!)); return Task.FromResult(3); },
             });
 
             var (added, closedCount) = await ScheduledApproverFollowUps.SyncAsync(collections, followUps);
 
             Assert.That(addedContracts, Is.EqualTo(new long[] { 1 }));
-            Assert.That(closed, Is.EquivalentTo(new[] { (30, ApproverFollowUpRules.Paying), (50, ApproverFollowUpRules.ContractEnded) }));
-            Assert.That((added, closedCount), Is.EqualTo((1, 2)));
+            Assert.That(closed, Is.EquivalentTo(new[] { (30, ApproverFollowUpRules.Paying), (50, ApproverFollowUpRules.ContractEnded), (60, ApproverFollowUpRules.InCollections) }));
+            Assert.That(copied, Is.EqualTo(new[] { (60, 600) }), "the approvers' notes go onto the new case");
+            Assert.That((added, closedCount), Is.EqualTo((1, 3)));
         }
     }
 }
