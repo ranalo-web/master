@@ -89,9 +89,16 @@ namespace Ranalo.DataStore
             var sql = $@"
                 SELECT COUNT(*) FROM dbo.DeviceRemovalTasks WHERE {filter};
 
-                SELECT * FROM dbo.DeviceRemovalTasks
+                -- ContractId: the account's latest ended contract, so the
+                -- customer links to its Completed Contracts page to check
+                -- before releasing (that page shows ended contracts only).
+                SELECT t.*, c.ContractID AS ContractId
+                FROM dbo.DeviceRemovalTasks t
+                OUTER APPLY (SELECT TOP 1 ci.ContractID FROM Contract_Info ci
+                             WHERE ci.ID = t.AccountId AND ci.EndDate IS NOT NULL
+                             ORDER BY ci.EndDate DESC, ci.ContractID DESC) c
                 WHERE {filter}
-                ORDER BY CreatedAtUtc, Id
+                ORDER BY t.CreatedAtUtc, t.Id
                 OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY;";
 
             using var multi = await _db.QueryMultipleAsync(sql,

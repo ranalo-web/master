@@ -104,7 +104,16 @@
                                             </td>
                                         }
                                         <td><a href="/account-details/@task.AccountId">@task.AccountId</a></td>
-                                        <td>@task.CustomerName</td>
+                                        <td>
+                                            @if (task.ContractId.HasValue)
+                                            {
+                                                <a href="/completed-contracts/@task.ContractId?from=pending-tasks" title="Check the contract and its payments before releasing">@task.CustomerName</a>
+                                            }
+                                            else
+                                            {
+                                                @task.CustomerName
+                                            }
+                                        </td>
                                         <td>@task.Imei</td>
                                         <td>@task.Provider</td>
                                         <td>@task.Reason</td>
@@ -203,7 +212,16 @@
                                         <tr>
                                             <td><input type="checkbox" name="taskIds" value="@task.Id" class="rejected-check"></td>
                                             <td><a href="/account-details/@task.AccountId">@task.AccountId</a></td>
-                                            <td>@task.CustomerName</td>
+                                            <td>
+                                            @if (task.ContractId.HasValue)
+                                            {
+                                                <a href="/completed-contracts/@task.ContractId?from=pending-tasks" title="Check the contract and its payments before releasing">@task.CustomerName</a>
+                                            }
+                                            else
+                                            {
+                                                @task.CustomerName
+                                            }
+                                        </td>
                                             <td>@task.Imei</td>
                                             <td>@task.Provider</td>
                                             <td>@task.CreatedAtUtc.ToString("dd MMM yyyy")</td>

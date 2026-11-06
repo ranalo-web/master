@@ -20,6 +20,10 @@ namespace Ranalo.Models
         public DateTime? LastAttemptAtUtc { get; set; }
         public string? LastResponse { get; set; }
         public DateTime? CompletedAtUtc { get; set; }
+
+        // Not stored: the account's latest ended contract, filled in by
+        // ListAsync for the link to /completed-contracts/{id}.
+        public int? ContractId { get; set; }
     }
 
     public static class DeviceRemovalStatus

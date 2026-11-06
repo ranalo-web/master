@@ -7,6 +7,9 @@
     var paidOff = c.Outcome == CompletedOutcome.PaidOff;
     var owed = CompletedContractRules.Owed(c);
     var over = CompletedContractRules.Overpaid(c);
+    // Opened from Pending Tasks to check before releasing: offer the way back.
+    var fromPending = Context.Request.Query["from"] == "pending-tasks";
+    var from = fromPending ? "&from=pending-tasks" : "";
 }
 
 <link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
@@ -25,7 +28,14 @@
                 </div>
             </div>
             <div class="nk-block-head-content">
-                <a href="/completed-contracts" class="btn btn-outline-light"><em class="icon ni ni-arrow-left"></em><span>Completed Contracts</span></a>
+                @if (fromPending)
+                {
+                    <a href="/pending-tasks" class="btn btn-primary"><em class="icon ni ni-arrow-left"></em><span>Back to Pending Tasks to release</span></a>
+                }
+                else
+                {
+                    <a href="/completed-contracts" class="btn btn-outline-light"><em class="icon ni ni-arrow-left"></em><span>Completed Contracts</span></a>
+                }
             </div>
         </div>
     </div>
@@ -124,12 +134,12 @@
                 var current = Model.PaymentsPage;
                 <div class="card-inner d-flex justify-content-center">
                     <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item @(current <= 1 ? "disabled" : "")"><a class="page-link" href="?page=@(current - 1)">Prev</a></li>
+                        <li class="page-item @(current <= 1 ? "disabled" : "")"><a class="page-link" href="?page=@(current - 1)@from">Prev</a></li>
                         @for (var i = Math.Max(1, current - 2); i <= Math.Min(Model.PaymentsPages, current + 2); i++)
                         {
-                            <li class="page-item @(i == current ? "active" : "")"><a class="page-link" href="?page=@i">@i</a></li>
+                            <li class="page-item @(i == current ? "active" : "")"><a class="page-link" href="?page=@i@from">@i</a></li>
                         }
-                        <li class="page-item @(current >= Model.PaymentsPages ? "disabled" : "")"><a class="page-link" href="?page=@(current + 1)">Next</a></li>
+                        <li class="page-item @(current >= Model.PaymentsPages ? "disabled" : "")"><a class="page-link" href="?page=@(current + 1)@from">Next</a></li>
                     </ul>
                 </div>
             }
