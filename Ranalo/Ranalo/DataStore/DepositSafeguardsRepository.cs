@@ -28,18 +28,14 @@ namespace Ranalo.DataStore
         {
             var rows = await _db.QueryAsync<AccountPayment>(@"
                 SELECT TOP 10
-                       CAST(kp.MpesaCode AS NVARCHAR(100)) AS MpesaCode,
-                       CAST(ISNULL(kp.AmountValue, 0) AS DECIMAL(18,2)) AS Amount,
-                       kp.PaymentDateValue AS PaidAt,
+                       CAST(p.MpesaCode AS NVARCHAR(100)) AS MpesaCode,
+                       CAST(ISNULL(p.AmountValue, 0) AS DECIMAL(18,2)) AS Amount,
+                       p.PaymentDateValue AS PaidAt,
                        (SELECT TOP 1 CAST(wo.OrderID AS BIGINT) FROM Woo_Orders wo
-                         WHERE wo.MpesaDepositRef = kp.MpesaCode) AS DepositOnOrderId
-                FROM KosePayments kp
-                OUTER APPLY (SELECT TOP 1 o.AccountNoBigint FROM OrphanedPayments o
-                             WHERE o.MpesaCode = kp.MpesaCode
-                             ORDER BY o.DateCreated DESC) op
-                WHERE COALESCE(op.AccountNoBigint, kp.AccountNoBigint) = @AccountNo
-                  AND kp.PaymentDateValue >= @Since
-                ORDER BY kp.PaymentDateValue DESC",
+                         WHERE wo.MpesaDepositRef = p.MpesaCode) AS DepositOnOrderId
+                FROM " + AccountPaymentsSql.For("@AccountNo") + @" p
+                WHERE p.PaymentDateValue >= @Since
+                ORDER BY p.PaymentDateValue DESC",
                 new { AccountNo = accountNo, Since = since });
             return rows.ToList();
         }

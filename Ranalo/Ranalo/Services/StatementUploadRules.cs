@@ -23,6 +23,9 @@ namespace Ranalo.Services
             return DateTime.TryParseExact(value, Formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var t) ? t : null;
         }
 
+        // Receipt numbers as kept and compared: trimmed, upper case.
+        public static string CleanReceipt(string? raw) => (raw ?? "").Trim().ToUpperInvariant();
+
         public static (DateTime? From, DateTime? To) Period(IEnumerable<PaymentTransaction> payments)
         {
             var times = payments.Select(p => ParseTime(p.CompletionTime)).Where(t => t.HasValue).Select(t => t!.Value).ToList();
@@ -81,7 +84,8 @@ namespace Ranalo.Services
             return months;
         }
 
-        public static StatementUploadsViewModel Build(List<StatementUpload> uploads, List<EarlierImport> earlier, DateTime today)
+        public static StatementUploadsViewModel Build(List<StatementUpload> uploads, List<EarlierImport> earlier, DateTime today,
+            List<NotOnStatementPayment>? notOnStatement = null)
         {
             var covered = Covered(uploads);
             var coveredTo = covered.LastOrDefault()?.To;
@@ -95,6 +99,7 @@ namespace Ranalo.Services
                 DaysSinceCovered = coveredTo.HasValue ? Math.Max(0, (today.Date - coveredTo.Value).Days) : 0,
                 MissedFound = uploads.Where(u => u.Error == null).Sum(u => u.NewPayments),
                 Earlier = earlier,
+                NotOnStatement = notOnStatement ?? new(),
             };
         }
     }

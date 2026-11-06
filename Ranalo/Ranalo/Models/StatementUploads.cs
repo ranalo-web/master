@@ -15,6 +15,22 @@ namespace Ranalo.Models
         public int AlreadyRecorded { get; set; }
         public int Skipped { get; set; }
         public string? Error { get; set; }
+        // Its receipt numbers were saved (StatementUploads/002), so it can
+        // show payments the database has that it doesn't.
+        public bool ReceiptsKept { get; set; }
+    }
+
+    // A payment in KosePayments, dated inside an uploaded statement's
+    // period, whose receipt no uploaded statement has.
+    public class NotOnStatementPayment
+    {
+        public string MpesaCode { get; set; } = "";
+        public long? AccountNo { get; set; }
+        public string? FirstName { get; set; }
+        public decimal Amount { get; set; }
+        public DateTime PaidAt { get; set; }
+        public DateTime AddedAtUtc { get; set; }
+        public string Source { get; set; } = "";
     }
 
     // Payments added by imports before uploads were recorded, by day.
@@ -48,5 +64,9 @@ namespace Ranalo.Models
         public int DaysSinceCovered { get; set; }
         public int MissedFound { get; set; }
         public List<EarlierImport> Earlier { get; set; } = new();
+        public List<NotOnStatementPayment> NotOnStatement { get; set; } = new();
+        public decimal NotOnStatementTotal => NotOnStatement.Sum(p => p.Amount);
+        // Any upload kept its receipts; until one does there's nothing to compare.
+        public bool CanCompare => Uploads.Any(u => u.ReceiptsKept);
     }
 }
