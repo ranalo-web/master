@@ -9,7 +9,13 @@ namespace Ranalo.ScheduledServices
     {
         private readonly ILogger<ScheduledLockFullyPaid> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly TimeSpan _interval = TimeSpan.FromDays(1); // Run once a day
+        // Every 10 minutes, like the paying and restructured lock jobs: those
+        // leave a paid-off phone to this one, so once a day kept a phone that
+        // locked just before its last payment locked for up to 24 hours
+        // (8440271, 2026-11-05/06). Safe to repeat: phones already at
+        // 31/12/9999 aren't picked, ended contracts aren't ended again, and a
+        // queued removal isn't queued twice.
+        private readonly TimeSpan _interval = TimeSpan.FromMinutes(10);
 
         public ScheduledLockFullyPaid(
             ILogger<ScheduledLockFullyPaid> logger,
