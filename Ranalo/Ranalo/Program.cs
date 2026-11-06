@@ -103,6 +103,21 @@ builder.Services.AddScoped<IKosePaymentsRepository, KosePaymentsRepository>();
 builder.Services.Configure<Ranalo.Models.SafaricomC2BSettings>(
     builder.Configuration.GetSection("SafaricomC2B"));
 
+//M-Pesa Express (STK push) for the customer app: off until SafaricomStk is
+//Enabled and its secrets are set in Azure (see SafaricomStkSettings).
+builder.Services.Configure<Ranalo.Models.SafaricomStkSettings>(
+    builder.Configuration.GetSection("SafaricomStk"));
+builder.Services.AddScoped<IStkRequestRepository, StkRequestRepository>();
+
+//Customer app (my.ranalocredit.com): login by account number + a code sent
+//to the financed phone. Kept apart from the staff login (LoginSession).
+builder.Services.AddScoped<ICustomerAccessRepository, CustomerAccessRepository>();
+builder.Services.AddScoped<ICustomerSession, CustomerSession>();
+//System email from the no-reply address: off until Email is set up (EmailSettings).
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddHttpClient<IMpesaStkClient, MpesaStkClient>(client => client.Timeout = TimeSpan.FromSeconds(30));
+
 
 builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -223,6 +238,7 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService<AccountRefreshWorker>();
         builder.Services.AddHostedService<ScheduledDailyPaymentSummary>();
         builder.Services.AddHostedService<ScheduledMilestoneMessages>();
+        builder.Services.AddHostedService<ScheduledCustomerEmailCopies>();
 
         // Runs nightly at 4 AM UTC alongside the other scheduled jobs above
         // (see the class comment for exactly which snapshot fields it
@@ -289,6 +305,8 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+// my.ranalocredit.com answers only the customer app (CustomerHostGate).
+app.UseMiddleware<CustomerHostGate>();
 app.UseStaticFiles();
 
 app.UseRouting();

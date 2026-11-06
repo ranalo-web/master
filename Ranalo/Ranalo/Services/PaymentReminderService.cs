@@ -38,6 +38,26 @@ namespace Ranalo.Services
             await SendTranssionAsync(records.Where(r => r.LockGroup == 3).ToList(), messageType, paymentsRepository);
         }
 
+        public const string LoginCodeType = "LoginCode";
+
+        // The customer app's login code, to the financed phone through its
+        // own provider. MessageLogs gets CustomerLoginRules.CodeLogText,
+        // never the code. True when the provider accepted it.
+        public async Task<bool> SendLoginCodeAsync(AccountSendMessage rec, string code,
+            IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient)
+        {
+            rec.MessageTitle = "Ranalo app code";
+            rec.MessageText = CustomerLoginRules.CodeMessage(code);
+            var one = new List<AccountSendMessage> { rec };
+            var logs = rec.LockGroup switch
+            {
+                2 => await SendKnoxAsync(one, LoginCodeType, paymentsRepository, knoxGuardClient, CustomerLoginRules.CodeLogText),
+                3 => await SendTranssionAsync(one, LoginCodeType, paymentsRepository, CustomerLoginRules.CodeLogText),
+                _ => await SendNuovoAsync(one, LoginCodeType, paymentsRepository, CustomerLoginRules.CodeLogText),
+            };
+            return logs.Any(l => l.MessageStatus == "sent");
+        }
+
         // The three reminder jobs (active lock, auto-restructured,
         // restructured) start together every 2 hours and can list the same
         // phone. Each checks MessageLogs and then sends, so one at a time:
@@ -169,11 +189,11 @@ namespace Ranalo.Services
                 (log.AccountNo == rec.AccountId.ToString() || (!string.IsNullOrEmpty(rec.Imei) && log.AccountNo == rec.Imei))
                 && log.Message?.StartsWith(title) == true);
 
-        private static async Task SendNuovoAsync(List<AccountSendMessage> records, string messageType, IPaymentsRepository paymentsRepository)
+        private static async Task<List<MessageLog>> SendNuovoAsync(List<AccountSendMessage> records, string messageType, IPaymentsRepository paymentsRepository, string? logText = null)
         {
             if (records.Count == 0)
             {
-                return;
+                return new List<MessageLog>();
             }
 
             var logs = new List<MessageLog>();
@@ -195,20 +215,21 @@ namespace Ranalo.Services
                     try
                     {
                         var response = await client.PostAsync(NuovoMessageUrl, new StringContent(body, Encoding.UTF8, "application/json"));
-                        logs.Add(Log(rec.AccountId.ToString(), message, messageType, response.IsSuccessStatusCode,
+                        logs.Add(Log(rec.AccountId.ToString(), logText ?? message, messageType, response.IsSuccessStatusCode,
                             response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync() : response.StatusCode.ToString()));
                     }
                     catch (Exception ex)
                     {
-                        logs.Add(Log(rec.AccountId.ToString(), message, messageType, false, ex.Message));
+                        logs.Add(Log(rec.AccountId.ToString(), logText ?? message, messageType, false, ex.Message));
                     }
                 }
             }
 
             await SaveLogsAsync(logs, paymentsRepository);
+            return logs;
         }
 
-        private static async Task SendKnoxAsync(List<AccountSendMessage> records, string messageType, IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient)
+        private static async Task<List<MessageLog>> SendKnoxAsync(List<AccountSendMessage> records, string messageType, IPaymentsRepository paymentsRepository, IKnoxGuardClient knoxGuardClient, string? logText = null)
         {
             var logs = new List<MessageLog>();
             foreach (var rec in records)
@@ -219,7 +240,7 @@ namespace Ranalo.Services
                 // is what stopped the restructured reminder job, 2026-11-04).
                 if (string.IsNullOrWhiteSpace(rec.Imei))
                 {
-                    logs.Add(Log(rec.AccountId.ToString(), message, messageType, false, "No IMEI for this Knox phone; not sent."));
+                    logs.Add(Log(rec.AccountId.ToString(), logText ?? message, messageType, false, "No IMEI for this Knox phone; not sent."));
                     continue;
                 }
 
@@ -235,18 +256,19 @@ namespace Ranalo.Services
                     });
 
                     var reply = await response.Content.ReadAsStringAsync();
-                    logs.Add(Log(rec.Imei, message, messageType, response.IsSuccessStatusCode && KnoxReply.Accepted(reply), reply));
+                    logs.Add(Log(rec.Imei, logText ?? message, messageType, response.IsSuccessStatusCode && KnoxReply.Accepted(reply), reply));
                 }
                 catch (Exception ex)
                 {
-                    logs.Add(Log(rec.Imei, message, messageType, false, ex.Message));
+                    logs.Add(Log(rec.Imei, logText ?? message, messageType, false, ex.Message));
                 }
             }
 
             await SaveLogsAsync(logs, paymentsRepository);
+            return logs;
         }
 
-        private async Task SendTranssionAsync(List<AccountSendMessage> records, string messageType, IPaymentsRepository paymentsRepository)
+        private async Task<List<MessageLog>> SendTranssionAsync(List<AccountSendMessage> records, string messageType, IPaymentsRepository paymentsRepository, string? logText = null)
         {
             var logs = new List<MessageLog>();
             foreach (var rec in records)
@@ -269,10 +291,11 @@ namespace Ranalo.Services
 
                 // Logged with its title, like Nuovo and Knox, so a repeat can be spotted (AlreadySent).
                 var logged = string.IsNullOrEmpty(rec.MessageTitle) ? message : new CustomerMessages.Message(rec.MessageTitle, message).Full;
-                logs.Add(Log(rec.AccountId.ToString(), logged, messageType, sent, result));
+                logs.Add(Log(rec.AccountId.ToString(), logText ?? logged, messageType, sent, result));
             }
 
             await SaveLogsAsync(logs, paymentsRepository);
+            return logs;
         }
 
         // Nuovo and Knox have no title: it goes first, as its own line.

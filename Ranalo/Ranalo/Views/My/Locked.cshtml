@@ -1,0 +1,15 @@
+@{ ViewBag.Title = "App locked"; }
+
+<h1>App access locked</h1>
+<div class="note bad">Too many wrong codes were entered, so we've locked app access to keep your account safe. Your phone and payments aren't affected.</div>
+
+<div class="card">
+    <h2>To unlock it</h2>
+    <ol class="steps">
+        <li>Email <a href="mailto:@ViewBag.SupportEmail?subject=Unlock%20my%20Ranalo%20app">@ViewBag.SupportEmail</a></li>
+        <li>Include your account number and your name</li>
+        <li>We'll check it's you and unlock it</li>
+    </ol>
+</div>
+
+<p class="muted">You can still pay as usual: M-Pesa Pay Bill 4090703, with your account number.</p>

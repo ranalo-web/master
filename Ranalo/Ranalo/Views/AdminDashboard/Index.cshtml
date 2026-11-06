@@ -48,6 +48,9 @@
         </div>
     </div><!-- .nk-block-head -->
 
+    @* Everything an admin has to decide, one link each (WaitingForYouViewComponent). *@
+    @await Component.InvokeAsync("WaitingForYou")
+
     <div class="nk-block">
         <div class="row g-gs">
             <div class="col-12 col-lg-5">

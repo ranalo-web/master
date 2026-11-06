@@ -1,0 +1,44 @@
+@model List<MyInboxItem>
+@{
+    ViewBag.Title = "Inbox";
+    ViewBag.Tab = "inbox";
+}
+
+<h1>Inbox</h1>
+<p class="muted">Every message we've sent your Ranalo phone, newest first.</p>
+
+@if (!Model.Any())
+{
+    <div class="card"><p class="muted" style="margin:0;">No messages yet.</p></div>
+}
+@foreach (var m in Model)
+{
+    <details class="card msg">
+        <summary>
+            <span class="kind">@m.Kind</span>
+            <span class="when">@m.SentAtKenya.ToString("d MMM, h:mm tt")</span>
+            <div class="title">@m.Title</div>
+        </summary>
+        <div class="body">
+            @foreach (var line in m.Lines)
+            {
+                <div>@line</div>
+            }
+            @if (!m.Delivered)
+            {
+                <div class="muted" style="margin-top:8px;">This one may not have reached your phone; it's here so you don't miss it.</div>
+            }
+        </div>
+    </details>
+}
+
+<style>
+    .msg summary { list-style: none; cursor: pointer; }
+    .msg summary::-webkit-details-marker { display: none; }
+    .msg .kind { display: inline-block; font-size: 12px; font-weight: 700; color: var(--brand); background: var(--peach);
+        border-radius: 999px; padding: 2px 10px; }
+    .msg .when { float: right; font-size: 13px; color: var(--soft); }
+    .msg .title { font-weight: 700; margin-top: 8px; }
+    .msg .body { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 15px; }
+    .msg .body div { margin: 2px 0; }
+</style>

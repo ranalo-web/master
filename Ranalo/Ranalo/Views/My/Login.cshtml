@@ -1,0 +1,20 @@
+@model MyLoginForm
+@{ ViewBag.Title = "Sign in"; }
+
+<h1>Sign in</h1>
+<p class="muted">Enter your account number. We'll send a code to your Ranalo phone, the one you're paying for.</p>
+
+@if (Model.Message != null)
+{
+    <div class="note bad">@Model.Message</div>
+}
+
+<form method="post" action="/my/login" class="card">
+    @Html.AntiForgeryToken()
+    <label for="AccountNo">Account number</label>
+    <input id="AccountNo" name="AccountNo" value="@Model.AccountNo" inputmode="numeric" autocomplete="username"
+           pattern="[0-9 ]*" placeholder="Your account number" required autofocus />
+    <button class="btn" type="submit">Send my code</button>
+</form>
+
+<p class="muted">Your account number is on your M-Pesa receipts and every Ranalo message. It's the account number you pay to on Pay Bill 4090703.</p>

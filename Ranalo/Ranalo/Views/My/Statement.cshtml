@@ -1,0 +1,42 @@
+@model List<MyStatementLine>
+@{
+    ViewBag.Title = "Statement";
+    ViewBag.Tab = "statement";
+    var account = (MyAccountView)ViewBag.Account;
+    string Ksh(decimal v) => "Ksh " + CustomerMessages.Money(v);
+}
+
+<h1>Statement</h1>
+
+<div class="card">
+    <div class="row"><span>Phone price (with deposit)</span><span>@Ksh(account.Owed)</span></div>
+    <div class="row"><span>Paid so far</span><span>@Ksh(account.TotalPaid)</span></div>
+    <div class="row"><span>Balance left</span><span>@Ksh(account.Balance)</span></div>
+    <div class="row"><span>Payments</span><span>@Model.Count</span></div>
+</div>
+
+<div class="card">
+    @if (!Model.Any())
+    {
+        <p class="muted">No payments yet.</p>
+    }
+    else
+    {
+        <table>
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td>
+                        <div style="font-weight:600;">@p.PaidAt.ToString("d MMM yyyy, h:mm tt")</div>
+                        <div class="muted">@p.MpesaCode</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:700;">@Ksh(p.Amount)</div>
+                        <div class="muted">Balance @Ksh(Math.Max(0, p.BalanceAfter))</div>
+                    </td>
+                </tr>
+            }
+        </table>
+    }
+</div>
+<p class="muted">Times are Kenya time. A payment you've just made can take a few minutes to show.</p>

@@ -226,12 +226,12 @@ namespace Ranalo.Services
         private static string Lines(params string[] lines) => string.Join("\n", lines);
 
         // Names arrive as typed ("JANE", "jane"); show "Jane".
-        private static string Name(string? firstName) =>
+        public static string Name(string? firstName) =>
             string.IsNullOrWhiteSpace(firstName)
                 ? "Customer"
                 : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(firstName.Trim().ToLowerInvariant());
 
-        private static string Money(decimal amount) =>
+        public static string Money(decimal amount) =>
             amount.ToString("#,##0.##", CultureInfo.InvariantCulture);
 
         // "Tue 28 Oct, 12:31 PM"

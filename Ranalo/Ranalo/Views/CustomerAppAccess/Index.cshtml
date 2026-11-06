@@ -1,0 +1,152 @@
+@using Ranalo.Controllers
+@model CustomerAppAccessViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    string Kenya(DateTime? utc) => utc.HasValue ? utc.Value.AddHours(3).ToString("dd MMM yyyy, HH:mm") : "—";
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between flex-wrap" style="gap:10px;">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Customer App</h3>
+                <div class="nk-block-des text-soft">
+                    <p>Customers using the app at my.ranalocredit.com. After @Ranalo.Services.CustomerLoginRules.LockAfterFailures wrong codes an account's app access locks; unlock it here once the customer has emailed in and you've checked it's them.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <form method="post" class="d-flex flex-wrap" style="gap:6px;">
+                    @Html.AntiForgeryToken()
+                    <input name="accountNo" class="form-control" placeholder="Account no" inputmode="numeric" style="width:150px;" required />
+                    <button class="btn btn-primary" type="submit" formaction="/customer-app/preview"><em class="icon ni ni-eye"></em><span>Preview as customer</span></button>
+                    <button class="btn btn-outline-primary" type="submit" formaction="/customer-app/issue-code"
+                            onclick="return confirm('Issue a one-time sign-in code for this account? Only give it to the customer after checking it is them.');">
+                        <em class="icon ni ni-shield-check"></em><span>Issue sign-in code</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.IssuedCode is { } issued)
+    {
+        <div class="card card-bordered border-primary mb-3">
+            <div class="card-inner">
+                <div class="d-flex flex-wrap align-items-center" style="gap:18px;">
+                    <div>
+                        <div class="small text-soft">Sign-in code for account @issued.AccountNo · @issued.Name</div>
+                        <div style="font-size:34px;font-weight:800;letter-spacing:8px;">@issued.Code</div>
+                    </div>
+                    <div class="small" style="max-width:520px;">
+                        Shown <b>once</b>: it isn't stored as typed and can't be shown again. Works for
+                        @((int)Ranalo.Services.CustomerLoginRules.StaffCodeLifetime.TotalMinutes) minutes, one sign-in.
+                        Read it to the customer only after checking it's them. They enter it on the code page:
+                        <a href="/my/code?account=@issued.AccountNo" target="_blank" rel="noopener">/my/code?account=@issued.AccountNo</a>.
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    @if (Model.Message != null)
+    {
+        <div class="alert alert-success">@Model.Message</div>
+    }
+    @if (Model.Error != null)
+    {
+        <div class="alert alert-danger">@Model.Error</div>
+    }
+
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link @(Model.Show == "locked" ? "active" : "")" href="/customer-app?show=locked">
+                Locked <span class="badge @(Model.LockedCount > 0 ? "bg-danger" : "bg-light text-dark") ms-1">@Model.LockedCount</span>
+            </a>
+        </li>
+        <li class="nav-item"><a class="nav-link @(Model.Show == "all" ? "active" : "")" href="/customer-app?show=all">All app users</a></li>
+    </ul>
+
+    <form method="get" action="/customer-app" class="mb-3 d-flex" style="gap:6px;max-width:420px;">
+        <input type="hidden" name="show" value="@Model.Show" />
+        <input name="q" value="@Model.Search" class="form-control" placeholder="Account, name, email or phone" />
+        <button class="btn btn-outline-primary" type="submit">Search</button>
+    </form>
+
+    <div class="card card-bordered">
+        <div class="card-inner p-0">
+            <div class="table-responsive">
+                <table class="table mb-0" style="white-space:nowrap;">
+                    <thead>
+                        <tr>
+                            <th class="wl-th">Account</th>
+                            <th class="wl-th">Customer</th>
+                            <th class="wl-th d-none d-md-table-cell">Email / M-Pesa</th>
+                            <th class="wl-th">App access</th>
+                            <th class="wl-th d-none d-lg-table-cell">Last sign-in</th>
+                            <th class="wl-th"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Rows.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-soft py-4">@(Model.Show == "locked" ? "No locked customers." : "Nobody has used the app yet.")</td></tr>
+                        }
+                        @foreach (var r in Model.Rows)
+                        {
+                            <tr>
+                                <td><a href="/account-details/@r.AccountNo">@r.AccountNo</a></td>
+                                <td>@r.FirstName</td>
+                                <td class="d-none d-md-table-cell small">
+                                    @(r.Email ?? "—")<div class="text-soft">@(r.Phone ?? "—")</div>
+                                </td>
+                                <td>
+                                    @if (r.LockedAtUtc.HasValue)
+                                    {
+                                        <span class="badge bg-danger">Locked</span>
+                                        <div class="small text-soft">@Kenya(r.LockedAtUtc) · @r.LockedReason</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Open</span>
+                                        @if (r.FailedCodes > 0)
+                                        {
+                                            <div class="small text-warning">@r.FailedCodes wrong code@(r.FailedCodes == 1 ? "" : "s") in a row</div>
+                                        }
+                                        @if (r.UnlockedAtUtc.HasValue)
+                                        {
+                                            <div class="small text-soft">Unlocked @Kenya(r.UnlockedAtUtc) by @r.UnlockedBy: @r.UnlockNote</div>
+                                        }
+                                    }
+                                </td>
+                                <td class="d-none d-lg-table-cell small">@Kenya(r.LastLoginUtc)</td>
+                                <td class="text-end">
+                                    @if (r.LockedAtUtc.HasValue)
+                                    {
+                                        <form method="post" action="/customer-app/unlock" class="d-flex justify-content-end" style="gap:6px;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="accountNo" value="@r.AccountNo" />
+                                            <input name="note" class="form-control form-control-sm" placeholder="Why, e.g. emailed, ID checked" style="width:220px;" required />
+                                            <button class="btn btn-sm btn-success" type="submit">Unlock</button>
+                                        </form>
+                                    }
+                                    <form method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="accountNo" value="@r.AccountNo" />
+                                        <button class="btn btn-sm btn-outline-light mt-1" type="submit" formaction="/customer-app/preview" title="See the app as this customer sees it, read-only">Preview</button>
+                                        @if (!r.LockedAtUtc.HasValue)
+                                        {
+                                            <button class="btn btn-sm btn-outline-primary mt-1" type="submit" formaction="/customer-app/issue-code"
+                                                    title="One-time code to read to the customer when their phone messages don't arrive"
+                                                    onclick="return confirm('Issue a one-time sign-in code for @r.AccountNo? Only give it to the customer after checking it is them.');">Issue code</button>
+                                        }
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

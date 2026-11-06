@@ -1,0 +1,163 @@
+@model MyAccountView
+@{
+    ViewBag.Title = "My account";
+    ViewBag.Tab = "home";
+    var missing = ViewBag.Missing as List<string> ?? new();
+    string Ksh(decimal v) => "Ksh " + CustomerMessages.Money(v);
+    string When(DateTime d) => d.ToString("ddd d MMM, h:mm tt");
+}
+
+<h1>Hi @Model.FirstName</h1>
+
+@if (TempData["MySaved"] is string saved)
+{
+    <div class="note good">@saved</div>
+}
+@if (missing.Any())
+{
+    <a class="note warn" style="display:block;text-decoration:none;" href="/my/details">
+        Please add your @string.Join(", ", missing) before paying or viewing your statement. <b>Add now ›</b>
+    </a>
+}
+
+<div class="card device">
+    @if (Model.PhotoUrl != null)
+    {
+        <img src="@Model.PhotoUrl" alt="@Model.DeviceName" loading="lazy" referrerpolicy="no-referrer" />
+    }
+    else
+    {
+        <div class="ph" aria-hidden="true">📱</div>
+    }
+    <div>
+        <div style="font-weight:700;">@Model.DeviceName</div>
+        <div class="muted">Account @Model.AccountNo</div>
+    </div>
+</div>
+
+@if (Model.FullyPaid)
+{
+    <div class="note good"><b>Fully paid, congratulations!</b> Your phone is yours and won't lock again.</div>
+}
+else if (Model.Locked)
+{
+    // Locked: what opens it now, under the auto restructure (pay the new
+    // daily within 24 hours -- RestructureCalculator).
+    <div class="note bad">
+        <b>Your phone is locked.</b>
+        @if (Model.UnlockFor24h is > 0)
+        {
+            <span>Pay <b>@Ksh(Model.UnlockFor24h.Value)</b> today to open it for 24 hours.</span>
+        }
+        else if (Model.UnlockFor24h == 0)
+        {
+            <span>You've paid enough today to open it; it opens within a few minutes once your phone is online.</span>
+        }
+        else
+        {
+            <span>Call us on @ViewBag.HelpLine to agree a payment plan and open it.</span>
+        }
+        @if (Model.Behind > 0)
+        {
+            <div style="margin-top:4px;">@(Model.RestructuredOn.HasValue ? "Behind on your payment plan" : "Behind"): @Ksh(Model.Behind).</div>
+        }
+    </div>
+}
+else if (Model.Behind > 0)
+{
+    <div class="note warn">
+        <b>@(Model.RestructuredOn.HasValue ? $"You're {Ksh(Model.Behind)} behind on your payment plan." : $"You're {Ksh(Model.Behind)} behind.")</b>
+        @if (Model.LocksAtKenya.HasValue)
+        {
+            <span>Your phone locks @When(Model.LocksAtKenya.Value).</span>
+        }
+    </div>
+}
+else
+{
+    <div class="note good">
+        <b>@(Model.RestructuredOn.HasValue ? "You're on track with your payment plan" : "You're up to date")@(Model.Ahead > 0 ? $", {Ksh(Model.Ahead)} ahead" : "").</b>
+        @if (Model.LocksAtKenya.HasValue)
+        {
+            <span>Paid up until @When(Model.LocksAtKenya.Value).</span>
+        }
+    </div>
+}
+
+@if (!Model.FullyPaid)
+{
+    <a class="btn" href="/my/pay">@(Model.Locked && Model.UnlockFor24h is > 0 ? $"Pay {Ksh(Model.UnlockFor24h.Value)} to open my phone" : "Pay now")</a>
+}
+
+@if (Model.RestructuredOn.HasValue && !Model.FullyPaid)
+{
+    // Restructured: the payment plan first; switch to the original contract.
+    <div class="card" style="margin-top:12px;">
+        <h2>Your position</h2>
+        <div class="seg" role="tablist">
+            <button type="button" role="tab" class="on" data-pos="plan" aria-selected="true">Payment plan</button>
+            <button type="button" role="tab" data-pos="original" aria-selected="false">Original contract</button>
+        </div>
+        <div class="pos-pane" data-pane="plan">
+            <div class="muted">Since @Model.RestructuredOn.Value.ToString("d MMM yyyy")</div>
+            <div class="row"><span>Daily</span><span>@Ksh(Model.Daily)</span></div>
+            <div class="row"><span>Due so far</span><span>@Ksh(Model.PlanDue)</span></div>
+            <div class="row"><span>Paid</span><span>@Ksh(Model.PlanPaid)</span></div>
+            <div class="row"><span>@(Model.Behind > 0 ? "Behind" : "Ahead")</span><span>@Ksh(Model.Behind > 0 ? Model.Behind : Model.Ahead)</span></div>
+            <p class="muted" style="margin:10px 0 0;">Your phone stays open while you keep to your payment plan.</p>
+        </div>
+        <div class="pos-pane" data-pane="original" hidden>
+            <div class="muted">As first agreed</div>
+            <div class="row"><span>Daily</span><span>@Ksh(Model.ContractDaily)</span></div>
+            <div class="row"><span>Due so far</span><span>@Ksh(Model.ContractDue)</span></div>
+            <div class="row"><span>Paid</span><span>@Ksh(Model.TotalPaid)</span></div>
+            <div class="row"><span>Behind</span><span>@Ksh(Model.ContractBehind)</span></div>
+            <p class="muted" style="margin:10px 0 0;">What's behind on the original contract is still owed and is part of your balance.</p>
+        </div>
+    </div>
+    <style>
+        .seg { display: flex; background: var(--page); border: 1px solid var(--line); border-radius: 999px; padding: 3px; margin-bottom: 10px; }
+        .seg button { flex: 1; border: 0; background: transparent; border-radius: 999px; padding: 9px 8px; font-size: 15px; font-weight: 600; color: var(--soft); }
+        .seg button.on { background: var(--brand); color: #fff; }
+        .pos-pane .row { font-size: 15px; }
+    </style>
+    <script>
+        document.querySelectorAll('.seg button').forEach(function (b) {
+            b.addEventListener('click', function () {
+                document.querySelectorAll('.seg button').forEach(function (x) {
+                    var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on);
+                });
+                document.querySelectorAll('.pos-pane').forEach(function (p) { p.hidden = p.dataset.pane !== b.dataset.pos; });
+            });
+        });
+    </script>
+}
+
+<div class="card" style="margin-top:12px;">
+    <h2>Paid so far</h2>
+    <div class="big">@Model.PercentPaid%</div>
+    <div class="bar"><div style="width:@Model.PercentPaid%;"></div></div>
+    <div class="muted">@Ksh(Model.TotalPaid) of @Ksh(Model.Owed)</div>
+</div>
+
+<div class="card">
+    <div class="row"><span>Balance left</span><span>@Ksh(Model.Balance)</span></div>
+    @if (Model.RestructuredOn.HasValue && !Model.FullyPaid)
+    {
+        <div class="row"><span>Payment plan since</span><span>@Model.RestructuredOn.Value.ToString("d MMM yyyy")</span></div>
+    }
+    @if (Model.Daily > 0 && !Model.FullyPaid)
+    {
+        <div class="row"><span>@(Model.RestructuredOn.HasValue ? "Plan daily amount" : "Daily amount")</span><span>@Ksh(Model.Daily)</span></div>
+    }
+    @if (Model.LastPaidOn.HasValue)
+    {
+        <div class="row"><span>Last payment</span><span>@Ksh(Model.LastPaidAmount) · @Model.LastPaidOn.Value.ToString("d MMM")</span></div>
+    }
+    @if (Model.ContractEnds.HasValue)
+    {
+        <div class="row"><span>Contract ends</span><span>@Model.ContractEnds.Value.ToString("d MMM yyyy")</span></div>
+    }
+</div>
+
+<a class="btn ghost" href="/my/statement">See my statement</a>
