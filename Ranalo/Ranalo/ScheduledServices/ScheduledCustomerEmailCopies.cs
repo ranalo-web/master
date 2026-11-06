@@ -87,7 +87,7 @@ namespace Ranalo.ScheduledServices
             lines.AddRange(item.Lines);
             lines.Add("");
             lines.Add($"Account {accountNo} · sent {item.SentAtKenya:ddd d MMM yyyy, h:mm tt} (Kenya time)");
-            lines.Add("See all your messages, your statement and pay in the Ranalo app: https://my.ranalocredit.com");
+            lines.Add("See all your notifications, your statement and pay in the Ranalo app: https://my.ranalocredit.com");
             lines.Add("");
             lines.Add($"This is an automatic message; replies aren't read. For help call {CustomerMessages.HelpLine} or email {supportEmail}.");
             return ($"Ranalo: {item.Title}", string.Join("\n", lines));

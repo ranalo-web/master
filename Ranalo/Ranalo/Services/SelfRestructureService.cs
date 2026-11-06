@@ -52,6 +52,7 @@ namespace Ranalo.Services
                 Behind = view.Behind,
                 DailyAll = view.ContractDaily,
                 UsedBefore = contractId != null && await _plans.HasUsedAsync(contractId.Value),
+                OnPlan = view.RestructuredOn.HasValue,
                 LostOrStolen = (await _lostStolen.GetLockedAccountNosAsync()).Contains(view.AccountNo),
                 InRecovery = await _plans.InRecoveryAsync(view.AccountNo),
             };
@@ -107,7 +108,10 @@ namespace Ranalo.Services
 
                         case SelfRestructureRules.PendingOutcome.Start:
                             // Still the same open contract, and the phone not reported lost or stolen.
-                            if (await _plans.GetOpenContractIdAsync(plan.AccountNo) != plan.ContractId || lostStolen.Contains(plan.AccountNo))
+                            // Still the same open contract, not reported lost or stolen, and
+                            // no plan agreed with staff since they chose (never overwritten).
+                            if (await _plans.GetOpenContractIdAsync(plan.AccountNo) != plan.ContractId || lostStolen.Contains(plan.AccountNo)
+                                || await _plans.HasPlanAsync(plan.AccountNo))
                             {
                                 await _plans.SetStatusAsync(plan.Id, SelfRestructureStatus.Pending, SelfRestructureStatus.Cancelled, "No longer allowed when the payment came.");
                                 break;

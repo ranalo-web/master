@@ -1,12 +1,12 @@
 @model List<MyInboxItem>
 @{
-    ViewBag.Title = "Inbox";
+    ViewBag.Title = "Notifications";
     ViewBag.Tab = "inbox";
     // New since the Inbox was last opened (Kenya time, as the messages are shown).
     var seenKenya = ((ViewBag.SeenBefore as DateTime?) ?? DateTime.UtcNow.AddDays(-7)).AddHours(3);
 }
 
-<h1>Inbox</h1>
+<h1>Notifications</h1>
 <p class="muted">Every message we've sent your Ranalo phone, newest first.</p>
 
 @if (!Model.Any())

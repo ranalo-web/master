@@ -4,7 +4,7 @@ namespace Ranalo.Services
 {
     // Self-service restructure in the customer app (agreed 2026-11-06).
     //
-    // A customer who is behind can put themselves on a plan once per
+    // A customer who is behind and not already on a plan can put themselves on a plan once per
     // contract; after that they have to call. The plans offered are ours,
     // never a number the customer types:
     //   Standard -- the original daily (all-in), until paid: the longest.
@@ -35,6 +35,9 @@ namespace Ranalo.Services
             public decimal Behind { get; set; }
             public decimal DailyAll { get; set; }
             public bool UsedBefore { get; set; }
+            // Already on a plan (agreed with staff, or one they chose): only
+            // a person changes it (2026-11-06).
+            public bool OnPlan { get; set; }
             public bool LostOrStolen { get; set; }
             public bool InRecovery { get; set; }
         }
@@ -45,6 +48,7 @@ namespace Ranalo.Services
             if (!f.HasOpenContract) return "There's no open contract on this account.";
             if (f.FullyPaid || f.Balance <= 0) return "Your phone is fully paid.";
             if (f.UsedBefore) return "You've already set up a payment plan yourself on this contract. Call us to agree a new one.";
+            if (f.OnPlan) return "You're already on a payment plan. To change it, call us.";
             if (f.LostOrStolen || f.InRecovery) return "We can't set up a plan in the app for this account. Call us.";
             if (f.DailyAll <= 0) return "We can't work out a plan for this account in the app. Call us.";
             if (f.Behind <= 0) return "You're not behind, so there's nothing to fix.";

@@ -44,6 +44,7 @@ namespace Ranolo.Web.Tests
         [TestCase("recovery")]
         [TestCase("daily")]
         [TestCase("behind")]
+        [TestCase("onplan")]
         public void Each_gap_is_closed(string gap)
         {
             var f = Facts();
@@ -56,11 +57,20 @@ namespace Ranolo.Web.Tests
                 case "recovery": f.InRecovery = true; break;
                 case "daily": f.DailyAll = 0m; break;
                 case "behind": f.Behind = 0m; break;
+                case "onplan": f.OnPlan = true; break;
             }
 
             Assert.That(SelfRestructureRules.Refusal(f), Is.Not.Null);
             Assert.That(SelfRestructureRules.Options(f), Is.Empty);
             Assert.That(SelfRestructureRules.Find(f, "Standard"), Is.Null);
+        }
+
+        [Test]
+        public void Already_on_a_plan_they_have_to_call()
+        {
+            var f = Facts();
+            f.OnPlan = true;
+            Assert.That(SelfRestructureRules.Refusal(f), Is.EqualTo("You're already on a payment plan. To change it, call us."));
         }
 
         [Test]

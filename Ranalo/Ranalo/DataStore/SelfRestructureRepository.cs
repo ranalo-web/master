@@ -13,6 +13,7 @@ namespace Ranalo.DataStore
         Task<int?> GetOpenContractIdAsync(long accountNo);
         Task<bool> HasUsedAsync(int contractId);
         Task<bool> InRecoveryAsync(long accountNo);
+        Task<bool> HasPlanAsync(long accountNo);
         Task<SelfRestructure?> GetLatestAsync(long accountNo);
         Task<bool> AddPendingAsync(SelfRestructure plan);
         Task<List<SelfRestructure>> GetPendingAsync();
@@ -50,6 +51,11 @@ namespace Ranalo.DataStore
                 SELECT CASE WHEN EXISTS (SELECT 1 FROM SelfRestructures
                     WHERE ContractId = @ContractId AND Status IN ('Active', 'Reverted')) THEN 1 ELSE 0 END",
                 new { ContractId = contractId });
+
+        // On a plan already (RestructuredRecords), however it was agreed.
+        public async Task<bool> HasPlanAsync(long accountNo) =>
+            await _db.ExecuteScalarAsync<bool>(
+                "SELECT CASE WHEN EXISTS (SELECT 1 FROM RestructuredRecords WHERE AccountNo = @AccountNo) THEN 1 ELSE 0 END", new { AccountNo = accountNo });
 
         // An open recovery: the phone's lock is being sorted out by staff.
         public async Task<bool> InRecoveryAsync(long accountNo) =>
