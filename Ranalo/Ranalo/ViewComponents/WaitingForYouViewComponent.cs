@@ -16,6 +16,8 @@ namespace Ranalo.ViewComponents
         {
             ("Write-offs to review", "Proposed by the nightly check; approve or hold each one.", "/write-offs", "ni-file-minus",
                 "SELECT COUNT(*) FROM WriteOffs WHERE Status = 'Pending'"),
+            ("Self-service plans", "Customers put themselves on a plan; check within 24 hours.", "/self-restructures", "ni-repeat",
+                "SELECT COUNT(*) FROM SelfRestructures WHERE Status = 'Active' AND ReviewedAtUtc IS NULL"),
             ("Phones to release", "Fully paid: approve removing each from its lock provider.", "/pending-tasks", "ni-check-round-cut",
                 "SELECT COUNT(*) FROM DeviceRemovalTasks WHERE Status IN ('Pending', 'Failed')"),
             ("Collector flags", "Raised by collectors on their cases.", "/collections-admin?tab=flags", "ni-flag",

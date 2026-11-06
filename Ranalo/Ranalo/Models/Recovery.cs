@@ -40,7 +40,11 @@ namespace Ranalo.Models
         // phone with an open contract.
         public const string LockLost = "Lock lost";
 
-        public static readonly string[] All = { "Fraud", "Collections", LockLost, "Other" };
+        // The customer owes on other phones or devices: this one is locked
+        // with them, even if it is paid for (2026-11-06).
+        public const string LargeExposure = "Large exposure";
+
+        public static readonly string[] All = { "Fraud", "Collections", LargeExposure, LockLost, "Other" };
     }
 
     // A phone the app locks through Knox (2) or Transsion (3), with an open

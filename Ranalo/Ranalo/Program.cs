@@ -113,6 +113,9 @@ builder.Services.AddScoped<IStkRequestRepository, StkRequestRepository>();
 //to the financed phone. Kept apart from the staff login (LoginSession).
 builder.Services.AddScoped<ICustomerAccessRepository, CustomerAccessRepository>();
 builder.Services.AddScoped<ICustomerSession, CustomerSession>();
+//Self-service restructure from the app (SelfRestructureRules).
+builder.Services.AddScoped<ISelfRestructureRepository, SelfRestructureRepository>();
+builder.Services.AddScoped<ISelfRestructureService, SelfRestructureService>();
 //System email from the no-reply address: off until Email is set up (EmailSettings).
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
@@ -239,6 +242,7 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService<ScheduledDailyPaymentSummary>();
         builder.Services.AddHostedService<ScheduledMilestoneMessages>();
         builder.Services.AddHostedService<ScheduledCustomerEmailCopies>();
+        builder.Services.AddHostedService<ScheduledSelfRestructures>();
 
         // Runs nightly at 4 AM UTC alongside the other scheduled jobs above
         // (see the class comment for exactly which snapshot fields it

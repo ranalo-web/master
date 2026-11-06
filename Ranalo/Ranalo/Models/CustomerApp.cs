@@ -17,6 +17,40 @@ namespace Ranalo.Models
         public bool Locked => LockedAtUtc.HasValue;
     }
 
+    // Database/Customers/004: a plan a customer chose in the app.
+    public class SelfRestructure
+    {
+        public int Id { get; set; }
+        public long AccountNo { get; set; }
+        public int ContractId { get; set; }
+        public string Status { get; set; } = SelfRestructureStatus.Pending;
+        public string OptionName { get; set; } = "";
+        public decimal Daily { get; set; }
+        public decimal BalanceAtChoice { get; set; }
+        public decimal BehindAtChoice { get; set; }
+        public DateTime ChosenAtUtc { get; set; }
+        public DateTime ExpiresAtUtc { get; set; }
+        public DateTime? StartedAtUtc { get; set; }
+        public bool PrevHadPlan { get; set; }
+        public DateTime? PrevDateAgreed { get; set; }
+        public decimal? PrevAmountRes { get; set; }
+        public DateTime? ReviewedAtUtc { get; set; }
+        public string? ReviewedBy { get; set; }
+        public DateTime? RevertedAtUtc { get; set; }
+        public string? RevertedBy { get; set; }
+        public string? Note { get; set; }
+        public string? FirstName { get; set; }
+    }
+
+    public static class SelfRestructureStatus
+    {
+        public const string Pending = "Pending";
+        public const string Expired = "Expired";
+        public const string Active = "Active";
+        public const string Reverted = "Reverted";
+        public const string Cancelled = "Cancelled";
+    }
+
     // A row on the staff Customer App page.
     public class CustomerAccessRow
     {

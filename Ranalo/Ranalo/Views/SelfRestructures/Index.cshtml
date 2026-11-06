@@ -1,0 +1,95 @@
+@using Ranalo.Models
+@model List<SelfRestructure>
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    var show = (string)ViewBag.Show;
+    string Kenya(DateTime? utc) => utc.HasValue ? utc.Value.AddHours(3).ToString("dd MMM yyyy, HH:mm") : "—";
+    string Ksh(decimal? v) => v.HasValue ? "KES " + v.Value.ToString("N2") : "—";
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <h3 class="nk-block-title page-title">Self-service plans</h3>
+        <div class="nk-block-des text-soft">
+            <p>Payment plans customers set up themselves in the app: our Standard (original daily, until paid) or Faster (1.5x) plan, started by paying the first day. Review each within 24 hours. Undo puts the previous plan back; it still counts as the customer's one plan.</p>
+        </div>
+    </div>
+
+    @if (ViewBag.Message is string message) { <div class="alert alert-success">@message</div> }
+    @if (ViewBag.Error is string error) { <div class="alert alert-danger">@error</div> }
+
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item"><a class="nav-link @(show == "review" ? "active" : "")" href="/self-restructures">To review</a></li>
+        <li class="nav-item"><a class="nav-link @(show == "all" ? "active" : "")" href="/self-restructures?show=all">All</a></li>
+    </ul>
+
+    <div class="card card-bordered">
+        <div class="card-inner p-0">
+            <div class="table-responsive">
+                <table class="table mb-0" style="white-space:nowrap;">
+                    <thead>
+                        <tr>
+                            <th class="wl-th">Account</th>
+                            <th class="wl-th">Plan</th>
+                            <th class="wl-th">When chosen</th>
+                            <th class="wl-th">Behind / balance then</th>
+                            <th class="wl-th">Plan before</th>
+                            <th class="wl-th">Status</th>
+                            <th class="wl-th"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr><td colspan="7" class="text-center text-soft py-4">@(show == "review" ? "Nothing to review." : "No self-service plans yet.")</td></tr>
+                        }
+                        @foreach (var p in Model)
+                        {
+                            <tr>
+                                <td><a href="/account-details/@p.AccountNo">@p.AccountNo</a><div class="small text-soft">@p.FirstName</div></td>
+                                <td>@p.OptionName<div class="small text-soft">@Ksh(p.Daily) a day</div></td>
+                                <td>@Kenya(p.ChosenAtUtc)<div class="small text-soft">Started @Kenya(p.StartedAtUtc)</div></td>
+                                <td>@Ksh(p.BehindAtChoice)<div class="small text-soft">of @Ksh(p.BalanceAtChoice)</div></td>
+                                <td>@(p.PrevHadPlan ? $"{Ksh(p.PrevAmountRes)} a day from {p.PrevDateAgreed:dd MMM yyyy}" : "None")</td>
+                                <td>
+                                    <span class="badge @(p.Status switch { "Active" => "bg-success", "Pending" => "bg-warning", "Reverted" => "bg-danger", _ => "bg-light text-dark" })">@p.Status</span>
+                                    @if (p.ReviewedAtUtc.HasValue)
+                                    {
+                                        <div class="small text-soft">Reviewed @Kenya(p.ReviewedAtUtc) by @p.ReviewedBy</div>
+                                    }
+                                    @if (p.RevertedAtUtc.HasValue)
+                                    {
+                                        <div class="small text-soft">Undone by @p.RevertedBy: @p.Note</div>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (p.Status == "Active" && !p.ReviewedAtUtc.HasValue)
+                                    {
+                                        <form method="post" action="/self-restructures/reviewed" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@p.Id" />
+                                            <button class="btn btn-sm btn-success" type="submit">Looks fine</button>
+                                        </form>
+                                    }
+                                    @if (p.Status == "Active")
+                                    {
+                                        <form method="post" action="/self-restructures/undo" class="d-flex justify-content-end mt-1" style="gap:6px;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@p.Id" />
+                                            <input type="hidden" name="accountNo" value="@p.AccountNo" />
+                                            <input name="note" class="form-control form-control-sm" placeholder="Why undo" style="width:170px;" required />
+                                            <button class="btn btn-sm btn-outline-danger" type="submit"
+                                                    onclick="return confirm('Undo this plan and put the previous one back?');">Undo</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -28,12 +28,15 @@ namespace Ranalo.Controllers
         private readonly IApplicationReportService _reports;
         private readonly IMpesaStkClient _stk;
         private readonly ICompletedContractRepository _completed;
+        private readonly ISelfRestructureService _selfPlans;
+        private readonly ISelfRestructureRepository _selfPlanStore;
         private readonly IConfiguration _config;
         private readonly ILogger<MyController> _logger;
 
         public MyController(ICustomerAccessRepository access, ICustomerSession session, IPaymentReminderService messages,
             IPaymentsRepository paymentsRepository, IKnoxGuardClient knox, IApplicationReportService reports,
-            IMpesaStkClient stk, ICompletedContractRepository completed, IConfiguration config, ILogger<MyController> logger)
+            IMpesaStkClient stk, ICompletedContractRepository completed, ISelfRestructureService selfPlans,
+            ISelfRestructureRepository selfPlanStore, IConfiguration config, ILogger<MyController> logger)
         {
             _access = access;
             _session = session;
@@ -43,6 +46,8 @@ namespace Ranalo.Controllers
             _reports = reports;
             _stk = stk;
             _completed = completed;
+            _selfPlans = selfPlans;
+            _selfPlanStore = selfPlanStore;
             _config = config;
             _logger = logger;
         }
@@ -172,10 +177,59 @@ namespace Ranalo.Controllers
             var (access, redirect) = await SignedInAsync();
             if (redirect != null) return redirect;
 
+            // A plan they chose and have just paid for starts now, not at the next job run.
+            if (!Previewing) await _selfPlans.ProcessPendingAsync(access!.AccountNo);
+
             var view = await AccountAsync(access!.AccountNo);
             if (view == null) return View("NoContract");
             ViewBag.Missing = CustomerAppRules.Missing(access);
+            ViewBag.SelfPlan = await _selfPlanStore.GetLatestAsync(access.AccountNo);
+            ViewBag.CanSelfRestructure = SelfRestructureRules.Refusal(await _selfPlans.FactsAsync(view)) == null;
             return View(view);
+        }
+
+        // "Get back on track": choose one of our plans; it starts once the
+        // first day is paid (SelfRestructureRules).
+        [HttpGet("my/plan")]
+        public async Task<IActionResult> Plan()
+        {
+            var (access, redirect) = await SignedInAsync(needsDetails: true);
+            if (redirect != null) return redirect;
+            if (!Previewing) await _selfPlans.ProcessPendingAsync(access!.AccountNo);
+
+            var view = await AccountAsync(access!.AccountNo);
+            if (view == null) return View("NoContract");
+            return View(await PlanFormAsync(view, TempData["MyPlanMessage"] as string));
+        }
+
+        [HttpPost("my/plan")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Plan(string? option)
+        {
+            var (access, redirect) = await SignedInAsync(needsDetails: true);
+            if (redirect != null) return redirect;
+
+            var view = await AccountAsync(access!.AccountNo);
+            if (view == null) return View("NoContract");
+            if (Previewing) return View(await PlanFormAsync(view, "Staff preview: no plan is set up from here."));
+
+            var (ok, message) = await _selfPlans.ChooseAsync(view, option);
+            if (!ok) return View(await PlanFormAsync(view, message));
+            TempData["MyPlanMessage"] = message;
+            return RedirectToAction(nameof(Plan));
+        }
+
+        private async Task<MyPlanForm> PlanFormAsync(MyAccountView view, string? message)
+        {
+            var facts = await _selfPlans.FactsAsync(view);
+            return new MyPlanForm
+            {
+                Account = view,
+                Latest = await _selfPlanStore.GetLatestAsync(view.AccountNo),
+                Refusal = SelfRestructureRules.Refusal(facts),
+                Options = SelfRestructureRules.Options(facts),
+                Message = message,
+            };
         }
 
         [HttpGet("my/statement")]
@@ -210,13 +264,16 @@ namespace Ranalo.Controllers
             if (redirect != null) return redirect;
 
             var view = await AccountAsync(access!.AccountNo);
+            // A chosen plan waiting for its first day: that amount starts it.
+            var pendingPlan = await _selfPlanStore.GetLatestAsync(access.AccountNo) is { Status: SelfRestructureStatus.Pending } p ? p : null;
             if (view == null) return View("NoContract");
             return View(new MyPayForm
             {
                 Account = view,
                 Phone = access.Phone,
                 // Locked: what opens it for 24 hours; behind: catch up; else a day.
-                Amount = view.Locked && view.UnlockFor24h is > 0 ? view.UnlockFor24h.Value
+                Amount = pendingPlan != null ? pendingPlan.Daily
+                    : view.Locked && view.UnlockFor24h is > 0 ? view.UnlockFor24h.Value
                     : view.Behind > 0 ? Math.Ceiling(view.Behind) : Math.Ceiling(view.Daily),
                 CanPrompt = _stk.Ready,
             });
@@ -432,6 +489,16 @@ namespace Ranalo.Controllers
         public bool CanPrompt { get; set; }
         public bool Sent { get; set; }
         public string? Message { get; set; }
+    }
+
+    public class MyPlanForm
+    {
+        public MyAccountView Account { get; set; } = new();
+        public SelfRestructure? Latest { get; set; }
+        public string? Refusal { get; set; }
+        public List<SelfRestructureRules.Option> Options { get; set; } = new();
+        public string? Message { get; set; }
+        public bool Waiting => Latest?.Status == SelfRestructureStatus.Pending;
     }
 
     public class MyDetailsForm

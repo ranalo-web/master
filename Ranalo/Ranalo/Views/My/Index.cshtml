@@ -89,6 +89,17 @@ else
     <a class="btn" href="/my/pay">@(Model.Locked && Model.UnlockFor24h is > 0 ? $"Pay {Ksh(Model.UnlockFor24h.Value)} to open my phone" : "Pay now")</a>
 }
 
+@if (ViewBag.SelfPlan is SelfRestructure { Status: "Pending" } waiting)
+{
+    <a class="note warn" style="display:block;text-decoration:none;margin-top:12px;" href="/my/plan">
+        <b>Your plan is waiting:</b> pay Ksh @CustomerMessages.Money(waiting.Daily) by @waiting.ExpiresAtUtc.AddHours(3).ToString("ddd h:mm tt") to start it. ›
+    </a>
+}
+else if (ViewBag.CanSelfRestructure is true)
+{
+    <a class="btn ghost" href="/my/plan">Get back on track with a payment plan</a>
+}
+
 @if (Model.RestructuredOn.HasValue && !Model.FullyPaid)
 {
     // Restructured: the payment plan first; switch to the original contract.

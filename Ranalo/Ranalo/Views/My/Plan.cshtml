@@ -1,0 +1,70 @@
+@model MyPlanForm
+@{
+    ViewBag.Title = "Get back on track";
+    ViewBag.Tab = "home";
+    string Ksh(decimal v) => "Ksh " + CustomerMessages.Money(v);
+    var latest = Model.Latest;
+}
+
+<h1>Get back on track</h1>
+
+@if (Model.Message != null)
+{
+    <div class="note @(Model.Waiting || latest?.Status == SelfRestructureStatus.Active ? "good" : "bad")">@Model.Message</div>
+}
+
+@if (Model.Waiting)
+{
+    <div class="card">
+        <h2>Your plan is waiting for its first payment</h2>
+        <div class="row"><span>Plan</span><span>@latest!.OptionName, @Ksh(latest.Daily) a day</span></div>
+        <div class="row"><span>Pay by</span><span>@latest.ExpiresAtUtc.AddHours(3).ToString("ddd d MMM, h:mm tt")</span></div>
+        <p class="muted" style="margin:10px 0 0;">Pay @Ksh(latest.Daily) to start it. Your phone opens soon after, and stays open while you keep to the plan. If it isn't paid in time, the plan is cancelled and you can choose again.</p>
+        <a class="btn" href="/my/pay">Pay @Ksh(latest.Daily) now</a>
+    </div>
+}
+else if (latest?.Status == SelfRestructureStatus.Active && Model.Refusal != null)
+{
+    <div class="note good">You're on the plan you chose on @latest.ChosenAtUtc.AddHours(3).ToString("d MMM yyyy"): @Ksh(latest.Daily) a day.</div>
+    <p class="muted">You can set up a plan yourself once per contract. To change it, call us on @ViewBag.HelpLine.</p>
+}
+else if (Model.Refusal != null)
+{
+    <div class="card"><p style="margin:0;">@Model.Refusal</p></div>
+    @if (Model.Refusal.Contains("Call us"))
+    {
+        <a class="btn" href="tel:@(((string)ViewBag.HelpLine).Replace(" ", ""))">Call @ViewBag.HelpLine</a>
+    }
+}
+else
+{
+    <p>You're <b>@Ksh(Model.Account.Behind)</b> behind. Choose a plan to pay your balance of <b>@Ksh(Model.Account.Balance)</b> a day at a time.</p>
+
+    <form method="post" action="/my/plan">
+        @Html.AntiForgeryToken()
+        @foreach (var o in Model.Options)
+        {
+            <label class="card plan-opt">
+                <input type="radio" name="option" value="@o.Name" @(o == Model.Options[0] ? "checked" : "") />
+                <span>
+                    <b>@o.Name: @Ksh(o.Daily) a day</b>
+                    <span class="muted" style="display:block;">@o.Summary.</span>
+                </span>
+            </label>
+        }
+        <div class="card">
+            <h2>How it works</h2>
+            <ol class="steps">
+                <li>Choose a plan and pay the first day within 24 hours.</li>
+                <li>Your phone opens, and stays open while you pay each day.</li>
+                <li>Miss days and it locks again until you catch up.</li>
+                <li>You can do this <b>once</b>. After that, call us to agree a new plan.</li>
+            </ol>
+        </div>
+        <button class="btn" type="submit">Choose this plan</button>
+    </form>
+    <style>
+        .plan-opt { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+        .plan-opt input { width: 22px; height: 22px; margin-top: 2px; flex: none; }
+    </style>
+}
