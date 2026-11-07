@@ -156,6 +156,11 @@ namespace Ranalo.Controllers
         [HttpGet("my/locked")]
         public IActionResult Locked() => View();
 
+        // Public (no sign-in): the Play Store links to it, and to its
+        // "delete your app access" section, from the app's listing.
+        [HttpGet("my/privacy")]
+        public IActionResult Privacy() => View();
+
         [HttpPost("my/logout")]
         [ValidateAntiForgeryToken]
         public IActionResult Logout()
