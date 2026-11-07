@@ -1,0 +1,121 @@
+@model Ranalo.Controllers.AnnouncementsController.AnnouncementsPage
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    string Kenya(DateTime? utc) => utc.HasValue ? utc.Value.AddHours(3).ToString("dd MMM yyyy, HH:mm") : "—";
+    var p = Model.Progress;
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <h3 class="nk-block-title page-title">Announcements</h3>
+        <div class="nk-block-des text-soft">
+            <p>One message to every customer, through each phone's own lock service (Nuovo, Knox, Transsion). It also appears in the app's Notifications. TVs are left out, and nobody gets the same announcement twice. Use <b>{name}</b> and <b>{account}</b> for the customer's first name and account number.</p>
+        </div>
+    </div>
+
+    @if (ViewBag.Message is string message) { <div class="alert alert-success">@message</div> }
+    @if (ViewBag.Error is string error) { <div class="alert alert-danger">@error</div> }
+
+    <div id="ann-progress" class="alert @(p.Running ? "alert-info" : "alert-light") @(p.MessageType == null ? "d-none" : "")">
+        <b id="ann-state">@(p.Running ? "Sending…" : p.Error != null ? "Stopped" : "Last send finished")</b>
+        <span id="ann-count">@p.Done of @p.Total phones</span>
+        <span class="text-soft small">· started @Kenya(p.StartedUtc) by @p.StartedBy@(p.FinishedUtc.HasValue ? $" · finished {Kenya(p.FinishedUtc)}" : "")</span>
+        @if (p.Error != null) { <div class="text-danger small">@p.Error</div> }
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="card card-bordered">
+                <div class="card-inner">
+                    <form method="post" id="ann-form">
+                        @Html.AntiForgeryToken()
+                        <div class="form-group">
+                            <label class="form-label" for="title">Title</label>
+                            <input class="form-control" id="title" name="title" value="@Model.Title" maxlength="80" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="body">Message</label>
+                            <textarea class="form-control" id="body" name="body" rows="9" required>@Model.Body</textarea>
+                            <div class="form-note">Avoid &lt; &gt; | ` ^ \ ~ = (Knox refuses them). 500 characters at most.</div>
+                        </div>
+
+                        <div class="d-flex align-items-end flex-wrap mt-3" style="gap:8px;">
+                            <div>
+                                <label class="form-label" for="accountNo">Test on one account</label>
+                                <input class="form-control" id="accountNo" name="accountNo" inputmode="numeric" placeholder="Account number" style="width:180px;" />
+                            </div>
+                            <button class="btn btn-outline-primary" type="submit" formaction="/announcements/test">Send test</button>
+                        </div>
+
+                        <hr />
+                        <p class="mb-2">Send to <b>@Model.Counts.Total</b> phones: @Model.Counts.Nuovo Nuovo, @Model.Counts.Knox Knox, @Model.Counts.Transsion Transsion. @Model.Counts.TvsLeftOut TVs left out.</p>
+                        <div class="d-flex align-items-end flex-wrap" style="gap:8px;">
+                            <div>
+                                <label class="form-label" for="confirm">Type SEND to confirm</label>
+                                <input class="form-control" id="confirm" name="confirm" autocomplete="off" style="width:180px;" />
+                            </div>
+                            <button class="btn btn-primary" type="submit" formaction="/announcements/send" @(p.Running ? "disabled" : "")
+                                    onclick="return confirm('Send this message to @Model.Counts.Total customers?');">Send to everyone</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card card-bordered">
+                <div class="card-inner">
+                    <h6 class="title">Preview (Jane, account 1234567)</h6>
+                    <pre style="white-space:pre-wrap;font-family:inherit;margin:0;">@Model.Preview</pre>
+                    <div class="form-note mt-2">Preview of the saved text. Knox shows it on one line, joined with " - ".</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h5 class="mt-4">Sent before</h5>
+    <div class="card card-bordered">
+        <div class="card-inner p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr><th class="wl-th">When</th><th class="wl-th">Sent</th><th class="wl-th">Failed</th><th class="wl-th">Message</th></tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.History.Any())
+                        {
+                            <tr><td colspan="4" class="text-center text-soft py-4">No announcements yet.</td></tr>
+                        }
+                        @foreach (var h in Model.History)
+                        {
+                            <tr>
+                                <td style="white-space:nowrap;">@Kenya(h.First)@(h.MessageType == Ranalo.Services.AnnouncementRules.TestType ? " (tests)" : "")</td>
+                                <td>@h.Sent</td>
+                                <td>@h.Failed</td>
+                                <td class="small">@h.Sample</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (p.Running)
+{
+    <script>
+        (function poll() {
+            setTimeout(function () {
+                fetch('/announcements/progress', { credentials: 'same-origin' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (s) {
+                        document.getElementById('ann-count').textContent = s.done + ' of ' + s.total + ' phones';
+                        if (s.running) poll(); else location.reload();
+                    })
+                    .catch(poll);
+            }, 4000);
+        })();
+    </script>
+}

@@ -124,6 +124,7 @@ namespace Ranalo.Services
                     "FullyPaid" => "Fully paid",
                     "Welcome" => "Welcome",
                     "PlanStarted" => "Payment plan",
+                    var t when AnnouncementRules.IsAnnouncement(t) => "News",
                     _ => "Message",
                 },
                 title,
