@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.ranalocredit.app",
+        "sha256_cert_fingerprints": ["6D:22:4D:FA:71:B0:3D:45:D7:EA:C2:45:D0:FD:17:4E:FE:44:12:F5:3B:6C:57:2A:3F:CB:83:D0:AD:83:FC:CA"]
+      }
+    }]
