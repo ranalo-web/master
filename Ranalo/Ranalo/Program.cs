@@ -186,6 +186,8 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IDeviceLockRepository, DeviceLockRepository>();
 builder.Services.AddScoped<IDepositSafeguardsRepository, DepositSafeguardsRepository>();
 builder.Services.AddScoped<IMilestoneMessagesRepository, MilestoneMessagesRepository>();
+builder.Services.AddScoped<IAnnouncementsRepository, AnnouncementsRepository>();
+builder.Services.AddSingleton<IAnnouncementSender, AnnouncementSender>();
 builder.Services.AddScoped<IDeviceRemovalTaskRepository, DeviceRemovalTaskRepository>();
 builder.Services.AddScoped<IEnrolmentCheckService, EnrolmentCheckService>();
 builder.Services.AddScoped<ITranssionEnrolmentWorkflow, TranssionEnrolmentWorkflow>();
