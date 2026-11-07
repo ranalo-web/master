@@ -1,6 +1,6 @@
 {
-  "name": "Ranalo",
-  "short_name": "Ranalo",
+  "name": "Ranalo Credit",
+  "short_name": "Ranalo Credit",
   "description": "Your Ranalo Credit account: what you've paid, your balance, your notifications, and paying with M-Pesa.",
   "id": "/my/",
   "start_url": "/my/?source=app",
