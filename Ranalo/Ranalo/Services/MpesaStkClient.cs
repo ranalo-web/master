@@ -13,9 +13,11 @@ namespace Ranalo.Services
     {
         bool Ready { get; }
 
-        // Sends the PIN prompt for paybill 4090703, account = accountNo.
-        // The payment itself arrives later on the callback.
-        Task<StkStart> RequestAsync(long accountNo, string phone, decimal amount);
+        // Sends the PIN prompt for paybill 4090703, account = accountNo,
+        // within StkRules' limits. The payment itself arrives later on the
+        // callback. savedPhone = the customer's own M-Pesa number; balance =
+        // what's left to pay (the most one prompt may ask for).
+        Task<StkStart> RequestAsync(long accountNo, string phone, decimal amount, string? savedPhone = null, decimal? balance = null);
     }
 
     // M-Pesa Express (STK push) via Safaricom Daraja. See SafaricomStkSettings.
@@ -41,7 +43,7 @@ namespace Ranalo.Services
 
         public bool Ready => _settings.Ready;
 
-        public async Task<StkStart> RequestAsync(long accountNo, string phone, decimal amount)
+        public async Task<StkStart> RequestAsync(long accountNo, string phone, decimal amount, string? savedPhone = null, decimal? balance = null)
         {
             if (!Ready) return new(false, "Paying from the app isn't switched on yet. Use Pay Bill 4090703.");
 
@@ -50,6 +52,15 @@ namespace Ranalo.Services
 
             var whole = StkRules.Amount(amount);
             if (whole == null) return new(false, "Enter an amount of at least Ksh 1.");
+
+            var now = DateTime.UtcNow;
+            var refusal = StkRules.Refusal(accountNo, msisdn, savedPhone, whole.Value, balance,
+                await _requests.RecentAsync(accountNo, msisdn, now.AddDays(-1)), now);
+            if (refusal != null)
+            {
+                _logger.LogInformation("STK push for {Account} not sent (limits): {Refusal}", accountNo, refusal);
+                return new(false, refusal);
+            }
 
             var timestamp = StkRules.Timestamp(DateTime.UtcNow);
             var body = new

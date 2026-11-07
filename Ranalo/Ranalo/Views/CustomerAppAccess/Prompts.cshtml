@@ -1,0 +1,71 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model List<StkRequest>
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    string Kenya(DateTime? utc) => utc.HasValue ? utc.Value.AddHours(3).ToString("dd MMM yyyy, HH:mm") : "—";
+    // 254712345678 -> 0712 *** 678: enough to recognise, not the whole number.
+    string Masked(string? p) => string.IsNullOrEmpty(p) || p.Length < 12 ? (p ?? "—") : "0" + p.Substring(3, 3) + " *** " + p.Substring(9);
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <h3 class="nk-block-title page-title">M-Pesa prompts</h3>
+        <div class="nk-block-des text-soft">
+            <p>Every "enter your M-Pesa PIN" prompt sent from the customer app, newest first. Limits per account: @StkRules.MaxPerHour an hour, @StkRules.MaxPerDay a day,
+               one a minute, at most @StkRules.MaxOtherNumbersPerDay numbers other than the customer's own a day, and no more than the balance.
+               One number can be prompted by at most @StkRules.MaxAccountsPerNumberPerDay accounts a day.
+               "Sent" for more than a few minutes = Safaricom's answer hasn't arrived.</p>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item"><a class="nav-link" href="/customer-app?show=locked">Locked</a></li>
+        <li class="nav-item"><a class="nav-link" href="/customer-app?show=all">All app users</a></li>
+        <li class="nav-item"><a class="nav-link active" href="/customer-app/prompts">M-Pesa prompts</a></li>
+    </ul>
+
+    <div class="card card-bordered">
+        <div class="card-inner p-0">
+            <div class="table-responsive">
+                <table class="table mb-0" style="white-space:nowrap;">
+                    <thead>
+                        <tr>
+                            <th class="wl-th">Sent</th>
+                            <th class="wl-th">Account</th>
+                            <th class="wl-th">To number</th>
+                            <th class="wl-th">Amount</th>
+                            <th class="wl-th">Result</th>
+                            <th class="wl-th">M-Pesa code</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-soft py-4">No prompts yet.</td></tr>
+                        }
+                        @foreach (var r in Model)
+                        {
+                            <tr>
+                                <td>@Kenya(r.CreatedAtUtc)</td>
+                                <td><a href="/account-details/@r.AccountNo">@r.AccountNo</a></td>
+                                <td>@Masked(r.Phone)</td>
+                                <td>KES @r.Amount.ToString("N0")</td>
+                                <td>
+                                    <span class="badge @(r.Status == StkStatus.Paid ? "bg-success" : r.Status == StkStatus.Failed ? "bg-light text-dark" : "bg-warning")">@r.Status</span>
+                                    @if (!string.IsNullOrEmpty(r.ResultDesc))
+                                    {
+                                        <div class="small text-soft" style="white-space:normal;max-width:320px;">@r.ResultDesc</div>
+                                    }
+                                </td>
+                                <td>@(r.MpesaReceipt ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

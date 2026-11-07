@@ -311,7 +311,7 @@ namespace Ranalo.Controllers
             }
 
             // Always the signed-in account: the form can't name another.
-            var result = await _stk.RequestAsync(access.AccountNo, form.Phone ?? access.Phone ?? "", form.Amount);
+            var result = await _stk.RequestAsync(access.AccountNo, form.Phone ?? access.Phone ?? "", form.Amount, access.Phone, view.Balance);
             form.Sent = result.Sent;
             form.Message = result.Message;
             return View(form);
