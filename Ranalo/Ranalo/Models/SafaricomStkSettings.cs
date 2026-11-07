@@ -34,7 +34,9 @@ namespace Ranalo.Models
             && !string.IsNullOrWhiteSpace(ConsumerSecret)
             && !string.IsNullOrWhiteSpace(Passkey)
             && !string.IsNullOrWhiteSpace(CallbackBaseUrl)
-            && !string.IsNullOrWhiteSpace(CallbackToken);
+            // Shorter than the callback accepts = Safaricom's answers would
+            // be refused and paid prompts never recorded (7 Nov 2026), so off.
+            && CallbackToken!.Trim().Length >= Ranalo.Services.SafaricomCallerRules.MinTokenLength;
     }
 
     // One prompt sent, and what became of it (Database/Payments/003).

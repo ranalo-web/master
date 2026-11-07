@@ -84,7 +84,7 @@ namespace Ranolo.Web.Tests
         [Test]
         public void Off_until_enabled_and_every_secret_is_set()
         {
-            var s = new SafaricomStkSettings { ConsumerKey = "k", ConsumerSecret = "s", Passkey = "p", CallbackBaseUrl = "https://x", CallbackToken = "t" };
+            var s = new SafaricomStkSettings { ConsumerKey = "k", ConsumerSecret = "s", Passkey = "p", CallbackBaseUrl = "https://x", CallbackToken = new string('t', 32) };
             Assert.That(s.Ready, Is.False);
             s.Enabled = true;
             Assert.That(s.Ready, Is.True);

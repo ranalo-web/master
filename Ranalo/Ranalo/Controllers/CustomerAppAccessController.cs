@@ -14,13 +14,25 @@ namespace Ranalo.Controllers
     {
         private readonly ICustomerAccessRepository _access;
         private readonly ICustomerSession _session;
+        private readonly IStkRequestRepository _prompts;
         private readonly ILogger<CustomerAppAccessController> _logger;
 
-        public CustomerAppAccessController(ICustomerAccessRepository access, ICustomerSession session, ILogger<CustomerAppAccessController> logger)
+        public CustomerAppAccessController(ICustomerAccessRepository access, ICustomerSession session, IStkRequestRepository prompts,
+            ILogger<CustomerAppAccessController> logger)
         {
             _access = access;
             _session = session;
+            _prompts = prompts;
             _logger = logger;
+        }
+
+        // Every M-Pesa prompt sent from the app: which account, to which
+        // number, how much, and what came of it (StkRules limits who and how often).
+        [HttpGet("customer-app/prompts")]
+        public async Task<IActionResult> Prompts()
+        {
+            if (!Allowed(out _, out var redirect)) return redirect!;
+            return View(await _prompts.LatestAsync(300));
         }
 
         public static bool CanManage(UserRole role) => role is UserRole.Admin or UserRole.Approver;
