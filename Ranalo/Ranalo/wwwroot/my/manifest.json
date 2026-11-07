@@ -1,0 +1,25 @@
+{
+  "name": "Ranalo",
+  "short_name": "Ranalo",
+  "description": "Your Ranalo Credit account: what you've paid, your balance, your notifications, and paying with M-Pesa.",
+  "id": "/my/",
+  "start_url": "/my/?source=app",
+  "scope": "/my/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6f8",
+  "theme_color": "#213b4a",
+  "lang": "en-KE",
+  "dir": "ltr",
+  "categories": ["finance"],
+  "icons": [
+    { "src": "/images/brand/ranalo-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/images/brand/ranalo-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/images/brand/ranalo-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Pay", "url": "/my/pay", "icons": [{ "src": "/images/brand/ranalo-icon-192.png", "sizes": "192x192" }] },
+    { "name": "Statement", "url": "/my/statement", "icons": [{ "src": "/images/brand/ranalo-icon-192.png", "sizes": "192x192" }] },
+    { "name": "Notifications", "url": "/my/inbox", "icons": [{ "src": "/images/brand/ranalo-icon-192.png", "sizes": "192x192" }] }
+  ]
+}
