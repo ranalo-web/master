@@ -187,6 +187,7 @@ builder.Services.AddScoped<IDeviceLockRepository, DeviceLockRepository>();
 builder.Services.AddScoped<IDepositSafeguardsRepository, DepositSafeguardsRepository>();
 builder.Services.AddScoped<IMilestoneMessagesRepository, MilestoneMessagesRepository>();
 builder.Services.AddScoped<IAnnouncementsRepository, AnnouncementsRepository>();
+builder.Services.AddScoped<ICelebrationsRepository, CelebrationsRepository>();
 builder.Services.AddSingleton<IAnnouncementSender, AnnouncementSender>();
 builder.Services.AddScoped<IDeviceRemovalTaskRepository, DeviceRemovalTaskRepository>();
 builder.Services.AddScoped<IEnrolmentCheckService, EnrolmentCheckService>();
@@ -245,6 +246,7 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService<AccountRefreshWorker>();
         builder.Services.AddHostedService<ScheduledDailyPaymentSummary>();
         builder.Services.AddHostedService<ScheduledMilestoneMessages>();
+        builder.Services.AddHostedService<ScheduledCelebrationMessages>();
         builder.Services.AddHostedService<ScheduledCustomerEmailCopies>();
         builder.Services.AddHostedService<ScheduledSelfRestructures>();
         builder.Services.AddHostedService<ScheduledApproverFollowUps>();
