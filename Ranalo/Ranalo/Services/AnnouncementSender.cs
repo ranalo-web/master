@@ -13,6 +13,10 @@ namespace Ranalo.Services
 
         // false = one is already going.
         bool TryStart(string title, string body, string startedBy);
+
+        // Sends an earlier announcement again, only to the phones it failed
+        // for (same MessageType, so nobody gets it twice). false = busy.
+        bool TryRetry(string messageType, string title, string body, string startedBy);
     }
 
     // Sends an announcement to everyone in the background: several hundred
@@ -48,11 +52,23 @@ namespace Ranalo.Services
                 _progress = new(true, type, 0, 0, DateTime.UtcNow, null, startedBy, null);
             }
 
-            _ = Task.Run(() => RunAsync(type, title, body, startedBy));
+            _ = Task.Run(() => RunAsync(type, title, body, startedBy, retry: false));
             return true;
         }
 
-        private async Task RunAsync(string type, string title, string body, string startedBy)
+        public bool TryRetry(string messageType, string title, string body, string startedBy)
+        {
+            lock (_gate)
+            {
+                if (_progress.Running) return false;
+                _progress = new(true, messageType, 0, 0, DateTime.UtcNow, null, startedBy, null);
+            }
+
+            _ = Task.Run(() => RunAsync(messageType, title, body, startedBy, retry: true));
+            return true;
+        }
+
+        private async Task RunAsync(string type, string title, string body, string startedBy, bool retry)
         {
             var done = 0;
             try
@@ -63,9 +79,9 @@ namespace Ranalo.Services
                 var payments = scope.ServiceProvider.GetRequiredService<IPaymentsRepository>();
                 var knox = scope.ServiceProvider.GetRequiredService<IKnoxGuardClient>();
 
-                var recipients = await repo.GetRecipientsAsync(type);
+                var recipients = retry ? await repo.GetFailedRecipientsAsync(type) : await repo.GetRecipientsAsync(type);
                 Update(p => p with { Total = recipients.Count });
-                _logger.LogInformation("Announcement {Type} by {User}: sending to {Count} phones.", type, startedBy, recipients.Count);
+                _logger.LogInformation("Announcement {Type} by {User}: {What} to {Count} phones.", type, startedBy, retry ? "retrying" : "sending", recipients.Count);
 
                 foreach (var batch in recipients.Chunk(BatchSize))
                 {
