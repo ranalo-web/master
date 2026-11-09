@@ -145,6 +145,7 @@ namespace Ranalo.Services
                 "Your phone opens shortly and stays open while you pay each day. Miss days and it locks until you catch up.",
                 "",
                 $"Pay: M-Pesa Pay Bill {Paybill}, account no {accountNo}",
+                PayInApp,
                 Help));
 
         // The weekly update, Sunday evening (ScheduledDailyPaymentSummary).
@@ -182,6 +183,7 @@ namespace Ranalo.Services
                 lines.Add($"Pay Ksh {Money(Math.Abs(arrears))} to catch up.");
             }
             lines.Add($"Pay: M-Pesa Pay Bill {Paybill}, account no {record.AccountNo}");
+            lines.Add(PayInApp);
             lines.Add(Help);
 
             return new(title, Lines(lines.ToArray()));
@@ -229,7 +231,11 @@ namespace Ranalo.Services
             "M-Pesa > Lipa na M-Pesa > Pay Bill",
             $"Business no: {Paybill}",
             $"Account no: {accountNo}",
+            PayInApp,
         };
+
+        // The M-Pesa prompt in the customer app (9 Nov 2026).
+        public const string PayInApp = "Or tap Pay in the Ranalo Credit app.";
 
         private static string Help => $"Help: call {HelpLine}";
 
