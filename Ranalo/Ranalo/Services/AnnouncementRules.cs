@@ -13,10 +13,10 @@ namespace Ranalo.Services
         public const string TypePrefix = "Announcement:";
         public const string TestType = TypePrefix + "test";
 
-        public const string DefaultTitle = "New: the Ranalo Credit app";
+        public const string DefaultTitle = "The Ranalo Credit app";
 
         public const string DefaultBody =
-            "Hi {name}, you can now see your balance, statement and messages, and pay with M-Pesa, in the new Ranalo Credit app.\n" +
+            "Hi {name}, you can now see your balance, statement and messages, and pay with M-Pesa, in the Ranalo Credit app.\n" +
             "\n" +
             "Open the Ranalo Credit icon on your phone. No icon? Open my.ranalocredit.com in Chrome and tap Install.\n" +
             "Sign in with your account number {account}. We send a code to this phone.\n" +
