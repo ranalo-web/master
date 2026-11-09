@@ -76,20 +76,25 @@ namespace Ranalo.DataStore
         // Phones, not log rows: a phone that failed and then got it on a
         // retry counts as sent, not failed.
         public async Task<List<AnnouncementHistory>> HistoryAsync() =>
+            // Per phone first (SQL Server won't put a subquery inside COUNT).
             (await _db.QueryAsync<AnnouncementHistory>(@"
-                SELECT TOP 20 m.MessageType,
-                       COUNT(DISTINCT CASE WHEN m.MessageStatus = 'sent' THEN m.AccountNo END) AS Sent,
-                       COUNT(DISTINCT CASE WHEN m.MessageStatus = 'failed'
-                                            AND NOT EXISTS (SELECT 1 FROM MessageLogs s
-                                                            WHERE s.MessageType = m.MessageType AND s.MessageStatus = 'sent'
-                                                              AND s.AccountNo = m.AccountNo)
-                                           THEN m.AccountNo END) AS Failed,
-                       MIN(m.DateSent) AS First, MAX(m.DateSent) AS Last,
-                       MAX(LEFT(m.Message, 120)) AS Sample
-                FROM MessageLogs m
-                WHERE m.MessageType LIKE 'Announcement:%'
-                GROUP BY m.MessageType
-                ORDER BY MIN(m.DateSent) DESC")).ToList();
+                WITH phones AS (
+                    SELECT MessageType, AccountNo,
+                           MAX(CASE WHEN MessageStatus = 'sent' THEN 1 ELSE 0 END) AS GotIt,
+                           MIN(DateSent) AS First, MAX(DateSent) AS Last,
+                           MAX(LEFT(Message, 120)) AS Sample
+                    FROM MessageLogs
+                    WHERE MessageType LIKE 'Announcement:%'
+                    GROUP BY MessageType, AccountNo
+                )
+                SELECT TOP 20 MessageType,
+                       SUM(GotIt) AS Sent,
+                       SUM(1 - GotIt) AS Failed,
+                       MIN(First) AS First, MAX(Last) AS Last,
+                       MAX(Sample) AS Sample
+                FROM phones
+                GROUP BY MessageType
+                ORDER BY MIN(First) DESC")).ToList();
 
         // A retry: only phones this announcement failed for, and still
         // haven't got it -- not customers who joined since.
