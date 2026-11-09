@@ -9,6 +9,11 @@
 <h1>Notifications</h1>
 <p class="muted">Every message we've sent your Ranalo phone, newest first.</p>
 
+@if (ViewBag.Deleted is string deleted)
+{
+    <div class="note good">@deleted</div>
+}
+
 @if (!Model.Any())
 {
     <div class="card"><p class="muted" style="margin:0;">No messages yet.</p></div>
@@ -31,8 +36,22 @@
             {
                 <div class="muted" style="margin-top:8px;">This one may not have reached your phone; it's here so you don't miss it.</div>
             }
+            @if (m.Id != Guid.Empty)
+            {
+                <form method="post" action="/my/inbox/delete" class="delete" onsubmit="return confirm('Delete this message?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@m.Id" />
+                    <input type="hidden" name="show" value="@ViewBag.Shown" />
+                    <button type="submit">Delete</button>
+                </form>
+            }
         </div>
     </details>
+}
+
+@if (ViewBag.More == true)
+{
+    <a class="btn ghost more" href="/my/inbox?show=@((int)ViewBag.Shown + CustomerAppRules.PageSize)">Show more</a>
 }
 
 <style>
@@ -45,4 +64,8 @@
     .msg .title { font-weight: 700; margin-top: 8px; }
     .msg .body { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 15px; }
     .msg .body div { margin: 2px 0; }
+    .msg .delete { margin: 12px 0 0; text-align: right; }
+    .msg .delete button { background: none; border: 1px solid var(--line); color: var(--bad); border-radius: 8px;
+        padding: 6px 14px; font-size: 14px; cursor: pointer; }
+    .more { display: block; text-align: center; margin: 8px 0 16px; }
 </style>

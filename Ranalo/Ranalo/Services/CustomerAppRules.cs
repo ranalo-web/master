@@ -110,6 +110,14 @@ namespace Ranalo.Services
                 .ToList();
         }
 
+        // Notifications and Statement show this many, then "Show more" adds as
+        // many again (?show=40, 60, ...), up to MaxShown.
+        public const int PageSize = 20;
+        public const int MaxShown = 1000;
+
+        public static int Shown(int? requested) =>
+            Math.Clamp((int)Math.Ceiling((requested ?? PageSize) / (double)PageSize) * PageSize, PageSize, MaxShown);
+
         // A logged message back into a title and lines for the app's inbox.
         // Nuovo's are stored with <br>, Knox's on one line with " - "
         // (CustomerMessages.ForNuovoKnox / ForKnox), Transsion's with "\n".
@@ -140,7 +148,8 @@ namespace Ranalo.Services
                 },
                 title,
                 lines.Skip(1).ToList(),
-                string.Equals(log.MessageStatus, "sent", StringComparison.OrdinalIgnoreCase));
+                string.Equals(log.MessageStatus, "sent", StringComparison.OrdinalIgnoreCase),
+                log.Id);
         }
 
         // The first photo of the product, from WooCommerce's comma list.
@@ -190,7 +199,7 @@ namespace Ranalo.Services
     }
 
     // Delivered: the phone's provider accepted it (it may still not have shown on the phone).
-    public record MyInboxItem(DateTime SentAtKenya, string Kind, string Title, List<string> Lines, bool Delivered);
+    public record MyInboxItem(DateTime SentAtKenya, string Kind, string Title, List<string> Lines, bool Delivered, Guid Id = default);
 
     public record MyStatementLine(DateTime PaidAt, string MpesaCode, decimal Amount, decimal PaidSoFar, decimal BalanceAfter);
 

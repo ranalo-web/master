@@ -343,6 +343,27 @@ namespace Ranolo.Web.Tests
             Assert.That(CustomerHostGate.PathAllowed(new PathString(path)), Is.EqualTo(allowed));
         }
 
+        // ---------- Show more ----------
+
+        [TestCase(null, 20)]
+        [TestCase(0, 20)]
+        [TestCase(-5, 20)]
+        [TestCase(20, 20)]
+        [TestCase(21, 40)]
+        [TestCase(40, 40)]
+        [TestCase(999999, 1000)]
+        public void Shown_goes_up_twenty_at_a_time(int? requested, int expected)
+        {
+            Assert.That(CustomerAppRules.Shown(requested), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void Inbox_item_keeps_the_message_id_for_delete()
+        {
+            var id = Guid.NewGuid();
+            Assert.That(CustomerAppRules.InboxItem(new MessageLog { Id = id, MessageType = "Payment", Message = "x" }).Id, Is.EqualTo(id));
+        }
+
         // ---------- Dates ----------
 
         [Test]

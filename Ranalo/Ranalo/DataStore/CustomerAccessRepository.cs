@@ -20,6 +20,7 @@ namespace Ranalo.DataStore
         Task<Ranalo.Services.MyDevice?> GetDeviceAsync(long accountNo);
         Task<int?> GetLatestEndedContractIdAsync(long accountNo);
         Task<List<MessageLog>> GetMessagesAsync(long accountNo, string? imei, int take);
+        Task<bool> HideMessageAsync(long accountNo, string? imei, Guid messageLogId);
         Task<List<MessageToEmail>> GetMessagesToEmailAsync(int take);
         Task<(int Count, MessageLog? Newest)> GetNewMessagesAsync(long accountNo, string? imei, DateTime sinceUtc);
         Task MarkInboxSeenAsync(long accountNo);
@@ -135,13 +136,47 @@ namespace Ranalo.DataStore
         // Everything we've sent the phone (Nuovo/Transsion log by account,
         // Knox by IMEI), newest first. Never login codes -- and those are
         // logged without the code anyway.
-        public async Task<List<MessageLog>> GetMessagesAsync(long accountNo, string? imei, int take) =>
-            (await _db.QueryAsync<MessageLog>(@"
-                SELECT TOP (@Take) Id, AccountNo, MessageType, Message, DateSent, MessageStatus
-                FROM MessageLogs
-                WHERE AccountNo IN (@Account, @Imei) AND MessageType <> 'LoginCode'
-                ORDER BY DateSent DESC",
-                new { Take = take, Account = accountNo.ToString(), Imei = string.IsNullOrWhiteSpace(imei) ? accountNo.ToString() : imei })).ToList();
+        // Not the ones the customer deleted from the app (Customers/006).
+        public async Task<List<MessageLog>> GetMessagesAsync(long accountNo, string? imei, int take)
+        {
+            var args = new { Take = take, Account = accountNo.ToString(), Imei = string.IsNullOrWhiteSpace(imei) ? accountNo.ToString() : imei, AccountNo = accountNo };
+            const string select = @"
+                SELECT TOP (@Take) m.Id, m.AccountNo, m.MessageType, m.Message, m.DateSent, m.MessageStatus
+                FROM MessageLogs m
+                WHERE m.AccountNo IN (@Account, @Imei) AND m.MessageType <> 'LoginCode'";
+            try
+            {
+                return (await _db.QueryAsync<MessageLog>(select + @"
+                      AND NOT EXISTS (SELECT 1 FROM CustomerHiddenMessages h WHERE h.AccountNo = @AccountNo AND h.MessageLogId = m.Id)
+                    ORDER BY m.DateSent DESC", args)).ToList();
+            }
+            catch (System.Data.Common.DbException ex) when (ex.Message.Contains("CustomerHiddenMessages"))
+            {
+                // Customers/006 not run yet: show everything.
+                return (await _db.QueryAsync<MessageLog>(select + " ORDER BY m.DateSent DESC", args)).ToList();
+            }
+        }
+
+        // Hides one of the customer's own messages in their app; MessageLogs
+        // itself is never changed. false = not theirs, already hidden, or
+        // Customers/006 not run.
+        public async Task<bool> HideMessageAsync(long accountNo, string? imei, Guid messageLogId)
+        {
+            try
+            {
+                return await _db.ExecuteAsync(@"
+                    INSERT INTO CustomerHiddenMessages (AccountNo, MessageLogId)
+                    SELECT @AccountNo, m.Id FROM MessageLogs m
+                    WHERE m.Id = @Id AND m.AccountNo IN (@Account, @Imei)
+                      AND NOT EXISTS (SELECT 1 FROM CustomerHiddenMessages h WHERE h.AccountNo = @AccountNo AND h.MessageLogId = m.Id)",
+                    new { AccountNo = accountNo, Id = messageLogId, Account = accountNo.ToString(),
+                          Imei = string.IsNullOrWhiteSpace(imei) ? accountNo.ToString() : imei }) == 1;
+            }
+            catch (System.Data.Common.DbException ex) when (ex.Message.Contains("CustomerHiddenMessages"))
+            {
+                return false;
+            }
+        }
 
         // Messages sent to the phones of customers who gave an email, newer
         // than what they've been emailed (or than when they joined the app),

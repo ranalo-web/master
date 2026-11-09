@@ -4,6 +4,7 @@
     ViewBag.Tab = "statement";
     var account = (MyAccountView)ViewBag.Account;
     string Ksh(decimal v) => "Ksh " + CustomerMessages.Money(v);
+    var shown = (ViewBag.Shown as int?) ?? CustomerAppRules.PageSize;
 }
 
 <h1>Statement</h1>
@@ -23,7 +24,7 @@
     else
     {
         <table>
-            @foreach (var p in Model)
+            @foreach (var p in Model.Take(shown))
             {
                 <tr>
                     <td>
@@ -37,6 +38,10 @@
                 </tr>
             }
         </table>
+        @if (Model.Count > shown)
+        {
+            <a class="btn ghost" style="margin-top:12px;" href="/my/statement?show=@(shown + CustomerAppRules.PageSize)">Show more</a>
+        }
     }
 </div>
 <p class="muted">Times are Kenya time. A payment you've just made can take a few minutes to show.</p>

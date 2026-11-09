@@ -239,7 +239,7 @@ namespace Ranalo.Controllers
         }
 
         [HttpGet("my/statement")]
-        public async Task<IActionResult> Statement()
+        public async Task<IActionResult> Statement(int? show)
         {
             var (access, redirect) = await SignedInAsync(needsDetails: true);
             if (redirect != null) return redirect;
@@ -247,13 +247,16 @@ namespace Ranalo.Controllers
             var view = await AccountAsync(access!.AccountNo);
             if (view == null) return View("NoContract");
             ViewBag.Account = view;
+            // All payments are needed for the running balance; the page shows
+            // the newest `shown` of them (the count above covers all).
+            ViewBag.Shown = CustomerAppRules.Shown(show);
             return View(CustomerAppRules.Statement(await _access.GetPaymentsAsync(access.AccountNo), view.Owed));
         }
 
         // Every message we've sent the phone, so nothing is lost if the
         // phone's notification was missed or cleared.
         [HttpGet("my/inbox")]
-        public async Task<IActionResult> Inbox()
+        public async Task<IActionResult> Inbox(int? show)
         {
             var (access, redirect) = await SignedInAsync();
             if (redirect != null) return redirect;
@@ -267,8 +270,34 @@ namespace Ranalo.Controllers
             ViewBag.Unread = 0;
 
             var target = await _access.GetTargetAsync(access.AccountNo);
-            var messages = await _access.GetMessagesAsync(access.AccountNo, target?.Imei, 100);
-            return View(messages.Select(CustomerAppRules.InboxItem).ToList());
+            var shown = CustomerAppRules.Shown(show);
+            // One extra tells whether there are more.
+            var messages = await _access.GetMessagesAsync(access.AccountNo, target?.Imei, shown + 1);
+            ViewBag.Shown = shown;
+            ViewBag.More = messages.Count > shown;
+            ViewBag.Deleted = TempData["MyInboxDeleted"] as string;
+            return View(messages.Take(shown).Select(CustomerAppRules.InboxItem).ToList());
+        }
+
+        // "Delete" on a notification: hidden from the app only.
+        [HttpPost("my/inbox/delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteMessage(Guid id, int? show)
+        {
+            var (access, redirect) = await SignedInAsync();
+            if (redirect != null) return redirect;
+
+            if (Previewing)
+            {
+                TempData["MyInboxDeleted"] = "Staff preview: nothing is deleted from here.";
+            }
+            else
+            {
+                var target = await _access.GetTargetAsync(access!.AccountNo);
+                if (await _access.HideMessageAsync(access.AccountNo, target?.Imei, id))
+                    TempData["MyInboxDeleted"] = "Message deleted.";
+            }
+            return Redirect("/my/inbox" + (show is > CustomerAppRules.PageSize ? "?show=" + CustomerAppRules.Shown(show) : ""));
         }
 
         [HttpGet("my/pay")]
