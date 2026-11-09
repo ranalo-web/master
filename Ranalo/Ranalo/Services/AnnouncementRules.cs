@@ -16,7 +16,7 @@ namespace Ranalo.Services
         public const string DefaultTitle = "New: the Ranalo Credit app";
 
         public const string DefaultBody =
-            "Hi {name}, you can now see your balance, statement and messages in the Ranalo Credit app.\n" +
+            "Hi {name}, we have a new app: the Ranalo Credit app. See your balance, statement and messages, and pay with M-Pesa, all in one place.\n" +
             "\n" +
             "Open the Ranalo Credit icon on your phone. No icon? Open my.ranalocredit.com in Chrome and tap Install.\n" +
             "Sign in with your account number {account}. We send a code to this phone.\n" +
