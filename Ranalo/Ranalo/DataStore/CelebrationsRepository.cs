@@ -8,8 +8,17 @@ namespace Ranalo.DataStore
         public string? Dob { get; set; }
     }
 
+    public class UpgradeAccount : MilestoneAccount
+    {
+        public decimal Paid { get; set; }
+        public decimal Owed { get; set; }
+        public decimal Behind { get; set; }
+        public bool Restructured { get; set; }
+    }
+
     public interface ICelebrationsRepository
     {
+        Task<List<UpgradeAccount>> GetNearlyPaidAsync(decimal from, int maxFailures);
         Task<List<MilestoneAccount>> GetOpenAsync(string messageType, int maxFailures);
         Task<List<BirthdayAccount>> GetWithDobAsync(string messageType, int maxFailures);
         Task<List<MilestoneAccount>> GetHalfwayAsync(decimal from, decimal to, int maxFailures);
@@ -77,6 +86,36 @@ namespace Ranalo.DataStore
                 WHERE Owed > 0 AND Paid >= Owed * @From AND Paid < Owed * @To
                 ORDER BY ID",
                 new { MessageType = Ranalo.Services.CelebrationRules.HalfwayType, MaxFailures = maxFailures, From = from, To = to },
+                commandTimeout: 120)).ToList();
+
+        // For the upgrade offer: accounts past `from` of the contract, with
+        // how far behind they are today (the Collections arrears sum: deposit
+        // plus each day since the start, up to the term) and whether they
+        // have ever been restructured. CelebrationRules picks who's offered.
+        public async Task<List<UpgradeAccount>> GetNearlyPaidAsync(decimal from, int maxFailures) =>
+            (await _db.QueryAsync<UpgradeAccount>(@"
+                WITH a AS (
+                    SELECT ci.ID, ci.First_Name, d.ImeiNo, ISNULL(d.LockGroup, 1) AS LockGroup,
+                           ISNULL(ci.Daily, 0) + ISNULL(ci.Weekly, 0) / 7.0 + ISNULL(ci.Monthly, 0) / 30.0 AS Daily,
+                           ISNULL(ci.Deposit, 0) + ISNULL(ci.Daily, 0) * 30 * ci.Term_in_Months
+                             + ISNULL(ci.Weekly, 0) * (30.0 / 7.0) * ci.Term_in_Months
+                             + ISNULL(ci.Monthly, 0) * ci.Term_in_Months AS Owed,
+                           ISNULL(ci.Deposit, 0)
+                             + (ISNULL(ci.Daily, 0) + ISNULL(ci.Weekly, 0) / 7.0 + ISNULL(ci.Monthly, 0) / 30.0)
+                               * CASE WHEN DATEDIFF(DAY, ci.StartDate, GETDATE()) < CAST(ci.Term_in_Months * 30 AS INT)
+                                      THEN DATEDIFF(DAY, ci.StartDate, GETDATE()) ELSE CAST(ci.Term_in_Months * 30 AS INT) END AS DueToday,
+                           (SELECT ISNULL(SUM(p.AmountValue), 0) FROM " + AccountPaymentsSql.For("ci.ID") + @" p) AS Paid,
+                           CASE WHEN EXISTS (SELECT 1 FROM RestructuredRecords rr WHERE rr.AccountNo = ci.ID) THEN 1 ELSE 0 END AS Restructured" +
+                    OpenNotSent + @"
+                      AND ci.StartDate IS NOT NULL
+                )
+                SELECT ID AS AccountId, First_Name AS FirstName, ImeiNo AS Imei, LockGroup, Daily,
+                       Paid, Owed, CASE WHEN DueToday > Paid THEN DueToday - Paid ELSE 0 END AS Behind,
+                       CAST(Restructured AS BIT) AS Restructured
+                FROM a
+                WHERE Owed > 0 AND Paid >= Owed * @From
+                ORDER BY ID",
+                new { MessageType = Ranalo.Services.CelebrationRules.UpgradeType, MaxFailures = maxFailures, From = from },
                 commandTimeout: 120)).ToList();
     }
 }

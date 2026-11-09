@@ -44,7 +44,8 @@ namespace Ranolo.Web.Tests
             var eid = new[] { new DateTime(2027, 3, 10) };
             var messages = CelebrationRules.HolidaysIn(2027, eid).Select(h => CelebrationRules.For(h, "Bartholomew"))
                 .Append(CelebrationRules.Birthday("Bartholomew"))
-                .Append(CelebrationRules.Halfway("Bartholomew", 999_999_999_999));
+                .Append(CelebrationRules.Halfway("Bartholomew", 999_999_999_999))
+                .Append(CelebrationRules.Upgrade("Bartholomew", 999_999_999_999));
             foreach (var m in messages)
             {
                 Assert.That(m.Title.Length, Is.LessThanOrEqualTo(CustomerMessages.TitleLimit), m.Title);
@@ -109,6 +110,20 @@ namespace Ranolo.Web.Tests
         public void Halfway_band(decimal paid, decimal owed, bool expected)
         {
             Assert.That(CelebrationRules.IsHalfway(paid, owed), Is.EqualTo(expected));
+        }
+
+        // ---------- Upgrade offer ----------
+
+        [TestCase(7499, 0, false, false)]   // not yet 75%
+        [TestCase(7500, 0, false, true)]
+        [TestCase(9499, 0, false, true)]
+        [TestCase(9500, 0, false, false)]   // nearly done: too late
+        [TestCase(8000, 75, false, true)]   // 3 days behind at Ksh 25
+        [TestCase(8000, 76, false, false)]  // more than 3 days behind
+        [TestCase(8000, 0, true, false)]    // restructured
+        public void Upgrade_offer_goes_to_good_payers_from_75_percent(decimal paid, decimal behind, bool restructured, bool expected)
+        {
+            Assert.That(CelebrationRules.IsUpgradeCandidate(paid, 10000, behind, 25, restructured), Is.EqualTo(expected));
         }
 
         [Test]

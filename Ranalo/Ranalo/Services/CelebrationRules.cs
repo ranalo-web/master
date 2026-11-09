@@ -126,6 +126,28 @@ namespace Ranalo.Services
                 "Keep paying every day and the phone will be fully yours.\n\n" +
                 $"Help: call {CustomerMessages.HelpLine}");
 
+        // ---------- Upgrade offer ----------
+
+        // To keep good customers from leaving once the phone is paid off, an
+        // upgrade is offered while they still have a little to pay (time to
+        // talk before the last payment), and only to those keeping up: not on
+        // a restructure, and at most MaxDaysBehind days' payments behind.
+        public const string UpgradeType = "UpgradeOffer";
+        public const decimal UpgradeFrom = 0.75m;
+        public const decimal UpgradeTo = 0.95m;
+        public const int MaxDaysBehind = 3;
+
+        public static bool IsUpgradeCandidate(decimal paid, decimal owed, decimal behind, decimal daily, bool restructured) =>
+            !restructured && owed > 0 && paid >= owed * UpgradeFrom && paid < owed * UpgradeTo
+            && behind <= Math.Max(0, daily) * MaxDaysBehind;
+
+        public static CustomerMessages.Message Upgrade(string? firstName, long accountNo) =>
+            new("A thank-you offer from Ranalo Credit",
+                $"Hi {CustomerMessages.Name(firstName)}, you have paid most of your phone on account {accountNo}, " +
+                "and you have been one of our best customers. Thank you!\n\n" +
+                "As a thank-you, you can upgrade to a newer phone. Call us and we will show you the phones you can choose and how it works.\n\n" +
+                $"Call {CustomerMessages.HelpLine}");
+
         public static CustomerMessages.Message For(Holiday h, string? firstName) =>
             new(h.Title, h.Text.Replace("{name}", CustomerMessages.Name(firstName)));
     }

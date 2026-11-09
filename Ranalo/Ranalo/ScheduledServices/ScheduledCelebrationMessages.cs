@@ -49,10 +49,10 @@ namespace Ranalo.ScheduledServices
                         services.GetRequiredService<IKnoxGuardClient>(),
                         DateTime.UtcNow, EidDates(_config));
 
-                    if (sent.Holiday + sent.Birthdays + sent.Halfway > 0)
+                    if (sent.Holiday + sent.Birthdays + sent.Halfway + sent.Upgrades > 0)
                     {
-                        _logger.LogInformation("Celebration messages: {Holiday} holiday, {Birthdays} birthday, {Halfway} halfway",
-                            sent.Holiday, sent.Birthdays, sent.Halfway);
+                        _logger.LogInformation("Celebration messages: {Holiday} holiday, {Birthdays} birthday, {Halfway} halfway, {Upgrades} upgrade offer",
+                            sent.Holiday, sent.Birthdays, sent.Halfway, sent.Upgrades);
                     }
                 }
                 catch (Exception ex)
@@ -71,7 +71,7 @@ namespace Ranalo.ScheduledServices
             }
         }
 
-        public static async Task<(int Holiday, int Birthdays, int Halfway)> SendAsync(
+        public static async Task<(int Holiday, int Birthdays, int Halfway, int Upgrades)> SendAsync(
             ICelebrationsRepository repository,
             IPaymentReminderService sender,
             IPaymentsRepository paymentsRepository,
@@ -80,7 +80,7 @@ namespace Ranalo.ScheduledServices
             IEnumerable<DateTime> eidAlFitr)
         {
             var nowKenya = nowUtc + CustomerMessages.KenyaOffset;
-            if (!CelebrationRules.SendingHours(nowKenya)) return (0, 0, 0);
+            if (!CelebrationRules.SendingHours(nowKenya)) return (0, 0, 0, 0);
 
             async Task<int> Send(List<AccountSendMessage> records, string type)
             {
@@ -111,7 +111,12 @@ namespace Ranalo.ScheduledServices
                 .Select(a => ToMessage(a, CelebrationRules.Halfway(a.FirstName, a.AccountId))).ToList();
             var halfwaySent = await Send(halfway, CelebrationRules.HalfwayType);
 
-            return (holidaySent, birthdaysSent, halfwaySent);
+            var upgrades = (await repository.GetNearlyPaidAsync(CelebrationRules.UpgradeFrom, MaxFailures))
+                .Where(a => CelebrationRules.IsUpgradeCandidate(a.Paid, a.Owed, a.Behind, a.Daily, a.Restructured))
+                .Select(a => ToMessage(a, CelebrationRules.Upgrade(a.FirstName, a.AccountId))).ToList();
+            var upgradesSent = await Send(upgrades, CelebrationRules.UpgradeType);
+
+            return (holidaySent, birthdaysSent, halfwaySent, upgradesSent);
         }
 
         private static AccountSendMessage ToMessage(MilestoneAccount account, CustomerMessages.Message message) => new()

@@ -135,6 +135,7 @@ namespace Ranalo.Services
                     var t when t?.StartsWith(CelebrationRules.HolidayPrefix, StringComparison.Ordinal) == true => "Greetings",
                     var t when t?.StartsWith(CelebrationRules.BirthdayPrefix, StringComparison.Ordinal) == true => "Birthday",
                     CelebrationRules.HalfwayType => "Halfway",
+                    CelebrationRules.UpgradeType => "Offer",
                     _ => "Message",
                 },
                 title,
