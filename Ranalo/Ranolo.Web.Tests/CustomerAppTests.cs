@@ -342,5 +342,15 @@ namespace Ranolo.Web.Tests
         {
             Assert.That(CustomerHostGate.PathAllowed(new PathString(path)), Is.EqualTo(allowed));
         }
+
+        // ---------- Dates ----------
+
+        [Test]
+        public void When_adds_the_year_only_when_it_is_not_this_year()
+        {
+            var now = new DateTime(2026, 11, 9, 20, 0, 0);
+            Assert.That(CustomerAppRules.When(new DateTime(2026, 11, 10, 15, 47, 0), now), Is.EqualTo("Tue 10 Nov, 3:47 PM"));
+            Assert.That(CustomerAppRules.When(new DateTime(2027, 10, 4, 15, 47, 0), now), Is.EqualTo("Mon 4 Oct 2027, 3:47 PM"));
+        }
     }
 }

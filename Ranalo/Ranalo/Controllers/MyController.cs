@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Mvc;
 using Ranalo.DataStore;
@@ -280,7 +281,7 @@ namespace Ranalo.Controllers
             // A chosen plan waiting for its first day: that amount starts it.
             var pendingPlan = await _selfPlanStore.GetLatestAsync(access.AccountNo) is { Status: SelfRestructureStatus.Pending } p ? p : null;
             if (view == null) return View("NoContract");
-            return View(new MyPayForm
+            var form = new MyPayForm
             {
                 Account = view,
                 Phone = access.Phone,
@@ -289,7 +290,20 @@ namespace Ranalo.Controllers
                     : view.Locked && view.UnlockFor24h is > 0 ? view.UnlockFor24h.Value
                     : view.Behind > 0 ? Math.Ceiling(view.Behind) : Math.Ceiling(view.Daily),
                 CanPrompt = _stk.Ready,
-            });
+            };
+
+            // The result of a prompt just sent (the POST redirects here).
+            if (TempData[PayResultKey] is string message)
+            {
+                form.Message = message;
+                form.Sent = TempData[PaySentKey] is true;
+                // Refused: keep what they typed so they can fix it.
+                if (TempData[PayAmountKey] is string amount
+                    && decimal.TryParse(amount, NumberStyles.Number, CultureInfo.InvariantCulture, out var typed))
+                    form.Amount = typed;
+                if (TempData[PayPhoneKey] is string phone) form.Phone = phone;
+            }
+            return View(form);
         }
 
         [HttpPost("my/pay")]
@@ -312,10 +326,22 @@ namespace Ranalo.Controllers
 
             // Always the signed-in account: the form can't name another.
             var result = await _stk.RequestAsync(access.AccountNo, form.Phone ?? access.Phone ?? "", form.Amount, access.Phone, view.Balance);
-            form.Sent = result.Sent;
-            form.Message = result.Message;
-            return View(form);
+
+            // Back to a plain GET with the result: coming back from the M-Pesa
+            // PIN screen reloads the page, and a POST page shows Chrome's
+            // "Confirm Form Resubmission" (9 Nov 2026 test) or sends again.
+            TempData[PayResultKey] = result.Message;
+            TempData[PaySentKey] = result.Sent;
+            if (!result.Sent)
+            {
+                TempData[PayAmountKey] = form.Amount.ToString(CultureInfo.InvariantCulture);
+                TempData[PayPhoneKey] = form.Phone;
+            }
+            return RedirectToAction(nameof(Pay));
         }
+
+        private const string PayResultKey = "MyPayResult", PaySentKey = "MyPaySent",
+            PayAmountKey = "MyPayAmount", PayPhoneKey = "MyPayPhone";
 
         [HttpGet("my/details")]
         public async Task<IActionResult> Details()

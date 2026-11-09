@@ -8,6 +8,13 @@ namespace Ranalo.Services
     // ScheduledDailyPaymentSummary), from the same MobileStatusReport.
     public static class CustomerAppRules
     {
+        // A Kenya-time date for the app: "Mon 4 Oct, 3:47 PM", with the year
+        // added when it isn't this year -- "Mon 4 Oct" alone read as a date
+        // already gone when the lock was in 2027 (9 Nov 2026 test).
+        public static string When(DateTime kenya, DateTime nowKenya) =>
+            kenya.ToString(kenya.Year == nowKenya.Year ? "ddd d MMM, h:mm tt" : "ddd d MMM yyyy, h:mm tt",
+                System.Globalization.CultureInfo.InvariantCulture);
+
         public static MyAccountView Account(MobileStatusReport r, DateTime? lockUtc, MyDevice? device, DateTime nowUtc,
             RestructuredRecord? plan = null)
         {
