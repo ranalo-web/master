@@ -189,6 +189,15 @@ namespace Ranalo.Services
                 (log.AccountNo == rec.AccountId.ToString() || (!string.IsNullOrEmpty(rec.Imei) && log.AccountNo == rec.Imei))
                 && log.Message?.StartsWith(title) == true);
 
+        // Nuovo's "TooManyRequests": how long to wait before sending again,
+        // and how many waits one send may make before the rest are logged
+        // failed (so a long outage can't hold a job for hours).
+        public const int NuovoMaxWaits = 20;
+        public static readonly TimeSpan NuovoDefaultWait = TimeSpan.FromSeconds(60);
+
+        public static TimeSpan NuovoRetryWait(TimeSpan? retryAfter) =>
+            retryAfter is { } d && d > TimeSpan.Zero && d <= TimeSpan.FromMinutes(5) ? d : NuovoDefaultWait;
+
         private static async Task<List<MessageLog>> SendNuovoAsync(List<AccountSendMessage> records, string messageType, IPaymentsRepository paymentsRepository, string? logText = null)
         {
             if (records.Count == 0)
@@ -197,6 +206,7 @@ namespace Ranalo.Services
             }
 
             var logs = new List<MessageLog>();
+            var nuovoWaits = 0;
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -215,6 +225,18 @@ namespace Ranalo.Services
                     try
                     {
                         var response = await client.PostAsync(NuovoMessageUrl, new StringContent(body, Encoding.UTF8, "application/json"));
+                        // Nuovo limits how fast we send: 124 of the first
+                        // announcement (10 Nov 2026) came back TooManyRequests.
+                        // Wait as it asks (or a minute) and send that phone
+                        // again. Not for a single message (a login code):
+                        // the customer is waiting on the page.
+                        while (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests
+                               && records.Count > 1 && nuovoWaits < NuovoMaxWaits)
+                        {
+                            nuovoWaits++;
+                            await Task.Delay(NuovoRetryWait(response.Headers.RetryAfter?.Delta));
+                            response = await client.PostAsync(NuovoMessageUrl, new StringContent(body, Encoding.UTF8, "application/json"));
+                        }
                         logs.Add(Log(rec.AccountId.ToString(), logText ?? message, messageType, response.IsSuccessStatusCode,
                             response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync() : response.StatusCode.ToString()));
                     }

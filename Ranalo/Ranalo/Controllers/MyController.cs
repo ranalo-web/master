@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Mvc;
 using Ranalo.DataStore;
@@ -238,7 +239,7 @@ namespace Ranalo.Controllers
         }
 
         [HttpGet("my/statement")]
-        public async Task<IActionResult> Statement()
+        public async Task<IActionResult> Statement(int? show)
         {
             var (access, redirect) = await SignedInAsync(needsDetails: true);
             if (redirect != null) return redirect;
@@ -246,13 +247,16 @@ namespace Ranalo.Controllers
             var view = await AccountAsync(access!.AccountNo);
             if (view == null) return View("NoContract");
             ViewBag.Account = view;
+            // All payments are needed for the running balance; the page shows
+            // the newest `shown` of them (the count above covers all).
+            ViewBag.Shown = CustomerAppRules.Shown(show);
             return View(CustomerAppRules.Statement(await _access.GetPaymentsAsync(access.AccountNo), view.Owed));
         }
 
         // Every message we've sent the phone, so nothing is lost if the
         // phone's notification was missed or cleared.
         [HttpGet("my/inbox")]
-        public async Task<IActionResult> Inbox()
+        public async Task<IActionResult> Inbox(int? show)
         {
             var (access, redirect) = await SignedInAsync();
             if (redirect != null) return redirect;
@@ -266,8 +270,34 @@ namespace Ranalo.Controllers
             ViewBag.Unread = 0;
 
             var target = await _access.GetTargetAsync(access.AccountNo);
-            var messages = await _access.GetMessagesAsync(access.AccountNo, target?.Imei, 100);
-            return View(messages.Select(CustomerAppRules.InboxItem).ToList());
+            var shown = CustomerAppRules.Shown(show);
+            // One extra tells whether there are more.
+            var messages = await _access.GetMessagesAsync(access.AccountNo, target?.Imei, shown + 1);
+            ViewBag.Shown = shown;
+            ViewBag.More = messages.Count > shown;
+            ViewBag.Deleted = TempData["MyInboxDeleted"] as string;
+            return View(messages.Take(shown).Select(CustomerAppRules.InboxItem).ToList());
+        }
+
+        // "Delete" on a notification: hidden from the app only.
+        [HttpPost("my/inbox/delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteMessage(Guid id, int? show)
+        {
+            var (access, redirect) = await SignedInAsync();
+            if (redirect != null) return redirect;
+
+            if (Previewing)
+            {
+                TempData["MyInboxDeleted"] = "Staff preview: nothing is deleted from here.";
+            }
+            else
+            {
+                var target = await _access.GetTargetAsync(access!.AccountNo);
+                if (await _access.HideMessageAsync(access.AccountNo, target?.Imei, id))
+                    TempData["MyInboxDeleted"] = "Message deleted.";
+            }
+            return Redirect("/my/inbox" + (show is > CustomerAppRules.PageSize ? "?show=" + CustomerAppRules.Shown(show) : ""));
         }
 
         [HttpGet("my/pay")]
@@ -280,7 +310,7 @@ namespace Ranalo.Controllers
             // A chosen plan waiting for its first day: that amount starts it.
             var pendingPlan = await _selfPlanStore.GetLatestAsync(access.AccountNo) is { Status: SelfRestructureStatus.Pending } p ? p : null;
             if (view == null) return View("NoContract");
-            return View(new MyPayForm
+            var form = new MyPayForm
             {
                 Account = view,
                 Phone = access.Phone,
@@ -289,7 +319,20 @@ namespace Ranalo.Controllers
                     : view.Locked && view.UnlockFor24h is > 0 ? view.UnlockFor24h.Value
                     : view.Behind > 0 ? Math.Ceiling(view.Behind) : Math.Ceiling(view.Daily),
                 CanPrompt = _stk.Ready,
-            });
+            };
+
+            // The result of a prompt just sent (the POST redirects here).
+            if (TempData[PayResultKey] is string message)
+            {
+                form.Message = message;
+                form.Sent = TempData[PaySentKey] is true;
+                // Refused: keep what they typed so they can fix it.
+                if (TempData[PayAmountKey] is string amount
+                    && decimal.TryParse(amount, NumberStyles.Number, CultureInfo.InvariantCulture, out var typed))
+                    form.Amount = typed;
+                if (TempData[PayPhoneKey] is string phone) form.Phone = phone;
+            }
+            return View(form);
         }
 
         [HttpPost("my/pay")]
@@ -312,10 +355,22 @@ namespace Ranalo.Controllers
 
             // Always the signed-in account: the form can't name another.
             var result = await _stk.RequestAsync(access.AccountNo, form.Phone ?? access.Phone ?? "", form.Amount, access.Phone, view.Balance);
-            form.Sent = result.Sent;
-            form.Message = result.Message;
-            return View(form);
+
+            // Back to a plain GET with the result: coming back from the M-Pesa
+            // PIN screen reloads the page, and a POST page shows Chrome's
+            // "Confirm Form Resubmission" (9 Nov 2026 test) or sends again.
+            TempData[PayResultKey] = result.Message;
+            TempData[PaySentKey] = result.Sent;
+            if (!result.Sent)
+            {
+                TempData[PayAmountKey] = form.Amount.ToString(CultureInfo.InvariantCulture);
+                TempData[PayPhoneKey] = form.Phone;
+            }
+            return RedirectToAction(nameof(Pay));
         }
+
+        private const string PayResultKey = "MyPayResult", PaySentKey = "MyPaySent",
+            PayAmountKey = "MyPayAmount", PayPhoneKey = "MyPayPhone";
 
         [HttpGet("my/details")]
         public async Task<IActionResult> Details()

@@ -8,6 +8,13 @@ namespace Ranalo.Services
     // ScheduledDailyPaymentSummary), from the same MobileStatusReport.
     public static class CustomerAppRules
     {
+        // A Kenya-time date for the app: "Mon 4 Oct, 3:47 PM", with the year
+        // added when it isn't this year -- "Mon 4 Oct" alone read as a date
+        // already gone when the lock was in 2027 (9 Nov 2026 test).
+        public static string When(DateTime kenya, DateTime nowKenya) =>
+            kenya.ToString(kenya.Year == nowKenya.Year ? "ddd d MMM, h:mm tt" : "ddd d MMM yyyy, h:mm tt",
+                System.Globalization.CultureInfo.InvariantCulture);
+
         public static MyAccountView Account(MobileStatusReport r, DateTime? lockUtc, MyDevice? device, DateTime nowUtc,
             RestructuredRecord? plan = null)
         {
@@ -103,6 +110,14 @@ namespace Ranalo.Services
                 .ToList();
         }
 
+        // Notifications and Statement show this many, then "Show more" adds as
+        // many again (?show=40, 60, ...), up to MaxShown.
+        public const int PageSize = 20;
+        public const int MaxShown = 1000;
+
+        public static int Shown(int? requested) =>
+            Math.Clamp((int)Math.Ceiling((requested ?? PageSize) / (double)PageSize) * PageSize, PageSize, MaxShown);
+
         // A logged message back into a title and lines for the app's inbox.
         // Nuovo's are stored with <br>, Knox's on one line with " - "
         // (CustomerMessages.ForNuovoKnox / ForKnox), Transsion's with "\n".
@@ -125,11 +140,16 @@ namespace Ranalo.Services
                     "Welcome" => "Welcome",
                     "PlanStarted" => "Payment plan",
                     var t when AnnouncementRules.IsAnnouncement(t) => "News",
+                    var t when t?.StartsWith(CelebrationRules.HolidayPrefix, StringComparison.Ordinal) == true => "Greetings",
+                    var t when t?.StartsWith(CelebrationRules.BirthdayPrefix, StringComparison.Ordinal) == true => "Birthday",
+                    CelebrationRules.HalfwayType => "Halfway",
+                    CelebrationRules.UpgradeType => "Offer",
                     _ => "Message",
                 },
                 title,
                 lines.Skip(1).ToList(),
-                string.Equals(log.MessageStatus, "sent", StringComparison.OrdinalIgnoreCase));
+                string.Equals(log.MessageStatus, "sent", StringComparison.OrdinalIgnoreCase),
+                log.Id);
         }
 
         // The first photo of the product, from WooCommerce's comma list.
@@ -179,7 +199,7 @@ namespace Ranalo.Services
     }
 
     // Delivered: the phone's provider accepted it (it may still not have shown on the phone).
-    public record MyInboxItem(DateTime SentAtKenya, string Kind, string Title, List<string> Lines, bool Delivered);
+    public record MyInboxItem(DateTime SentAtKenya, string Kind, string Title, List<string> Lines, bool Delivered, Guid Id = default);
 
     public record MyStatementLine(DateTime PaidAt, string MpesaCode, decimal Amount, decimal PaidSoFar, decimal BalanceAfter);
 

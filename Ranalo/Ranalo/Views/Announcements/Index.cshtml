@@ -92,7 +92,15 @@
                             <tr>
                                 <td style="white-space:nowrap;">@Kenya(h.First)@(h.MessageType == Ranalo.Services.AnnouncementRules.TestType ? " (tests)" : "")</td>
                                 <td>@h.Sent</td>
-                                <td>@h.Failed</td>
+                                <td>
+                                    @h.Failed
+                                    @if (h.Failed > 0 && h.MessageType != Ranalo.Services.AnnouncementRules.TestType)
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary ms-2" type="submit" form="ann-form"
+                                                formaction="/announcements/retry" name="retryType" value="@h.MessageType" @(p.Running ? "disabled" : "")
+                                                onclick="return confirm('Send it again to the @h.Failed phones that did not get it? It uses the title and message in the boxes above.');">Retry failed</button>
+                                    }
+                                </td>
                                 <td class="small">@h.Sample</td>
                             </tr>
                         }

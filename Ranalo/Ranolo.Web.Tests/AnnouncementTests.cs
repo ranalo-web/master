@@ -7,6 +7,15 @@ namespace Ranolo.Web.Tests
     public class AnnouncementTests
     {
         [Test]
+        public void Nuovo_too_many_requests_waits_as_asked_or_a_minute()
+        {
+            Assert.That(Ranalo.Services.PaymentReminderService.NuovoRetryWait(null), Is.EqualTo(TimeSpan.FromSeconds(60)));
+            Assert.That(Ranalo.Services.PaymentReminderService.NuovoRetryWait(TimeSpan.FromSeconds(20)), Is.EqualTo(TimeSpan.FromSeconds(20)));
+            Assert.That(Ranalo.Services.PaymentReminderService.NuovoRetryWait(TimeSpan.Zero), Is.EqualTo(TimeSpan.FromSeconds(60)));
+            Assert.That(Ranalo.Services.PaymentReminderService.NuovoRetryWait(TimeSpan.FromHours(1)), Is.EqualTo(TimeSpan.FromSeconds(60)));
+        }
+
+        [Test]
         public void Name_and_account_are_filled_in_per_customer()
         {
             var m = AnnouncementRules.For(" Hello ", "Hi {name}, account {account}.\r\nBye", "JANE", 1234567);

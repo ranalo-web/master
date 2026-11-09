@@ -114,6 +114,29 @@ namespace Ranalo.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // "Retry failed" on a past announcement: the text in the boxes, only
+        // to phones that announcement failed for (AnnouncementSender.TryRetry).
+        [HttpPost("announcements/retry")]
+        [ValidateAntiForgeryToken]
+        public IActionResult Retry(string title, string body, string retryType)
+        {
+            if (!Allowed(out var user, out var redirect)) return redirect!;
+            Keep(title, body);
+            var problem = AnnouncementRules.Problem(title, body);
+            if (problem != null) { TempData["AnnError"] = problem; return RedirectToAction(nameof(Index)); }
+            if (!AnnouncementRules.IsAnnouncement(retryType) || retryType == AnnouncementRules.TestType)
+            {
+                TempData["AnnError"] = "That isn't an announcement that can be retried.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (_sender.TryRetry(retryType, title, body, user!.KnownAs ?? user.UserId.ToString()))
+                TempData["AnnMessage"] = "Retrying the phones that didn't get it. This page shows the progress.";
+            else
+                TempData["AnnError"] = "An announcement is already being sent. Wait for it to finish.";
+            return RedirectToAction(nameof(Index));
+        }
+
         private void Keep(string title, string body)
         {
             TempData["AnnTitle"] = title;

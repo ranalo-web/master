@@ -4,7 +4,7 @@
     ViewBag.Tab = "home";
     var missing = ViewBag.Missing as List<string> ?? new();
     string Ksh(decimal v) => "Ksh " + CustomerMessages.Money(v);
-    string When(DateTime d) => d.ToString("ddd d MMM, h:mm tt");
+    string When(DateTime d) => CustomerAppRules.When(d, DateTime.UtcNow + CustomerMessages.KenyaOffset);
 }
 
 <h1>Hi @Model.FirstName</h1>

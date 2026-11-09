@@ -28,6 +28,7 @@ namespace Ranalo.DataStore
         Task<List<MilestoneAccount>> GetRecipientsAsync(string messageType);
         Task<MilestoneAccount?> GetAccountAsync(long accountNo);
         Task<List<AnnouncementHistory>> HistoryAsync();
+        Task<List<MilestoneAccount>> GetFailedRecipientsAsync(string messageType);
     }
 
     // Who an announcement goes to (AnnouncementRules): every open contract
@@ -72,16 +73,37 @@ namespace Ranalo.DataStore
                 JOIN Devices d ON d.Id = ci.ID
                 WHERE ci.ID = @AccountNo", new { AccountNo = accountNo });
 
+        // Phones, not log rows: a phone that failed and then got it on a
+        // retry counts as sent, not failed.
         public async Task<List<AnnouncementHistory>> HistoryAsync() =>
             (await _db.QueryAsync<AnnouncementHistory>(@"
-                SELECT TOP 20 MessageType,
-                       SUM(CASE WHEN MessageStatus = 'sent' THEN 1 ELSE 0 END) AS Sent,
-                       SUM(CASE WHEN MessageStatus = 'failed' THEN 1 ELSE 0 END) AS Failed,
-                       MIN(DateSent) AS First, MAX(DateSent) AS Last,
-                       MAX(LEFT(Message, 120)) AS Sample
-                FROM MessageLogs
-                WHERE MessageType LIKE 'Announcement:%'
-                GROUP BY MessageType
-                ORDER BY MAX(DateSent) DESC")).ToList();
+                SELECT TOP 20 m.MessageType,
+                       COUNT(DISTINCT CASE WHEN m.MessageStatus = 'sent' THEN m.AccountNo END) AS Sent,
+                       COUNT(DISTINCT CASE WHEN m.MessageStatus = 'failed'
+                                            AND NOT EXISTS (SELECT 1 FROM MessageLogs s
+                                                            WHERE s.MessageType = m.MessageType AND s.MessageStatus = 'sent'
+                                                              AND s.AccountNo = m.AccountNo)
+                                           THEN m.AccountNo END) AS Failed,
+                       MIN(m.DateSent) AS First, MAX(m.DateSent) AS Last,
+                       MAX(LEFT(m.Message, 120)) AS Sample
+                FROM MessageLogs m
+                WHERE m.MessageType LIKE 'Announcement:%'
+                GROUP BY m.MessageType
+                ORDER BY MIN(m.DateSent) DESC")).ToList();
+
+        // A retry: only phones this announcement failed for, and still
+        // haven't got it -- not customers who joined since.
+        public async Task<List<MilestoneAccount>> GetFailedRecipientsAsync(string messageType) =>
+            (await _db.QueryAsync<MilestoneAccount>(@"
+                SELECT ci.ID AS AccountId, ci.First_Name AS FirstName, d.ImeiNo AS Imei,
+                       ISNULL(d.LockGroup, 1) AS LockGroup, ISNULL(ci.Daily, 0) AS Daily" + Open + @"
+                  AND ISNULL(d.IsTv, 0) = 0
+                  AND EXISTS (SELECT 1 FROM MessageLogs m
+                              WHERE m.MessageType = @MessageType AND m.MessageStatus = 'failed'
+                                AND m.AccountNo IN (CAST(ci.ID AS NVARCHAR(50)), d.ImeiNo))
+                  AND NOT EXISTS (SELECT 1 FROM MessageLogs m
+                                  WHERE m.MessageType = @MessageType AND m.MessageStatus = 'sent'
+                                    AND m.AccountNo IN (CAST(ci.ID AS NVARCHAR(50)), d.ImeiNo))
+                ORDER BY ci.ID", new { MessageType = messageType })).ToList();
     }
 }

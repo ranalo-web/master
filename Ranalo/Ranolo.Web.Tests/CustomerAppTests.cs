@@ -342,5 +342,36 @@ namespace Ranolo.Web.Tests
         {
             Assert.That(CustomerHostGate.PathAllowed(new PathString(path)), Is.EqualTo(allowed));
         }
+
+        // ---------- Show more ----------
+
+        [TestCase(null, 20)]
+        [TestCase(0, 20)]
+        [TestCase(-5, 20)]
+        [TestCase(20, 20)]
+        [TestCase(21, 40)]
+        [TestCase(40, 40)]
+        [TestCase(999999, 1000)]
+        public void Shown_goes_up_twenty_at_a_time(int? requested, int expected)
+        {
+            Assert.That(CustomerAppRules.Shown(requested), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void Inbox_item_keeps_the_message_id_for_delete()
+        {
+            var id = Guid.NewGuid();
+            Assert.That(CustomerAppRules.InboxItem(new MessageLog { Id = id, MessageType = "Payment", Message = "x" }).Id, Is.EqualTo(id));
+        }
+
+        // ---------- Dates ----------
+
+        [Test]
+        public void When_adds_the_year_only_when_it_is_not_this_year()
+        {
+            var now = new DateTime(2026, 11, 9, 20, 0, 0);
+            Assert.That(CustomerAppRules.When(new DateTime(2026, 11, 10, 15, 47, 0), now), Is.EqualTo("Tue 10 Nov, 3:47 PM"));
+            Assert.That(CustomerAppRules.When(new DateTime(2027, 10, 4, 15, 47, 0), now), Is.EqualTo("Mon 4 Oct 2027, 3:47 PM"));
+        }
     }
 }
