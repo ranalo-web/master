@@ -24,12 +24,14 @@ namespace Ranalo.Services
         private readonly ICustomerAccessRepository? _access;
         private readonly IPaymentsRepository? _paymentsRepository;
         private readonly Ranalo.SumsungKnox.IKnoxGuardClient? _knox;
+        private readonly IRestructureLogRepository? _restructureLog;
         private readonly ILogger<SelfRestructureService> _logger;
 
         public SelfRestructureService(ISelfRestructureRepository plans, ILostStolenRepository lostStolen,
             IAccountRefreshQueue refresh, ILogger<SelfRestructureService> logger,
             IPaymentReminderService? messages = null, ICustomerAccessRepository? access = null,
-            IPaymentsRepository? paymentsRepository = null, Ranalo.SumsungKnox.IKnoxGuardClient? knox = null)
+            IPaymentsRepository? paymentsRepository = null, Ranalo.SumsungKnox.IKnoxGuardClient? knox = null,
+            IRestructureLogRepository? restructureLog = null)
         {
             _plans = plans;
             _lostStolen = lostStolen;
@@ -38,6 +40,7 @@ namespace Ranalo.Services
             _access = access;
             _paymentsRepository = paymentsRepository;
             _knox = knox;
+            _restructureLog = restructureLog;
             _logger = logger;
         }
 
@@ -121,6 +124,8 @@ namespace Ranalo.Services
                             {
                                 started++;
                                 _logger.LogInformation("Self-service plan started: {Account} Ksh {Daily}/day", plan.AccountNo, plan.Daily);
+                                if (_restructureLog != null)
+                                    await _restructureLog.AddAsync(plan.AccountNo, RestructureLogKind.SelfService, plan.ChosenAtUtc.AddHours(3), plan.Daily, null, null, null, "Chosen by the customer in the app.");
                                 _refresh.Enqueue(plan.AccountNo.ToString());
                                 await TellThePhoneAsync(plan);
                             }

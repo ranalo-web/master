@@ -91,7 +91,7 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Agreed Restructure Report</h3>
                 <div class="nk-block-des text-soft">
-                    <p>Status reports for each account</p>
+                    <p>Plans agreed with customers, with what's due and paid on each plan. "Agreed by" and "Times restructured" are logged from 10 Nov 2026; click the count for an account's history.</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -169,6 +169,24 @@
                         </div>
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
+                @if (ViewBag.RestructureStaff is List<Ranalo.DataStore.RestructureLogStaff> staff && staff.Any())
+                {
+                    <div class="card-inner border-bottom">
+                        <h6 class="title mb-1">By staff</h6>
+                        <p class="text-soft small mb-2">Plans each person agreed or changed: in the last 30 days and since the log started (10 Nov 2026).</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0" style="max-width:520px;">
+                                <thead><tr><th>Who</th><th class="text-end">Last 30 days</th><th class="text-end">Total</th></tr></thead>
+                                <tbody>
+                                    @foreach (var s in staff)
+                                    {
+                                        <tr><td>@(s.ByName ?? "-")</td><td class="text-end">@s.Last30Days</td><td class="text-end">@s.Total</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
                 <div class="card-inner p-0">
                     <div class="table-responsive">
                     <table class="table mb-0" style="white-space:nowrap;" data-key="manual-restructured" data-page-size="10">
@@ -190,6 +208,8 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Lock Date</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Paid Date</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Paid Amnt</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Agreed by</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Times a plan was agreed on this account. Click for the history.">Times restructured</th>
                                 <th class="wl-th"></th>
                             </tr>
                         </thead>
@@ -213,6 +233,15 @@
                                 <td>@FormatLockDate(report.NextLockDate)</td>
                                 <td>@(report.LastResPaymentDate?.ToString("dd MMM yyyy HH:mm") ?? "-")</td>
                                 <td>@report.LastPaidAmount</td>
+                                @{ var logRow = (ViewBag.RestructureLog as Dictionary<long, Ranalo.DataStore.RestructureLogAccount>)?.GetValueOrDefault(report.AccountNo); }
+                                <td>
+                                    @(logRow?.LastBy ?? "-")
+                                    @if (logRow?.LastAtUtc != null)
+                                    {
+                                        <span class="d-block sub-text">@logRow.LastAtUtc.Value.AddHours(3).ToString("dd MMM yyyy")</span>
+                                    }
+                                </td>
+                                <td><a href="/statussummary/@report.AccountNo#restructure-history" title="See the restructure history">@(logRow?.Times.ToString() ?? "-")</a></td>
                                 <td class="text-end">
                                     <ul class="nk-tb-actions gx-2 justify-content-end">
                                         <li><a href="/account-details/@report.AccountNo" class="btn btn-sm btn-icon btn-trigger" data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"><em class="icon ni ni-eye"></em></a></li>

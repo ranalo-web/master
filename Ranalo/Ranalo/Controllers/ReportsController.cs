@@ -20,15 +20,19 @@ namespace Ranalo.Controllers
         private readonly IContractService _contractorService;
         private readonly IDeviceProcessor _deviceProcessor;
 
-        public ReportsController(IApplicationReportService applicationReportService, 
+        private readonly Ranalo.DataStore.IRestructureLogRepository _restructureLog;
+
+        public ReportsController(IApplicationReportService applicationReportService,
             IUserService userService,
             IContractService contractorService,
-            IDeviceProcessor deviceProcessor)
+            IDeviceProcessor deviceProcessor,
+            Ranalo.DataStore.IRestructureLogRepository restructureLog)
         {
             _applicationReportService = applicationReportService;
             _userService = userService;
             _contractorService = contractorService;
             _deviceProcessor = deviceProcessor;
+            _restructureLog = restructureLog;
         }
 
         [HttpGet]
@@ -256,6 +260,7 @@ namespace Ranalo.Controllers
             }
 
             viewDetails.CustomerDetails = await _applicationReportService.GetCustomerDetailsByAccountIdAsync(accountId);
+            ViewBag.RestructureHistory = await _restructureLog.HistoryAsync(accountId);
 
 
             return View(viewDetails);
@@ -317,15 +322,19 @@ namespace Ranalo.Controllers
                 AutoLockDatePmtR = date24HoursFromNow //(ArrearsR / AmountRes) + SystemDate + 27hrs
             };
 
-            try
-            {
-                await _applicationReportService.CreateRestructuredAsync(restructureToSave);
-            }
-            catch (Exception)
-            {
+            // The plan it replaces, if any (a new plan overwrites the old one).
+            var previous = (await _applicationReportService.GetAllRestructuredForAccount(accountNo))
+                .OrderByDescending(r => r.DateAgreed).FirstOrDefault();
 
-                throw;
-            }
+            await _applicationReportService.CreateRestructuredAsync(restructureToSave);
+
+            // Who agreed it (Agreed Restructure report: Agreed by, Times, By staff).
+            var byName = string.IsNullOrWhiteSpace(settings.KnownAs)
+                ? $"{settings.Name} {settings.LastName}".Trim()
+                : settings.KnownAs;
+            await _restructureLog.AddAsync(accountNo,
+                previous == null ? Ranalo.DataStore.RestructureLogKind.Agreed : Ranalo.DataStore.RestructureLogKind.Changed,
+                restructureToSave.DateAgreed, newRate, previous?.AmountRes, settings.UserId, byName);
 
             return RedirectToAction("RestructuredReport", "Reports");
         }
@@ -394,6 +403,11 @@ namespace Ranalo.Controllers
             }
 
             await SetViewBags(settings, "approver");
+
+            // Who agreed each plan and how often (Database/Restructures/001).
+            ViewBag.RestructureLog = await _restructureLog.ByAccountAsync();
+            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
+                ViewBag.RestructureStaff = await _restructureLog.ByStaffAsync(DateTime.UtcNow.AddDays(-30));
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {

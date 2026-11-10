@@ -475,6 +475,49 @@
                             <div class="nk-divider divider md"></div>
                         }
 
+                        @{ var history = ViewBag.RestructureHistory as List<Ranalo.DataStore.RestructureLogEntry> ?? new(); }
+                        <div class="nk-block" id="restructure-history">
+                            <div class="nk-block-head nk-block-head-sm">
+                                <h5 class="title">Restructure history</h5>
+                                <p class="text-soft small mb-0">Every time a plan was agreed, changed or undone on this account, and by whom (logged since 10 Nov 2026).</p>
+                            </div>
+                            @if (!history.Any())
+                            {
+                                <p class="text-soft">No restructures logged.</p>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead><tr><th>When</th><th>What</th><th>By</th><th>Daily amount</th><th>Plan from</th><th>Note</th></tr></thead>
+                                        <tbody>
+                                            @foreach (var h in history)
+                                            {
+                                                <tr>
+                                                    <td style="white-space:nowrap;">@h.AtUtc.AddHours(3).ToString("dd MMM yyyy, HH:mm")</td>
+                                                    <td>@h.Kind</td>
+                                                    <td>@h.Who</td>
+                                                    <td style="white-space:nowrap;">
+                                                        @if (h.PrevAmountRes.HasValue && h.AmountRes.HasValue)
+                                                        {
+                                                            <span>Ksh @h.PrevAmountRes.Value.ToString("N0") → @h.AmountRes.Value.ToString("N0")</span>
+                                                        }
+                                                        else if (h.AmountRes.HasValue)
+                                                        {
+                                                            <span>Ksh @h.AmountRes.Value.ToString("N0")</span>
+                                                        }
+                                                        else { <span>-</span> }
+                                                    </td>
+                                                    <td style="white-space:nowrap;">@(h.DateAgreed?.ToString("dd MMM yyyy") ?? "-")</td>
+                                                    <td class="small">@h.Note</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                        <div class="nk-divider divider md"></div>
 
                         <div class="nk-block">
                             <div class="nk-block-head nk-block-head-sm nk-block-between">

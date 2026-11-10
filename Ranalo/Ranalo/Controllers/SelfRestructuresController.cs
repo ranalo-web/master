@@ -13,13 +13,15 @@ namespace Ranalo.Controllers
         private readonly ISelfRestructureRepository _plans;
         private readonly Ranalo.Services.IAccountRefreshQueue _refresh;
         private readonly ILogger<SelfRestructuresController> _logger;
+        private readonly IRestructureLogRepository _restructureLog;
 
         public SelfRestructuresController(ISelfRestructureRepository plans, Ranalo.Services.IAccountRefreshQueue refresh,
-            ILogger<SelfRestructuresController> logger)
+            ILogger<SelfRestructuresController> logger, IRestructureLogRepository restructureLog)
         {
             _plans = plans;
             _refresh = refresh;
             _logger = logger;
+            _restructureLog = restructureLog;
         }
 
         [HttpGet("self-restructures")]
@@ -63,6 +65,8 @@ namespace Ranalo.Controllers
             else
             {
                 _logger.LogInformation("Self-service plan {Id} on {Account} undone by {User}: {Note}", id, accountNo, user.KnownAs, note.Trim());
+                await _restructureLog.AddAsync(accountNo, RestructureLogKind.Undone, null, null, null, user.UserId,
+                    string.IsNullOrWhiteSpace(user.KnownAs) ? $"{user.Name} {user.LastName}".Trim() : user.KnownAs, note.Trim());
                 _refresh.Enqueue(accountNo);
                 TempData["SelfPlanMessage"] = $"Plan undone on {accountNo}: the previous plan is back. It still counts as the customer's one plan.";
             }

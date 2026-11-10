@@ -190,6 +190,7 @@ builder.Services.AddScoped<IAnnouncementsRepository, AnnouncementsRepository>();
 builder.Services.AddScoped<ICelebrationsRepository, CelebrationsRepository>();
 builder.Services.AddScoped<IKnoxStatusRepository, KnoxStatusRepository>();
 builder.Services.AddScoped<IKnoxSwitchService, KnoxSwitchService>();
+builder.Services.AddScoped<IRestructureLogRepository, RestructureLogRepository>();
 builder.Services.AddSingleton<IAnnouncementSender, AnnouncementSender>();
 builder.Services.AddScoped<IDeviceRemovalTaskRepository, DeviceRemovalTaskRepository>();
 builder.Services.AddScoped<IEnrolmentCheckService, EnrolmentCheckService>();
