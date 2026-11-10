@@ -1,515 +1,230 @@
-﻿@using Ranalo.Models
-@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+@using Ranalo.Models
 @model MobileStatusReport
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
+    var canRestructure = ViewBag.IsAdmin is true || ViewBag.IsApprover is true;
+    var history = ViewBag.RestructureHistory as List<Ranalo.DataStore.RestructureLogEntry> ?? new();
+    var contractTotal = Model.Deposit + Model.TotalLoan;
+    var paidPercent = contractTotal > 0 ? (int)Math.Min(100, Math.Round(Model.TotalPaid / contractTotal * 100)) : 0;
+    var behind = Model.Arrears < 0 ? -Model.Arrears : 0;
+    var ahead = Model.Arrears > 0 ? Model.Arrears : 0;
+    var plan = Model.RestructuredRecords.OrderByDescending(r => r.DateAgreed).FirstOrDefault();
+    var service = Ranalo.Services.RecoveryRules.LockGroupName(Model.LockGroup);
+    var locked = Model.Locked || string.Equals(Model.LockType, "complete", StringComparison.OrdinalIgnoreCase);
 }
-@functions{
+@functions {
+    private static string Ksh(decimal v) => "KES " + v.ToString("N0");
 
-
-    private string SetStatusBadge(string status)
+    // Next lock is stored as text in a few shapes; shown as "11 Nov 2026, 12:55".
+    private static string When(string? date)
     {
-        var statusClass = "";
-        switch (status)
-        {
-            case "checkin":
-                statusClass = "tb-status text-warning";
-                break;
-            case "un_registered":
-                statusClass = "tb-status text-danger";
-                break;
-            case "rejected":
-                statusClass = "tb-status text-danger";
-                break;
-            case "enrolled":
-                statusClass = "tb-status text-success";
-                break;
-            default:
-                statusClass = "";
-                break;
-        }
-
-        return statusClass;
-    }
-
-    private string SetLockStatusBadge(string status)
-    {
-        var statusClass = "";
-        switch (status)
-        {
-            case "unlocked":
-                statusClass = "tb-status text-warning";
-                break;
-            case "un_registered":
-                statusClass = "tb-status text-danger";
-                break;
-            case "rejected":
-                statusClass = "tb-status text-danger";
-                break;
-            case "complete":
-                statusClass = "tb-status text-success";
-                break;
-            default:
-                statusClass = "";
-                break;
-        }
-
-        return statusClass;
+        if (string.IsNullOrWhiteSpace(date)) return "-";
+        var formats = new[] { "dd/MM/yyyy HH:mm:ss", "dd/MM/yyyy'T'HH:mm:ss", "dd/MM/yyyy", "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd HH:mm:ss" };
+        return DateTime.TryParseExact(date.Trim(), formats, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var d)
+            || DateTime.TryParse(date.Trim(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out d)
+            ? d.ToString("dd MMM yyyy, HH:mm")
+            : date.Trim();
     }
 }
+
+<style>
+    /* Equal tiles that wrap; long values break instead of running into the next tile. */
+    .ss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .ss-tile { border: 1px solid #e5e9f2; border-radius: 8px; padding: 10px 12px; min-width: 0; }
+    .ss-tile .lbl { display: block; font-size: 12px; color: #8094ae; margin-bottom: 2px; }
+    .ss-tile .val { display: block; font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+    .ss-tile .sub { display: block; font-size: 12px; color: #8094ae; }
+    .ss-section + .ss-section { margin-top: 28px; }
+    .ss-section h5 { margin-bottom: 12px; }
+    .ss-table td, .ss-table th { vertical-align: top; }
+</style>
 
 <div class="nk-content-body">
     <div class="nk-block-head">
         <div class="nk-block-head-sub"><span>Account @Model.AccountNo</span></div>
         <div class="nk-block-between-md g-4">
             <div class="nk-block-head-content">
-                <h2 class="nk-block-title  page-title">@Model.FirstName</h2>
-                <div class="nk-block-des">
-                    <p>At a glance summary of your account. Have fun!</p>
-                </div>
+                <h2 class="nk-block-title page-title">@Model.FirstName @Model.CustomerDetails?.LastName</h2>
+                <div class="nk-block-des text-soft"><p>@Model.Make @Model.Model · @service</p></div>
             </div>
-            <div class="nk-block-head nk-block-head-sm nk-block-between">
-                <div class="btn-group">
-                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><span>Loan List</span> <em class="icon ni ni-chevron-down"></em></button>
-                    <div class="dropdown-menu dropdown-menu-end">
-                        <ul class="link-list-opt no-bdr">
-                            <li><a href="#"><span>Home Loan (Pro)</span></a></li>
-                            <li><a href="#"><span>Personal Loan (Standard)</span></a></li>
-                            <li><a href="#"></em><span>SME Loan (Pro)</span></a></li>
-                        </ul>
-                    </div>
+            @if (canRestructure)
+            {
+                <div class="nk-block-head-content">
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#modalRestructure" class="btn btn-primary"><em class="icon ni ni-repeat"></em><span>Restructure</span></button>
                 </div>
-            </div><!-- .nk-block-head -->
+            }
         </div>
-    </div><!-- .nk-block-head -->
+    </div>
+
+    @if (TempData["RestructureError"] is string restructureError)
+    {
+        <div class="alert alert-danger alert-icon"><em class="icon ni ni-cross-circle"></em> @restructureError</div>
+    }
+
     <div class="nk-block">
         <div class="row g-gs">
-        <div class="col-lg-4 col-xl-4 col-xxl-3">
-            <div class="card card-bordered">
-                <div class="card-inner-group">
+            <div class="col-lg-4 col-xxl-3">
+                <div class="card card-bordered">
                     <div class="card-inner">
                         <div class="user-card user-card-s2">
-
                             <div class="user-avatar lg bg-primary">
-                                @if (Model.CustomerDetails != null && Model.CustomerDetails.Url != null)
+                                @if (Model.CustomerDetails?.Url != null)
                                 {
-                                        <img src="@Model.CustomerDetails.Url" alt="">
+                                    <img src="@Model.CustomerDetails.Url" alt="">
+                                }
+                                else
+                                {
+                                    <span>@(string.IsNullOrWhiteSpace(Model.FirstName) ? "?" : Model.FirstName.Trim()[..1].ToUpperInvariant())</span>
                                 }
                             </div>
                             <div class="user-info">
-                                <div class="badge bg-light rounded-pill ucap">Platinam</div>
-                                <h5>@Model.FirstName @Model?.CustomerDetails?.LastName</h5>
-                                <span class="sub-text">@Model?.CustomerDetails?.Email </span>
+                                <h5>@Model.FirstName @Model.CustomerDetails?.LastName</h5>
+                                <span class="sub-text">@Model.CustomerDetails?.Email</span>
                             </div>
                         </div>
                     </div>
-                    <div class="card-inner card-inner-sm">
-                        <ul class="btn-toolbar justify-center gx-1">
-                            <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-shield-off"></em></a></li>
-                            <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-mail"></em></a></li>
-                            <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-bookmark"></em></a></li>
-                            <li><a href="#" class="btn btn-trigger btn-icon text-danger"><em class="icon ni ni-na"></em></a></li>
-                        </ul>
+                    <div class="card-inner border-top">
+                        <h6 class="overline-title mb-2">Customer</h6>
+                        @{
+                            var details = new (string Label, string? Value)[]
+                            {
+                                ("Phone", Model.CustomerDetails?.Phone),
+                                ("National ID", Model.CustomerDetails?.NationalId),
+                                ("Address", Model.CustomerDetails?.Address1),
+                                ("Email", Model.CustomerDetails?.Email),
+                                ("IMEI", Model.ImeiNo ?? Model.CustomerDetails?.IMEI),
+                                ("Dealer ref", Model.CustomerDetails?.DealerRef),
+                                ("Deposit M-Pesa code", Model.CustomerDetails?.MpesaDepositRef),
+                                ("Ordered", Model.CustomerDetails?.DateCreated.ToString("dd MMM yyyy")),
+                            };
+                        }
+                        <div class="row g-2">
+                            @foreach (var d in details)
+                            {
+                                <div class="col-sm-6 col-lg-12">
+                                    <span class="sub-text">@d.Label</span>
+                                    <span style="overflow-wrap:anywhere;">@(string.IsNullOrWhiteSpace(d.Value) ? "-" : d.Value)</span>
+                                </div>
+                            }
+                        </div>
+                        @if (Model.CustomerDetails == null)
+                        {
+                            <p class="text-soft small mt-2 mb-0">No online order found for this account, so contact details aren't on file.</p>
+                        }
                     </div>
-                    <div class="card-inner">
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="profile-stats">
-                                    <span class="amount">23</span>
-                                    <span class="sub-text">Total Order</span>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="profile-stats">
-                                    <span class="amount">20</span>
-                                    <span class="sub-text">Complete</span>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="profile-stats">
-                                    <span class="amount">3</span>
-                                    <span class="sub-text">Progress</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div><!-- .card-inner -->
-                    <div class="card-inner">
-                        <h6 class="overline-title mb-2">Short Details</h6>
-                        <div class="row g-3">
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">User ID:</span>
-                                <span>@Model?.CustomerDetails?.CustomerId</span>
-                            </div>
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">Billing Email:</span>
-                                <span>@Model?.CustomerDetails?.Email</span>
-                            </div>
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">Billing Address:</span>
-                                <span>@Model?.CustomerDetails?.Address1</span>
-                            </div>
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">Phone:</span>
-                                <span>@Model?.CustomerDetails?.Phone</span>
-                            </div>
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">National ID:</span>
-                                <span>@Model?.CustomerDetails?.NationalId</span>
-                            </div>
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">Order Modified:</span>
-                                <span>@Model?.CustomerDetails?.DateModified</span>
-                            </div>
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">Status:</span>
-                                <span class="@SetStatusBadge(Model.Status)">@Model.Status</span>
-                            </div>
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">Ordered At:</span>
-                                <span>@Model?.CustomerDetails?.DateCreated</span>
-                            </div>
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">Dealer Ref:</span>
-                                <span>@Model?.CustomerDetails?.DealerRef</span>
-                            </div>
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">IMEI:</span>
-                                <span>@Model?.CustomerDetails?.IMEI</span>
-                            </div>
-                            <div class="col-sm-6 col-md-4 col-lg-12">
-                                <span class="sub-text">Mpesa Code:</span>
-                                <span>@Model?.CustomerDetails?.MpesaDepositRef</span>
-                            </div>
-                        </div>
-                    </div><!-- .card-inner -->
                 </div>
             </div>
-        </div><!-- .col -->
-        <div class="col-lg-8 col-xl-8 col-xxl-9">
 
-        <div class="card card-bordered">
-            <div class="card-aside-wrap">
-                <div class="card-content">
+            <div class="col-lg-8 col-xxl-9">
+                <div class="card card-bordered">
                     <div class="card-inner">
-                        <div class="nk-block">
-                            <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                <h5 class="title">Finance Details</h5>
-                            </div><!-- .nk-block-head -->
-                            <div class="row gy-5">
-                                <div class="col-md-3 col-lg-2 col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Loan Balance</span>
-                                        <span> KES @Model.LoanBalance/- </span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2 col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Deposit</span>
-                                        <span> KES @Model.Deposit/- </span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2  col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Total Loan</span>
-                                        <span>@Model.TotalLoan</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2  col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Total Paid</span>
-                                        <span>@Model.TotalPaid</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2  col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Total Due</span>
-                                        <span>@Model.TotalDue</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2  col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Arrears</span>
-                                        <span>@Model.Arrears</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div><!-- .nk-block -->
-                        <div class="nk-divider divider md"></div>
-                        <div class="nk-block">
-                            <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                <h5 class="title">Payment History</h5>
-                            </div><!-- .nk-block-head -->
-                            <div class="row gy-5">
-                                <div class="col-md-2 col-sm-4 col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">First Paid</span>
-                                        <span class="amount text-primary">@Model.FirstPaidAmt</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 col-sm-4 col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Last Paid</span>
-                                        <span class="amount text-success">@Model.LastPaidAmt</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2  col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Daily</span>
-                                        <span class="amount text-info">@Model.Daily</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 col-sm-4 col-12">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Days Left</span>
-                                        <span>@Math.Round(Model.NumberDaysLifeTime)</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 col-sm-4 col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">First Date</span>
-                                        <span>@Model.FirstPaymentDate?.ToString("dd MMM yyyy")</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 col-sm-4 col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Last Date</span>
-                                        <span>@Model.LastPaymentDate?.ToString("dd MMM yyyy")</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div><!-- .nk-block -->
-                        <div class="nk-block">
-                            <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                <h5 class="title">Device Details</h5>
-                            </div><!-- .nk-block-head -->
-                            <div class="row gy-5">
-                                <div class="col-md-3 col-lg-2 col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Make</span>
-                                        <span>@Model.Make </span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2 col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Model</span>
-                                        <span>@Model.Model </span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2  col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Lock Status</span>
-                                        <span class="@SetLockStatusBadge(Model.LockType)">@Model.LockType</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2  col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Next Lock</span>
-                                        <span>@Model.NextLockDate</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2  col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Enroll Status</span>
-                                        <span class="@SetStatusBadge(Model.Status)">@Model.Status</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-lg-2  col-6">
-                                    <div class="profile-stats">
-                                        <span class="profile-ud-label">Locked</span>
-                                        <span>@(Model.Locked ? "True" : "False") </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div><!-- .nk-block -->
-                        <div class="nk-divider divider md"></div>
-                        <div class="nk-block">
-                            <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                <h5 class="title">Loan Status</h5>
-                            </div><!-- .nk-block-head -->
-                            <div class="row gy-5">
-                                <div class="col-12 col-md-10 col-lg-8">
-                                    <div class="profile-stats">
-                                        <div class="progress progress-lg">
-                                            @{
-                                                int percentagePaid = 0;
-                                                DateTime today = DateTime.Today;
 
-                                                if (today <= Model.FirstPaymentDate)
-                                                {
-                                                    percentagePaid = 0;
-                                                }
-                                                else if (Model.NumberDaysLifeTime <= 0)
-                                                {
-                                                    percentagePaid = 100;
-                                                }
-                                                else
-                                                {
-                                                    double totalDays = Model.NumberDaysLifeTime;
-                                                    double elapsedDays = (today - Model?.FirstPaymentDate).Value.TotalDays;
-                                                    percentagePaid = (int)Math.Round((elapsedDays / totalDays) * 100);
+                        <div class="ss-section">
+                            <h5 class="title">Contract</h5>
+                            <div class="ss-grid">
+                                <div class="ss-tile"><span class="lbl">Contract total</span><span class="val">@Ksh(contractTotal)</span><span class="sub">incl. deposit @Ksh(Model.Deposit)</span></div>
+                                <div class="ss-tile"><span class="lbl">Paid so far</span><span class="val">@Ksh(Model.TotalPaid)</span></div>
+                                <div class="ss-tile"><span class="lbl">Balance left</span><span class="val">@Ksh(Model.LoanBalance)</span></div>
+                                <div class="ss-tile"><span class="lbl">Due by today</span><span class="val">@Ksh(Model.TotalDue)</span></div>
+                                <div class="ss-tile">
+                                    <span class="lbl">@(behind > 0 ? "Behind by" : "Ahead by")</span>
+                                    <span class="val @(behind > 0 ? "text-danger" : "text-success")">@Ksh(behind > 0 ? behind : ahead)</span>
+                                    <span class="sub">on the original contract</span>
+                                </div>
+                                <div class="ss-tile"><span class="lbl">Daily amount</span><span class="val">@Ksh(Model.Daily)</span></div>
+                            </div>
 
-                                                }
-                                                <div class="progress-bar progress-bar-striped bg-success" data-progress="@percentagePaid" style="width: @percentagePaid %;">@percentagePaid %</div>
-                                            }
-                                        </div>
-                                    </div>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span>Paid @paidPercent% of the contract</span>
+                                    <span class="text-soft">@Ksh(Model.TotalPaid) of @Ksh(contractTotal)</span>
+                                </div>
+                                <div class="progress progress-lg">
+                                    <div class="progress-bar bg-success" style="width:@(paidPercent)%;"></div>
                                 </div>
                             </div>
-                        </div><!-- .nk-block -->
-                        <div class="nk-divider divider md"></div>
-                        @if (ViewBag.IsAdmin is true || ViewBag.IsApprover is true)
+                        </div>
+
+                        <div class="ss-section">
+                            <h5 class="title">Payments</h5>
+                            <div class="ss-grid">
+                                <div class="ss-tile"><span class="lbl">First payment</span><span class="val">@Ksh(Model.FirstPaidAmt)</span><span class="sub">@(Model.FirstPaymentDate?.ToString("dd MMM yyyy") ?? "-")</span></div>
+                                <div class="ss-tile"><span class="lbl">Last payment</span><span class="val">@Ksh(Model.LastPaidAmt)</span><span class="sub">@(Model.LastPaymentDate?.ToString("dd MMM yyyy") ?? "-")</span></div>
+                                <div class="ss-tile"><span class="lbl">Paid in the last 24 hours</span><span class="val">@Ksh(Model.TotalLast24)</span></div>
+                                <div class="ss-tile"><span class="lbl">Contract ends</span><span class="val">@(Model.ContractEndDate?.ToString("dd MMM yyyy") ?? "-")</span><span class="sub">@Math.Max(0, Math.Round(Model.NumberDaysLifeTime)) days left</span></div>
+                            </div>
+                        </div>
+
+                        <div class="ss-section">
+                            <h5 class="title">Phone</h5>
+                            <div class="ss-grid">
+                                <div class="ss-tile"><span class="lbl">Phone</span><span class="val">@Model.Make @Model.Model</span></div>
+                                <div class="ss-tile"><span class="lbl">Lock service</span><span class="val">@service</span></div>
+                                <div class="ss-tile"><span class="lbl">Lock status</span><span class="val @(locked ? "text-danger" : "text-success")">@(locked ? "Locked" : "Unlocked")</span></div>
+                                <div class="ss-tile"><span class="lbl">Next lock</span><span class="val">@When(Model.NextLockDate)</span></div>
+                                <div class="ss-tile"><span class="lbl">Enrolment</span><span class="val">@(string.IsNullOrWhiteSpace(Model.Status) ? "-" : char.ToUpperInvariant(Model.Status[0]) + Model.Status[1..])</span></div>
+                            </div>
+                        </div>
+
+                        @if (plan != null)
                         {
-                            <div class="nk-block">
-                                @if (TempData["RestructureError"] is string restructureError)
-                                {
-                                    <div class="alert alert-danger alert-icon alert-dismissible">
-                                        <em class="icon ni ni-cross-circle"></em> @restructureError
-                                        <button class="close" data-bs-dismiss="alert"></button>
+                            <div class="ss-section">
+                                <h5 class="title">Agreed restructure</h5>
+                                <div class="ss-grid">
+                                    <div class="ss-tile"><span class="lbl">Agreed from</span><span class="val">@plan.DateAgreed.ToString("dd MMM yyyy")</span><span class="sub">@plan.DaysRestructured days on the plan</span></div>
+                                    <div class="ss-tile"><span class="lbl">Plan daily amount</span><span class="val">@Ksh(plan.AmountRes)</span></div>
+                                    <div class="ss-tile"><span class="lbl">Due on the plan</span><span class="val">@Ksh(plan.TotalDueR)</span></div>
+                                    <div class="ss-tile"><span class="lbl">Paid on the plan</span><span class="val">@Ksh(plan.TotalPaidR)</span></div>
+                                    <div class="ss-tile">
+                                        <span class="lbl">@(plan.ArrearsR < 0 ? "Behind on the plan" : "Ahead on the plan")</span>
+                                        <span class="val @(plan.ArrearsR < 0 ? "text-danger" : "text-success")">@Ksh(Math.Abs(plan.ArrearsR))</span>
                                     </div>
-                                }
-                                <div class="nk-block-head nk-block-head-sm">
-                                    <button type="button" data-bs-toggle="modal" data-bs-target="#modalRestructure" class="link link-primary ms-auto">Restructure</button>
-                                </div><!-- .nk-block-head -->
+                                </div>
                             </div>
                         }
-                        <div class="nk-divider divider md"></div>
-                        @if(Model.RestructuredRecords.Any())
-                        {
-                                <div class="nk-block">
-                                <div class="nk-block-head nk-block-head-sm">
-                                        <div class="col-xxl-8">
-                    <div class="card card-bordered card-full">
-                        <div class="card-inner">
-                            <div class="card-title-group">
-                                <div class="card-title">
-                                    <h6 class="title"><span class="me-2">Transaction</span> <a href="#" class="link d-none d-sm-inline">See History</a></h6>
-                                </div>
-                                <div class="card-tools">
-                                    <ul class="card-tools-nav">
-                                        <li><a href="#"><span>Paid</span></a></li>
-                                        <li><a href="#"><span>Pending</span></a></li>
-                                        <li class="active"><a href="#"><span>All</span></a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-inner p-0 border-top">
-                            <div class="nk-tb-list nk-tb-orders">
-                                <div class="nk-tb-item nk-tb-head">
 
-                                    <div class="nk-tb-col"><span>Account No</span></div>
-                                    @* <div class="nk-tb-col tb-col-sm"><span>Customer</span></div> *@
-                                    <div class="nk-tb-col tb-col-md"><span>Date Agreed</span></div>
-                                    <div class="nk-tb-col tb-col-lg"><span>Day Res</span></div>
-                                    <div class="nk-tb-col"><span>Amount Res</span></div>
-                                        <div class="nk-tb-col"><span>Due</span></div>
-                                            <div class="nk-tb-col"><span>Paid</span></div>
-                                            <div class="nk-tb-col"><span>Arrears</span></div>
-                                                <div class="nk-tb-col"><span>Auto Lock</span></div>
-                                    <div class="nk-tb-col"><span>&nbsp;</span></div>
-                                </div>
-                                                   
-                                @foreach (var record in Model.RestructuredRecords)
-                                {
-                                    <div class="nk-tb-item">
-                                        <div class="nk-tb-col">
-                                            <span class="tb-lead"><a href="#">#@record.AccountNo</a></span>
-                                        </div>
-                                        @* <div class="nk-tb-col tb-col-sm">
-                                            <div class="user-card">
-                                                <div class="user-avatar user-avatar-sm bg-purple">
-                                                    <span>@GetInitials(record.FirstName + " " + record.LastName)</span>
-                                                </div>
-                                                <div class="user-name">
-                                                    <span class="tb-lead">@(record.FirstName + " " + record.LastName)</span>
-                                                </div>
-                                            </div>
-                                        </div> *@
-                                        <div class="nk-tb-col tb-col-md">
-                                            <span class="tb-sub">@record.DateAgreed.ToString("dd MMM yyyy")</span>
-                                        </div>
-                                        <div class="nk-tb-col tb-col-lg">
-                                            <span class="tb-sub text-primary">@record.DaysRestructured</span>
-                                        </div>
-                                        <div class="nk-tb-col">
-                                                    <span class="tb-sub tb-amount">@record.AmountRes.ToString("N2") <span>KES</span></span>
-                                        </div>
-                                                        <div class="nk-tb-col">
-                                                            <span class="tb-sub tb-amount">@record.TotalDueR.ToString("N2")</span>
-                                        </div>
-                                                <div class="nk-tb-col">
-                                                                    <span class="tb-sub tb-amount">@record.TotalPaidR</span>
-                                                </div>
-                                                        <div class="nk-tb-col">
-                                                                            <span class="tb-sub tb-amount">@record.ArrearsR.ToString("N0")</span>
-                                                        </div>
-                                                                <div class="nk-tb-col">
-                                                                                    <span class="tb-sub tb-amount">@record.AutoLockDatePmtR</span>
-                                                                </div>
-                                        <div class="nk-tb-col nk-tb-col-action">
-                                            <div class="dropdown">
-                                                <a class="text-soft dropdown-toggle btn btn-icon btn-trigger" data-bs-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
-                                                <div class="dropdown-menu dropdown-menu-end dropdown-menu-xs">
-                                                    <ul class="link-list-plain">
-                                                        <li><a href="#">View</a></li>
-                                                        <li><a href="#">Invoice</a></li>
-                                                        <li><a href="#">Print</a></li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                                        }
-
-                            </div>
-                        </div>
-                        <div class="card-inner-sm border-top text-center d-sm-none">
-                            <a href="#" class="btn btn-link btn-block">See History</a>
-                        </div>
-                    </div><!-- .card -->
-                </div><!-- .col -->
-                                </div><!-- .nk-block-head -->
-                            </div>
-                            <div class="nk-divider divider md"></div>
-                        }
-
-                        @{ var history = ViewBag.RestructureHistory as List<Ranalo.DataStore.RestructureLogEntry> ?? new(); }
-                        <div class="nk-block" id="restructure-history">
-                            <div class="nk-block-head nk-block-head-sm">
-                                <h5 class="title">Restructure history</h5>
-                                <p class="text-soft small mb-0">Every time a plan was agreed, changed or undone on this account, and by whom (logged since 10 Nov 2026).</p>
-                            </div>
+                        <div class="ss-section" id="restructure-history">
+                            <h5 class="title">Restructure history</h5>
                             @if (!history.Any())
                             {
-                                <p class="text-soft">No restructures logged.</p>
+                                <p class="text-soft mb-0">No restructures logged for this account. Logging started on 10 Nov 2026.</p>
                             }
                             else
                             {
                                 <div class="table-responsive">
-                                    <table class="table table-sm mb-0">
-                                        <thead><tr><th>When</th><th>What</th><th>By</th><th>Daily amount</th><th>Plan from</th><th>Note</th></tr></thead>
+                                    <table class="table table-sm ss-table mb-0">
+                                        <thead>
+                                            <tr><th>When</th><th>What</th><th>By</th><th>Daily amount</th><th>Plan from</th><th>Reason</th></tr>
+                                        </thead>
                                         <tbody>
                                             @foreach (var h in history)
                                             {
+                                                var badge = h.Kind switch
+                                                {
+                                                    Ranalo.DataStore.RestructureLogKind.Agreed => "bg-primary",
+                                                    Ranalo.DataStore.RestructureLogKind.Changed => "bg-info",
+                                                    Ranalo.DataStore.RestructureLogKind.SelfService => "bg-success",
+                                                    Ranalo.DataStore.RestructureLogKind.Undone => "bg-danger",
+                                                    _ => "bg-light text-dark",
+                                                };
                                                 <tr>
-                                                    <td style="white-space:nowrap;">@h.AtUtc.AddHours(3).ToString("dd MMM yyyy, HH:mm")</td>
-                                                    <td>@h.Kind</td>
+                                                    <td style="white-space:nowrap;">@h.AtUtc.AddHours(3).ToString("dd MMM yyyy")<span class="d-block small text-soft">@h.AtUtc.AddHours(3).ToString("HH:mm")</span></td>
+                                                    <td><span class="badge @badge">@h.Kind</span></td>
                                                     <td>@h.Who</td>
                                                     <td style="white-space:nowrap;">
                                                         @if (h.PrevAmountRes.HasValue && h.AmountRes.HasValue)
                                                         {
-                                                            <span>Ksh @h.PrevAmountRes.Value.ToString("N0") → @h.AmountRes.Value.ToString("N0")</span>
+                                                            <span>@Ksh(h.PrevAmountRes.Value) → @Ksh(h.AmountRes.Value)</span>
                                                         }
                                                         else if (h.AmountRes.HasValue)
                                                         {
-                                                            <span>Ksh @h.AmountRes.Value.ToString("N0")</span>
+                                                            <span>@Ksh(h.AmountRes.Value)</span>
                                                         }
                                                         else { <span>-</span> }
                                                     </td>
                                                     <td style="white-space:nowrap;">@(h.DateAgreed?.ToString("dd MMM yyyy") ?? "-")</td>
-                                                    <td class="small">@h.Note</td>
+                                                    <td class="small" style="min-width:180px;">@(string.IsNullOrWhiteSpace(h.Note) ? "-" : h.Note)</td>
                                                 </tr>
                                             }
                                         </tbody>
@@ -517,25 +232,12 @@
                                 </div>
                             }
                         </div>
-                        <div class="nk-divider divider md"></div>
 
-                        <div class="nk-block">
-                            <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                <h5 class="title"><code>Notice</code></h5>
-                            </div><!-- .nk-block-head -->
-                            <div class="row gy-5">
-                                <div class="col-12">
-                                    <dt>If you pay your EMI late, you may attract additional charges from your lender. If you make a payment towards your EMI which is after your due date but within your lender's grace period, there is usually an added 'late fee' that you will have to pay alongside your EMI amount.</dt>
-                                </div>
-                            </div>
-                        </div><!-- .nk-block -->
-                    </div><!-- .card-inner -->
-                </div><!-- .card-content -->
-            </div><!-- .card-aside-wrap -->
-        </div><!-- .card -->
+                    </div>
+                </div>
             </div>
         </div>
-    </div><!-- .nk-block -->
+    </div>
 </div>
 
 <div class="modal fade" tabindex="-1" id="modalRestructure">

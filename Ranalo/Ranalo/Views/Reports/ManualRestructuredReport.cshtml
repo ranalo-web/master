@@ -242,13 +242,7 @@
                                 <td>@(report.LastResPaymentDate?.ToString("dd MMM yyyy HH:mm") ?? "-")</td>
                                 <td>@report.LastPaidAmount</td>
                                 @{ var logRow = (ViewBag.RestructureLog as Dictionary<long, Ranalo.DataStore.RestructureLogAccount>)?.GetValueOrDefault(report.AccountNo); }
-                                <td>
-                                    @(logRow?.LastBy ?? "-")
-                                    @if (logRow?.LastAtUtc != null)
-                                    {
-                                        <span class="d-block sub-text">@logRow.LastAtUtc.Value.AddHours(3).ToString("dd MMM yyyy")</span>
-                                    }
-                                </td>
+                                <td>@(logRow?.LastBy ?? "-")</td>
                                 <td><a href="/statussummary/@report.AccountNo#restructure-history" title="See the restructure history">@(logRow?.Times.ToString() ?? "-")</a></td>
                                 <td class="text-end">
                                     <ul class="nk-tb-actions gx-2 justify-content-end">
