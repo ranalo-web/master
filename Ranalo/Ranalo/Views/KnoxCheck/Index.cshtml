@@ -1,0 +1,116 @@
+@using Ranalo.DataStore
+@using Ranalo.Services
+@model List<KnoxCheckRow>
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    string Kenya(DateTime? utc) => utc.HasValue ? utc.Value.AddHours(3).ToString("d MMM, h:mm tt") : "–";
+    var sentElsewhere = Model.Where(r => r.Problem == KnoxStatusRules.Problem.ActiveInKnoxButSentElsewhere && r.OpenContract).ToList();
+    var notActive = Model.Where(r => r.Problem == KnoxStatusRules.Problem.SentToKnoxButNotActive && r.OpenContract).ToList();
+    var lastRead = Model.Max(r => r.KnoxStatusAtUtc);
+    string Badge(string? s) => KnoxStatusRules.Active(s) ? "bg-success" : string.IsNullOrWhiteSpace(s) ? "bg-light text-dark" : "bg-warning text-dark";
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-head-content">
+            <h3 class="nk-block-title page-title">Knox check</h3>
+            <div class="nk-block-des text-soft">
+                <p>What Knox says about each phone, next to the service we send its locks and messages through. Read from Knox every 2 hours; last read @Kenya(lastRead) (Kenya time). Phones in Recovery are moved from there.</p>
+            </div>
+        </div>
+    </div>
+
+    @if (ViewBag.NotReady == true)
+    {
+        <div class="alert alert-warning">Run <code>Database/DeviceLock/002_knox_status.sql</code> first. The page fills in on the next Knox read (within 2 hours).</div>
+    }
+    @if (TempData["KnoxResult"] is string result)
+    {
+        <div class="alert alert-success alert-icon"><em class="icon ni ni-check-circle"></em> @result</div>
+    }
+    @if (TempData["KnoxError"] is string error)
+    {
+        <div class="alert alert-danger alert-icon"><em class="icon ni ni-cross-circle"></em> @error</div>
+    }
+
+    <h5 class="mt-3">Active in Knox, but we send to another service (@sentElsewhere.Count)</h5>
+    <p class="text-soft small">Knox controls these phones, but our locks and messages go to Nuovo or Transsion, so they don't reach the phone. Switch checks Knox again first.</p>
+    <div class="card card-bordered mb-4">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead><tr><th class="wl-th">Account</th><th class="wl-th">Phone</th><th class="wl-th">We send to</th><th class="wl-th">Knox says</th><th class="wl-th"></th></tr></thead>
+                <tbody>
+                    @if (!sentElsewhere.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-soft py-3">None.</td></tr>
+                    }
+                    @foreach (var r in sentElsewhere)
+                    {
+                        <tr>
+                            <td>@r.AccountNo<div class="small text-soft">@r.FirstName</div></td>
+                            <td>@r.Model<div class="small text-soft">@r.Imei</div></td>
+                            <td>@RecoveryRules.LockGroupName(r.LockGroup)</td>
+                            <td><span class="badge @Badge(r.KnoxStatus)">@r.KnoxStatus</span><div class="small text-soft">@KnoxStatusRules.Explain(r.KnoxStatus)</div></td>
+                            <td class="text-end">
+                                <form method="post" action="/knox-check/switch" onsubmit="return confirm('Switch account @r.AccountNo to Knox? Its locks and messages will go through Knox from now on.');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="accountNo" value="@r.AccountNo" />
+                                    <button class="btn btn-sm btn-primary" type="submit">Switch to Knox</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h5>We send to Knox, but Knox can't act on it (@notActive.Count)</h5>
+    <p class="text-soft small">Locks and messages to these phones are refused by Knox. Usually the phone needs switching on and connecting, or approving in the Knox portal. Check each one in Knox.</p>
+    <div class="card card-bordered mb-4">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead><tr><th class="wl-th">Account</th><th class="wl-th">Phone</th><th class="wl-th">Knox says</th><th class="wl-th">Knox last saw it</th></tr></thead>
+                <tbody>
+                    @if (!notActive.Any())
+                    {
+                        <tr><td colspan="4" class="text-center text-soft py-3">None.</td></tr>
+                    }
+                    @foreach (var r in notActive)
+                    {
+                        <tr>
+                            <td>@r.AccountNo<div class="small text-soft">@r.FirstName</div></td>
+                            <td>@r.Model<div class="small text-soft">@r.Imei</div></td>
+                            <td><span class="badge @Badge(r.KnoxStatus)">@r.KnoxStatus</span><div class="small text-soft">@KnoxStatusRules.Explain(r.KnoxStatus)</div></td>
+                            <td>@Kenya(r.KnoxLastSeenUtc)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h5>All phones in Knox or sent to Knox (@Model.Count)</h5>
+    <div class="card card-bordered">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead><tr><th class="wl-th">Account</th><th class="wl-th">Phone</th><th class="wl-th">We send to</th><th class="wl-th">Knox says</th><th class="wl-th">Knox last saw it</th><th class="wl-th">Knox next lock</th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td>@r.AccountNo<div class="small text-soft">@r.FirstName@(r.OpenContract ? "" : " · no open contract")@(r.OpenRecoveryId is int rid ? " · in Recovery" : "")</div></td>
+                            <td>@r.Model<div class="small text-soft">@r.Imei</div></td>
+                            <td>@RecoveryRules.LockGroupName(r.LockGroup)</td>
+                            <td><span class="badge @Badge(r.KnoxStatus)">@(r.KnoxStatus ?? "not read yet")</span>@if (r.KnoxOffline == true) {<span class="small text-soft"> · offline</span>}</td>
+                            <td>@Kenya(r.KnoxLastSeenUtc)</td>
+                            <td>@Kenya(r.KnoxRelockUtc)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

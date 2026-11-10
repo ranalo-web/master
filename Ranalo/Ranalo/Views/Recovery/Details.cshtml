@@ -78,6 +78,10 @@
                         <div class="text-soft small">Status</div>
                         <div class="fs-5 fw-bold mb-2">@RecoveryStatus.Label(r.Status, r.Make)</div>
                         <div class="small"><span class="text-soft">Locker now:</span> @RecoveryRules.LockGroupName(r.CurrentLockGroup) @(r.Locked == true ? "(locked)" : r.Locked == false ? "(unlocked)" : "")</div>
+                        @if (!string.IsNullOrWhiteSpace(r.KnoxStatus))
+                        {
+                            <div class="small"><span class="text-soft">Knox says:</span> <span class="badge @(KnoxStatusRules.Active(r.KnoxStatus) ? "bg-success" : "bg-warning text-dark")">@r.KnoxStatus</span> @KnoxStatusRules.Explain(r.KnoxStatus) <span class="text-soft">(read @(r.KnoxStatusAtUtc?.AddHours(3).ToString("d MMM, h:mm tt")))</span></div>
+                        }
                         <div class="small"><span class="text-soft">Locker when added:</span> @RecoveryRules.LockGroupName(r.OriginalLockGroup)</div>
                         <div class="small"><span class="text-soft">Lock date:</span> @(r.NextLockDate ?? "—")</div>
                         <div class="small"><span class="text-soft">Last connected:</span> @(r.LastConnectedAt ?? "—")</div>

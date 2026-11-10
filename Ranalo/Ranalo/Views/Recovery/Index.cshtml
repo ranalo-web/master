@@ -185,7 +185,12 @@
                                     <td class="d-none d-lg-table-cell">@r.CustomerName</td>
                                     <td class="d-none d-xxl-table-cell">@r.DealerName</td>
                                     <td class="d-none d-xl-table-cell">@r.Reason</td>
-                                    <td class="d-none d-lg-table-cell">@RecoveryRules.LockGroupName(r.CurrentLockGroup) @(r.Locked == true ? "· locked" : r.Locked == false ? "· unlocked" : "")</td>
+                                    <td class="d-none d-lg-table-cell">@RecoveryRules.LockGroupName(r.CurrentLockGroup) @(r.Locked == true ? "· locked" : r.Locked == false ? "· unlocked" : "")
+                                        @if (!string.IsNullOrWhiteSpace(r.KnoxStatus) && r.KnoxStatus != KnoxStatusRules.NotInKnox)
+                                        {
+                                            <div class="small" title="@KnoxStatusRules.Explain(r.KnoxStatus) (read @(r.KnoxStatusAtUtc?.AddHours(3).ToString("d MMM, h:mm tt")))">Knox: <span class="badge @(KnoxStatusRules.Active(r.KnoxStatus) ? "bg-success" : "bg-warning text-dark")">@r.KnoxStatus</span></div>
+                                        }
+                                    </td>
                                     <td class="d-none d-sm-table-cell"><span class="badge @(RecoveryStatus.IsMoved(r.Status) ? "bg-success" : r.Status == RecoveryStatus.NotCatchable ? "bg-danger" : "bg-light text-dark")">@RecoveryStatus.Label(r.Status, r.Make)</span></td>
                                     <td style="white-space:normal; min-width:170px; max-width:360px; overflow-wrap:anywhere;">
                                         @if (r.LastStep != null)
