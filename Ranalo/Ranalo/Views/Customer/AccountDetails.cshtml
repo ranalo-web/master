@@ -152,33 +152,98 @@ else
                             }
 
                             <div class="ss-section">
-                                <h5 class="title">Phone</h5>
-                                @if (device != null || !string.IsNullOrWhiteSpace(s?.ImeiNo))
+                                <h5 class="title">Device Details</h5>
+                                @if (Model.DeviceDetails != null)
                                 {
-                                    // The device record first; the account summary fills what it lacks.
-                                    static string? First(params string?[] v) => v.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
-                                    var nextLockText = First(device?.NextLockDateIsoFormat, device?.NextLockDate, s?.NextLockDate);
-                                    var lastSeenText = First(device?.LastConnectedAt, s?.LastConnectedAt);
-                                    <partial name="_PhoneCard" model="new Ranalo.Models.PhoneCardModel
-                                    {
-                                        Make = device?.Make, Model = device?.Model, Imei = First(device?.ImeiNo, s?.ImeiNo, Model.IMEI), Imei2 = device?.ImeiNo2,
-                                        Service = service, Locked = locked,
-                                        Enrolment = First(device?.Status, device?.EnrollmentStatus),
-                                        NextLock = Ranalo.Models.PhoneCardModel.Parse(nextLockText), NextLockText = nextLockText,
-                                        LastConnectedUtc = Ranalo.Models.PhoneCardModel.Parse(lastSeenText),
-                                        EnrolledUtc = Ranalo.Models.PhoneCardModel.Parse(First(device?.EnrolledOn, device?.CreatedAt)),
-                                        Serial = device?.SerialNo, OsVersion = device?.OsVersion, SimNumber = device?.PhoneNumber,
-                                        SimSwapLock = device?.IsLockedOnSimSwap ?? false,
-                                        LockAppVersion = device?.AppVersionName,
-                                        ProductName = Model.Product?.ProductName, Storage = Model.Product?.ProductStorage,
-                                        Ram = Model.Product?.ProductRam, Colour = Model.Product?.ProductColor,
-                                    }" />
+                                    <div class="profile-ud-list">
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">Make</span>
+                                                <span class="profile-ud-value">@Model.DeviceDetails.Make</span>
+                                            </div>
+                                        </div>
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">Model</span>
+                                                <span class="profile-ud-value">@Model.DeviceDetails.Model</span>
+                                            </div>
+                                        </div>
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">Lock Status</span>
+                                                <span class="profile-ud-value @(locked ? "text-danger" : "text-success")">@Model.DeviceDetails.LockType</span>
+                                            </div>
+                                        </div>
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">Enrolled</span>
+                                                <span class="profile-ud-value">@When(Model.DeviceDetails.EnrolledOn, utc: true)</span>
+                                            </div>
+                                        </div>
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">Last Connected</span>
+                                                <span class="profile-ud-value">@When(Model.DeviceDetails.LastConnectedAt, utc: true)</span>
+                                            </div>
+                                        </div>
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">Next Lock</span>
+                                                <span class="profile-ud-value">@When(Model.DeviceDetails.NextLockDateIsoFormat ?? Model.DeviceDetails.NextLockDate)</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 }
                                 else
                                 {
                                     <p class="text-soft mb-0">No phone linked to this account yet.</p>
                                 }
                             </div>
+
+                            @if (Model.Product != null)
+                            {
+                                <div class="ss-section">
+                                    <h5 class="title">Device Information</h5>
+                                    <div class="profile-ud-list">
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">Name</span>
+                                                <span class="profile-ud-value">@Model.Product.ProductName</span>
+                                            </div>
+                                        </div>
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">Storage</span>
+                                                <span class="profile-ud-value">@Model.Product.ProductStorage</span>
+                                            </div>
+                                        </div>
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">SKU</span>
+                                                <span class="profile-ud-value">@Model.Product.Sku</span>
+                                            </div>
+                                        </div>
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">RAM</span>
+                                                <span class="profile-ud-value">@Model.Product.ProductRam</span>
+                                            </div>
+                                        </div>
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">Order No</span>
+                                                <span class="profile-ud-value">@Model.Product.ProductId</span>
+                                            </div>
+                                        </div>
+                                        <div class="profile-ud-item">
+                                            <div class="profile-ud wider">
+                                                <span class="profile-ud-label">Color</span>
+                                                <span class="profile-ud-value">@Model.Product.ProductColor</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
 
                             <div class="ss-section">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
