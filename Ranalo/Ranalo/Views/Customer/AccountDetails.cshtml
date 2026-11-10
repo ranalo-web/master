@@ -194,15 +194,6 @@ else
                                             <span class="dd-k">Enrolled</span>
                                             <span class="dd-v">@When(Model.DeviceDetails.EnrolledOn, utc: true)</span>
                                         </div>
-                                        @{
-                                            // As the lock service reports the device.
-                                            var makeModel = string.Join(" · ", new[] { Model.DeviceDetails.Make, Model.DeviceDetails.Model }
-                                                .Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()));
-                                        }
-                                        <div class="dd-item dd-full">
-                                            <span class="dd-k">Make &amp; model</span>
-                                            <span class="dd-v">@(string.IsNullOrWhiteSpace(makeModel) ? "-" : makeModel)</span>
-                                        </div>
                                         @if (Model.Product != null)
                                         {
                                             // From the WooCommerce product, on one card.
