@@ -3,9 +3,9 @@
 // connection. It never stores account pages -- balances, statements and
 // notifications always come fresh from the server, so nothing about a
 // customer can be read from the phone's storage.
-const CACHE = 'ranalo-app-v1';
+const CACHE = 'ranalo-app-v2'; // v2 (10 Nov 2026): new logo files
 const OFFLINE = '/my/offline.html';
-const STATIC = [OFFLINE, '/images/brand/ranalo-icon-192.png', '/images/brand/ranalo-icon.png'];
+const STATIC = [OFFLINE, '/images/brand/ranalo-icon-192.png', '/images/brand/ranalo-icon.png', '/images/brand/ranalo-mark-white.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(STATIC)).then(() => self.skipWaiting()));
