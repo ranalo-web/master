@@ -29,6 +29,7 @@ namespace Ranalo.DataStore
         Task<int> SaveAsync(IReadOnlyList<KnoxStatusRules.KnoxDeviceState> states, DateTime readAtUtc);
         Task<List<KnoxCheckRow>> GetCheckListAsync();
         Task<KnoxCheckRow?> GetAsync(long accountNo);
+        Task<List<string>> GetTrackedImeisAsync();
     }
 
     // Knox's own status on Devices (Database/DeviceLock/002).
@@ -97,6 +98,13 @@ namespace Ranalo.DataStore
             (await _db.QueryAsync<KnoxCheckRow>(Select + @"
                 WHERE d.LockGroup = 2 OR (d.KnoxStatus IS NOT NULL AND d.KnoxStatus <> @NotInKnox)
                 ORDER BY d.Id", new { NotInKnox = KnoxStatusRules.NotInKnox })).ToList();
+
+        // Phones we send to Knox, or that Knox has had: looked up by IMEI when
+        // Knox's paged list leaves them out.
+        public async Task<List<string>> GetTrackedImeisAsync() =>
+            (await _db.QueryAsync<string>(@"
+                SELECT DISTINCT LTRIM(RTRIM(ImeiNo)) FROM Devices
+                WHERE (LockGroup = 2 OR KnoxStatus IS NOT NULL) AND NULLIF(LTRIM(RTRIM(ImeiNo)), '') IS NOT NULL")).ToList();
 
         public async Task<KnoxCheckRow?> GetAsync(long accountNo) =>
             await _db.QueryFirstOrDefaultAsync<KnoxCheckRow>(Select + " WHERE d.Id = @AccountNo", new { AccountNo = accountNo });

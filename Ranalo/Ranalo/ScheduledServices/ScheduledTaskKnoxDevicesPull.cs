@@ -44,9 +44,19 @@ namespace Ranalo.ScheduledServices
                         {
                             try
                             {
-                                var matched = await scope.ServiceProvider.GetRequiredService<IKnoxStatusRepository>()
-                                    .SaveAsync(all.Select(Ranalo.Services.KnoxStatusRules.From).ToList(), DateTime.UtcNow);
-                                _logger.LogInformation("Knox status saved: {Knox} phones in Knox, {Matched} of ours.", all.Count, matched);
+                                var statusRepo = scope.ServiceProvider.GetRequiredService<IKnoxStatusRepository>();
+                                // Our phones the list didn't include are looked up one by one
+                                // by IMEI (as Recovery's Check in Knox does): on 10 Nov two
+                                // phones Knox had (last changed weeks earlier, so at the end
+                                // of the list) were missing from the paged read.
+                                var found = await LookUpMissingAsync(knoxClient, statusRepo, all);
+                                if (found != null)
+                                {
+                                    all.AddRange(found);
+                                    var matched = await statusRepo.SaveAsync(all.Select(Ranalo.Services.KnoxStatusRules.From).ToList(), DateTime.UtcNow);
+                                    _logger.LogInformation("Knox status saved: {Knox} phones read ({Looked} looked up by IMEI), {Matched} of ours.",
+                                        all.Count, found.Count, matched);
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -106,14 +116,10 @@ namespace Ranalo.ScheduledServices
                     if (list.DeviceList.Count == 0 || all.Count >= total) break;
                 }
 
-                // Fewer phones than Knox says it has: incomplete, so save nothing.
+                // Fewer than Knox's total is logged; our own phones missing from
+                // it are then looked up by IMEI (LookUpMissingAsync).
                 var distinct = all.Select(d => d.ObjectId ?? d.DeviceUid ?? d.Imei).Distinct().Count();
-                if (distinct < total)
-                {
-                    _logger.LogWarning("Knox list incomplete: {Got} of {Total} phones read; not saved this round.", distinct, total);
-                    return null;
-                }
-                _logger.LogInformation("Knox list read: {Total} phones.", total);
+                _logger.LogInformation("Knox list read: {Got} of {Total} phones.", distinct, total);
                 return all;
             }
             catch (Exception ex)
@@ -121,6 +127,37 @@ namespace Ranalo.ScheduledServices
                 _logger.LogError(ex, "Error while reading Knox's device list");
                 return null;
             }
+        }
+
+        // Our phones (sent to Knox, or seen in Knox before) not in the list:
+        // searched by IMEI. null = a lookup failed, so nothing is saved this
+        // round (a failed lookup must not mark a phone "Not in Knox").
+        public const int MaxLookups = 300;
+
+        private async Task<List<DeviceDto>?> LookUpMissingAsync(IKnoxGuardClient knoxClient, IKnoxStatusRepository repo, List<DeviceDto> read)
+        {
+            var seen = new HashSet<string>(read.SelectMany(d => new[] { d.Imei, d.Imei2 }).Where(i => !string.IsNullOrWhiteSpace(i))!,
+                StringComparer.OrdinalIgnoreCase);
+            var missing = (await repo.GetTrackedImeisAsync()).Where(i => !seen.Contains(i)).Take(MaxLookups).ToList();
+            var found = new List<DeviceDto>();
+            foreach (var imei in missing)
+            {
+                try
+                {
+                    var list = await knoxClient.ListDevicesAsync(new ListDevicesRequest
+                    {
+                        PageNum = 0, PageSize = 20, SortBy = "updateTime", SortOrder = "descending", Search = imei,
+                    });
+                    var d = list?.DeviceList?.FirstOrDefault(x => x.Imei == imei || x.Imei2 == imei || x.DeviceUid == imei);
+                    if (d != null) found.Add(d);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Knox lookup of {Imei} failed; Knox status not saved this round.", imei);
+                    return null;
+                }
+            }
+            return found;
         }
 
         private async Task<List<Device>> DeviceUnlockPull(List<DeviceDto>? enrolled, IDevicesRepository deviceRepository)
