@@ -1,635 +1,290 @@
-﻿@using Ranalo.Models
-@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+@using Ranalo.Models
 @model CustomerDetails
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
 @functions {
-    private string SetStatusBadge(string status)
-    {
-        var statusClass = "";
-        switch (status)
-        {
-            case "approval-waiting":
-                statusClass = "lead-text text-warning";
-                break;
-            case "cancelled":
-                statusClass = "lead-text text-danger";
-                break;
-            case "rejected":
-                statusClass = "lead-text text-danger";
-                break;
-            case "approved":
-                statusClass = "lead-text text-success";
-                break;
-            default:
-                statusClass = "";
-                break;
-        }
+    private static string Ksh(decimal v) => "KES " + v.ToString("N0");
 
-        return statusClass;
+    // Dates arrive as text in several shapes ("10-11-26 09:55:00 UTC",
+    // "11/11/2026T12:55:00", ISO). Never throws: unreadable text is shown as is.
+    private static string When(string? text, bool utc = false)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "-";
+        var t = text.Trim().Replace(" UTC", "");
+        var formats = new[] { "dd-MM-yy HH:mm:ss", "dd/MM/yyyy'T'HH:mm:ss", "dd/MM/yyyy HH:mm:ss", "dd/MM/yyyy",
+                              "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd HH:mm:ss" };
+        if (!DateTime.TryParseExact(t, formats, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var d)
+            && !DateTime.TryParse(t, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out d))
+            return text.Trim();
+        if (d.Year < 2000) return "-";   // 01-01-70 = never
+        return (utc ? d.AddHours(3) : d).ToString("dd MMM yyyy, HH:mm");
     }
 
-    private string SetLockStatusBadge(string status)
-    {
-        var statusClass = "";
-        switch (status)
-        {
-            case "unlocked":
-                statusClass = "tb-status text-success";
-                break;
-            case "un_registered":
-                statusClass = "tb-status text-info";
-                break;
-            case "rejected":
-                statusClass = "tb-status text-danger";
-                break;
-            case "complete":
-                statusClass = "tb-status text-danger";
-                break;
-            default:
-                statusClass = "";
-                break;
-        }
-
-        return statusClass;
-    }
-
-    private string FormartUtcDate(string date, string format = "dd/MM/yyyy HH:mm:ss")
-    {
-        if (string.IsNullOrEmpty(date))
-        {
-            return "Not set";
-        }
-        DateTime parsedDate = DateTime.ParseExact(
-            date.Replace(" UTC", ""),
-        "dd-MM-yy HH:mm:ss",
-        System.Globalization.CultureInfo.InvariantCulture,
-        System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal
-    );
-        return parsedDate.ToString(format);
-    }
-
-    public string FormartDateWithT(string input, string format = "dd/MM/yyyy HH:mm:ss")
-    {
-        if(input == null)
-        {
-            return DateTime.MinValue.ToString(format);
-        }
-
-        input = input.Replace("T", " ");
-
-        DateTime parsedDate = DateTime.ParseExact(
-            input,
-            "dd/MM/yyyy HH:mm:ss",
-            System.Globalization.CultureInfo.InvariantCulture
-        );
-
-        return parsedDate.ToString(format);
-    }
-
+    private static string OrDash(string? s) => string.IsNullOrWhiteSpace(s) ? "-" : s.Trim();
 }
 
-@if(Model == null)
+@if (Model == null)
 {
     <div class="alert alert-pro alert-warning">
         <div class="alert-text">
-            <h6>Account Details</h6>
-            <p>Sorry! the account details cannot be found. This may be because the link to order details does not exist.</p>
+            <h6>Account details</h6>
+            <p>This account or order couldn't be found. Check the number in the link.</p>
         </div>
     </div>
-}else
+}
+else
 {
+    string? accountNo = Model.Payments.FirstOrDefault()?.AccountNo
+        ?? (Model.Summary?.AccountId > 0 ? Model.Summary.AccountId.ToString() : Model.AccountId != 0 ? Model.AccountId.ToString() : null);
+    var s = Model.Summary;
+    var contractTotal = s == null ? 0
+        : Math.Round(s.Deposit + s.Daily * 30 * s.TermsInMonths + s.Weekly * (30m / 7m) * s.TermsInMonths + s.Monthly * s.TermsInMonths, 0);
+    var balance = s == null ? 0 : Math.Max(0, contractTotal - s.TotalPaid);
+    var paidPercent = contractTotal > 0 && s != null ? (int)Math.Min(100, Math.Round(s.TotalPaid / contractTotal * 100)) : 0;
+    var arrears = Model.Arrears ?? 0;
+    var frequency = s == null ? "-" : s.Daily > 0 ? "Daily" : s.Weekly > 0 ? "Weekly" : s.Monthly > 0 ? "Monthly" : "-";
+    var instalment = s == null ? 0 : s.Daily > 0 ? s.Daily : s.Weekly > 0 ? s.Weekly : s.Monthly;
+    var device = Model.DeviceDetails;
+    var service = Ranalo.Services.RecoveryRules.LockGroupName(device?.LockGroup ?? s?.LockGroup);
+    var locked = device != null && (device.Locked || string.Equals(device.LockType, "complete", StringComparison.OrdinalIgnoreCase));
+    var photo = Model.IdentityImages.FirstOrDefault(x => x.Key == "photo_of_applicant")?.Url;
+
+    <style>
+        .ss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+        .ss-tile { border: 1px solid #e5e9f2; border-radius: 8px; padding: 10px 12px; min-width: 0; }
+        .ss-tile .lbl { display: block; font-size: 12px; color: #8094ae; margin-bottom: 2px; }
+        .ss-tile .val { display: block; font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+        .ss-tile .sub { display: block; font-size: 12px; color: #8094ae; }
+        .ss-section + .ss-section { margin-top: 28px; }
+        .ss-section h5 { margin-bottom: 12px; }
+        .ss-kv { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        .ss-kv .k { display: block; font-size: 12px; color: #8094ae; }
+        .ss-kv .v { overflow-wrap: anywhere; }
+    </style>
+
     <div class="nk-content-body">
-        <div class="nk-block-head nk-block-head-sm">
-            <div class="nk-block-between g-3">
+        <div class="nk-block-head">
+            <div class="nk-block-head-sub"><span>@(accountNo != null ? $"Account {accountNo}" : "")@(Model.OrderID > 0 ? $" · Order {Model.OrderID}" : "")</span></div>
+            <div class="nk-block-between-md g-4">
                 <div class="nk-block-head-content">
-                    <h3 class="nk-block-title page-title">Customer Details</h3>
-                    <div class="nk-block-des text-soft">
-                        <p>Details of the account for customer</p>
-                    </div>
+                    <h2 class="nk-block-title page-title">@Model.FirstName @Model.LastName</h2>
+                    <div class="nk-block-des text-soft"><p>@(device != null ? $"{device.Make} {device.Model} · {service}" : "No phone linked yet")</p></div>
                 </div>
                 <div class="nk-block-head-content">
-                    <a href="html/customer-list.html" class="btn btn-outline-light bg-white d-none d-sm-inline-flex"><em class="icon ni ni-arrow-left"></em><span>Back</span></a>
-                    <a href="html/customer-list.html" class="btn btn-icon btn-outline-light bg-white d-inline-flex d-sm-none"><em class="icon ni ni-arrow-left"></em></a>
+                    <ul class="nk-block-tools g-2">
+                        <li><a href="javascript:history.back()" class="btn btn-outline-light bg-white"><em class="icon ni ni-arrow-left"></em><span>Back</span></a></li>
+                        @if (accountNo != null)
+                        {
+                            <li><a href="/statussummary/@accountNo" class="btn btn-outline-light bg-white"><em class="icon ni ni-list"></em><span>Status &amp; history</span></a></li>
+                        }
+                        @if ((ViewBag.IsAdmin is true || ViewBag.IsApprover is true) && accountNo != null)
+                        {
+                            <li><button type="button" data-bs-toggle="modal" data-bs-target="#modalRestructure" class="btn btn-primary"><em class="icon ni ni-repeat"></em><span>Restructure</span></button></li>
+                        }
+                    </ul>
                 </div>
             </div>
-        </div><!-- .nk-block-head -->
+        </div>
+
+        @if (TempData["RestructureError"] is string restructureError)
+        {
+            <div class="alert alert-danger alert-icon"><em class="icon ni ni-cross-circle"></em> @restructureError</div>
+        }
+
         <div class="nk-block">
             <div class="row g-gs">
-                <div class="col-xl-4 order-last">
-                    <div class="card">
-                        <div class="card-inner-group">
-                            <div class="card-inner card-inner-sm">
-                                <ul class="btn-toolbar justify-center gx-1">
-                                    <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-shield-off"></em></a></li>
-                                    <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-mail"></em></a></li>
-                                    <li><a href="#" class="btn btn-trigger btn-icon"><em class="icon ni ni-bookmark"></em></a></li>
-                                    <li><a href="#" class="btn btn-trigger btn-icon text-danger"><em class="icon ni ni-na"></em></a></li>
-                                </ul>
+                <div class="col-xl-8">
+                    <div class="card card-bordered">
+                        <div class="card-inner">
+
+                            @if (s != null)
+                            {
+                                <div class="ss-section">
+                                    <h5 class="title">Loan</h5>
+                                    <div class="ss-grid">
+                                        <div class="ss-tile"><span class="lbl">Contract total</span><span class="val">@Ksh(contractTotal)</span><span class="sub">incl. deposit @Ksh(s.Deposit)</span></div>
+                                        <div class="ss-tile"><span class="lbl">Paid so far</span><span class="val">@Ksh(s.TotalPaid)</span></div>
+                                        <div class="ss-tile"><span class="lbl">Balance left</span><span class="val">@Ksh(balance)</span></div>
+                                        <div class="ss-tile"><span class="lbl">Due by today</span><span class="val">@Ksh(Model.TotalDue ?? 0)</span></div>
+                                        <div class="ss-tile">
+                                            <span class="lbl">@(arrears < 0 ? "Behind by" : "Ahead by")</span>
+                                            <span class="val @(arrears < 0 ? "text-danger" : "text-success")">@Ksh(Math.Abs(arrears))</span>
+                                        </div>
+                                        <div class="ss-tile"><span class="lbl">Instalment</span><span class="val">@Ksh(instalment)</span><span class="sub">@frequency</span></div>
+                                        <div class="ss-tile"><span class="lbl">Term</span><span class="val">@s.TermsInMonths.ToString("0.#") months</span><span class="sub">@Math.Max(0, Math.Round(Model.DaysLeft)) days left</span></div>
+                                        <div class="ss-tile"><span class="lbl">Started</span><span class="val">@s.FirstPaymentDate.ToString("dd MMM yyyy")</span><span class="sub">first payment @Ksh(s.FirstAmount)</span></div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between small mb-1">
+                                            <span>Paid @paidPercent% of the contract</span>
+                                            <span class="text-soft">@Ksh(s.TotalPaid) of @Ksh(contractTotal)</span>
+                                        </div>
+                                        <div class="progress progress-lg"><div class="progress-bar bg-success" style="width:@(paidPercent)%;"></div></div>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="ss-section"><h5 class="title">Loan</h5><p class="text-soft mb-0">No payments on this account yet.</p></div>
+                            }
+
+                            <div class="ss-section">
+                                <h5 class="title">Phone</h5>
+                                @if (device != null)
+                                {
+                                    <div class="ss-grid">
+                                        <div class="ss-tile"><span class="lbl">Phone</span><span class="val">@device.Make @device.Model</span><span class="sub">IMEI @OrDash(device.ImeiNo)</span></div>
+                                        <div class="ss-tile"><span class="lbl">Lock service</span><span class="val">@service</span></div>
+                                        <div class="ss-tile"><span class="lbl">Lock status</span><span class="val @(locked ? "text-danger" : "text-success")">@(locked ? "Locked" : "Unlocked")</span></div>
+                                        <div class="ss-tile"><span class="lbl">Next lock</span><span class="val">@When(device.NextLockDateIsoFormat ?? device.NextLockDate)</span></div>
+                                        <div class="ss-tile"><span class="lbl">Last connected</span><span class="val">@When(device.LastConnectedAt, utc: true)</span></div>
+                                        <div class="ss-tile"><span class="lbl">Enrolled</span><span class="val">@When(device.EnrolledOn, utc: true)</span></div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-soft mb-0">No phone linked to this account yet.</p>
+                                }
+                                @if (Model.Product != null)
+                                {
+                                    <div class="ss-grid mt-3">
+                                        <div class="ss-tile"><span class="lbl">Product</span><span class="val">@OrDash(Model.Product.ProductName)</span></div>
+                                        <div class="ss-tile"><span class="lbl">Storage / RAM</span><span class="val">@OrDash(Model.Product.ProductStorage) / @OrDash(Model.Product.ProductRam)</span></div>
+                                        <div class="ss-tile"><span class="lbl">Colour</span><span class="val">@OrDash(Model.Product.ProductColor)</span></div>
+                                        <div class="ss-tile"><span class="lbl">SKU</span><span class="val">@OrDash(Model.Product.Sku)</span></div>
+                                    </div>
+                                }
                             </div>
-                            <div class="card-inner">
-                                <div class="row gy-3 justify-content-center text-center">
-                                    <div class="col">
-                                        <div class="profile-stats">
-                                            <span class="amount">23</span>
-                                            <span class="sub-text">Orders</span>
-                                        </div>
-                                    </div>
-                                    <div class="col">
-                                        <div class="profile-stats">
-                                            <span class="amount">20</span>
-                                            <span class="sub-text">Completed</span>
-                                        </div>
-                                    </div>
-                                    <div class="col">
-                                        <div class="profile-stats">
-                                            <span class="amount">3</span>
-                                            <span class="sub-text">Progress</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div><!-- .card-inner -->
-                            <div class="card-inner">
-                                <h6 class="overline-title mb-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#shortDetailsCollapse" role="button" aria-expanded="false" aria-controls="shortDetailsCollapse" style="cursor:pointer;">
-                                    Short Details
-                                    <em class="icon ni ni-chevron-down d-md-none"></em>
-                                </h6>
-                                <div class="collapse d-md-block" id="shortDetailsCollapse">
-                                <div class="row g-3">
-                                    <div class="col-sm-6 col-md-4 col-xl-12">
-                                        <span class="sub-text">User ID:</span>
-                                        <span>@Model.CustomerId</span>
-                                    </div>
 
-                                    <div class="col-sm-6 col-md-4 col-xl-12">
-                                        <span class="sub-text">Phone:</span>
-                                        <span>@Model.Phone</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-xl-12">
-                                        <span class="sub-text">Billing Email:</span>
-                                        <span>@Model.Email</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-xl-12">
-                                        <span class="sub-text">Billing Address:</span>
-                                        <span>@Model.Address1</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-xl-12">
-                                        <span class="sub-text">Order Modified:</span>
-                                        <span>@Model.DateModified</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-lg-12">
-                                        <span class="sub-text">Status:</span>
-                                        <span class="@SetStatusBadge(Model.Status)">@Model.Status</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-lg-12">
-                                        <span class="sub-text">Ordered At:</span>
-                                        <span>@Model.DateCreated</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-lg-12">
-                                        <span class="sub-text">Dealer Ref:</span>
-                                        <span>@Model.DealerRef</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-lg-12">
-                                        <span class="sub-text">IMEI:</span>
-                                        <span>@Model.IMEI</span>
-                                    </div>
-                                    <div class="col-sm-6 col-md-4 col-lg-12">
-                                        <span class="sub-text">Mpesa Code:</span>
-                                        <span>@Model.MpesaDepositRef</span>
-                                    </div>
+                            <div class="ss-section">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="title mb-0">Recent payments</h5>
+                                    @if (accountNo != null) { <a href="/statussummary/@accountNo" class="link link-sm">Status &amp; restructure history</a> }
                                 </div>
-                                </div><!-- .collapse -->
-                            </div><!-- .card-inner -->
-                            <div class="card-inner">
-                                <h6 class="overline-title mb-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#nextOfKinCollapse" role="button" aria-expanded="false" aria-controls="nextOfKinCollapse" style="cursor:pointer;">
-                                    Next of Kin
-                                    <em class="icon ni ni-chevron-down d-md-none"></em>
-                                </h6>
-                                <div class="collapse d-md-block" id="nextOfKinCollapse">
-                                @if (Model.NextOfKin != null)
+                                @if (Model.Payments.Any())
                                 {
-                                    <div class="row g-3">
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Name:</span>
-                                            <span>@Model.NextOfKin?.Name</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Email:</span>
-                                            <span>@Model.NextOfKin?.Email</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Phone:</span>
-                                            <span>@Model.NextOfKin?.Phone</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">ID Number:</span>
-                                            <span>@Model.NextOfKin?.IdNumber</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Address:</span>
-                                            <span>@Model.NextOfKin?.Address</span>
-                                        </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0">
+                                            <thead><tr><th>Date</th><th>M-Pesa code</th><th class="text-end">Amount</th></tr></thead>
+                                            <tbody>
+                                                @foreach (var p in Model.Payments)
+                                                {
+                                                    <tr>
+                                                        <td style="white-space:nowrap;">@p.PaymentDateValue.ToString("dd MMM yyyy, HH:mm")</td>
+                                                        <td>@p.MpesaCode</td>
+                                                        <td class="text-end" style="white-space:nowrap;">@Ksh(p.AmountValue)</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
                                     </div>
                                 }
-                                </div><!-- .collapse -->
-                            </div><!-- .card-inner -->
-
-                            <div class="card-inner">
-                                <h6 class="overline-title mb-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#secondNextOfKinCollapse" role="button" aria-expanded="false" aria-controls="secondNextOfKinCollapse" style="cursor:pointer;">
-                                    Second Next of Kin
-                                    <em class="icon ni ni-chevron-down d-md-none"></em>
-                                </h6>
-                                <div class="collapse d-md-block" id="secondNextOfKinCollapse">
-                                @if (Model.NextOfKin2 != null)
+                                else
                                 {
-                                    <div class="row g-3">
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Name:</span>
-                                            <span>@Model.NextOfKin2?.Name</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Email:</span>
-                                            <span>@Model.NextOfKin2?.Email</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Phone:</span>
-                                            <span>@Model.NextOfKin2?.Phone</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">ID Number:</span>
-                                            <span>@Model.NextOfKin2?.IdNumber</span>
-                                        </div>
-                                        <div class="col-sm-6 col-md-4 col-xl-12">
-                                            <span class="sub-text">Address:</span>
-                                            <span>@Model.NextOfKin2?.Address</span>
-                                        </div>
+                                    <p class="text-soft mb-0">No payments yet.</p>
+                                }
+                            </div>
+
+                            <div class="ss-section">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="title mb-0">Notes</h5>
+                                    <button type="button" data-bs-toggle="modal" data-bs-target="#modalCustomerNotes" class="btn btn-sm btn-outline-primary"><em class="icon ni ni-plus"></em><span>Add note</span></button>
+                                </div>
+                                @if (Model.Notes != null && Model.Notes.Any())
+                                {
+                                    <div class="bq-note">
+                                        @foreach (var note in Model.Notes.OrderByDescending(n => n.Created))
+                                        {
+                                            <div class="bq-note-item">
+                                                <div class="bq-note-text"><p>@note.Note</p></div>
+                                                <div class="bq-note-meta">
+                                                    <span class="bq-note-added">@note.Created.ToString("dd MMM yyyy, HH:mm")</span>
+                                                    <span class="bq-note-sep sep">|</span>
+                                                    <span class="bq-note-by">By <span>@note.UserName</span></span>
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
                                 }
-                                </div><!-- .collapse -->
-                            </div><!-- .card-inner -->
+                                else
+                                {
+                                    <p class="text-soft mb-0">No notes yet.</p>
+                                }
+                            </div>
+
                         </div>
                     </div>
-                </div><!-- .col -->
-                <div class="col-xl-8 order-first">
-                    <div class="card">
+                </div>
+
+                <div class="col-xl-4">
+                    <div class="card card-bordered">
                         <div class="card-inner">
                             <div class="user-card user-card-s2">
                                 <div class="user-avatar lg bg-primary">
-                                    @if (Model.IdentityImages.Any())
+                                    @if (!string.IsNullOrWhiteSpace(photo))
                                     {
-                                        <img src="@Model.IdentityImages.FirstOrDefault(x=>x.Key == "photo_of_applicant").Url" alt="">
-                                    }
-                                </div>
-                                <div class="user-info">
-                                    @if (Model.Payments.Any())
-                                    {
-                                        <div class="badge bg-light rounded-pill ucap">@Model?.Payments?.FirstOrDefault().AccountNo</div>
+                                        <img src="@photo" alt="">
                                     }
                                     else
                                     {
-                                        <div class="badge bg-light rounded-pill ucap">@(Model.OrderID == 0 && Model.AccountId != 0 ? Model.AccountId : Model.OrderID)</div>
+                                        <span>@(string.IsNullOrWhiteSpace(Model.FirstName) ? "?" : Model.FirstName.Trim()[..1].ToUpperInvariant())</span>
                                     }
-
+                                </div>
+                                <div class="user-info">
                                     <h5>@Model.FirstName @Model.LastName</h5>
                                     <span class="sub-text">@Model.Email</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-inner">
-                            <div class="nk-block">
-                                <div class="overline-title-alt mb-2 mt-2">In Account</div>
-                                <div class="profile-balance">
-                                    <div class="profile-balance-group gx-4">
-                                        <div class="profile-balance-sub">
-                                            <div class="profile-balance-amount">
-                                                <div class="number @(Model.Arrears >= 0 ? "text-success" : "text-danger")">@Model?.Arrears?.ToString("N0") <small class="currency currency-usd">KES</small></div>
-                                            </div>
-                                            <div class="profile-balance-subtitle">Balance</div>
-                                        </div>
-                                       @*  <div class="profile-balance-sub">
-                                            <span class="profile-balance-plus text-soft"><em class="icon ni ni-plus"></em></span>
-                                            <div class="profile-balance-amount">
-                                                <div class="number">1,643</div>
-                                            </div>
-                                            <div class="profile-balance-subtitle">Credit Points</div>
-                                        </div> *@
-                                    </div>
+                        <div class="card-inner border-top">
+                            <h6 class="overline-title mb-2">Customer</h6>
+                            <div class="ss-kv">
+                                <div><span class="k">Phone</span><span class="v">@OrDash(Model.Phone)</span></div>
+                                <div><span class="k">National ID</span><span class="v">@OrDash(Model.NationalId)</span></div>
+                                <div><span class="k">Address</span><span class="v">@OrDash(Model.Address1)</span></div>
+                                <div><span class="k">Email</span><span class="v">@OrDash(Model.Email)</span></div>
+                            </div>
+                        </div>
+                        @if (Model.OrderID > 0)
+                        {
+                            <div class="card-inner border-top">
+                                <h6 class="overline-title mb-2">Order</h6>
+                                <div class="ss-kv">
+                                    <div><span class="k">Order</span><span class="v">@Model.OrderID · @OrDash(Model.Status)</span></div>
+                                    <div><span class="k">Ordered</span><span class="v">@Model.DateCreated.ToString("dd MMM yyyy, HH:mm")</span></div>
+                                    <div><span class="k">Dealer ref</span><span class="v">@OrDash(Model.DealerRef)</span></div>
+                                    <div><span class="k">Deposit M-Pesa code</span><span class="v">@OrDash(Model.MpesaDepositRef)</span></div>
+                                    <div><span class="k">IMEI on the order</span><span class="v">@OrDash(Model.IMEI)</span></div>
                                 </div>
                             </div>
-
-                            <div class="nk-block">
-                                <div class="card card-bordered">
-                                    <div class="card-aside-wrap">
-                                        <div class="card-content">
-                                            <div class="card-inner">
-                                                @if (Model.Summary != null)
-                                                {
-                                                    <div class="nk-block">
-                                                        @{
-                                                            decimal outstandingBalance = Math.Round(
-                                                                Model.Summary.Deposit
-                                                                + (Model.Summary.Daily * 30 * Model.Summary.TermsInMonths)
-                                                                + (Model.Summary.Weekly * (30m / 7m) * Model.Summary.TermsInMonths)
-                                                                + (Model.Summary.Monthly * Model.Summary.TermsInMonths)
-                                                                - Model.Summary.TotalPaid, 0);
-                                                        }
-                                                        <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                                            <h5 class="title">Loan Details</h5>
-                                                        </div>
-
-                                                        <div class="row gy-5">
-                                                            <div class="col-md-3 col-lg-2 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Balance</span><span>@outstandingBalance.ToString("N0")</span></div>
-                                                            </div>
-                                                            <div class="col-md-3 col-lg-2 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Total Due</span><span>@Model?.TotalDue?.ToString("N0")</span></div>
-                                                            </div>
-                                                            <div class="col-md-3 col-lg-2 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Total Paid</span><span>@Model.Summary.TotalPaid.ToString("N0")</span></div>
-                                                            </div>
-                                                            <div class="col-md-3 col-lg-2  col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Frequency</span><span>Daily</span></div>
-                                                            </div>
-                                                            <div class="col-md-3 col-lg-2  col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Duration</span><span>1 year</span></div>
-                                                            </div>
-                                                            <div class="col-md-3 col-lg-2  col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Start Date</span><span>@Model.Summary.FirstPaymentDate.ToString("dd MMM yyyy")</span></div>
-                                                            </div>
-                                                            @* <div class="col-md-3 col-lg-2  col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">End Date</span><span>@Model.Summary.ContractEndDate.ToString("dd MMM yyyy")</span></div>
-                                                            </div> *@
-                                                        </div>
-                                                    </div>
-                                                    <div class="nk-divider divider md"></div>
-                                                    <div class="nk-block">
-                                                        <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                                            <h5 class="title">Schedule</h5>
-                                                        </div>
-                                                        <div class="row gy-5">
-                                                            <div class="col-md-2 col-sm-4 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Daily</span><span class="amount text-primary">@Model.Summary.Daily.ToString("F2")</span></div>
-                                                            </div>
-                                                            <div class="col-md-2 col-sm-4 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Weekely</span><span class="amount text-success">@Model.Summary.Weekly.ToString("F2")</span></div>
-                                                            </div>
-                                                            <div class="col-md-2 col-sm-4 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Monthly</span><span class="amount text-warning">@Model.Summary.Monthly.ToString("F2")</span></div>
-                                                            </div>
-                                                            <div class="col-md-2 col-sm-4 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Days Left</span><span class="amount text-warning">@Math.Round(Model.DaysLeft)</span></div>
-                                                            </div>
-                                                                    <div class="col-md-3 col-lg-2 col-sm-4 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">First Amount</span><span>@Model.Summary.FirstAmount.ToString("N0")</span></div>
-                                                            </div>
-                                                                    <div class="col-md-3 col-lg-2 col-sm-4 col-6">
-                                                                <div class="profile-stats"><span class="profile-ud-label">Deposit</span><span>@Model.Summary.Deposit.ToString("N0")</span></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="nk-divider divider md"></div>
-                                                    <div class="nk-block">
-                                                        <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                                            <h5 class="title">Loan Status</h5>
-                                                        </div>
-                                                        <div class="row gy-5">
-                                                            <div class="col-12 col-md-10 col-lg-8">
-                                                                <div class="profile-stats">
-                                                                    <div class="progress progress-lg">
-                                                                        @{
-                                                                            decimal totalLoanValue = outstandingBalance + Model.Summary.TotalPaid;
-                                                                            int percentagePaid = totalLoanValue > 0
-                                                                                ? (int)Math.Min(100, Math.Round((double)(Model.Summary.TotalPaid / totalLoanValue * 100)))
-                                                                                : 0;
-                                                                            <div class="progress-bar progress-bar-striped bg-success" data-progress="@percentagePaid" style="width: @percentagePaid%;">@percentagePaid%</div>
-                                                                        }
-
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                }
-                                                <div class="nk-divider divider md"></div>
-                                                <div class="nk-block">
-                                                    <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                                        <h5 class="title">Device Details</h5>
-                                                    </div><!-- .nk-block-head -->
-                                                    @if (Model.DeviceDetails != null)
-                                                    {
-                                                        <div class="profile-ud-list">
-                                                            <div class="profile-ud-item">
-                                                                <div class="profile-ud wider">
-                                                                    <span class="profile-ud-label">Make</span>
-                                                                    <span class="profile-ud-value">@Model.DeviceDetails.Make</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="profile-ud-item">
-                                                                <div class="profile-ud wider">
-                                                                    <span class="profile-ud-label">Model</span>
-                                                                    <span class="profile-ud-value">@Model.DeviceDetails.Model</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="profile-ud-item">
-                                                                <div class="profile-ud wider">
-                                                                    <span class="profile-ud-label">Lock Status</span>
-                                                                    <span class="profile-ud-value @SetLockStatusBadge(Model.DeviceDetails.LockType)">@Model.DeviceDetails.LockType</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="profile-ud-item">
-                                                                <div class="profile-ud wider">
-                                                                    <span class="profile-ud-label">Enrolled</span>
-                                                                    <span class="profile-ud-value">@FormartUtcDate(Model.DeviceDetails.EnrolledOn, "dd/MMM/yy")</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="profile-ud-item">
-                                                                <div class="profile-ud wider">
-                                                                    <span class="profile-ud-label">Last Connected</span>
-                                                                    <span class="profile-ud-value">@FormartUtcDate(Model.DeviceDetails.LastConnectedAt, "dd MMM yyyy HH:mm")</span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="profile-ud-item">
-                                                                <div class="profile-ud wider">
-                                                                    <span class="profile-ud-label">Next Lock</span>
-                                                                    <span class="profile-ud-value">@FormartDateWithT(Model.DeviceDetails.NextLockDateIsoFormat, "dd MMM yyyy HH:mm")</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    }
-
-                                                </div><!-- .nk-block -->
-
-                                                @*   <div class="nk-block">
-                                                    <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                                        <h5 class="title"><code>Notice</code></h5>
-                                                    </div>
-                                                    <div class="row gy-5">
-                                                        <div class="col-12">
-                                                            <dt>If you pay your EMI late, you may attract additional charges from your lender. If you make a payment towards your EMI which is after your due date but within your lender's grace period, there is usually an added 'late fee' that you will have to pay alongside your EMI amount.</dt>
-                                                        </div>
-                                                    </div>
-                                                </div> *@
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                           
-
-                            <div class="nk-block">
-                                <h5 class="title">Recent Payments</h5>
-                                <div class="table-responsive">
-                                <div class="nk-tb-list nk-tb-ulist is-compact card">
-                                    <div class="nk-tb-item nk-tb-head">
-                                        <div class="nk-tb-col tb-col-sm">
-                                            <span class="overline-title">Account#</span>
-                                        </div>
-                                        <div class="nk-tb-col">
-                                            <span class="overline-title">Mpesa Code</span>
-                                        </div>
-                                        <div class="nk-tb-col">
-                                            <span class="overline-title">Payment Date</span>
-                                        </div>
-                                        <div class="nk-tb-col">
-                                            <span class="overline-title">Amount</span>
-                                        </div>
-                                    </div>
-
-                                    @if (Model.Payments != null && Model.Payments.Any())
-                                    {
-                                        foreach (var payment in Model.Payments)
-                                        {
-                                            <div class="nk-tb-item">
-                                                <div class="nk-tb-col tb-col-sm">
-                                                    <span>@payment.AccountNo</span>
-                                                </div>
-                                                <div class="nk-tb-col">
-                                                    <span class="sub-text">@payment.MpesaCode</span>
-                                                </div>
-                                                <div class="nk-tb-col">
-                                                    <span class="sub-text">@payment.PaymentDateValue.ToString("dd MMM yyyy HH:mm")</span>
-                                                </div>
-                                                <div class="nk-tb-col">
-                                                    <span class="sub-text">@payment.AmountValue.ToString("N0")</span>
-                                                </div>
-                                            </div>
-                                        }
-
-                                    }
-                                </div><!-- .nk-tb-list -->
-                            </div>
-                            </div>
-                            @if (Model.Product != null)
-                            {
-                                <div class="nk-block">
-                                    <div class="nk-block-head">
-                                        <h5 class="title">Device Information</h5>
-                                        <p>Phone Info Card</p>
-                                    </div><!-- .nk-block-head -->
-                                    <div class="profile-ud-list">
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Name</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductName</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Storage</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductStorage</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">SKU</span>
-                                                <span class="profile-ud-value">@Model.Product.Sku</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">RAM</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductRam</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Order No</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductId</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Color</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductColor</span>
-                                            </div>
-                                        </div>
-                                    </div><!-- .profile-ud-list -->
-                                </div>
-
-                                <!-- .nk-block -->
-                            }
-
-
-
-                            
-                            <div class="nk-divider divider md"></div>
-                            @if (ViewBag.IsAdmin is true || ViewBag.IsApprover is true)
-                            {
-                                <div class="nk-block">
-                                    @if (TempData["RestructureError"] is string restructureError)
-                                    {
-                                        <div class="alert alert-danger alert-icon alert-dismissible">
-                                            <em class="icon ni ni-cross-circle"></em> @restructureError
-                                            <button class="close" data-bs-dismiss="alert"></button>
-                                        </div>
-                                    }
-                                    <div class="nk-block-head nk-block-head-sm">
-                                        <button type="button" data-bs-toggle="modal" data-bs-target="#modalRestructure" class="link link-primary ms-auto">Restructure</button>
-                                    </div><!-- .nk-block-head -->
-                                </div>
-                            }
-
-                                <div class="nk-divider divider md"></div>
-                            <div class="nk-block">
-                                <div class="nk-block-head nk-block-head-sm nk-block-between">
-                                    <h5 class="title">Customer Note</h5>
-                                    <button type="button" data-bs-toggle="modal" data-bs-target="#modalCustomerNotes" class="link link-primary ms-auto">+ Add Note</button>
-                                </div><!-- .nk-block-head -->
-                                @if (Model.Notes.Any())
+                        }
+                        @foreach (var (title, kin) in new[] { ("Next of kin", Model.NextOfKin), ("Second next of kin", Model.NextOfKin2) })
+                        {
+                            <div class="card-inner border-top">
+                                <h6 class="overline-title mb-2">@title</h6>
+                                @if (kin != null)
                                 {
-                                        <div class="bq-note">
-                                        @foreach (var note in Model.Notes)
-                                        {
-                                                    <div class="bq-note-item">
-                                                        <div class="bq-note-text">
-                                                            <p>@note.Note </p>
-                                                        </div>
-                                                        <div class="bq-note-meta">
-                                                            <span class="bq-note-added">Added on <span class="date">@note.Created.ToString("dd MMM yyyy")</span> at <span class="time">@note.Created.ToString("HH:mm:ss")</span></span>
-                                                            <span class="bq-note-sep sep">|</span>
-                                                            <span class="bq-note-by">By <span>@note.UserName</span></span>
-                                                    @* <a href="#" class="link link-sm link-danger">Delete Note</a> *@
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- .bq-note-item -->
-                                        }
-                                        </div>
-                                        <!-- .bq-note -->
+                                    <div class="ss-kv">
+                                        <div><span class="k">Name</span><span class="v">@OrDash(kin.Name)</span></div>
+                                        <div><span class="k">Phone</span><span class="v">@OrDash(kin.Phone)</span></div>
+                                        <div><span class="k">ID number</span><span class="v">@OrDash(kin.IdNumber)</span></div>
+                                        <div><span class="k">Email</span><span class="v">@OrDash(kin.Email)</span></div>
+                                        <div><span class="k">Address</span><span class="v">@OrDash(kin.Address)</span></div>
+                                    </div>
                                 }
-
-                            </div><!-- .nk-block -->
-
-                        </div><!-- .card-inner -->
-                    </div><!-- .card -->
-                </div><!-- .col -->
-            </div><!-- .row -->
-        </div><!-- .nk-block -->
+                                else
+                                {
+                                    <p class="text-soft small mb-0">None on file.</p>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="modal fade" tabindex="-1" id="modalRestructure">
@@ -698,7 +353,7 @@
         <div class="modal fade" tabindex="-1" id="modalCustomerNotes">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <button class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                     <em class="icon ni ni-cross"></em>
                 </button>
                 <div class="modal-header">
@@ -710,13 +365,13 @@
                         <div class="nk-block nk-block-lg">
                             <div class="card">
                                 <div class="card-inner">
-                                    <textarea name="customerNote" class="tinymce-toolbar form-control">Add note!</textarea>
+                                    <textarea name="customerNote" class="form-control" rows="5" required placeholder="What happened, e.g. called, promised to pay Ksh 500 on Friday"></textarea>
                                 </div>
                             </div>
                         </div><!-- .nk-block -->
                     </div>
                     <div class="modal-footer bg-light">
-                        <button data-bs-dismiss="modal" class="btn btn-lg btn-danger">Cancel</button>
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-lg btn-light">Cancel</button>
                         <button type="submit" class="btn btn-lg btn-primary">Save</button>
                     </div>
                 </form>
