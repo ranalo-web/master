@@ -176,7 +176,6 @@
                             <tr>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Customer</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Account No</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Yes = on an agreed restructure but behind on it, so the auto restructure rule opens the phone.">Agreed</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Daily Rate</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Rstrd Amount</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Rstrd Days</th>
@@ -188,6 +187,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Lock Date</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Paid</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Conn</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)" title="Yes = on an agreed restructure but behind on it, so the auto restructure rule opens the phone.">Agreed</th>
                                 <th class="wl-th"></th>
                             </tr>
                         </thead>
@@ -197,16 +197,6 @@
                             <tr>
                                 <td>@(string.IsNullOrWhiteSpace(report.FirstName) ? "-" : report.FirstName)</td>
                                 <td><a href="/account-details/@report.AccountNo" class="fw-medium">@report.AccountNo</a></td>
-                                <td>
-                                    @if ((ViewBag.BehindOnPlan as HashSet<long>)?.Contains(report.AccountNo) == true)
-                                    {
-                                        <span class="badge bg-warning text-dark" title="On an agreed restructure but behind on it, so the auto restructure rule opens the phone.">Yes, behind on plan</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-soft">No</span>
-                                    }
-                                </td>
                                 <td>@report.Daily</td>
                                 <td>@report.RestructuredAmnt</td>
                                 <td>@report.DaysRestructured</td>
@@ -218,6 +208,16 @@
                                 <td>@FormatLockDate(report.NextLockDate)</td>
                                 <td>@(report.LastPaymentDate?.ToString("dd MMM yyyy") ?? "-")</td>
                                 <td>@FormartUtcDate(report.LastConnectedAt)</td>
+                                <td>
+                                    @if ((ViewBag.BehindOnPlan as HashSet<long>)?.Contains(report.AccountNo) == true)
+                                    {
+                                        <span class="badge bg-warning text-dark" title="On an agreed restructure but behind on it, so the auto restructure rule opens the phone.">Yes, behind on plan</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-soft">No</span>
+                                    }
+                                </td>
                                 <td class="text-end">
                                     <ul class="nk-tb-actions gx-2 justify-content-end">
                                         <li>
