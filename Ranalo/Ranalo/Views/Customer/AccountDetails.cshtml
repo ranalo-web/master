@@ -63,15 +63,18 @@ else
         .ss-kv { display: grid; grid-template-columns: 1fr; gap: 8px; }
         .ss-kv .k { display: block; font-size: 12px; color: #8094ae; }
         .ss-kv .v { overflow-wrap: anywhere; }
-        /* Device boxes: label above value, in a tidy grid. */
-        .dd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); border: 1px solid #e5e9f2; border-radius: 10px; overflow: hidden; }
-        .dd-item { padding: 12px 16px; border-right: 1px solid #f0f2f7; border-bottom: 1px solid #f0f2f7; min-width: 0; }
-        .dd-wide { grid-column: 1 / -1; background: #f8f9fc; }
+        /* Device boxes: the device name across the top, then four to a row
+           (two on a phone) -- status on top, WooCommerce specs below. The
+           boxes sit on a hairline grid: the 1px gap shows the background. */
+        .dd-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: #e5e9f2;
+            border: 1px solid #e5e9f2; border-radius: 10px; overflow: hidden; }
+        @@media (max-width: 767px) { .dd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        .dd-item { background: #fff; padding: 12px 16px; min-width: 0; display: flex; flex-direction: column; justify-content: center; min-height: 64px; }
+        .dd-wide { grid-column: 1 / -1; background: #f8f9fc; min-height: 0; }
         .dd-wide .dd-v { font-size: 17px; }
         .dd-full { grid-column: 1 / -1; }
-        .dd-specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px 16px; }
-        .dd-k { display: block; font-size: 12px; color: #8094ae; margin-bottom: 2px; }
-        .dd-v { display: block; font-weight: 600; overflow-wrap: anywhere; }
+        .dd-k { display: block; font-size: 11px; color: #8094ae; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .05em; }
+        .dd-v { display: block; font-weight: 600; font-size: 14px; line-height: 1.35; overflow-wrap: break-word; }
         .dd-pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
         .dd-pill.locked { background: #fde8e8; color: #c0392b; }
         .dd-pill.open { background: #e6f6ee; color: #1e8e5a; }
@@ -196,14 +199,12 @@ else
                                         </div>
                                         @if (Model.Product != null)
                                         {
-                                            // From the WooCommerce product, on one card.
+                                            // From the WooCommerce product: the bottom row of four.
                                             string D(string? v) => string.IsNullOrWhiteSpace(v) ? "-" : v.Trim();
-                                            <div class="dd-item dd-full dd-specs">
-                                                <div><span class="dd-k">SKU</span><span class="dd-v">@D(Model.Product.Sku)</span></div>
-                                                <div><span class="dd-k">Storage</span><span class="dd-v">@D(Model.Product.ProductStorage)</span></div>
-                                                <div><span class="dd-k">RAM</span><span class="dd-v">@D(Model.Product.ProductRam)</span></div>
-                                                <div><span class="dd-k">Color</span><span class="dd-v">@D(Model.Product.ProductColor)</span></div>
-                                            </div>
+                                            <div class="dd-item"><span class="dd-k">SKU</span><span class="dd-v">@D(Model.Product.Sku)</span></div>
+                                            <div class="dd-item"><span class="dd-k">Storage</span><span class="dd-v">@D(Model.Product.ProductStorage)</span></div>
+                                            <div class="dd-item"><span class="dd-k">RAM</span><span class="dd-v">@D(Model.Product.ProductRam)</span></div>
+                                            <div class="dd-item"><span class="dd-k">Color</span><span class="dd-v">@D(Model.Product.ProductColor)</span></div>
                                         }
                                     </div>
                                 }
