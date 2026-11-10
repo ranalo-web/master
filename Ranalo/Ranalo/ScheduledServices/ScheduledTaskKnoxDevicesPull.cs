@@ -88,6 +88,7 @@ namespace Ranalo.ScheduledServices
         private async Task<List<DeviceDto>?> ListAllAsync(IKnoxGuardClient knoxClient)
         {
             var all = new List<DeviceDto>();
+            var total = 0;
             try
             {
                 for (var page = 0; page < MaxPages; page++)
@@ -99,9 +100,20 @@ namespace Ranalo.ScheduledServices
                     // A page missing = an incomplete list: save nothing, or phones on
                     // the missing page would be marked "Not in Knox".
                     if (list?.DeviceList == null) return null;
+                    total = list.TotalCount;
                     all.AddRange(list.DeviceList);
-                    if (list.DeviceList.Count < PageSize || all.Count >= list.TotalCount) break;
+                    // Until Knox's own total: Knox may send fewer than PageSize a page.
+                    if (list.DeviceList.Count == 0 || all.Count >= total) break;
                 }
+
+                // Fewer phones than Knox says it has: incomplete, so save nothing.
+                var distinct = all.Select(d => d.ObjectId ?? d.DeviceUid ?? d.Imei).Distinct().Count();
+                if (distinct < total)
+                {
+                    _logger.LogWarning("Knox list incomplete: {Got} of {Total} phones read; not saved this round.", distinct, total);
+                    return null;
+                }
+                _logger.LogInformation("Knox list read: {Total} phones.", total);
                 return all;
             }
             catch (Exception ex)
