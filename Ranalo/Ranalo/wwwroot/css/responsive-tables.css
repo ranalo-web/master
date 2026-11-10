@@ -50,3 +50,15 @@
         white-space: normal;
     }
 }
+
+/* Ranalo logo (2026-11-10): the blue mark in a white box and "Ranalo Credit",
+   the same as the customer app's top bar, on every staff page. */
+.rc-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+.rc-box { width: 34px; height: 34px; border-radius: 8px; background: #fff; display: grid; place-items: center;
+    box-shadow: 0 0 0 1px rgba(33, 59, 74, .15); flex: none; }
+.rc-box img { height: 24px; width: auto; }
+.rc-name { font-weight: 700; font-size: 18px; letter-spacing: .3px; color: #213b4a; white-space: nowrap; }
+.is-dark .rc-name, .dark-mode .rc-name, .is-theme .rc-name { color: #fff; }
+.rc-lg .rc-box { width: 48px; height: 48px; border-radius: 11px; }
+.rc-lg .rc-box img { height: 34px; }
+.rc-lg .rc-name { font-size: 24px; }

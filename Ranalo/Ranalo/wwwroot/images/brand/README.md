@@ -6,8 +6,7 @@ Made on 2026-11-10 from the logo mark `Ranalo_Credit_Logo.png`
 
 | File | What | Size |
 |---|---|---|
-| `ranalo-logo.png` | Blue mark, staff site headers. Transparent. | 160 px high |
-| `ranalo-mark-white.png` | White mark, customer app top bar (on blue). Transparent. | 108 px high |
+| `ranalo-logo.png` | Blue mark. Shown in a white box beside "Ranalo Credit" on every page (staff site and customer app). Transparent. | 160 px high |
 | `ranalo-icon.png` | App icon: blue mark on white. Browser tab, Play Store, manifest (any + maskable). | 512 x 512 |
 | `ranalo-icon-192.png` | Same, small. | 192 x 192 |
 | `apple-touch-icon.png` | Same, iPhone home screen. | 180 x 180 |
