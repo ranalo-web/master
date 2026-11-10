@@ -63,6 +63,22 @@ else
         .ss-kv { display: grid; grid-template-columns: 1fr; gap: 8px; }
         .ss-kv .k { display: block; font-size: 12px; color: #8094ae; }
         .ss-kv .v { overflow-wrap: anywhere; }
+        /* The headline: where the account stands, as the old "In account" figure. */
+        .ad-hero { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between;
+            border-radius: 12px; padding: 18px 20px; margin-bottom: 24px; }
+        .ad-hero.behind { background: #fdf1f1; border: 1px solid #f6caca; }
+        .ad-hero.ahead { background: #eef8f3; border: 1px solid #c7ead8; }
+        .ad-hero-main { display: flex; flex-direction: column; min-width: 0; }
+        .ad-hero-lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #8094ae; }
+        .ad-hero-num { font-size: 34px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+        .ad-hero-num small { font-size: 15px; font-weight: 600; color: #8094ae; }
+        .ad-hero.behind .ad-hero-num { color: #c0392b; }
+        .ad-hero.ahead .ad-hero-num { color: #1e8e5a; }
+        .ad-hero-sub { font-size: 14px; color: #3c4d62; }
+        .ad-hero-side { display: flex; gap: 24px; flex-wrap: wrap; }
+        .ad-hero-side div { display: flex; flex-direction: column; }
+        .ad-hero-side span { font-size: 12px; color: #8094ae; }
+        .ad-hero-side b { font-size: 16px; font-variant-numeric: tabular-nums; }
     </style>
 
     <div class="nk-content-body">
@@ -102,6 +118,19 @@ else
 
                             @if (s != null)
                             {
+                                <div class="ad-hero @(arrears < 0 ? "behind" : "ahead")">
+                                    <div class="ad-hero-main">
+                                        <span class="ad-hero-lbl">In account</span>
+                                        <span class="ad-hero-num">@(arrears < 0 ? "-" : "+")@Math.Abs(arrears).ToString("N0") <small>KES</small></span>
+                                        <span class="ad-hero-sub">@(arrears < 0 ? "Behind on payments" : arrears > 0 ? "Paid ahead" : "Up to date")@(locked ? " · phone locked" : "")</span>
+                                    </div>
+                                    <div class="ad-hero-side">
+                                        <div><span>Paid</span><b>@Ksh(s.TotalPaid)</b></div>
+                                        <div><span>Balance left</span><b>@Ksh(balance)</b></div>
+                                        <div><span>Contract</span><b>@Ksh(contractTotal)</b></div>
+                                    </div>
+                                </div>
+
                                 <div class="ss-section">
                                     <h5 class="title">Loan</h5>
                                     <div class="ss-grid">
@@ -133,16 +162,23 @@ else
 
                             <div class="ss-section">
                                 <h5 class="title">Phone</h5>
-                                @if (device != null)
+                                @if (device != null || !string.IsNullOrWhiteSpace(s?.ImeiNo))
                                 {
-                                    var nextLockText = device.NextLockDateIsoFormat ?? device.NextLockDate;
+                                    // The device record first; the account summary fills what it lacks.
+                                    static string? First(params string?[] v) => v.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
+                                    var nextLockText = First(device?.NextLockDateIsoFormat, device?.NextLockDate, s?.NextLockDate);
+                                    var lastSeenText = First(device?.LastConnectedAt, s?.LastConnectedAt);
                                     <partial name="_PhoneCard" model="new Ranalo.Models.PhoneCardModel
                                     {
-                                        Make = device.Make, Model = device.Model, Imei = device.ImeiNo, Service = service, Locked = locked,
-                                        Enrolment = device.Status,
+                                        Make = device?.Make, Model = device?.Model, Imei = First(device?.ImeiNo, s?.ImeiNo, Model.IMEI), Imei2 = device?.ImeiNo2,
+                                        Service = service, Locked = locked,
+                                        Enrolment = First(device?.Status, device?.EnrollmentStatus),
                                         NextLock = Ranalo.Models.PhoneCardModel.Parse(nextLockText), NextLockText = nextLockText,
-                                        LastConnectedUtc = Ranalo.Models.PhoneCardModel.Parse(device.LastConnectedAt),
-                                        EnrolledUtc = Ranalo.Models.PhoneCardModel.Parse(device.EnrolledOn),
+                                        LastConnectedUtc = Ranalo.Models.PhoneCardModel.Parse(lastSeenText),
+                                        EnrolledUtc = Ranalo.Models.PhoneCardModel.Parse(First(device?.EnrolledOn, device?.CreatedAt)),
+                                        Serial = device?.SerialNo, OsVersion = device?.OsVersion, SimNumber = device?.PhoneNumber,
+                                        SimSwapLock = device?.IsLockedOnSimSwap ?? false,
+                                        LockAppVersion = device?.AppVersionName,
                                         ProductName = Model.Product?.ProductName, Storage = Model.Product?.ProductStorage,
                                         Ram = Model.Product?.ProductRam is { Length: > 0 } ram ? ram + " RAM" : null, Colour = Model.Product?.ProductColor,
                                     }" />

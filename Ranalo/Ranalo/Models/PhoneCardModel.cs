@@ -20,6 +20,12 @@ namespace Ranalo.Models
         public string? Storage { get; set; }
         public string? Ram { get; set; }
         public string? Colour { get; set; }
+        public string? Imei2 { get; set; }
+        public string? Serial { get; set; }
+        public string? OsVersion { get; set; }
+        public string? SimNumber { get; set; }
+        public bool SimSwapLock { get; set; }
+        public string? LockAppVersion { get; set; }
 
         public string Title => string.Join(" ", new[] { Make, Model }.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!.Trim()))
             is { Length: > 0 } t ? Cap(t) : "Phone";
@@ -42,7 +48,7 @@ namespace Ranalo.Models
             if (string.IsNullOrWhiteSpace(text)) return null;
             var t = text.Trim().Replace(" UTC", "");
             if (!DateTime.TryParseExact(t, Formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
-                && !DateTime.TryParse(t, CultureInfo.InvariantCulture, DateTimeStyles.None, out d))
+                && !DateTime.TryParse(t, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out d))
                 return null;
             return d.Year < 2000 ? null : d;
         }
