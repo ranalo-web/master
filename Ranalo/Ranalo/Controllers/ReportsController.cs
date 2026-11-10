@@ -268,7 +268,7 @@ namespace Ranalo.Controllers
 
         [HttpPost]
         [Route("restructure-payment")]
-        public async Task<IActionResult> StatusSummary(int accountNo, decimal newRate, DateTime dateFrom)
+        public async Task<IActionResult> StatusSummary(int accountNo, decimal newRate, DateTime dateFrom, string? reason)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -293,7 +293,9 @@ namespace Ranalo.Controllers
                 }
             }
 
-            var refusal = RestructurePermissions.Refusal(settings.RoleId, newRate, dailyPaymentAll);
+            // A reason is required (10 Nov 2026): it goes in the restructure history.
+            var refusal = RestructurePermissions.Refusal(settings.RoleId, newRate, dailyPaymentAll)
+                ?? (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 5 ? "Give a reason for the restructure (at least a few words)." : null);
             if (refusal != null)
             {
                 TempData["RestructureError"] = refusal;
@@ -334,7 +336,7 @@ namespace Ranalo.Controllers
                 : settings.KnownAs;
             await _restructureLog.AddAsync(accountNo,
                 previous == null ? Ranalo.DataStore.RestructureLogKind.Agreed : Ranalo.DataStore.RestructureLogKind.Changed,
-                restructureToSave.DateAgreed, newRate, previous?.AmountRes, settings.UserId, byName);
+                restructureToSave.DateAgreed, newRate, previous?.AmountRes, settings.UserId, byName, reason?.Trim());
 
             return RedirectToAction("RestructuredReport", "Reports");
         }
@@ -394,7 +396,7 @@ namespace Ranalo.Controllers
 
         [HttpGet]
         [Route("manual-restructured/{page:int?}")]
-        public async Task<IActionResult> ManualRestructuredReport(string searchTerm = "", int page = 1, int pageSize = 10)
+        public async Task<IActionResult> ManualRestructuredReport(string searchTerm = "", int page = 1, int pageSize = 10, bool many = false)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -408,6 +410,21 @@ namespace Ranalo.Controllers
             ViewBag.RestructureLog = await _restructureLog.ByAccountAsync();
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
                 ViewBag.RestructureStaff = await _restructureLog.ByStaffAsync(DateTime.UtcNow.AddDays(-30));
+
+            // The dashboard alert: accounts restructured more than twice lately, all on one page.
+            if (many && (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver))
+            {
+                var manyTimes = await _restructureLog.RestructuredManyTimesAsync(
+                    Ranalo.ViewComponents.WaitingForYouViewComponent.ManyRestructures.MoreThan,
+                    Ranalo.ViewComponents.WaitingForYouViewComponent.ManyRestructures.RecentDays);
+                var all = await _applicationReportService.GetAllRestructured("", 1, ReportPaging.All);
+                all.Records = all.Records.Where(r => manyTimes.Contains(r.AccountNo)).ToList();
+                all.CurrentPage = 1;
+                all.TotalPages = 1;
+                all.TotalRecords = all.Records.Count;
+                ViewBag.ShowingMany = true;
+                return View(all);
+            }
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
             {

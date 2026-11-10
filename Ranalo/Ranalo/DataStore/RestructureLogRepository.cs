@@ -39,6 +39,7 @@ namespace Ranalo.DataStore
         Task<Dictionary<long, RestructureLogAccount>> ByAccountAsync();
         Task<List<RestructureLogStaff>> ByStaffAsync(DateTime sinceUtc);
         Task<List<RestructureLogEntry>> HistoryAsync(long accountNo);
+        Task<HashSet<long>> RestructuredManyTimesAsync(int moreThan, int recentDays);
     }
 
     public class RestructureLogEntry
@@ -109,6 +110,24 @@ namespace Ranalo.DataStore
                                  ORDER BY x.AtUtc DESC, x.Id DESC) last
                     GROUP BY l.AccountNo", new { Counted = RestructureLogKind.Counted });
                 return rows.ToDictionary(r => r.AccountNo);
+            }
+            catch (Exception ex) when (Missing(ex))
+            {
+                return new();
+            }
+        }
+
+        // The dashboard alert's accounts (WaitingForYouViewComponent.ManyRestructures).
+        public async Task<HashSet<long>> RestructuredManyTimesAsync(int moreThan, int recentDays)
+        {
+            try
+            {
+                return (await _db.QueryAsync<long>(@"
+                    SELECT AccountNo FROM RestructureLog
+                    WHERE Kind IN @Counted
+                    GROUP BY AccountNo
+                    HAVING COUNT(*) > @MoreThan AND MAX(AtUtc) >= DATEADD(DAY, -@Days, SYSUTCDATETIME())",
+                    new { Counted = RestructureLogKind.Counted, MoreThan = moreThan, Days = recentDays })).ToHashSet();
             }
             catch (Exception ex) when (Missing(ex))
             {

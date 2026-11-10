@@ -28,7 +28,28 @@ namespace Ranalo.ViewComponents
                 "SELECT COUNT(*) FROM CustomerAccess WHERE LockedAtUtc IS NOT NULL"),
             ("Recoveries in progress", "Waiting for the next step (upload, approve, lock).", "/recovery", "ni-shield-alert",
                 "SELECT COUNT(*) FROM LockRecoveries WHERE Status NOT IN ('Closed', 'NotCatchable', 'MovedToTranssion', 'MovedToKnox')"),
+            (ManyRestructures.Label, ManyRestructures.Hint, ManyRestructures.Link, ManyRestructures.Icon, ManyRestructures.Sql),
         };
+
+        // Accounts restructured more than twice, the latest in the last 30
+        // days (RestructureLog, 10 Nov 2026): on both dashboards.
+        public static class ManyRestructures
+        {
+            public const int MoreThan = 2;
+            public const int RecentDays = 30;
+            public const string Label = "Restructured 3+ times";
+            public const string Hint = "Accounts given more than 2 plans, the latest in the last 30 days: check why.";
+            public const string Link = "/manual-restructured?many=1";
+            public const string Icon = "ni-alert";
+            public const string Sql = @"
+                SELECT COUNT(*) FROM (
+                    SELECT l.AccountNo FROM RestructureLog l
+                    WHERE l.Kind IN ('Agreed', 'Changed', 'Self-service', 'Before log')
+                      AND EXISTS (SELECT 1 FROM RestructuredRecords rr WHERE rr.AccountNo = l.AccountNo)
+                    GROUP BY l.AccountNo
+                    HAVING COUNT(*) > 2 AND MAX(l.AtUtc) >= DATEADD(DAY, -30, SYSUTCDATETIME())
+                ) x";
+        }
 
         // The approvers' own list (Approver Dashboard).
         private static readonly (string Label, string Hint, string Link, string Icon, string Sql)[] ApproverChecks =
@@ -39,6 +60,7 @@ namespace Ranalo.ViewComponents
                 "SELECT COUNT(*) FROM ApproverFollowUps WHERE Status = 'Open' AND PromisedDate <= CAST(DATEADD(HOUR, 3, SYSUTCDATETIME()) AS DATE)"),
             ("Customer app locked", "Customers who emailed in to be unlocked.", "/customer-app?show=locked", "ni-mobile",
                 "SELECT COUNT(*) FROM CustomerAccess WHERE LockedAtUtc IS NOT NULL"),
+            (ManyRestructures.Label, ManyRestructures.Hint, ManyRestructures.Link, ManyRestructures.Icon, ManyRestructures.Sql),
         };
 
         private readonly IDbConnection _db;
