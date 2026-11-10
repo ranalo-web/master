@@ -69,6 +69,7 @@ else
         .dd-wide { grid-column: 1 / -1; background: #f8f9fc; }
         .dd-wide .dd-v { font-size: 17px; }
         .dd-full { grid-column: 1 / -1; }
+        .dd-specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px 16px; }
         .dd-k { display: block; font-size: 12px; color: #8094ae; margin-bottom: 2px; }
         .dd-v { display: block; font-weight: 600; overflow-wrap: anywhere; }
         .dd-pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
@@ -202,6 +203,17 @@ else
                                             <span class="dd-k">Make &amp; model</span>
                                             <span class="dd-v">@(string.IsNullOrWhiteSpace(makeModel) ? "-" : makeModel)</span>
                                         </div>
+                                        @if (Model.Product != null)
+                                        {
+                                            // From the WooCommerce product, on one card.
+                                            string D(string? v) => string.IsNullOrWhiteSpace(v) ? "-" : v.Trim();
+                                            <div class="dd-item dd-full dd-specs">
+                                                <div><span class="dd-k">SKU</span><span class="dd-v">@D(Model.Product.Sku)</span></div>
+                                                <div><span class="dd-k">Storage</span><span class="dd-v">@D(Model.Product.ProductStorage)</span></div>
+                                                <div><span class="dd-k">RAM</span><span class="dd-v">@D(Model.Product.ProductRam)</span></div>
+                                                <div><span class="dd-k">Color</span><span class="dd-v">@D(Model.Product.ProductColor)</span></div>
+                                            </div>
+                                        }
                                     </div>
                                 }
                                 else
@@ -209,21 +221,6 @@ else
                                     <p class="text-soft mb-0">No phone linked to this account yet.</p>
                                 }
                             </div>
-
-                            @if (Model.Product != null)
-                            {
-                                <div class="ss-section">
-                                    <h5 class="title">Device Information</h5>
-                                    <div class="dd-grid">
-                                        <div class="dd-item dd-wide"><span class="dd-k">Name</span><span class="dd-v">@(string.IsNullOrWhiteSpace(Model.Product.ProductName) ? "-" : Model.Product.ProductName)</span></div>
-                                        <div class="dd-item"><span class="dd-k">Storage</span><span class="dd-v">@(Model.Product.ProductStorage ?? "-")</span></div>
-                                        <div class="dd-item"><span class="dd-k">RAM</span><span class="dd-v">@(Model.Product.ProductRam ?? "-")</span></div>
-                                        <div class="dd-item"><span class="dd-k">Color</span><span class="dd-v">@(Model.Product.ProductColor ?? "-")</span></div>
-                                        <div class="dd-item"><span class="dd-k">SKU</span><span class="dd-v">@(string.IsNullOrWhiteSpace(Model.Product.Sku) ? "-" : Model.Product.Sku)</span></div>
-                                        <div class="dd-item"><span class="dd-k">Order No</span><span class="dd-v">@Model.Product.ProductId</span></div>
-                                    </div>
-                                </div>
-                            }
 
                             <div class="ss-section">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
