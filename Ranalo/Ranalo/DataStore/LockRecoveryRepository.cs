@@ -38,6 +38,7 @@ namespace Ranalo.DataStore
                    LTRIM(RTRIM(ISNULL(u.[Name], '') + ' ' + ISNULL(u.[LastName], ''))) AS CreatedByName,
                    r.CreatedAtUtc, r.UpdatedAtUtc, r.MovedToKnoxAtUtc,
                    d.LockGroup AS CurrentLockGroup, d.Locked, d.NextLockDate, d.LastConnectedAt,
+                   d.KnoxStatus, d.KnoxStatusAtUtc,
                    la.Step AS LastStep, la.Success AS LastStepSuccess, la.AtUtc AS LastStepAtUtc, la.Response AS LastReply
             FROM LockRecoveries r
             LEFT JOIN Users u ON u.UserId = r.CreatedByUserId

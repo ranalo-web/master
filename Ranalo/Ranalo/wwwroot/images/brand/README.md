@@ -1,12 +1,15 @@
 # Ranalo brand files
 
-Drop the real files here with these exact names (replace the placeholders,
-which are the small icon from ranalocredit.com):
+Made on 2026-11-10 from the logo mark `Ranalo_Credit_Logo.png`
+(OneDrive\Documents\Ranalo-Android-App\Logo), cropped, transparent background.
+"Ranalo Credit" is written as text beside the mark; the file has no wording.
 
 | File | What | Size |
 |---|---|---|
-| `ranalo-logo.png` | Logo for page headers (staff site and customer app). Transparent background. | about 400 px wide |
-| `ranalo-icon.png` | Square app icon: browser tab, Play Store, home screen. | 512 x 512 |
+| `ranalo-logo.png` | Blue mark. Shown in a white box beside "Ranalo Credit" on every page (staff site and customer app). Transparent. | 160 px high |
+| `ranalo-icon.png` | App icon: blue mark on white. Browser tab, Play Store, manifest (any + maskable). | 512 x 512 |
+| `ranalo-icon-192.png` | Same, small. | 192 x 192 |
+| `apple-touch-icon.png` | Same, iPhone home screen. | 180 x 180 |
 
-Colours used by the customer app (from the logo and ranalocredit.com):
-logo blue `#213b4a`, peach `#fcdfb0`.
+Colours: logo blue `#213b4a`, peach `#fcdfb0`.
+The installed Android app keeps the icon it was built with until it is rebuilt (PWABuilder).

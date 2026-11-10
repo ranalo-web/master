@@ -108,6 +108,9 @@ namespace Ranalo.Models
         public bool? Locked { get; set; }
         public string? NextLockDate { get; set; }
         public string? LastConnectedAt { get; set; }
+        // What Knox itself says (Database/DeviceLock/002, KnoxStatusRules).
+        public string? KnoxStatus { get; set; }
+        public DateTime? KnoxStatusAtUtc { get; set; }
 
         // The latest logged step (LockRecoveryAttempts), for the list.
         public string? LastStep { get; set; }

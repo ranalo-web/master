@@ -30,7 +30,9 @@
         .top { background: var(--brand); color: #fff; border-bottom: 4px solid var(--peach); padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
             display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .brand { font-weight: 700; font-size: 20px; letter-spacing: .3px; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; }
-        .brand img { width: 34px; height: 34px; border-radius: 8px; background: #fff; padding: 3px; }
+        /* The logo as on every Ranalo page: blue mark in a white box, "Ranalo Credit". */
+        .brand .box { width: 34px; height: 34px; border-radius: 8px; background: #fff; display: grid; place-items: center; flex: none; }
+        .brand .box img { height: 24px; width: auto; }
         .top form button { background: transparent; border: 1px solid rgba(255,255,255,.5); color: #fff;
             border-radius: 999px; padding: 6px 12px; font-size: 14px; }
         main { max-width: 560px; margin: 0 auto; padding: 16px 16px calc(96px + env(safe-area-inset-bottom)); }
@@ -62,7 +64,9 @@
         .tabs { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--line);
             display: flex; padding-bottom: env(safe-area-inset-bottom); }
         .tabs a { flex: 1; min-width: 0; text-align: center; padding: 10px 2px 12px; font-size: 12px; color: var(--soft); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .tabs a b { display: block; font-size: 20px; line-height: 1.2; }
+        /* Line icons drawn the same on every phone (text symbols looked different by make). */
+        .tabs a b { display: block; width: 24px; height: 24px; margin: 0 auto 2px; }
+        .tabs svg { display: block; width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
         .tabs a.on { color: var(--brand); font-weight: 700; }
         .steps { margin: 0; padding-left: 20px; } .steps li { margin: 4px 0; }
         table { width: 100%; border-collapse: collapse; font-size: 15px; }
@@ -83,7 +87,7 @@
 </head>
 <body>
     <header class="top">
-        <a class="brand" href="/my"><img src="/images/brand/ranalo-icon.png" alt="" />Ranalo</a>
+        <a class="brand" href="/my"><span class="box"><img src="/images/brand/ranalo-logo.png" alt="" /></span>Ranalo Credit</a>
         @if (tab != null)
         {
             <form method="post" action="/my/logout">@Html.AntiForgeryToken()<button type="submit">@(ViewBag.Preview is true ? "Exit preview" : "Sign out")</button></form>
@@ -102,11 +106,11 @@
     @if (tab != null)
     {
         <nav class="tabs">
-            <a href="/my" class="@(tab == "home" ? "on" : "")"><b>⌂</b>Account</a>
-            <a href="/my/pay" class="@(tab == "pay" ? "on" : "")"><b>＋</b>Pay</a>
-            <a href="/my/statement" class="@(tab == "statement" ? "on" : "")"><b>☰</b>Statement</a>
-            <a href="/my/inbox" class="@(tab == "inbox" ? "on" : "")"><b>✉@if (unread > 0) {<span class="dot" id="inbox-count">@(unread > 99 ? "99+" : unread.ToString())</span>}</b>Notifications</a>
-            <a href="/my/details" class="@(tab == "details" ? "on" : "")"><b>☺</b>Details</a>
+            <a href="/my" class="@(tab == "home" ? "on" : "")"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3.5l8.5 7V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1z"/></svg></b>Account</a>
+            <a href="/my/pay" class="@(tab == "pay" ? "on" : "")"><b><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M12 7.8v8.4M7.8 12h8.4"/></svg></b>Pay</a>
+            <a href="/my/statement" class="@(tab == "statement" ? "on" : "")"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4M9.5 12h6M9.5 16h6"/></svg></b>Statement</a>
+            <a href="/my/inbox" class="@(tab == "inbox" ? "on" : "")"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2z"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>@if (unread > 0) {<span class="dot" id="inbox-count">@(unread > 99 ? "99+" : unread.ToString())</span>}</b>Notifications</a>
+            <a href="/my/details" class="@(tab == "details" ? "on" : "")"><b><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-6.5 8-6.5s8 2.3 8 6.5"/></svg></b>Details</a>
         </nav>
     }
     @if (tab != null && ViewBag.Preview is not true)

@@ -34,8 +34,27 @@ namespace Ranalo.ScheduledServices
                     using (var scope = _scopeFactory.CreateScope())
                     {
                         var knoxClient = scope.ServiceProvider.GetRequiredService<IKnoxGuardClient>();
-                        var deviceRepository = scope.ServiceProvider.GetRequiredService<IDevicesRepository>(); 
-                        var inactiveUsers = await DeviceUnlockPull(knoxClient, deviceRepository);
+                        var deviceRepository = scope.ServiceProvider.GetRequiredService<IDevicesRepository>();
+
+                        // Every phone in Knox, whatever its status, so our pages
+                        // show what Knox says (KnoxStatusRules). Until 10 Nov 2026
+                        // only the first 20 "Enrolled" phones were read.
+                        var all = await ListAllAsync(knoxClient);
+                        if (all != null)
+                        {
+                            try
+                            {
+                                var matched = await scope.ServiceProvider.GetRequiredService<IKnoxStatusRepository>()
+                                    .SaveAsync(all.Select(Ranalo.Services.KnoxStatusRules.From).ToList(), DateTime.UtcNow);
+                                _logger.LogInformation("Knox status saved: {Knox} phones in Knox, {Matched} of ours.", all.Count, matched);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Knox status not saved (has Database/DeviceLock/002 been run?)");
+                            }
+                        }
+
+                        var inactiveUsers = await DeviceUnlockPull(all?.Where(d => d.Status == "Enrolled").ToList(), deviceRepository);
                         foreach (var device in inactiveUsers)
                         {
                             _logger.LogInformation("Device Updated from Knox: {order}", device.Id);
@@ -61,27 +80,45 @@ namespace Ranalo.ScheduledServices
             _logger.LogInformation("ScheduledTaskKnoxDevicesPull stopped at: {time}", DateTime.UtcNow);
         }
 
-        private async Task<List<Device>> DeviceUnlockPull(IKnoxGuardClient knoxClient, IDevicesRepository deviceRepository)
+        // Knox's whole device list, page by page. null = Knox couldn't be read
+        // (nothing is marked "Not in Knox" then).
+        public const int PageSize = 100;
+        public const int MaxPages = 50;
+
+        private async Task<List<DeviceDto>?> ListAllAsync(IKnoxGuardClient knoxClient)
+        {
+            var all = new List<DeviceDto>();
+            try
+            {
+                for (var page = 0; page < MaxPages; page++)
+                {
+                    var list = await knoxClient.ListDevicesAsync(new ListDevicesRequest
+                    {
+                        PageNum = page, PageSize = PageSize, SortBy = "updateTime", SortOrder = "descending",
+                    });
+                    if (list?.DeviceList == null) return page == 0 ? null : all;
+                    all.AddRange(list.DeviceList);
+                    if (list.DeviceList.Count < PageSize || all.Count >= list.TotalCount) break;
+                }
+                return all;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while reading Knox's device list");
+                return null;
+            }
+        }
+
+        private async Task<List<Device>> DeviceUnlockPull(List<DeviceDto>? enrolled, IDevicesRepository deviceRepository)
         {
 
             var devicesToUpdate = new List<Device>();
 
             try
             {
-                var devices = await knoxClient.ListDevicesAsync(new ListDevicesRequest
+                if (enrolled != null && enrolled.Any())
                 {
-                    Filter = new DeviceListFilter() { Status = new List<string>() { "Enrolled" } },
-                    PageNum = 0,
-                    PageSize = 20,
-                    SortBy = "updateTime",
-                    SortOrder = "descending"
-                });
-
-                if (devices != null && devices.DeviceList != null && devices.DeviceList.Any())
-                {
-
-
-                    foreach (var device in devices.DeviceList)
+                    foreach (var device in enrolled)
                     {
                         var deviceToDb = new Device()
                         {
