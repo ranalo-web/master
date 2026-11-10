@@ -63,6 +63,16 @@ else
         .ss-kv { display: grid; grid-template-columns: 1fr; gap: 8px; }
         .ss-kv .k { display: block; font-size: 12px; color: #8094ae; }
         .ss-kv .v { overflow-wrap: anywhere; }
+        /* Device boxes: label above value, in a tidy grid. */
+        .dd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); border: 1px solid #e5e9f2; border-radius: 10px; overflow: hidden; }
+        .dd-item { padding: 12px 16px; border-right: 1px solid #f0f2f7; border-bottom: 1px solid #f0f2f7; min-width: 0; }
+        .dd-wide { grid-column: 1 / -1; background: #f8f9fc; }
+        .dd-wide .dd-v { font-size: 17px; }
+        .dd-k { display: block; font-size: 12px; color: #8094ae; margin-bottom: 2px; }
+        .dd-v { display: block; font-weight: 600; overflow-wrap: anywhere; }
+        .dd-pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+        .dd-pill.locked { background: #fde8e8; color: #c0392b; }
+        .dd-pill.open { background: #e6f6ee; color: #1e8e5a; }
         /* The headline: where the account stands, as the old "In account" figure. */
         .ad-hero { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between;
             border-radius: 12px; padding: 18px 20px; margin-bottom: 24px; }
@@ -151,46 +161,36 @@ else
                                 <div class="ss-section"><h5 class="title">Loan</h5><p class="text-soft mb-0">No payments on this account yet.</p></div>
                             }
 
+                            @{
+                                // The phone as WooCommerce names it; make and model when there's no order.
+                                var phoneName = !string.IsNullOrWhiteSpace(Model.Product?.ProductName)
+                                    ? Model.Product!.ProductName.Trim()
+                                    : string.Join(" ", new[] { Model.DeviceDetails?.Make, Model.DeviceDetails?.Model }.Where(x => !string.IsNullOrWhiteSpace(x)));
+                            }
                             <div class="ss-section">
                                 <h5 class="title">Device Details</h5>
                                 @if (Model.DeviceDetails != null)
                                 {
-                                    <div class="profile-ud-list">
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Make</span>
-                                                <span class="profile-ud-value">@Model.DeviceDetails.Make</span>
-                                            </div>
+                                    <div class="dd-grid">
+                                        <div class="dd-item dd-wide">
+                                            <span class="dd-k">Phone</span>
+                                            <span class="dd-v">@(string.IsNullOrWhiteSpace(phoneName) ? "-" : phoneName)</span>
                                         </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Model</span>
-                                                <span class="profile-ud-value">@Model.DeviceDetails.Model</span>
-                                            </div>
+                                        <div class="dd-item">
+                                            <span class="dd-k">Lock Status</span>
+                                            <span class="dd-v"><span class="dd-pill @(locked ? "locked" : "open")">@(locked ? "Locked" : "Unlocked")</span></span>
                                         </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Lock Status</span>
-                                                <span class="profile-ud-value @(locked ? "text-danger" : "text-success")">@Model.DeviceDetails.LockType</span>
-                                            </div>
+                                        <div class="dd-item">
+                                            <span class="dd-k">Next Lock</span>
+                                            <span class="dd-v">@When(Model.DeviceDetails.NextLockDateIsoFormat ?? Model.DeviceDetails.NextLockDate)</span>
                                         </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Enrolled</span>
-                                                <span class="profile-ud-value">@When(Model.DeviceDetails.EnrolledOn, utc: true)</span>
-                                            </div>
+                                        <div class="dd-item">
+                                            <span class="dd-k">Last Connected</span>
+                                            <span class="dd-v">@When(Model.DeviceDetails.LastConnectedAt, utc: true)</span>
                                         </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Last Connected</span>
-                                                <span class="profile-ud-value">@When(Model.DeviceDetails.LastConnectedAt, utc: true)</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Next Lock</span>
-                                                <span class="profile-ud-value">@When(Model.DeviceDetails.NextLockDateIsoFormat ?? Model.DeviceDetails.NextLockDate)</span>
-                                            </div>
+                                        <div class="dd-item">
+                                            <span class="dd-k">Enrolled</span>
+                                            <span class="dd-v">@When(Model.DeviceDetails.EnrolledOn, utc: true)</span>
                                         </div>
                                     </div>
                                 }
@@ -204,43 +204,13 @@ else
                             {
                                 <div class="ss-section">
                                     <h5 class="title">Device Information</h5>
-                                    <div class="profile-ud-list">
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Name</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductName</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Storage</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductStorage</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">SKU</span>
-                                                <span class="profile-ud-value">@Model.Product.Sku</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">RAM</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductRam</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Order No</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductId</span>
-                                            </div>
-                                        </div>
-                                        <div class="profile-ud-item">
-                                            <div class="profile-ud wider">
-                                                <span class="profile-ud-label">Color</span>
-                                                <span class="profile-ud-value">@Model.Product.ProductColor</span>
-                                            </div>
-                                        </div>
+                                    <div class="dd-grid">
+                                        <div class="dd-item dd-wide"><span class="dd-k">Name</span><span class="dd-v">@(string.IsNullOrWhiteSpace(Model.Product.ProductName) ? "-" : Model.Product.ProductName)</span></div>
+                                        <div class="dd-item"><span class="dd-k">Storage</span><span class="dd-v">@(Model.Product.ProductStorage ?? "-")</span></div>
+                                        <div class="dd-item"><span class="dd-k">RAM</span><span class="dd-v">@(Model.Product.ProductRam ?? "-")</span></div>
+                                        <div class="dd-item"><span class="dd-k">Color</span><span class="dd-v">@(Model.Product.ProductColor ?? "-")</span></div>
+                                        <div class="dd-item"><span class="dd-k">SKU</span><span class="dd-v">@(string.IsNullOrWhiteSpace(Model.Product.Sku) ? "-" : Model.Product.Sku)</span></div>
+                                        <div class="dd-item"><span class="dd-k">Order No</span><span class="dd-v">@Model.Product.ProductId</span></div>
                                     </div>
                                 </div>
                             }
