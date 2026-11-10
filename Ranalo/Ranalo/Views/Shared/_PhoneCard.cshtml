@@ -1,0 +1,73 @@
+@model Ranalo.Models.PhoneCardModel
+@{
+    var now = DateTime.UtcNow;
+    // Not seen for more than 3 days: worth a look (a lock can't reach it).
+    var stale = Model.LastConnectedUtc.HasValue && now - Model.LastConnectedUtc.Value > TimeSpan.FromDays(3);
+}
+<style>
+    .pc { border: 1px solid #e5e9f2; border-radius: 10px; overflow: hidden; }
+    .pc-head { display: flex; align-items: center; gap: 14px; padding: 14px 16px; flex-wrap: wrap; }
+    .pc-icon { width: 46px; height: 46px; border-radius: 10px; background: #e7edf1; color: #213b4a; display: grid; place-items: center; font-size: 24px; flex: none; }
+    .pc-name { flex: 1; min-width: 0; }
+    .pc-name .t { font-weight: 700; font-size: 16px; overflow-wrap: anywhere; }
+    .pc-name .s { font-size: 13px; color: #8094ae; overflow-wrap: anywhere; }
+    .pc-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pc-badge { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .pc-badge.locked { background: #fde8e8; color: #c0392b; }
+    .pc-badge.open { background: #e6f6ee; color: #1e8e5a; }
+    .pc-badge.svc { background: #eef1f6; color: #3c4d62; }
+    .pc-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-top: 1px solid #e5e9f2; }
+    .pc-fact { padding: 10px 16px; min-width: 0; }
+    .pc-fact + .pc-fact { border-left: 1px solid #e5e9f2; }
+    .pc-fact .k { display: block; font-size: 12px; color: #8094ae; }
+    .pc-fact .v { display: block; font-weight: 600; overflow-wrap: anywhere; }
+    .pc-fact .a { display: block; font-size: 12px; color: #8094ae; }
+    .pc-fact .a.warn { color: #c0392b; font-weight: 600; }
+    .pc-specs { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 16px; border-top: 1px solid #e5e9f2; }
+    .pc-spec { font-size: 12px; background: #f5f6fa; border: 1px solid #e5e9f2; border-radius: 6px; padding: 2px 8px; }
+    @@media (max-width: 575px) { .pc-fact + .pc-fact { border-left: 0; border-top: 1px solid #e5e9f2; } }
+</style>
+<div class="pc">
+    <div class="pc-head">
+        <div class="pc-icon"><em class="icon ni ni-mobile"></em></div>
+        <div class="pc-name">
+            <div class="t">@Model.Title</div>
+            <div class="s">IMEI @(string.IsNullOrWhiteSpace(Model.Imei) ? "-" : Model.Imei)@(string.IsNullOrWhiteSpace(Model.Enrolment) ? "" : " · " + Model.Enrolment)</div>
+        </div>
+        <div class="pc-badges">
+            <span class="pc-badge @(Model.Locked ? "locked" : "open")">@(Model.Locked ? "Locked" : "Unlocked")</span>
+            <span class="pc-badge svc">@Model.Service</span>
+        </div>
+    </div>
+    <div class="pc-facts">
+        <div class="pc-fact">
+            <span class="k">Next lock</span>
+            <span class="v">@(Model.NextLock?.ToString("dd MMM yyyy, HH:mm") ?? (string.IsNullOrWhiteSpace(Model.NextLockText) ? "-" : Model.NextLockText))</span>
+        </div>
+        <div class="pc-fact">
+            <span class="k">Last connected</span>
+            @if (Model.LastConnectedUtc.HasValue)
+            {
+                <span class="v">@Model.LastConnectedUtc.Value.AddHours(3).ToString("dd MMM yyyy, HH:mm")</span>
+                <span class="a @(stale ? "warn" : "")">@Ranalo.Models.PhoneCardModel.Ago(Model.LastConnectedUtc.Value, now)@(stale ? ": not seen lately" : "")</span>
+            }
+            else
+            {
+                <span class="v">Not recorded</span>
+            }
+        </div>
+        <div class="pc-fact">
+            <span class="k">Enrolled</span>
+            <span class="v">@(Model.EnrolledUtc?.AddHours(3).ToString("dd MMM yyyy") ?? "-")</span>
+        </div>
+    </div>
+    @if (Model.Specs.Any())
+    {
+        <div class="pc-specs">
+            @foreach (var spec in Model.Specs)
+            {
+                <span class="pc-spec">@spec</span>
+            }
+        </div>
+    }
+</div>

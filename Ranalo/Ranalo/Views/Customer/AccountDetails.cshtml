@@ -135,27 +135,21 @@ else
                                 <h5 class="title">Phone</h5>
                                 @if (device != null)
                                 {
-                                    <div class="ss-grid">
-                                        <div class="ss-tile"><span class="lbl">Phone</span><span class="val">@device.Make @device.Model</span><span class="sub">IMEI @OrDash(device.ImeiNo)</span></div>
-                                        <div class="ss-tile"><span class="lbl">Lock service</span><span class="val">@service</span></div>
-                                        <div class="ss-tile"><span class="lbl">Lock status</span><span class="val @(locked ? "text-danger" : "text-success")">@(locked ? "Locked" : "Unlocked")</span></div>
-                                        <div class="ss-tile"><span class="lbl">Next lock</span><span class="val">@When(device.NextLockDateIsoFormat ?? device.NextLockDate)</span></div>
-                                        <div class="ss-tile"><span class="lbl">Last connected</span><span class="val">@When(device.LastConnectedAt, utc: true)</span></div>
-                                        <div class="ss-tile"><span class="lbl">Enrolled</span><span class="val">@When(device.EnrolledOn, utc: true)</span></div>
-                                    </div>
+                                    var nextLockText = device.NextLockDateIsoFormat ?? device.NextLockDate;
+                                    <partial name="_PhoneCard" model="new Ranalo.Models.PhoneCardModel
+                                    {
+                                        Make = device.Make, Model = device.Model, Imei = device.ImeiNo, Service = service, Locked = locked,
+                                        Enrolment = device.Status,
+                                        NextLock = Ranalo.Models.PhoneCardModel.Parse(nextLockText), NextLockText = nextLockText,
+                                        LastConnectedUtc = Ranalo.Models.PhoneCardModel.Parse(device.LastConnectedAt),
+                                        EnrolledUtc = Ranalo.Models.PhoneCardModel.Parse(device.EnrolledOn),
+                                        ProductName = Model.Product?.ProductName, Storage = Model.Product?.ProductStorage,
+                                        Ram = Model.Product?.ProductRam is { Length: > 0 } ram ? ram + " RAM" : null, Colour = Model.Product?.ProductColor,
+                                    }" />
                                 }
                                 else
                                 {
                                     <p class="text-soft mb-0">No phone linked to this account yet.</p>
-                                }
-                                @if (Model.Product != null)
-                                {
-                                    <div class="ss-grid mt-3">
-                                        <div class="ss-tile"><span class="lbl">Product</span><span class="val">@OrDash(Model.Product.ProductName)</span></div>
-                                        <div class="ss-tile"><span class="lbl">Storage / RAM</span><span class="val">@OrDash(Model.Product.ProductStorage) / @OrDash(Model.Product.ProductRam)</span></div>
-                                        <div class="ss-tile"><span class="lbl">Colour</span><span class="val">@OrDash(Model.Product.ProductColor)</span></div>
-                                        <div class="ss-tile"><span class="lbl">SKU</span><span class="val">@OrDash(Model.Product.Sku)</span></div>
-                                    </div>
                                 }
                             </div>
 

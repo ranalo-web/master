@@ -158,13 +158,14 @@
 
                         <div class="ss-section">
                             <h5 class="title">Phone</h5>
-                            <div class="ss-grid">
-                                <div class="ss-tile"><span class="lbl">Phone</span><span class="val">@Model.Make @Model.Model</span></div>
-                                <div class="ss-tile"><span class="lbl">Lock service</span><span class="val">@service</span></div>
-                                <div class="ss-tile"><span class="lbl">Lock status</span><span class="val @(locked ? "text-danger" : "text-success")">@(locked ? "Locked" : "Unlocked")</span></div>
-                                <div class="ss-tile"><span class="lbl">Next lock</span><span class="val">@When(Model.NextLockDate)</span></div>
-                                <div class="ss-tile"><span class="lbl">Enrolment</span><span class="val">@(string.IsNullOrWhiteSpace(Model.Status) ? "-" : char.ToUpperInvariant(Model.Status[0]) + Model.Status[1..])</span></div>
-                            </div>
+                            <partial name="_PhoneCard" model="new Ranalo.Models.PhoneCardModel
+                            {
+                                Make = Model.Make, Model = Model.Model, Imei = Model.ImeiNo ?? Model.CustomerDetails?.IMEI, Service = service, Locked = locked,
+                                Enrolment = Model.Status,
+                                NextLock = Ranalo.Models.PhoneCardModel.Parse(Model.NextLockDate), NextLockText = Model.NextLockDate,
+                                LastConnectedUtc = Ranalo.Models.PhoneCardModel.Parse(Model.LastConnectedAt),
+                                EnrolledUtc = Model.EnrolledOn,
+                            }" />
                         </div>
 
                         @if (plan != null)
