@@ -1729,6 +1729,18 @@ FROM
             return record;
         }
 
+        // The product on the account's latest WooCommerce order, found as the
+        // customer app finds it: deposit M-Pesa code -> order -> product
+        // (Woo_OrderProduct.OrderId is Woo_Orders.Id, not the Woo order number).
+        public async Task<WooOrderProduct?> GetProductDetailsForAccount(long accountNo) =>
+            await _db.QueryFirstOrDefaultAsync<WooOrderProduct>(@"
+                SELECT TOP 1 op.*
+                FROM KosePayments kp
+                JOIN Woo_Orders o ON o.MpesaDepositRef = kp.MpesaCode
+                JOIN Woo_OrderProduct op ON op.OrderId = o.Id
+                WHERE kp.AccountNoBigint = @AccountNo
+                ORDER BY o.DateCreated DESC", new { AccountNo = accountNo });
+
         public async Task<Contact?> GetNextOfKinForOrder(long orderId, bool isPrimary)
         {
             var sql = @" SELECT *

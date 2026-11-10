@@ -142,8 +142,10 @@ namespace Ranalo.Services
 
                 customerDetails?.IdentityImages?.AddRange(identityImages.ToList());
 
-                //Populate Order device details
-                customerDetails.Product = await _applicationReportRepository.GetProductDetailsForOrder(customerDetails.OrderID);
+                //Populate Order device details. Woo_OrderProduct is keyed by Woo_Orders.Id,
+                //not the Woo order number (OrderID): that never found the product here.
+                customerDetails.Product = await _applicationReportRepository.GetProductDetailsForOrder(customerDetails.Id)
+                    ?? await _applicationReportRepository.GetProductDetailsForAccount(orderId);
 
                 customerDetails.NextOfKin = await _applicationReportRepository.GetNextOfKinForOrder(customerDetails.OrderID, true);
                 customerDetails.NextOfKin2 = await _applicationReportRepository.GetNextOfKinForOrder(customerDetails.OrderID, false);
@@ -200,6 +202,9 @@ namespace Ranalo.Services
                     customerDetails.DeviceDetails = accountDevice;
                 }
 
+                // The WooCommerce product, through the deposit's order.
+                customerDetails.Product = await _applicationReportRepository.GetProductDetailsForAccount(orderId);
+
                 if (customerDetails.Summary == null)
                 {
                     return customerDetails;
@@ -218,7 +223,7 @@ namespace Ranalo.Services
 
             customerDetails?.IdentityImages?.AddRange(identityImages.ToList());
 
-            //Populate Order device details
+            //Populate Order device details; else through the account's deposit.
             customerDetails.Product = await _applicationReportRepository.GetProductDetailsForOrder(customerDetails.Id);
 
             customerDetails.NextOfKin = await _applicationReportRepository.GetNextOfKinForOrder(customerDetails.OrderID, true);
@@ -230,6 +235,12 @@ namespace Ranalo.Services
             if(!string.IsNullOrEmpty(customerAccount))
             {
                 customerDetails.Summary = await _applicationReportRepository.GetPaymentSummaryForAccountId(customerAccount);
+            }
+
+            // No product row on this order: the account's latest order with one.
+            if (customerDetails.Product == null && long.TryParse(customerAccount, out var productAccount))
+            {
+                customerDetails.Product = await _applicationReportRepository.GetProductDetailsForAccount(productAccount);
             }
 
             //Lets get payments

@@ -42,6 +42,7 @@ namespace Ranalo.DataStore
         Task CreateCustomerNote(CustomerNote newNote);
         Task<List<CustomerNote>> GetNotesByOrderId(long orderId);
         Task<WooOrderProduct?> GetProductDetailsForOrder(long orderId);
+        Task<WooOrderProduct?> GetProductDetailsForAccount(long accountNo);
         Task<Contact?> GetNextOfKinForOrder(long orderId, bool isPrimary);
 
         Task<AwaitingApprovalViewModel> GetAllMissingMpesaAsync(string searchTerm = "", int page = 1, int pageSize = 10);
