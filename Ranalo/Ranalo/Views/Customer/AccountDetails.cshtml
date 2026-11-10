@@ -75,19 +75,15 @@ else
         .ad-hero.behind .ad-hero-num { color: #c0392b; }
         .ad-hero.ahead .ad-hero-num { color: #1e8e5a; }
         .ad-hero-sub { font-size: 14px; color: #3c4d62; }
-        .ad-hero-side { display: flex; gap: 24px; flex-wrap: wrap; }
-        .ad-hero-side div { display: flex; flex-direction: column; }
-        .ad-hero-side span { font-size: 12px; color: #8094ae; }
-        .ad-hero-side b { font-size: 16px; font-variant-numeric: tabular-nums; }
     </style>
 
     <div class="nk-content-body">
         <div class="nk-block-head">
-            <div class="nk-block-head-sub"><span>@(accountNo != null ? $"Account {accountNo}" : "")@(Model.OrderID > 0 ? $" · Order {Model.OrderID}" : "")</span></div>
+            <div class="nk-block-head-sub"><span>@(accountNo != null ? $"Account {accountNo}" : "")</span></div>
             <div class="nk-block-between-md g-4">
                 <div class="nk-block-head-content">
                     <h2 class="nk-block-title page-title">@Model.FirstName @Model.LastName</h2>
-                    <div class="nk-block-des text-soft"><p>@(device != null ? $"{device.Make} {device.Model} · {service}" : "No phone linked yet")</p></div>
+                    <div class="nk-block-des text-soft"><p>@(device != null ? $"{device.Make} {device.Model}" : "No phone linked yet")</p></div>
                 </div>
                 <div class="nk-block-head-content">
                     <ul class="nk-block-tools g-2">
@@ -123,11 +119,6 @@ else
                                         <span class="ad-hero-lbl">In account</span>
                                         <span class="ad-hero-num">@(arrears < 0 ? "-" : "+")@Math.Abs(arrears).ToString("N0") <small>KES</small></span>
                                         <span class="ad-hero-sub">@(arrears < 0 ? "Behind on payments" : arrears > 0 ? "Paid ahead" : "Up to date")@(locked ? " · phone locked" : "")</span>
-                                    </div>
-                                    <div class="ad-hero-side">
-                                        <div><span>Paid</span><b>@Ksh(s.TotalPaid)</b></div>
-                                        <div><span>Balance left</span><b>@Ksh(balance)</b></div>
-                                        <div><span>Contract</span><b>@Ksh(contractTotal)</b></div>
                                     </div>
                                 </div>
 
@@ -180,7 +171,7 @@ else
                                         SimSwapLock = device?.IsLockedOnSimSwap ?? false,
                                         LockAppVersion = device?.AppVersionName,
                                         ProductName = Model.Product?.ProductName, Storage = Model.Product?.ProductStorage,
-                                        Ram = Model.Product?.ProductRam is { Length: > 0 } ram ? ram + " RAM" : null, Colour = Model.Product?.ProductColor,
+                                        Ram = Model.Product?.ProductRam, Colour = Model.Product?.ProductColor,
                                     }" />
                                 }
                                 else
