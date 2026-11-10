@@ -342,10 +342,22 @@ namespace Ranalo.Controllers
 
             await SetViewBags(settings, "approver");
 
-            // Accounts on an agreed restructure are on the Manual Restructured
-            // report and locked by its plan, not the auto one.
-            var manualRestructured = (await _applicationReportService.GetAllRestructuredNoCalculation())
-                .Select(r => r.AccountNo)
+            // Agreed restructures (the Agreed Restructure report) that are up to
+            // date on their plan are opened by the plan, so they're left out.
+            // One behind on the plan is opened by the auto restructure rule
+            // when it pays the auto amount within 24h (CustomerAppRules.
+            // PlanUnlockAmount), so it's listed here too, as long as it's
+            // still within its contract (39141992, 10 Nov 2026).
+            var plans = (await _applicationReportService.GetAllRestructured("", 1, ReportPaging.All))?.Records ?? new();
+            var manualRestructured = plans
+                .GroupBy(r => r.AccountNo)
+                .Where(g => g.OrderByDescending(r => r.DateAgreed).First().ArrearsR >= 0)
+                .Select(g => g.Key)
+                .ToHashSet();
+            ViewBag.BehindOnPlan = plans
+                .GroupBy(r => r.AccountNo)
+                .Where(g => g.OrderByDescending(r => r.DateAgreed).First().ArrearsR < 0)
+                .Select(g => g.Key)
                 .ToHashSet();
 
             if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
