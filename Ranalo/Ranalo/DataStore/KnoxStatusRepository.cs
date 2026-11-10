@@ -58,11 +58,26 @@ namespace Ranalo.DataStore
                           LastSeen = s.LastSeenUtc, Relock = s.RelockUtc, s.Offline, s.Imei, Imei2 = s.Imei2 ?? s.Imei }) > 0 ? 1 : 0;
             }
 
-            await _db.ExecuteAsync(@"
-                UPDATE Devices
-                SET KnoxStatus = @NotInKnox, KnoxStatusAtUtc = @ReadAt, KnoxOffline = NULL
-                WHERE LockGroup = 2 AND (KnoxStatusAtUtc IS NULL OR KnoxStatusAtUtc < @ReadAt)",
-                new { NotInKnox = KnoxStatusRules.NotInKnox, ReadAt = readAtUtc });
+            // By IMEI, not by comparing KnoxStatusAtUtc with readAtUtc: Dapper
+            // sends DateTime as SQL datetime, and against the datetime2 column
+            // phones saved a moment ago compared as older and were all marked
+            // "Not in Knox" (first run, 10 Nov 2026).
+            var inKnox = new HashSet<string>(
+                states.SelectMany(s => new[] { s.Imei, s.Imei2 }).Where(i => !string.IsNullOrWhiteSpace(i)).Select(i => i!.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+            var ours = await _db.QueryAsync<(long Id, string? ImeiNo, string? ImeiNo2)>(
+                "SELECT CAST(Id AS BIGINT), ImeiNo, ImeiNo2 FROM Devices WHERE LockGroup = 2");
+            var missing = ours
+                .Where(d => !inKnox.Contains(d.ImeiNo?.Trim() ?? "") && !inKnox.Contains(d.ImeiNo2?.Trim() ?? ""))
+                .Select(d => d.Id).ToList();
+            if (missing.Count > 0)
+            {
+                await _db.ExecuteAsync(@"
+                    UPDATE Devices
+                    SET KnoxStatus = @NotInKnox, KnoxStatusAtUtc = @ReadAt, KnoxOffline = NULL, KnoxRelockUtc = NULL
+                    WHERE Id IN @Ids",
+                    new { NotInKnox = KnoxStatusRules.NotInKnox, ReadAt = readAtUtc, Ids = missing });
+            }
             return matched;
         }
 

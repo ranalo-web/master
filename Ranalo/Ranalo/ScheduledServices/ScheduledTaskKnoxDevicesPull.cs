@@ -96,7 +96,9 @@ namespace Ranalo.ScheduledServices
                     {
                         PageNum = page, PageSize = PageSize, SortBy = "updateTime", SortOrder = "descending",
                     });
-                    if (list?.DeviceList == null) return page == 0 ? null : all;
+                    // A page missing = an incomplete list: save nothing, or phones on
+                    // the missing page would be marked "Not in Knox".
+                    if (list?.DeviceList == null) return null;
                     all.AddRange(list.DeviceList);
                     if (list.DeviceList.Count < PageSize || all.Count >= list.TotalCount) break;
                 }
