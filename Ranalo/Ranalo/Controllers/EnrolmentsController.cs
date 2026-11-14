@@ -368,6 +368,13 @@ namespace Ranalo.Controllers
                 response.Errors.Add("The IMEI Number is not valid, please check the number and correct.");
             }
 
+            enrolment.Imei2 = string.IsNullOrWhiteSpace(enrolment.Imei2) ? null : enrolment.Imei2.Trim();
+            var imei2Error = DeviceLockRules.CheckSecondImei(enrolment.IMEI, enrolment.Imei2);
+            if (imei2Error != null)
+            {
+                response.Errors.Add(imei2Error);
+            }
+
             var existingEnrolment = await _enrolmentService.GetByImeiNumberAsync(enrolment.IMEI);
 
             // A stock phone (locked by IMEI, no order) is sold by enrolling it

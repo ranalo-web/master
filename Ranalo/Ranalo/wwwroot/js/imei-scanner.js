@@ -9,7 +9,8 @@
 // Only 15-digit numbers with a valid check digit are taken (the same rule as
 // DeviceLockRules.IsValidImei), so serial numbers, EANs and model codes on
 // the same box are ignored. Dual-SIM boxes show IMEI 1 and IMEI 2: when both
-// are seen the dealer taps the one to use.
+// are seen the dealer taps IMEI 1, and with data-imei-second="#imei2" on the
+// button the other one fills that input.
 //
 // Uses the browser's own BarcodeDetector where it has one (Chrome on
 // Android), otherwise ZXing from a CDN. The camera needs HTTPS.
@@ -82,7 +83,16 @@
         return b;
     }
 
-    function open(target, multi) {
+    function setValue(input, value) {
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        input.dispatchEvent(new Event('blur'));
+    }
+
+    // second: optional input for the other IMEI on a dual-SIM phone
+    // (data-imei-second on the button).
+    function open(target, multi, second) {
         if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             alertBox('The camera only works on the secure (https://) site. Type the IMEI instead.');
             return;
@@ -127,11 +137,10 @@
         close.addEventListener('click', stop);
 
         function fill(imei) {
-            target.value = imei;
-            target.dispatchEvent(new Event('input', { bubbles: true }));
-            target.dispatchEvent(new Event('change', { bubbles: true }));
+            setValue(target, imei);
+            var other = seen.filter(function (s) { return s !== imei; })[0];
+            if (second && other) setValue(second, other);
             stop();
-            target.focus();
         }
 
         function addLine(imei) {
@@ -144,7 +153,9 @@
         }
 
         function offerChoice() {
-            status.textContent = seen.length > 1 ? 'Two IMEIs found (dual SIM). Tap the one to use:' : 'IMEI found:';
+            status.textContent = seen.length < 2 ? 'IMEI found:'
+                : second ? 'Two IMEIs found (dual SIM). Tap IMEI 1 (listed first on the box); the other is saved as IMEI 2:'
+                : 'Two IMEIs found (dual SIM). Tap the one to use:';
             picks.innerHTML = '';
             seen.forEach(function (imei, i) {
                 var b = button((seen.length > 1 ? 'IMEI ' + (i + 1) + ': ' : '') + imei, true);
@@ -259,7 +270,8 @@
             if (!target) return;
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
-                open(target, btn.hasAttribute('data-imei-multi'));
+                var secondSel = btn.getAttribute('data-imei-second');
+                open(target, btn.hasAttribute('data-imei-multi'), secondSel ? document.querySelector(secondSel) : null);
             });
         });
         document.querySelectorAll('[data-imei-check]').forEach(wireCheck);

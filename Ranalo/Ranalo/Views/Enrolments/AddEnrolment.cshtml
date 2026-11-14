@@ -101,12 +101,35 @@
                                                        autocomplete="off"
                                                        data-imei-check
                                                        placeholder="Scan or type the 15-digit IMEI" required>
-                                                <button type="button" class="btn btn-primary" data-imei-scan="#imei" title="Scan the IMEI barcode with the camera">
+                                                <button type="button" class="btn btn-primary" data-imei-scan="#imei" data-imei-second="#imei2" title="Scan the IMEI barcode with the camera">
                                                     <em class="icon ni ni-camera-fill"></em><span>Scan</span>
                                                 </button>
                                             </div>
                                         </div>
                                         <div class="form-note">Tap Scan and point the camera at the IMEI barcode on the box, or dial *#06# on the phone and scan the screen. The IMEI of the phone the customer is taking. It doesn't need to be on the WooCommerce order -- it's saved to the order here.</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="imei2">IMEI 2 <span class="text-soft">(dual SIM, optional)</span></label>
+                                        <div class="form-control-wrap">
+                                            <div class="input-group">
+                                                <input type="text"
+                                                       name="imei2"
+                                                       class="form-control"
+                                                       id="imei2"
+                                                       value="@enrolment?.Imei2"
+                                                       inputmode="numeric"
+                                                       maxlength="15"
+                                                       autocomplete="off"
+                                                       data-imei-check
+                                                       placeholder="Filled when the scan finds both IMEIs">
+                                                <button type="button" class="btn btn-outline-primary" data-imei-scan="#imei2" title="Scan IMEI 2 with the camera">
+                                                    <em class="icon ni ni-camera-fill"></em><span>Scan</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="form-note">Saved with itel, TECNO and Infinix phones so they can be found by either IMEI. Samsung's comes from Knox.</div>
                                     </div>
                                 </div>
                                 <div class="col-sm-6">
@@ -209,7 +232,7 @@
     </div><!-- .card-preview -->
 </div><!-- .nk-block -->
 
-<script src="/js/imei-scanner.js?v=1"></script>
+<script src="/js/imei-scanner.js?v=2"></script>
 <script>
     // Deposit picker (DepositSafeguards): once the ID number is in, lists the
     // payments on that account that can be this order's deposit, so the

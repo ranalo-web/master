@@ -61,6 +61,7 @@ namespace Ranalo.Services
         public async Task<string?> AttachStockSaleAsync(Enrolment stock, Enrolment sale)
         {
             StockPhoneRules.AttachSale(stock, sale, DateTime.UtcNow);
+            stock.Imei2 = sale.Imei2;
             if (DeviceLockRules.IsTranssion(stock.DeviceBrand))
             {
                 return await _transsionWorkflow.AttachStockSaleAsync(stock, await DeviceGroupForDealerAsync(stock.DealerId));

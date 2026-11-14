@@ -127,6 +127,21 @@ namespace Ranalo.Services.DeviceLock
             return (10 - (sum % 10)) % 10 == imei[14] - '0';
         }
 
+        // The optional second IMEI on Add Enrolment: blank is fine,
+        // otherwise a valid IMEI that isn't IMEI 1 again. null = OK.
+        public static string? CheckSecondImei(string? imei1, string? imei2)
+        {
+            if (string.IsNullOrWhiteSpace(imei2))
+            {
+                return null;
+            }
+            if (!IsValidImei(imei2))
+            {
+                return "IMEI 2 is not valid. Check it, scan it again, or leave it blank.";
+            }
+            return imei2 == imei1?.Trim() ? "IMEI 2 is the same as IMEI 1. Use the phone's other IMEI, or leave it blank." : null;
+        }
+
         public static string? Tac(string? imei) =>
             imei != null && imei.Length >= 8 && imei.Take(8).All(char.IsDigit) ? imei[..8] : null;
 

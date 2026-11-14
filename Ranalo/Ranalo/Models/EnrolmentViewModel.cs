@@ -74,6 +74,12 @@ namespace Ranalo.Models
         public DateTime? StockKnoxApprovedAt { get; set; }
         public DateTime? StockVerifiedAt { get; set; }
         public string? StockCheck { get; set; }
+
+        // The phone's second IMEI (dual SIM), scanned or typed on Add
+        // Enrolment. Not an Enrolments column: Transsion phones store it on
+        // Devices.ImeiNo2; Knox phones get theirs from Knox.
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string? Imei2 { get; set; }
     }
 
     public enum EnrolmentStatus

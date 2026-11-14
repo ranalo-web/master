@@ -167,6 +167,8 @@ namespace Ranalo.Services.DeviceLock
             var device = existing ?? new Ranalo.Woocommece.Api.Models.Device { Id = (int)enrolment.AccountId };
             device.Name = enrolment.FirstName;
             device.ImeiNo = enrolment.IMEI;
+            // Scanned at enrolment; a later resend (no second IMEI given) keeps the saved one.
+            device.ImeiNo2 = enrolment.Imei2 ?? device.ImeiNo2;
             device.IsTv = false;
             device.Model = enrolment.ProductName ?? "";
             device.Make = enrolment.DeviceBrand ?? "";

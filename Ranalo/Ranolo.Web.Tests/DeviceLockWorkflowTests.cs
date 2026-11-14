@@ -84,6 +84,30 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
+        public async Task PreEnrol_SavesTheScannedSecondImeiOnTheDevice()
+        {
+            var e = NewEnrolment();
+            e.Imei2 = "490154203237518";
+            await _workflow.PreEnrolAsync(e, deviceGroupId: 1234);
+            Assert.That(_devices.ById[e.AccountId].ImeiNo2, Is.EqualTo("490154203237518"));
+
+            // A resend without a second IMEI keeps the one saved.
+            e.Imei2 = null;
+            e.Status = EnrolmentStatus.New;
+            await _workflow.PreEnrolAsync(e, deviceGroupId: 1234);
+            Assert.That(_devices.ById[e.AccountId].ImeiNo2, Is.EqualTo("490154203237518"));
+        }
+
+        [Test]
+        public void SecondImei_OptionalButMustBeValidAndDifferent()
+        {
+            Assert.That(DeviceLockRules.CheckSecondImei("356938035643809", null), Is.Null);
+            Assert.That(DeviceLockRules.CheckSecondImei("356938035643809", "490154203237518"), Is.Null);
+            Assert.That(DeviceLockRules.CheckSecondImei("356938035643809", "490154203237519"), Does.Contain("not valid"));
+            Assert.That(DeviceLockRules.CheckSecondImei("356938035643809", "356938035643809"), Does.Contain("same as IMEI 1"));
+        }
+
+        [Test]
         public async Task PreEnrol_CreatesDeviceRowTheLockJobsIgnore()
         {
             var e = await PreEnrolledAsync();
