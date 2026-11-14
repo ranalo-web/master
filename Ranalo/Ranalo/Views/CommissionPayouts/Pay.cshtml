@@ -74,6 +74,10 @@
                     <span class="sub-text">Already paid</span>
                     <span class="d-block fs-5 fw-bold">KES @p.Pool.Paid.ToString("N0")</span>
                     <span class="d-block text-soft small">Payable now: <strong class="@(p.Payable > 0 ? "text-success" : "")">KES @p.Payable.ToString("N0")</strong></span>
+                    @if (!isAgent && p.PaidAhead > 0)
+                    {
+                        <span class="d-block text-soft small" title="Advances (or other payments) not yet earned back. Their next commission repays this first.">Paid ahead: <strong class="text-warning">KES @p.PaidAhead.ToString("N0")</strong></span>
+                    }
                 </div></div>
             </div>
         </div>
@@ -124,6 +128,7 @@
                                         else
                                         {
                                             <th class="text-end" title="Earned - paid, before arrears">Unpaid</th>
+                                            <th class="text-end" title="Commission projected once the customer has paid in full, less arrears and what's already paid">Advance room</th>
                                         }
                                     </tr>
                                 </thead>
@@ -138,7 +143,7 @@
                                                     <a href="#" class="pay-toggle text-soft" data-row="@i" title="Show product and commission details" aria-expanded="false"><em class="icon ni ni-chevron-right"></em></a>
                                                     @if (a.ContractId > 0)
                                                     {
-                                                        <input type="checkbox" class="form-check-input pay-account" name="contractIds" value="@a.ContractId" checked="@Model.PreselectedContractIds.Contains(a.ContractId)" data-unpaid="@a.Unpaid.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-upfront-due="@a.UpfrontDue.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-bonus-due="@a.BonusDue.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                                                        <input type="checkbox" class="form-check-input pay-account" name="contractIds" value="@a.ContractId" checked="@Model.PreselectedContractIds.Contains(a.ContractId)" data-unpaid="@a.Unpaid.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-upfront-due="@a.UpfrontDue.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-bonus-due="@a.BonusDue.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-advance-room="@a.AdvanceRoom.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
                                                     }
                                                 </div>
                                             </td>
@@ -175,10 +180,11 @@
                                             else
                                             {
                                                 <td class="text-end fw-medium">@a.Unpaid.ToString("N0")</td>
+                                                <td class="text-end @(a.AdvanceRoom > 0 ? "" : "text-soft")" title="@(a.AdvanceBlockedReason ?? "")">@(a.AdvanceBlockedReason != null ? "-" : a.AdvanceRoom.ToString("N0"))</td>
                                             }
                                         </tr>
                                         <tr class="pay-detail d-none" data-row="@i">
-                                            <td colspan="7" style="white-space:normal; background:rgba(101,118,255,.04);">
+                                            <td colspan="8" style="white-space:normal; background:rgba(101,118,255,.04);">
                                                 <div class="row g-3 py-1" style="font-size:12.5px;">
                                                     <div class="col-12 col-md-4">
                                                         <h6 class="overline-title text-soft mb-1">Product</h6>
@@ -231,6 +237,17 @@
                                                             <div class="d-flex justify-content-between"><span class="text-soft">Less arrears (customer is behind by)</span><span class="text-danger">(@b.DealerArrearsDeducted.ToString("N0"))</span></div>
                                                             <div class="d-flex justify-content-between"><span class="text-soft">Less already paid</span><span>(@b.DealerPaid.ToString("N0"))</span></div>
                                                             <div class="d-flex justify-content-between fw-bold border-top mt-1 pt-1"><span>Balance on this account</span><span class="@(b.DealerBalance < 0 ? "text-danger" : "")">KES @b.DealerBalance!.Value.ToString("N0")</span></div>
+                                                            <h6 class="overline-title text-soft mb-1 mt-2">Advance</h6>
+                                                            @if (a.AdvanceBlockedReason != null)
+                                                            {
+                                                                <div class="text-soft">Can't advance: @a.AdvanceBlockedReason.</div>
+                                                            }
+                                                            else
+                                                            {
+                                                                <div class="d-flex justify-content-between"><span class="text-soft">Projected once paid in full</span><span>KES @a.Projected!.Value.ToString("N0")</span></div>
+                                                                <div class="d-flex justify-content-between"><span class="text-soft">Less arrears and already paid</span><span>(@((a.Deducted + a.Paid).ToString("N0")))</span></div>
+                                                                <div class="d-flex justify-content-between fw-medium"><span>Can still be advanced</span><span>KES @a.AdvanceRoom.ToString("N0")</span></div>
+                                                            }
                                                         }
                                                         else
                                                         {
@@ -287,6 +304,32 @@
                                             <label class="custom-control-label" for="pt-auto"><strong>Auto</strong> &mdash; upfronts first, then bonuses</label>
                                         </div>
                                     </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="form-group">
+                                    <label class="form-label">This payment is</label>
+                                    <div class="d-flex flex-column" style="gap:.35rem;">
+                                        <div class="custom-control custom-radio">
+                                            <input type="radio" class="custom-control-input pay-type" name="paymentType" id="pt-commission" value="@CommissionPart.Commission" checked />
+                                            <label class="custom-control-label" for="pt-commission"><strong>Commission</strong> &mdash; what they've earned</label>
+                                        </div>
+                                        <div class="custom-control custom-radio">
+                                            <input type="radio" class="custom-control-input pay-type" name="paymentType" id="pt-advance" value="@CommissionPart.Advance" disabled="@p.IsSuspended" />
+                                            <label class="custom-control-label" for="pt-advance"><strong>Advance</strong> &mdash; ahead of earnings, up to the commission projected once paid in full</label>
+                                        </div>
+                                    </div>
+                                    <span class="form-note d-block">
+                                        @if (p.IsSuspended)
+                                        {
+                                            <text>No advances while commissions are suspended.</text>
+                                        }
+                                        else
+                                        {
+                                            <text>Up to KES @p.AdvancePayable.ToString("N0") can be advanced. It's repaid from their next commission before they get any new cash; arrears or a collections handover come off their other accounts. If they leave, the commission still to come is forfeited.</text>
+                                        }
+                                    </span>
                                 </div>
                             }
 
@@ -380,6 +423,7 @@
     <script>
         (function () {
             var poolOwed = @p.Pool.Owed.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var advancePool = @p.AdvancePayable.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var suspended = @(p.IsSuspended ? "true" : "false");
             var boxes = Array.prototype.slice.call(document.querySelectorAll('.pay-account'));
             var amount = document.getElementById('pay-amount');
@@ -402,10 +446,11 @@
                     case 'Upfront': return up;
                     case 'Bonus': return bonus;
                     case 'Auto': return Math.min(unpaid, up + bonus);
+                    case 'Advance': return parseFloat(b.dataset.advanceRoom || '0');
                     default: return unpaid;
                 }
             }
-            var dueLabels = { Upfront: 'Upfront still due on ticked accounts', Bonus: 'Bonus still due on ticked accounts' };
+            var dueLabels = { Upfront: 'Upfront still due on ticked accounts', Bonus: 'Bonus still due on ticked accounts', Advance: 'Advance room on ticked accounts' };
 
             // Same rule as CommissionPayoutRules.Payable: arrears on all the
             // payee's accounts come off, so never more than their pooled Owed.
@@ -413,7 +458,12 @@
                 var ticked = boxes.filter(function (b) { return b.checked; });
                 var unpaid = ticked.reduce(function (s, b) { return s + room(b); }, 0);
                 document.getElementById('sel-due-label').textContent = dueLabels[paymentType()] || 'Still due on ticked accounts';
-                var payable = suspended ? 0 : Math.min(poolOwed, unpaid);
+                // Advances: same cap as CommissionPayoutRules.AdvancePayable,
+                // and no "already made" override.
+                var advance = paymentType() === 'Advance';
+                var payable = suspended ? 0 : Math.min(advance ? advancePool : poolOwed, unpaid);
+                past.disabled = advance;
+                if (advance) { past.checked = false; }
                 document.getElementById('sel-count').textContent = ticked.length;
                 document.getElementById('sel-unpaid').textContent = fmt(unpaid);
                 document.getElementById('sel-less').textContent = fmt(unpaid - payable);
@@ -465,7 +515,7 @@
             });
             document.getElementById('pay-form').addEventListener('submit', function (e) {
                 var total = document.getElementById('sel-payable').textContent;
-                if (!confirm('Record KES ' + fmt(parseFloat(amount.value || '0')) + ' paid to @Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(p.Name))?' + (past.checked ? '' : ' (payable: KES ' + total + ')'))) {
+                if (!confirm('Record KES ' + fmt(parseFloat(amount.value || '0')) + ' paid to @Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(p.Name))?' + (paymentType() === 'Advance' ? ' as an ADVANCE (max KES ' + total + ')' : past.checked ? '' : ' (payable: KES ' + total + ')'))) {
                     e.preventDefault();
                 }
             });

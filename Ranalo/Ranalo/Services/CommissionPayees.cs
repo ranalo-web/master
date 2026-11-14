@@ -21,12 +21,27 @@ namespace Ranalo.Services
         public static bool CountsFor(string payeeType, CommissionAccount a) =>
             !a.Commission.NoCommission || (payeeType == CommissionPayeeType.Dealer && a.Commission.RecoverArrears);
 
+        // Why a dealer can't be advanced commission on this account, or null
+        // when they can (CommissionPayoutRules, Advance).
+        public static string? AdvanceBlockedReason(CommissionAccount a) =>
+            a.Commission.NoCommission ? "No commission on this account"
+            : a.Commission.InCollections ? "In collections"
+            : InArrears(a) ? "More than 7 days past the lock date"
+            : !a.BuyingPrice.HasValue ? "No buying price"
+            : !a.TotalCost.HasValue ? "No contract value"
+            : null;
+
+        public static decimal? ProjectedDealerCommission(CommissionAccount a) =>
+            AdvanceBlockedReason(a) != null ? null
+            : CommissionCalculator.ProjectedDealerCommission(a.Deposit, a.TotalCost, a.BuyingPrice);
+
         public static PayoutAccount ToPayoutAccount(string payeeType, CommissionAccount a)
         {
             var c = a.Commission;
             var isAgent = payeeType == CommissionPayeeType.Agent;
             return new PayoutAccount
             {
+                Projected = isAgent ? null : ProjectedDealerCommission(a),
                 ContractId = long.TryParse(a.ContractId, out var id) ? id : 0,
                 StartDate = a.StartDate,
                 Earned = isAgent ? c.AgentEarned : c.DealerCommission ?? 0,
@@ -72,6 +87,8 @@ namespace Ranalo.Services
                 BonusHeldCount = isAgent ? accounts.Count(a => a.Commission.BonusAtRisk) : 0,
                 BonusHeldNoWooOrderCount = isAgent ? accounts.Count(a => a.Commission.BonusHeldNoWooOrder) : 0,
                 MissingBuyingPriceCount = isAgent ? 0 : earning.Count(a => !a.BuyingPrice.HasValue),
+                AdvancePayable = isAgent ? 0 : CommissionPayoutRules.AdvancePayable(payout, payout.Select(x => x.ContractId), suspended),
+                PaidAhead = isAgent ? 0 : CommissionPayoutRules.PaidAhead(pool),
             };
         }
 

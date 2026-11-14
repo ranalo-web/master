@@ -27,6 +27,22 @@ namespace Ranalo.Services
     //   has no parts and is paid oldest account first. Anything left over (an
     //   override, e.g. recording a payment made earlier) lands on the newest
     //   account, as the chosen part.
+    //
+    // Advance (dealers only, admin only -- Pay Commissions is admin-only)
+    //   Commission paid before the customer has paid for it. It is recorded
+    //   like any dealer payment (PaymentType "Advance"), so it counts as paid:
+    //   the dealer's later commission pays it back before any new cash goes
+    //   out, and arrears or a collections handover on that account come off
+    //   their other accounts through the pool, like any other overpayment.
+    //   Cap: what has been paid on an account (advances included) may not go
+    //   above the commission projected once the customer has paid in full
+    //   (CommissionCalculator.ProjectedDealerCommission), less the account's
+    //   arrears. Across the dealer the same holds for all accounts together.
+    //   Not while the dealer is suspended, with no "already made" override.
+    //   Accounts that can't be advanced on: no buying price or contract value,
+    //   no-commission (legacy), in collections, or more than 7 days past the
+    //   lock date. A dealer who leaves forfeits the commission still to come,
+    //   so an advance not yet earned back is simply not recovered.
     public static class CommissionPayoutRules
     {
         public const decimal SuspensionThresholdPct = 30m;
@@ -55,8 +71,34 @@ namespace Ranalo.Services
             CommissionPart.Upfront => UnpaidUpfront(a),
             CommissionPart.Bonus => UnpaidBonus(a),
             CommissionPart.Auto => Math.Min(Unpaid(a), UnpaidUpfront(a) + UnpaidBonus(a)),
+            CommissionPart.Advance => AdvanceRoom(a),
             _ => Unpaid(a),
         };
+
+        // What can still be advanced on one account: projected commission
+        // less arrears less everything already paid on it.
+        public static decimal AdvanceRoom(PayoutAccount a) =>
+            a.Projected.HasValue ? Math.Max(0, a.Projected.Value - a.Deducted - a.Paid) : 0;
+
+        // The most that can be advanced on the selected accounts: never more
+        // than the dealer's whole book is projected to still pay them (accounts
+        // that can't be advanced on count at what they've earned so far).
+        public static decimal AdvancePayable(IReadOnlyCollection<PayoutAccount> allAccounts, IEnumerable<long> selectedContractIds, bool suspended)
+        {
+            if (suspended)
+            {
+                return 0;
+            }
+
+            var selected = selectedContractIds.ToHashSet();
+            var projectedOverall = Math.Max(0, allAccounts.Sum(a => Math.Max(a.Projected ?? 0, a.Earned) - a.Deducted - a.Paid));
+            var selectedRoom = allAccounts.Where(a => selected.Contains(a.ContractId)).Sum(AdvanceRoom);
+            return Math.Min(projectedOverall, selectedRoom);
+        }
+
+        // Paid ahead of what has been earned after arrears: advances (and any
+        // other overpayment) still to be earned back.
+        public static decimal PaidAhead(CommissionPool pool) => Math.Max(0, pool.Paid - (pool.Earned - pool.Withheld));
 
         public static decimal Payable(IReadOnlyCollection<PayoutAccount> allAccounts, IEnumerable<long> selectedContractIds, bool suspended,
             string paymentType = CommissionPart.Commission)
@@ -109,6 +151,9 @@ namespace Ranalo.Services
                     Fill(CommissionPart.Upfront, UnpaidUpfront);
                     Fill(CommissionPart.Bonus, UnpaidBonus);
                     break;
+                case CommissionPart.Advance:
+                    Fill(null, AdvanceRoom);
+                    break;
                 default:
                     Fill(null, Unpaid);
                     break;
@@ -142,6 +187,9 @@ namespace Ranalo.Services
         // Dealer payments: no upfront/bonus split.
         public const string Commission = "Commission";
 
+        // Dealer payment ahead of earnings (see Advance above).
+        public const string Advance = "Advance";
+
         public static readonly string[] AgentTypes = { Upfront, Bonus, Auto };
     }
 
@@ -164,5 +212,9 @@ namespace Ranalo.Services
         // toward the upfront (older lines have no part).
         public decimal BonusPaid { get; set; }
         public decimal UpfrontPaid => Paid - BonusPaid;
+
+        // Dealers: commission projected once the customer has paid in full,
+        // or null when the account can't be advanced on.
+        public decimal? Projected { get; set; }
     }
 }

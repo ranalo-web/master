@@ -203,7 +203,8 @@ namespace Ranalo.DataStore
                     LEFT JOIN CommissionPayouts p ON p.Id = a.PayoutId
                     WHERE a.ContractId IN @Ids"
                 : @"SELECT d.ContractId, COALESCE(p.PaidDate, d.PaidDate, d.Created) AS PaidDate,
-                           ISNULL(d.AmountPaid, 0) AS Amount, p.Method, COALESCE(p.Reference, d.PaymentReference) AS Reference, NULL AS Part
+                           ISNULL(d.AmountPaid, 0) AS Amount, p.Method, COALESCE(p.Reference, d.PaymentReference) AS Reference,
+                           CASE WHEN p.PaymentType = 'Advance' THEN 'Advance' END AS Part
                     FROM DealerCommissionPayments d
                     LEFT JOIN CommissionPayouts p ON p.Id = d.PayoutId
                     WHERE d.ContractId IN @Ids";

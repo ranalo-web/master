@@ -109,6 +109,21 @@ namespace Ranalo.Services
             };
         }
 
+        // The dealer commission the account will have earned once the
+        // customer has paid the whole contract: 30% of (contract value -
+        // buying price - the agent's full upfront + bonus). Null when the
+        // buying price or contract value isn't known. The cap on advances.
+        public static decimal? ProjectedDealerCommission(decimal deposit, decimal? contractValue, decimal? buyingPrice)
+        {
+            if (!contractValue.HasValue || !buyingPrice.HasValue)
+            {
+                return null;
+            }
+
+            var agentFull = deposit * (AgentUpfrontRate + AgentBonusRate);
+            return Math.Max(0, contractValue.Value - buyingPrice.Value - agentFull) * DealerRate;
+        }
+
         private static CommissionBreakdown NoCommission(CommissionInputs i, CommissionExclusion x)
         {
             var trueArrears = i.Arrears < 0 ? -i.Arrears : 0;

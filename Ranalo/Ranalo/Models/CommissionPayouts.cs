@@ -48,6 +48,11 @@ namespace Ranalo.Models
         // Dealers: accounts with no buying price, so no dealer commission yet.
         public int MissingBuyingPriceCount { get; set; }
 
+        // Dealers: the most that can be advanced now (0 while suspended), and
+        // what has been paid ahead of earnings and is still to be earned back.
+        public decimal AdvancePayable { get; set; }
+        public decimal PaidAhead { get; set; }
+
         // Accounts that matched the search box, if any.
         public List<CommissionMatchedAccount> MatchedAccounts { get; set; } = new();
     }
@@ -90,6 +95,12 @@ namespace Ranalo.Models
         public decimal BonusEarned { get; set; }
         public decimal BonusPaid { get; set; }
         public decimal BonusDue { get; set; }
+
+        // Dealers: commission projected once paid in full, what can still be
+        // advanced, or why nothing can be.
+        public decimal? Projected { get; set; }
+        public decimal AdvanceRoom { get; set; }
+        public string? AdvanceBlockedReason { get; set; }
 
         // Expandable detail panel (display only).
         public string? ProductName { get; set; }

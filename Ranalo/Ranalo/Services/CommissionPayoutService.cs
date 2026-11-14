@@ -145,6 +145,9 @@ namespace Ranalo.Services
                         BonusPaid = isAgent ? p.BonusPaid : 0,
                         BonusDue = isAgent ? CommissionPayoutRules.UnpaidBonus(p) : 0,
                         OwnNet = CommissionPayoutRules.OwnNet(p),
+                        Projected = isAgent ? null : p.Projected,
+                        AdvanceRoom = isAgent ? 0 : CommissionPayoutRules.AdvanceRoom(p),
+                        AdvanceBlockedReason = isAgent ? null : CommissionPayees.AdvanceBlockedReason(a),
                         ProductName = a.ProductName,
                         Imei = a.Imei,
                         Deposit = a.Deposit,
@@ -205,10 +208,10 @@ namespace Ranalo.Services
                 return (false, "The payment date can't be in the future.");
             }
 
-            // Agents choose Upfront / Bonus / Auto; dealer commission has no parts.
+            // Agents choose Upfront / Bonus / Auto; dealers Commission or Advance.
             if (payeeType == CommissionPayeeType.Dealer)
             {
-                paymentType = CommissionPart.Commission;
+                paymentType = paymentType == CommissionPart.Advance ? CommissionPart.Advance : CommissionPart.Commission;
             }
             else if (!CommissionPart.AgentTypes.Contains(paymentType))
             {
@@ -224,8 +227,29 @@ namespace Ranalo.Services
             }
 
             var summary = CommissionPayees.Summarize(payeeType, payeeId, accounts);
-            var payable = CommissionPayoutRules.Payable(all, contractIds, summary.IsSuspended, paymentType);
+            var isAdvance = paymentType == CommissionPart.Advance;
+            var payable = isAdvance
+                ? CommissionPayoutRules.AdvancePayable(all, contractIds, summary.IsSuspended)
+                : CommissionPayoutRules.Payable(all, contractIds, summary.IsSuspended, paymentType);
             amount = Math.Round(amount, 2);
+
+            // Advances: never while suspended and never over the cap, even
+            // when recording one already made.
+            if (isAdvance && summary.IsSuspended)
+            {
+                return (false, $"No advances while commissions are suspended: the default rate is {summary.DefaultRatePct:0.#}% (above {CommissionPayoutRules.SuspensionThresholdPct:0}%).");
+            }
+            if (isAdvance && amount > payable)
+            {
+                if (amount <= payable + 1 && payable > 0)
+                {
+                    amount = payable;
+                }
+                else
+                {
+                    return (false, $"KES {amount:N0} is more than the KES {payable:N0} that can be advanced on the ticked accounts: the commission projected once they're paid in full, less arrears and what's already been paid.");
+                }
+            }
 
             if (amount > payable && !recordPastPayment)
             {
@@ -270,7 +294,8 @@ namespace Ranalo.Services
                 var id = await _payoutRepository.RecordAsync(payout);
                 _logger.LogInformation("Commission payout {PayoutId}: KES {Amount} ({PaymentType}) to {PayeeType} {PayeeId} over {Accounts} account(s) by user {UserId}",
                     id, amount, paymentType, payeeType, payeeId, accountCount, recordedByUserId);
-                var typeLabel = payeeType == CommissionPayeeType.Agent ? $" {paymentType.ToLowerInvariant()} commission" : "";
+                var typeLabel = payeeType == CommissionPayeeType.Agent ? $" {paymentType.ToLowerInvariant()} commission"
+                    : isAdvance ? " as an advance" : "";
                 return (true, $"Recorded KES {amount:N0}{typeLabel} paid to {summary.Name} across {accountCount} account(s).");
             }
             catch (Exception ex)
