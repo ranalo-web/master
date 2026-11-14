@@ -124,7 +124,7 @@
                                                        autocomplete="off"
                                                        data-imei-check
                                                        placeholder="Filled when the scan finds both IMEIs">
-                                                <button type="button" class="btn btn-outline-primary" data-imei-scan="#imei2" title="Scan IMEI 2 with the camera">
+                                                <button type="button" class="btn btn-outline-primary" data-imei-scan="#imei2" data-imei-skip="#imei" title="Scan IMEI 2 with the camera">
                                                     <em class="icon ni ni-camera-fill"></em><span>Scan</span>
                                                 </button>
                                             </div>
@@ -141,7 +141,7 @@
                                                 <div class="form-icon form-icon-left">
                                                     <em class="icon ni ni-mobile"></em>
                                                 </div>
-                                                <select name="overrideBrand" class="form-select" id="overrideBrand">
+                                                <select name="overrideBrand" class="form-select" id="overrideBrand" style="padding-left:2.5rem;">
                                                     <option value="" selected>From the order (recommended)</option>
                                                     @foreach (var brand in Ranalo.Services.DeviceLock.DeviceLockRules.KnownBrands)
                                                     {
@@ -232,7 +232,7 @@
     </div><!-- .card-preview -->
 </div><!-- .nk-block -->
 
-<script src="/js/imei-scanner.js?v=3"></script>
+<script src="/js/imei-scanner.js?v=4"></script>
 <script>
     // Deposit picker (DepositSafeguards): once the ID number is in, lists the
     // payments on that account that can be this order's deposit, so the

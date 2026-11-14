@@ -181,8 +181,9 @@
     }
 
     // second: optional input for the other IMEI on a dual-SIM phone
-    // (data-imei-second on the button).
-    function open(target, multi, second) {
+    // (data-imei-second on the button). skip: an input whose IMEI is ignored
+    // (data-imei-skip), so scanning for IMEI 2 doesn't pick up IMEI 1 again.
+    function open(target, multi, second, skip) {
         if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             alertBox('The camera only works on the secure (https://) site. Type the IMEI instead.');
             return;
@@ -259,6 +260,10 @@
         function onText(text) {
             if (stopped) return;
             imeisIn(text).forEach(function (imei) {
+                if (skip && imei === skip.value.trim()) {
+                    status.textContent = 'That one is already in the IMEI box. Point at the other IMEI barcode.';
+                    return;
+                }
                 if (multi) {
                     if (addLine(imei)) {
                         addedCount++;
@@ -297,8 +302,6 @@
         overlay.appendChild(photoInput);
         var photo = button('Take photo', false);
         actions.insertBefore(photo, close);
-        var diag = make('div', { fontSize: '11px', opacity: '.55', marginTop: '8px' });
-        panel.appendChild(diag);
 
         var decoder = null, checks = 0;
         var decoderReady = getDecoder().then(function (d) { decoder = d; return d; });
@@ -314,7 +317,8 @@
                     if (stopped) return;
                     var before = seen.length + addedCount;
                     texts.forEach(onText);
-                    if (seen.length + addedCount === before) {
+                    var onlySkipped = skip && texts.some(function (t) { return imeisIn(t).indexOf(skip.value.trim()) >= 0; });
+                    if (seen.length + addedCount === before && !onlySkipped) {
                         status.textContent = texts.length
                             ? 'No IMEI in that photo (found other barcodes). Photograph the IMEI barcode itself.'
                             : 'No barcode found in the photo. Make sure the whole IMEI barcode is in the picture, sharp and in good light, and try again.';
@@ -349,10 +353,7 @@
                     d.detect(canvas)
                         .then(function (texts) { texts.forEach(onText); })
                         .catch(function () { })
-                        .then(function () {
-                            diag.textContent = d.name + ' · ' + vw + '×' + vh + ' · ' + checks + ' checks';
-                            timer = setTimeout(tick, 120);
-                        });
+                        .then(function () { timer = setTimeout(tick, 120); });
                 })();
             })
             .catch(function (err) {
@@ -395,8 +396,9 @@
             if (!target) return;
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
-                var secondSel = btn.getAttribute('data-imei-second');
-                open(target, btn.hasAttribute('data-imei-multi'), secondSel ? document.querySelector(secondSel) : null);
+                var secondSel = btn.getAttribute('data-imei-second'), skipSel = btn.getAttribute('data-imei-skip');
+                open(target, btn.hasAttribute('data-imei-multi'), secondSel ? document.querySelector(secondSel) : null,
+                    skipSel ? document.querySelector(skipSel) : null);
             });
         });
         document.querySelectorAll('[data-imei-check]').forEach(wireCheck);
