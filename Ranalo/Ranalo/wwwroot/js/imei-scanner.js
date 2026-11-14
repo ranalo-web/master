@@ -17,7 +17,7 @@
 (function () {
     'use strict';
 
-    var ZXING_URL = 'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js';
+    var ZXING_URL = 'https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js';
     var FORMATS = ['code_128', 'code_39', 'ean_13', 'qr_code', 'data_matrix'];
     var SETTLE_MS = 900; // keep looking this long after the first IMEI, for IMEI 2
 
@@ -68,6 +68,96 @@
                 return formats.indexOf('code_128') >= 0 ? new window.BarcodeDetector({ formats: formats }) : null;
             })
             .catch(function () { return null; });
+    }
+
+    function withTimeout(promise, ms, message) {
+        return new Promise(function (resolve, reject) {
+            var t = setTimeout(function () { reject(new Error(message)); }, ms);
+            promise.then(function (v) { clearTimeout(t); resolve(v); }, function (e) { clearTimeout(t); reject(e); });
+        });
+    }
+
+    // One decoder for live frames and photos: detect(canvas) resolves to the
+    // texts of the barcodes found. The browser's own where it reads Code 128
+    // (Chrome on Android); otherwise ZXing, called directly on our canvas
+    // (iPhones: every iOS browser is Safari underneath, with no BarcodeDetector).
+    var decoderPromise = null;
+    function getDecoder() {
+        if (decoderPromise) return decoderPromise;
+        decoderPromise = nativeDetector().then(function (native) {
+            if (native) {
+                return {
+                    name: 'built-in',
+                    detect: function (canvas) {
+                        return native.detect(canvas).then(function (codes) { return codes.map(function (c) { return c.rawValue; }); });
+                    }
+                };
+            }
+            return withTimeout(loadZxing(), 15000, 'the scanner took too long to load; check the internet connection').then(function (ZX) {
+                var hints = new Map();
+                hints.set(ZX.DecodeHintType.POSSIBLE_FORMATS, [ZX.BarcodeFormat.CODE_128, ZX.BarcodeFormat.CODE_39,
+                    ZX.BarcodeFormat.QR_CODE, ZX.BarcodeFormat.DATA_MATRIX]);
+                hints.set(ZX.DecodeHintType.TRY_HARDER, true);
+                var reader = new ZX.MultiFormatReader();
+                reader.setHints(hints);
+                return {
+                    name: 'ZXing',
+                    detect: function (canvas) {
+                        try {
+                            var bitmap = new ZX.BinaryBitmap(new ZX.HybridBinarizer(new ZX.HTMLCanvasElementLuminanceSource(canvas)));
+                            return Promise.resolve([reader.decodeWithState(bitmap).getText()]);
+                        } catch (e) {
+                            return Promise.resolve([]); // NotFoundException: nothing in this frame
+                        } finally {
+                            try { reader.reset(); } catch (e) { }
+                        }
+                    }
+                };
+            });
+        });
+        decoderPromise.catch(function () { decoderPromise = null; });
+        return decoderPromise;
+    }
+
+    // Copies a region of a video frame or image onto the canvas, scaled down
+    // so its width is at most maxWidth.
+    function drawScaled(canvas, source, sx, sy, sw, sh, maxWidth) {
+        var scale = Math.min(1, maxWidth / sw);
+        canvas.width = Math.max(1, Math.round(sw * scale));
+        canvas.height = Math.max(1, Math.round(sh * scale));
+        canvas.getContext('2d').drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    }
+
+    function loadImage(file) {
+        return new Promise(function (resolve, reject) {
+            var url = URL.createObjectURL(file);
+            var img = new Image();
+            img.onload = function () { resolve(img); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); };
+            img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('not an image')); };
+            img.src = url;
+        });
+    }
+
+    // A photo of a box usually has several barcodes (IMEI 1, IMEI 2, EID,
+    // serial) and ZXing returns one per read, so read the whole photo and
+    // then overlapping horizontal strips, collecting every text found.
+    function decodePhoto(decoder, file) {
+        return loadImage(file).then(function (img) {
+            var w = img.naturalWidth, h = img.naturalHeight;
+            var regions = [[0, 0, w, h]];
+            var strip = Math.round(h / 5), step = Math.round(h / 10);
+            for (var y = 0; y + strip <= h; y += step) regions.push([0, y, w, strip]);
+            var canvas = document.createElement('canvas');
+            var texts = [];
+            return regions.reduce(function (p, r) {
+                return p.then(function () {
+                    drawScaled(canvas, img, r[0], r[1], r[2], r[3], 2000);
+                    return decoder.detect(canvas).then(function (found) {
+                        found.forEach(function (t) { if (texts.indexOf(t) < 0) texts.push(t); });
+                    });
+                });
+            }, Promise.resolve()).then(function () { return texts; });
+        });
     }
 
     function css(el, styles) { for (var k in styles) el.style[k] = styles[k]; return el; }
@@ -123,14 +213,13 @@
         overlay.appendChild(panel);
         document.body.appendChild(overlay);
 
-        var stream = null, reader = null, timer = null, settle = null, stopped = false;
+        var stream = null, timer = null, settle = null, stopped = false;
         var seen = [], addedCount = 0;
 
         function stop() {
             stopped = true;
             clearTimeout(timer);
             clearTimeout(settle);
-            if (reader) { try { reader.reset(); } catch (e) { } }
             if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
             if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
         }
@@ -154,11 +243,12 @@
 
         function offerChoice() {
             status.textContent = seen.length < 2 ? 'IMEI found:'
-                : second ? 'Two IMEIs found (dual SIM). Tap IMEI 1 (listed first on the box); the other is saved as IMEI 2:'
+                : second ? 'Two IMEIs found (dual SIM). Tap the one printed as IMEI 1 on the box; the other is saved as IMEI 2:'
                 : 'Two IMEIs found (dual SIM). Tap the one to use:';
             picks.innerHTML = '';
-            seen.forEach(function (imei, i) {
-                var b = button((seen.length > 1 ? 'IMEI ' + (i + 1) + ': ' : '') + imei, true);
+            // Not labelled 1 / 2: they're listed in the order they were read.
+            seen.forEach(function (imei) {
+                var b = button(imei, true);
                 b.style.fontFamily = 'monospace';
                 b.style.fontSize = '17px';
                 b.addEventListener('click', function () { fill(imei); });
@@ -193,42 +283,77 @@
         }
 
         var hint = multi
-            ? 'Point at the IMEI barcode on each box. Each one is added to the list.'
-            : 'Point at the IMEI barcode on the box, or dial *#06# on the phone and scan the screen.';
+            ? 'Point at the IMEI barcode on each box, with both ends of the barcode in view. Each one is added to the list.'
+            : 'Point at the IMEI barcode on the box (or the *#06# screen). Keep the whole barcode, both ends, inside the green box: hold back a little rather than too close.';
+
+        // "Take photo": a full-resolution still with proper focus. Far more
+        // reliable than live video on iPhones, and one photo of a box reads
+        // IMEI 1 and IMEI 2 together.
+        var photoInput = document.createElement('input');
+        photoInput.type = 'file';
+        photoInput.accept = 'image/*';
+        photoInput.setAttribute('capture', 'environment');
+        photoInput.style.display = 'none';
+        overlay.appendChild(photoInput);
+        var photo = button('Take photo', false);
+        actions.insertBefore(photo, close);
+        var diag = make('div', { fontSize: '11px', opacity: '.55', marginTop: '8px' });
+        panel.appendChild(diag);
+
+        var decoder = null, checks = 0;
+        var decoderReady = getDecoder().then(function (d) { decoder = d; return d; });
+
+        photo.addEventListener('click', function () { photoInput.value = ''; photoInput.click(); });
+        photoInput.addEventListener('change', function () {
+            var file = photoInput.files && photoInput.files[0];
+            if (!file) return;
+            status.textContent = 'Reading the photo…';
+            decoderReady
+                .then(function (d) { return decodePhoto(d, file); })
+                .then(function (texts) {
+                    if (stopped) return;
+                    var before = seen.length + addedCount;
+                    texts.forEach(onText);
+                    if (seen.length + addedCount === before) {
+                        status.textContent = texts.length
+                            ? 'No IMEI in that photo (found other barcodes). Photograph the IMEI barcode itself.'
+                            : 'No barcode found in the photo. Make sure the whole IMEI barcode is in the picture, sharp and in good light, and try again.';
+                    }
+                    if (video.paused) video.play().catch(function () { });
+                })
+                .catch(function (err) { status.textContent = 'Couldn\'t read the photo (' + (err && err.message || err) + '). Type the IMEI instead.'; });
+        });
 
         navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
             .then(function (s) {
                 stream = s;
                 if (stopped) { stop(); return; }
                 video.srcObject = s;
-                return video.play().then(function () { return nativeDetector(); });
+                return video.play().then(function () { return decoderReady; });
             })
-            .then(function (detector) {
+            .then(function (d) {
                 if (stopped || !stream) return;
-                status.textContent = hint;
-                if (detector) {
-                    (function tick() {
-                        if (stopped) return;
-                        detector.detect(video)
-                            .then(function (codes) { codes.forEach(function (c) { onText(c.rawValue); }); })
-                            .catch(function () { })
-                            .then(function () { timer = setTimeout(tick, 120); });
-                    })();
-                    return;
-                }
-                return loadZxing().then(function (ZXing) {
+                status.textContent = hint + ' Or tap Take photo.';
+                // Our own loop over the frames: each check reads one region,
+                // the band around the green box (where the barcode is
+                // largest) most of the time, the whole frame every third.
+                var canvas = document.createElement('canvas');
+                (function tick() {
                     if (stopped) return;
-                    var hints = new Map();
-                    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
-                        ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.DATA_MATRIX]);
-                    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-                    reader = new ZXing.BrowserMultiFormatReader(hints, 150);
-                    // ZXing opens its own stream on the same video element.
-                    stream.getTracks().forEach(function (t) { t.stop(); });
-                    stream = null;
-                    return reader.decodeFromConstraints({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } }, video,
-                        function (result) { if (result) onText(result.getText()); });
-                });
+                    var vw = video.videoWidth, vh = video.videoHeight;
+                    if (!vw || !vh) { timer = setTimeout(tick, 200); return; }
+                    var whole = checks % 3 === 2;
+                    var sy = whole ? 0 : Math.round(vh * 0.22), sh = whole ? vh : Math.round(vh * 0.45);
+                    drawScaled(canvas, video, 0, sy, vw, sh, 1600);
+                    checks++;
+                    d.detect(canvas)
+                        .then(function (texts) { texts.forEach(onText); })
+                        .catch(function () { })
+                        .then(function () {
+                            diag.textContent = d.name + ' · ' + vw + '×' + vh + ' · ' + checks + ' checks';
+                            timer = setTimeout(tick, 120);
+                        });
+                })();
             })
             .catch(function (err) {
                 if (stopped) return;
@@ -277,6 +402,11 @@
         document.querySelectorAll('[data-imei-check]').forEach(wireCheck);
     }
 
-    window.RanaloImei = { isValid: isValidImei, findIn: imeisIn };
+    // decodeFile: the "Take photo" path on any image file (used for testing).
+    window.RanaloImei = {
+        isValid: isValidImei,
+        findIn: imeisIn,
+        decodeFile: function (file) { return getDecoder().then(function (d) { return decodePhoto(d, file); }); }
+    };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
