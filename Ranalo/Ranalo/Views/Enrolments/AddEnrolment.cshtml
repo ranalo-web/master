@@ -90,17 +90,23 @@
                                     <div class="form-group">
                                         <label class="form-label" for="imei">IMEI</label>
                                         <div class="form-control-wrap">
-                                            <div class="form-icon form-icon-left">
-                                                <em class="icon ni ni-tag-alt-fill"></em>
+                                            <div class="input-group">
+                                                <input type="text"
+                                                       name="imei"
+                                                       class="form-control"
+                                                       id="imei"
+                                                       value="@enrolment?.IMEI"
+                                                       inputmode="numeric"
+                                                       maxlength="15"
+                                                       autocomplete="off"
+                                                       data-imei-check
+                                                       placeholder="Scan or type the 15-digit IMEI" required>
+                                                <button type="button" class="btn btn-primary" data-imei-scan="#imei" title="Scan the IMEI barcode with the camera">
+                                                    <em class="icon ni ni-camera-fill"></em><span>Scan</span>
+                                                </button>
                                             </div>
-                                            <input type="text" 
-                                                name="imei" 
-                                                class="form-control"
-                                                   id="imei"
-                                                   value="@enrolment?.IMEI"
-                                                placeholder="Enter a valid IMEI number" required>
                                         </div>
-                                        <div class="form-note">The IMEI of the phone the customer is taking. It doesn't need to be on the WooCommerce order -- it's saved to the order here.</div>
+                                        <div class="form-note">Tap Scan and point the camera at the IMEI barcode on the box, or dial *#06# on the phone and scan the screen. The IMEI of the phone the customer is taking. It doesn't need to be on the WooCommerce order -- it's saved to the order here.</div>
                                     </div>
                                 </div>
                                 <div class="col-sm-6">
@@ -203,6 +209,7 @@
     </div><!-- .card-preview -->
 </div><!-- .nk-block -->
 
+<script src="/js/imei-scanner.js?v=1"></script>
 <script>
     // Deposit picker (DepositSafeguards): once the ID number is in, lists the
     // payments on that account that can be this order's deposit, so the

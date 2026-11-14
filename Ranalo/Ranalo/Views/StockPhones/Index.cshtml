@@ -43,7 +43,11 @@
                             <div class="form-group">
                                 <label class="form-label" for="imeis">IMEIs, one per line</label>
                                 <textarea id="imeis" name="imeis" rows="4" class="form-control" placeholder="350522366526910" required></textarea>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-imei-scan="#imeis" data-imei-multi>
+                                    <em class="icon ni ni-camera-fill"></em><span>Scan boxes with the camera</span>
+                                </button>
                             </div>
+                            <script src="/js/imei-scanner.js?v=1"></script>
                             <div class="row g-2">
                                 <div class="col-sm-6">
                                     <div class="form-group">
