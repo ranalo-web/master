@@ -129,5 +129,65 @@ namespace Ranolo.Web.Tests
             Assert.That(ScreeningRules.NotPaying(Start.AddDays(-45), -50m, Start), Is.False);
             Assert.That(ScreeningRules.NotPaying(null, -50m, Start), Is.False);
         }
+
+        // ---- The one screening form (both calls saved together) ----
+
+        [Test]
+        public void Form_BothCallsAnswered_LogsBoth_AndTogetherTheyPass()
+        {
+            var (calls, error) = ScreeningRules.CallsFromForm(new ScreeningCallsForm
+            {
+                OrderId = 20214,
+                CustomerResult = ScreeningRules.Answered, IdentityConfirmed = true, TermsConfirmed = true, LockUnderstood = true, CustomerNotes = "  ok  ",
+                KinResult = ScreeningRules.Answered, NextOfKinNo = 1, KnowsCustomer = true, RelationshipConfirmed = true, Relationship = "Brother",
+            }, userId: 7);
+
+            Assert.That(error, Is.Null);
+            Assert.That(calls.Select(c => c.CallType), Is.EqualTo(new[] { ScreeningCall.Customer, ScreeningCall.NextOfKin }));
+            Assert.That(calls.All(c => c.OrderId == 20214 && c.CalledByUserId == 7), Is.True);
+            Assert.That(calls[0].Notes, Is.EqualTo("ok"));
+            Assert.That(calls[1].Relationship, Is.EqualTo("Brother"));
+            Assert.That(ScreeningRules.Status(true, calls), Is.EqualTo(ScreeningStatus.Passed));
+        }
+
+        [Test]
+        public void Form_OnlyOneCall_LogsJustThatOne()
+        {
+            var (calls, error) = ScreeningRules.CallsFromForm(new ScreeningCallsForm
+            {
+                OrderId = 1, KinResult = ScreeningRules.Answered, NextOfKinNo = 2, KnowsCustomer = true, RelationshipConfirmed = true,
+                IdentityConfirmed = true, // ticked by mistake, but the customer call has no result
+            }, 7);
+
+            Assert.That(error, Is.Null);
+            Assert.That(calls, Has.Count.EqualTo(1));
+            Assert.That(calls[0].CallType, Is.EqualTo(ScreeningCall.NextOfKin));
+            Assert.That(calls[0].NextOfKinNo, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void Form_NoAnswer_IsLogged_ButItsChecksDontCount()
+        {
+            var (calls, _) = ScreeningRules.CallsFromForm(new ScreeningCallsForm
+            {
+                OrderId = 1, CustomerResult = ScreeningRules.NoAnswer, IdentityConfirmed = true, TermsConfirmed = true, LockUnderstood = true,
+            }, 7);
+
+            Assert.That(calls, Has.Count.EqualTo(1));
+            Assert.That(calls[0].Reached, Is.False);
+            Assert.That(calls[0].IdentityConfirmed || calls[0].TermsConfirmed || calls[0].LockUnderstood, Is.False);
+            Assert.That(ScreeningRules.CustomerCallPassed(calls[0]), Is.False);
+        }
+
+        [Test]
+        public void Form_NothingChosen_OrNoNextOfKinPicked_IsRefused()
+        {
+            Assert.That(ScreeningRules.CallsFromForm(new ScreeningCallsForm { OrderId = 1, CustomerNotes = "rang" }, 7).Error,
+                Does.Contain("Answered or No answer"));
+            Assert.That(ScreeningRules.CallsFromForm(new ScreeningCallsForm { OrderId = 1, KinResult = ScreeningRules.NoAnswer }, 7).Error,
+                Does.Contain("which next of kin"));
+            Assert.That(ScreeningRules.CallsFromForm(new ScreeningCallsForm { OrderId = 1, CustomerResult = "maybe" }, 7).Error,
+                Is.Not.Null, "only the two known results count");
+        }
     }
 }

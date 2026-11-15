@@ -2,8 +2,10 @@ using Ranalo.Services.DeviceLock;
 
 namespace Ranalo.ScheduledServices
 {
-    // Every 5 minutes: enrolments on screened orders are approved without a
-    // person once their phone has reached Knox (EnrolmentApprovalService.SweepAsync).
+    // Every 5 minutes: Transsion phones still waiting to be switched on are
+    // checked with Transsion (CheckActivationsAsync), then enrolments on
+    // screened orders are approved without a person once their phone has
+    // reached Knox (EnrolmentApprovalService.SweepAsync).
     public class ScheduledEnrolmentAutoApproval : BackgroundService
     {
         private static readonly TimeSpan Interval = TimeSpan.FromMinutes(5);
@@ -36,6 +38,15 @@ namespace Ranalo.ScheduledServices
                 {
                     using var scope = _scopeFactory.CreateScope();
                     var approvals = scope.ServiceProvider.GetRequiredService<IEnrolmentApprovalService>();
+
+                    // First: Transsion phones that are on but whose activation
+                    // webhook never reached us, so this run can unlock them.
+                    var activated = await approvals.CheckActivationsAsync();
+                    if (activated > 0)
+                    {
+                        _logger.LogInformation("Enrolment auto-approval: {activated} Transsion phone(s) found active without a webhook", activated);
+                    }
+
                     var approved = await approvals.SweepAsync();
                     if (approved > 0)
                     {

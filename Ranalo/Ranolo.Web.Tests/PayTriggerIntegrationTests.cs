@@ -222,6 +222,7 @@ namespace Ranolo.Web.Tests
             public Task<Ranalo.Services.DeviceLock.WorkflowResult> RetryUnlockAsync(Guid enrolmentId, Ranalo.DataStore.DataModels.User actor) => throw new NotImplementedException();
             public Task<Ranalo.Services.DeviceLock.WorkflowResult> UnlockForAsync(Guid enrolmentId, TimeSpan period, Ranalo.DataStore.DataModels.User actor) => throw new NotImplementedException();
             public Task<Ranalo.Services.DeviceLock.WorkflowResult> SendAgainAsync(Guid enrolmentId, Ranalo.DataStore.DataModels.User actor, int? deviceGroupId) => throw new NotImplementedException();
+            public Task<bool> CheckActivationAsync(Ranalo.Models.Enrolment enrolment) => throw new NotImplementedException();
         }
 
         private static PayTriggerWebhookController CreateController(FakeRepo repo, string body, string? sign, FakeWorkflow? workflow = null,

@@ -387,6 +387,20 @@ namespace Ranalo.Services.DeviceLock
             !enrolment.UnlockedAt.HasValue &&
             (enrolment.Status == EnrolmentStatus.Error || string.IsNullOrEmpty(enrolment.PayTriggerResponse));
 
+        // PayTrigger findLockState lockState 3000: switched on and active.
+        public const int TranssionActiveLockState = 3000;
+
+        // Pre-enrolled with Transsion and still waiting to hear the phone is
+        // switched on. Transsion sends its activation webhook once; when that's
+        // missed (a stock phone switched on before it was sold, a failed call
+        // to us) the 5-minute job asks Transsion instead (CheckActivationAsync).
+        public static bool AwaitingActivation(Enrolment enrolment) =>
+            IsTranssion(enrolment.DeviceBrand) &&
+            enrolment.Status == EnrolmentStatus.PendingActivation &&
+            !enrolment.ActivatedAt.HasValue &&
+            !enrolment.UnlockedAt.HasValue &&
+            !NeedsSendingToTranssion(enrolment);
+
         public static bool ReadyToUnlock(Enrolment enrolment) =>
             enrolment.ActivatedAt.HasValue &&
             enrolment.CallApprovedAt.HasValue &&

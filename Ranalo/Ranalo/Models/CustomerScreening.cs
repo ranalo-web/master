@@ -23,6 +23,27 @@ namespace Ranalo.Models
         public DateTime CalledAtUtc { get; set; }
     }
 
+    // The screening form on Order Details: the customer call and the next of
+    // kin call on one form, saved together, so nothing typed in one is lost
+    // by saving the other. A result of "" means that call wasn't made yet.
+    public class ScreeningCallsForm
+    {
+        public long OrderId { get; set; }
+
+        public string? CustomerResult { get; set; }
+        public bool IdentityConfirmed { get; set; }
+        public bool TermsConfirmed { get; set; }
+        public bool LockUnderstood { get; set; }
+        public string? CustomerNotes { get; set; }
+
+        public string? KinResult { get; set; }
+        public byte? NextOfKinNo { get; set; }
+        public bool KnowsCustomer { get; set; }
+        public bool RelationshipConfirmed { get; set; }
+        public string? Relationship { get; set; }
+        public string? KinNotes { get; set; }
+    }
+
     // A welfare call logged against an account (CustomerWelfareCalls).
     public class WelfareCall
     {

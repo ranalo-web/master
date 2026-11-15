@@ -44,6 +44,70 @@ namespace Ranalo.Services
             c.CallType == ScreeningCall.NextOfKin && c.Reached
             && c.KnowsCustomer && c.RelationshipConfirmed;
 
+        // The screening form's call results ("" = not called yet).
+        public const string Answered = "answered";
+        public const string NoAnswer = "no-answer";
+        public const int NotesMaxLength = 1000;
+
+        // The form saves the customer call, the next of kin call or both at
+        // once: one call per section with a result. Checks only count when
+        // someone answered. null error = the calls to log (at least one).
+        public static (List<ScreeningCall> Calls, string? Error) CallsFromForm(ScreeningCallsForm f, int userId)
+        {
+            var customer = Result(f.CustomerResult);
+            var kin = Result(f.KinResult);
+            if (customer == null && kin == null)
+            {
+                return (new(), "Choose Answered or No answer for the customer call, the next of kin call, or both.");
+            }
+            if (kin != null && f.NextOfKinNo is not (1 or 2))
+            {
+                return (new(), "Choose which next of kin was called.");
+            }
+
+            var calls = new List<ScreeningCall>();
+            if (customer != null)
+            {
+                var reached = customer == Answered;
+                calls.Add(new ScreeningCall
+                {
+                    OrderId = f.OrderId,
+                    CallType = ScreeningCall.Customer,
+                    Reached = reached,
+                    IdentityConfirmed = reached && f.IdentityConfirmed,
+                    TermsConfirmed = reached && f.TermsConfirmed,
+                    LockUnderstood = reached && f.LockUnderstood,
+                    Notes = Clip(f.CustomerNotes, NotesMaxLength),
+                    CalledByUserId = userId,
+                });
+            }
+            if (kin != null)
+            {
+                var reached = kin == Answered;
+                calls.Add(new ScreeningCall
+                {
+                    OrderId = f.OrderId,
+                    CallType = ScreeningCall.NextOfKin,
+                    NextOfKinNo = f.NextOfKinNo,
+                    Reached = reached,
+                    KnowsCustomer = reached && f.KnowsCustomer,
+                    RelationshipConfirmed = reached && f.RelationshipConfirmed,
+                    Relationship = Clip(f.Relationship, 100),
+                    Notes = Clip(f.KinNotes, NotesMaxLength),
+                    CalledByUserId = userId,
+                });
+            }
+            return (calls, null);
+
+            static string? Result(string? r) => r is Answered or NoAnswer ? r : null;
+        }
+
+        private static string? Clip(string? value, int max)
+        {
+            var trimmed = value?.Trim();
+            return string.IsNullOrEmpty(trimmed) ? null : trimmed.Length > max ? trimmed[..max] : trimmed;
+        }
+
         public static ScreeningStatus Status(bool required, IReadOnlyCollection<ScreeningCall> calls)
         {
             if (!required)

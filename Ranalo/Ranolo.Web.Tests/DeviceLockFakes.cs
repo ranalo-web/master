@@ -51,6 +51,8 @@ namespace Ranolo.Web.Tests
         public Task<bool> DeleteEnrolmentAsync(Enrolment enrolment) => Task.FromResult(Items.Remove(enrolment));
         public Task<List<Enrolment>> GetAwaitingApprovalAsync() =>
             Task.FromResult(Items.Where(x => x.CallApprovedAt == null && x.Status is EnrolmentStatus.Pending or EnrolmentStatus.PendingActivation or EnrolmentStatus.Enrolled).ToList());
+        public Task<List<Enrolment>> GetAwaitingActivationAsync() =>
+            Task.FromResult(Items.Where(x => x.Status == EnrolmentStatus.PendingActivation && x.ActivatedAt == null && x.UnlockedAt == null).ToList());
         public Task<List<Enrolment>> GetStockAsync(bool unverifiedOnly, string? searchTerm = null) =>
             Task.FromResult(Items.Where(e => e.Status == EnrolmentStatus.Stock && (!unverifiedOnly || e.StockVerifiedAt == null)).ToList());
     }

@@ -36,6 +36,10 @@ namespace Ranalo.Services.DeviceLock
         // registered -- for when the activation webhook hasn't arrived.
         Task<WorkflowResult> UnlockForAsync(Guid enrolmentId, TimeSpan period, User actor);
         Task OnActivatedAsync(string imei);
+        // For when the activation webhook never arrives: asks Transsion
+        // whether the phone is active and, if so, carries on as the webhook
+        // would (unlocking it once the call's approved). true = it was active.
+        Task<bool> CheckActivationAsync(Enrolment enrolment);
     }
 
     public record WorkflowResult(bool Success, string Message);
@@ -301,6 +305,25 @@ namespace Ranalo.Services.DeviceLock
             }
 
             return await TryUnlockAsync(enrolment, period, force: true);
+        }
+
+        public async Task<bool> CheckActivationAsync(Enrolment enrolment)
+        {
+            if (!DeviceLockRules.AwaitingActivation(enrolment))
+            {
+                return false;
+            }
+
+            var state = await _payTrigger.FindLockStateAsync(new PayTriggerModels.FindLockStateRequest { Imei = enrolment.IMEI });
+            if (state.Data?.LockState != DeviceLockRules.TranssionActiveLockState)
+            {
+                return false;
+            }
+
+            _logger.LogInformation("Transsion reports {Imei} (account {Account}) active but no activation webhook arrived; treating it as activated",
+                enrolment.IMEI, enrolment.AccountId);
+            await OnActivatedAsync(enrolment.IMEI);
+            return true;
         }
 
         public async Task OnActivatedAsync(string imei)

@@ -14,6 +14,9 @@ namespace Ranalo.Services.DeviceLock
         Task<WorkflowResult?> TryAutoApproveAsync(Enrolment enrolment);
         Task<bool> WillAutoApproveAsync(Enrolment enrolment);
         Task<int> SweepAsync();
+        // Transsion phones still waiting to be switched on: asks Transsion
+        // (for when its activation webhook never arrived). Returns how many were active.
+        Task<int> CheckActivationsAsync();
     }
 
     public class EnrolmentApprovalService : IEnrolmentApprovalService
@@ -120,6 +123,26 @@ namespace Ranalo.Services.DeviceLock
                 }
             }
             return approved;
+        }
+
+        public async Task<int> CheckActivationsAsync()
+        {
+            var activated = 0;
+            foreach (var enrolment in (await _enrolments.GetAwaitingActivationAsync()).Where(DeviceLockRules.AwaitingActivation))
+            {
+                try
+                {
+                    if (await _transsion.CheckActivationAsync(enrolment))
+                    {
+                        activated++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Transsion activation check of {Imei} failed", enrolment.IMEI);
+                }
+            }
+            return activated;
         }
 
         private async Task<bool> ScreeningPassedAsync(long orderId) =>

@@ -199,6 +199,15 @@ namespace Ranalo.DataStore
                 .ToListAsync();
         }
 
+        public async Task<List<Enrolment>> GetAwaitingActivationAsync()
+        {
+            var since = DateTime.UtcNow.AddDays(-14);
+            return await _context.Enrolments.AsNoTracking()
+                .Where(x => x.Status == EnrolmentStatus.PendingActivation && x.ActivatedAt == null && x.UnlockedAt == null
+                    && x.Updated >= since)
+                .ToListAsync();
+        }
+
         public async Task<List<Enrolment>> GetStockAsync(bool unverifiedOnly, string? searchTerm = null)
         {
             var query = _context.Enrolments.AsNoTracking().Where(x => x.Status == EnrolmentStatus.Stock);

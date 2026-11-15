@@ -405,6 +405,72 @@ namespace Ranolo.Web.Tests
             AssertUnlocked(e, null);
         }
 
+        // ---- Activation check (the webhook never arrived) ----
+
+        private static FindLockStateResponse LockState(int state) =>
+            new() { Code = 200, Data = new FindLockStateData { LockState = state } };
+
+        [Test]
+        public async Task CheckActivation_TranssionSaysActive_UnlocksTheApprovedPhone()
+        {
+            var e = await PreEnrolledAsync();
+            await _workflow.ApproveCallAsync(e.Id, Approver);
+            _payTrigger.FindResponse = LockState(DeviceLockRules.TranssionActiveLockState);
+
+            Assert.That(await _workflow.CheckActivationAsync(e), Is.True);
+            Assert.That(_payTrigger.FindCalls.Single().Imei, Is.EqualTo(e.IMEI));
+            Assert.That(e.ActivatedAt, Is.Not.Null);
+            AssertUnlocked(e, null);
+        }
+
+        [Test]
+        public async Task CheckActivation_ActiveButCallNotApproved_RecordsActivationOnly()
+        {
+            var e = await PreEnrolledAsync();
+            _payTrigger.FindResponse = LockState(DeviceLockRules.TranssionActiveLockState);
+
+            Assert.That(await _workflow.CheckActivationAsync(e), Is.True);
+            Assert.That(e.ActivatedAt, Is.Not.Null);
+            Assert.That(e.Status, Is.EqualTo(EnrolmentStatus.Enrolled), "now waiting only for the approval");
+            Assert.That(_payTrigger.RepayCalls, Is.Empty, "not unlocked before the approval");
+        }
+
+        [Test]
+        public async Task CheckActivation_NotActiveYet_ChangesNothing()
+        {
+            var e = await PreEnrolledAsync();
+            await _workflow.ApproveCallAsync(e.Id, Approver);
+            _payTrigger.FindResponse = LockState(2000); // ready to activate, not on yet
+
+            Assert.That(await _workflow.CheckActivationAsync(e), Is.False);
+            Assert.That(e.ActivatedAt, Is.Null);
+            Assert.That(e.Status, Is.EqualTo(EnrolmentStatus.PendingActivation));
+            Assert.That(_payTrigger.RepayCalls, Is.Empty);
+        }
+
+        [Test]
+        public async Task CheckActivation_AlreadyActivated_DoesntAskTranssion()
+        {
+            var e = await PreEnrolledAsync();
+            await _workflow.OnActivatedAsync(e.IMEI);
+
+            Assert.That(await _workflow.CheckActivationAsync(e), Is.False);
+            Assert.That(_payTrigger.FindCalls, Is.Empty);
+        }
+
+        [Test]
+        public void AwaitingActivation_OnlyTranssionPhonesSentAndNotYetOn()
+        {
+            Enrolment E(string brand, EnrolmentStatus status, string? response = "Pre-enrolled") =>
+                new() { IMEI = "356938035643809", DeviceBrand = brand, Status = status, PayTriggerResponse = response };
+
+            Assert.That(DeviceLockRules.AwaitingActivation(E("TECNO", EnrolmentStatus.PendingActivation)), Is.True);
+            Assert.That(DeviceLockRules.AwaitingActivation(E("Samsung", EnrolmentStatus.PendingActivation)), Is.False);
+            Assert.That(DeviceLockRules.AwaitingActivation(E("TECNO", EnrolmentStatus.Enrolled)), Is.False);
+            Assert.That(DeviceLockRules.AwaitingActivation(E("TECNO", EnrolmentStatus.PendingActivation, response: null)), Is.False,
+                "never reached Transsion");
+        }
+
         private void AssertUnlocked(Enrolment e, WorkflowResult? result)
         {
             var device = _devices.ById[e.AccountId];

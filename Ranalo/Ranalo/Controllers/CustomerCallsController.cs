@@ -50,7 +50,9 @@ namespace Ranalo.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("customer-calls/screening")]
-        public async Task<IActionResult> LogScreeningCall(ScreeningCall call)
+        // The screening form: the customer call, the next of kin call or both,
+        // saved together (ScreeningRules.CallsFromForm).
+        public async Task<IActionResult> LogScreeningCall(ScreeningCallsForm form)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -58,54 +60,45 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            if (!CanCall(settings) || call.OrderId <= 0
-                || call.CallType is not (ScreeningCall.Customer or ScreeningCall.NextOfKin))
+            if (!CanCall(settings) || form.OrderId <= 0)
             {
                 return RedirectToAction("Index", "Home");
             }
 
-            if (call.CallType == ScreeningCall.NextOfKin && call.NextOfKinNo is not (1 or 2))
+            var (calls, error) = ScreeningRules.CallsFromForm(form, settings.UserId);
+            if (error != null)
             {
-                TempData["ScreeningError"] = "Choose which next of kin was called.";
-                return Redirect($"/order-details/{call.OrderId}");
+                TempData["ScreeningError"] = error;
+                return Redirect($"/order-details/{form.OrderId}#screening");
             }
 
-            // Only what applies to this call is kept; nothing counts if nobody answered.
-            var isCustomer = call.CallType == ScreeningCall.Customer;
-            call.NextOfKinNo = isCustomer ? null : call.NextOfKinNo;
-            call.IdentityConfirmed = isCustomer && call.Reached && call.IdentityConfirmed;
-            call.TermsConfirmed = isCustomer && call.Reached && call.TermsConfirmed;
-            call.LockUnderstood = isCustomer && call.Reached && call.LockUnderstood;
-            call.KnowsCustomer = !isCustomer && call.Reached && call.KnowsCustomer;
-            call.RelationshipConfirmed = !isCustomer && call.Reached && call.RelationshipConfirmed;
-            call.Relationship = isCustomer ? null : Trim(call.Relationship, 100);
-            call.Notes = Trim(call.Notes, NotesMaxLength);
-            call.CalledByUserId = settings.UserId;
-
-            await _screening.LogScreeningCallAsync(call);
-            TempData["ScreeningMessage"] = "Call logged.";
+            foreach (var call in calls)
+            {
+                await _screening.LogScreeningCallAsync(call);
+            }
+            TempData["ScreeningMessage"] = calls.Count == 2 ? "Both calls logged." : "Call logged.";
 
             // The call that completes screening approves the order.
-            var order = await _orders.GetOrderByOrderIdAsync(call.OrderId);
+            var order = await _orders.GetOrderByOrderIdAsync(form.OrderId);
             if (order != null)
             {
-                var screening = await _screening.GetOrderScreeningAsync(call.OrderId, order.DateCreated);
+                var screening = await _screening.GetOrderScreeningAsync(form.OrderId, order.DateCreated);
                 if (ScreeningRules.ShouldAutoApprove(order.Status, screening.Status))
                 {
                     try
                     {
-                        await _orders.ApproveOrderAsync(call.OrderId);
-                        TempData["ScreeningMessage"] = "Call logged. Screening passed, so the order is now approved and can be enrolled.";
+                        await _orders.ApproveOrderAsync(form.OrderId);
+                        TempData["ScreeningMessage"] = "Screening passed, so the order is now approved and can be enrolled.";
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Auto-approving order {OrderId} after screening failed", call.OrderId);
+                        _logger.LogError(ex, "Auto-approving order {OrderId} after screening failed", form.OrderId);
                         TempData["ScreeningError"] = "Screening passed, but the order couldn't be approved automatically. Press Approve.";
                     }
                 }
             }
 
-            return Redirect($"/order-details/{call.OrderId}");
+            return Redirect($"/order-details/{form.OrderId}#screening");
         }
 
         [HttpPost]

@@ -386,13 +386,12 @@
                                 var mustScreen = screening != null && screening.Status != ScreeningStatus.NotRequired;
                                 var screeningPassed = screening == null || screening.Status is ScreeningStatus.NotRequired or ScreeningStatus.Passed;
 
-                                @if (mustScreen && Model.Status == "approval-waiting")
+                                @* Shown whatever the order status: the call that passes screening
+                                   approves the order, and the panel (with its "passed" box and next
+                                   steps) used to vanish at that moment, message and all. *@
+                                @if (mustScreen && (Model.Status == "approval-waiting" || screening!.Calls.Any()))
                                 {
                                     @await Html.PartialAsync("_ScreeningPanel", (Model, screening!))
-                                }
-                                else if (mustScreen && screening!.Calls.Any())
-                                {
-                                    <p class="text-soft">Customer screening: @(screening.Status == ScreeningStatus.Passed ? "passed" : "not completed") (@screening.Calls.Count call(s) logged).</p>
                                 }
 
                                 @if (Model.Status == "approval-waiting")

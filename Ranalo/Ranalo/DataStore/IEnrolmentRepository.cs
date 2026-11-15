@@ -24,5 +24,8 @@ namespace Ranalo.DataStore
         Task<List<Enrolment>> GetStockAsync(bool unverifiedOnly, string? searchTerm = null);
         // Not approved yet and could be approved automatically (DeviceLockRules.AutoApproves).
         Task<List<Enrolment>> GetAwaitingApprovalAsync();
+        // Pre-enrolled in the last 14 days, still waiting to be switched on
+        // (DeviceLockRules.AwaitingActivation narrows it to Transsion).
+        Task<List<Enrolment>> GetAwaitingActivationAsync();
     }
 }
