@@ -379,6 +379,54 @@ namespace Ranolo.Web.Tests
             Assert.That(DeviceLockRules.AutoApproves(e, screeningPassed: true, Now), Is.True);
         }
 
+        // ---- The note by the approve button ----
+
+        [Test]
+        public void ApprovalNote_SaysWhyAPersonMustApprove()
+        {
+            var e = NewEnrolment();
+            e.OrderId = 20216;
+
+            Assert.That(DeviceLockRules.ApprovalNote(e, screeningPassed: false, Now), Does.Contain("not screened in the app"),
+                "e.g. order 20216, approved in WooCommerce");
+
+            e.DepositShort = true;
+            Assert.That(DeviceLockRules.ApprovalNote(e, true, Now), Does.Contain("Deposit short"));
+
+            e.DepositShort = false;
+            e.BrandOverriddenByUserId = 1;
+            Assert.That(DeviceLockRules.ApprovalNote(e, true, Now), Does.Contain("brand was overridden"));
+
+            e.BrandOverriddenByUserId = null;
+            e.OrderId = 0;
+            Assert.That(DeviceLockRules.ApprovalNote(e, true, Now), Does.Contain("No order"));
+        }
+
+        [Test]
+        public void ApprovalNote_ScreenedAndPaid_SaysItsAutomatic()
+        {
+            var e = NewEnrolment();
+            e.OrderId = 20214;
+            Assert.That(DeviceLockRules.ApprovalNote(e, true, Now), Does.Contain("automatically within 5 minutes"));
+            Assert.That(DeviceLockRules.AutoApproves(e, true, Now), Is.True, "the note agrees with the rule");
+
+            Assert.That(DeviceLockRules.ApprovalNote(Knox(minutesAgo: 3), true, Now), Does.Contain("once it reaches Knox"));
+            Assert.That(DeviceLockRules.ApprovalNote(Knox(minutesAgo: 60 * 24 * 3), true, Now), Does.Contain("after 2 days"));
+        }
+
+        [Test]
+        public void ApprovalNote_NothingToApprove_NoNote()
+        {
+            var e = NewEnrolment();
+            e.OrderId = 20214;
+            e.CallApprovedAt = Now;
+            Assert.That(DeviceLockRules.ApprovalNote(e, false, Now), Is.Null, "already approved");
+
+            e.CallApprovedAt = null;
+            e.Status = EnrolmentStatus.Stock;
+            Assert.That(DeviceLockRules.ApprovalNote(e, false, Now), Is.Null, "unsold stock");
+        }
+
         [Test]
         public void AutoApproves_NotScreened_Short_Overridden_OrAlreadyApproved_No()
         {

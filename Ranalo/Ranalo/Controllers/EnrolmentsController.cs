@@ -80,6 +80,14 @@ namespace Ranalo.Controllers
                 };
                 response.LockGroups = await _devices.GetLockGroupsAsync(response.Enrolments.Select(e => e.AccountId));
                 response.KnoxActive = await _devices.GetKnoxActiveAsync(response.Enrolments.Select(e => e.AccountId));
+                try
+                {
+                    response.ApprovalNotes = await _approvals.ApprovalNotesAsync(response.Enrolments);
+                }
+                catch (Exception)
+                {
+                    // Notes only; the buttons work without them.
+                }
                 AddFlash(response);
 
                 return View(response);

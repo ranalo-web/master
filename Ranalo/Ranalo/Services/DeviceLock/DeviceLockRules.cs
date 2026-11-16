@@ -308,6 +308,47 @@ namespace Ranalo.Services.DeviceLock
         // After this a Knox phone that still isn't in Knox is left for a person.
         public static readonly TimeSpan KnoxAutoApprovalFor = TimeSpan.FromDays(2);
 
+        // Shown next to the approve button on Enrolments: why a person has to
+        // approve this one, or what it's waiting for when it will be approved
+        // automatically (the same conditions as AutoApproves). null = nothing
+        // to approve. now: the same clock as Enrolment.Created (DateTime.Now).
+        public static string? ApprovalNote(Enrolment enrolment, bool screeningPassed, DateTime now)
+        {
+            if (enrolment.CallApprovedAt.HasValue
+                || enrolment.Status is EnrolmentStatus.Error or EnrolmentStatus.Approved or EnrolmentStatus.Stock
+                || NeedsSendingToTranssion(enrolment))
+            {
+                return null;
+            }
+
+            if (enrolment.OrderId <= 0)
+            {
+                return "No order on this enrolment, so a person must approve it.";
+            }
+            if (enrolment.DepositShort)
+            {
+                return "Deposit short: only an admin can approve it.";
+            }
+            if (enrolment.BrandOverriddenByUserId.HasValue)
+            {
+                return "The brand was overridden at enrolment, so a person must approve it.";
+            }
+            if (!screeningPassed)
+            {
+                return "Order not screened in the app (no passing customer and next-of-kin calls logged) -- "
+                    + "e.g. approved in WooCommerce. Check the customer, then approve.";
+            }
+            if (IsTranssion(enrolment.DeviceBrand) || enrolment.StockKnoxApprovedAt.HasValue)
+            {
+                return "Screened and paid in full: approved automatically within 5 minutes.";
+            }
+
+            var age = now - enrolment.Created;
+            return age < KnoxApprovalDelay ? "Screened and paid in full: approved automatically once it reaches Knox (10–15 minutes)."
+                : age <= KnoxAutoApprovalFor ? "Screened and paid in full: approved automatically as soon as Knox has it."
+                : "Not in Knox after 2 days, so it's left for a person to approve.";
+        }
+
         // now: the same clock as Enrolment.Created (DateTime.Now).
         public static bool AutoApproves(Enrolment enrolment, bool screeningPassed, DateTime now)
         {

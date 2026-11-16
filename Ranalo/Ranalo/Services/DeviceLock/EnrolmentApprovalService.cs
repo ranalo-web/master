@@ -17,6 +17,8 @@ namespace Ranalo.Services.DeviceLock
         // Transsion phones still waiting to be switched on: asks Transsion
         // (for when its activation webhook never arrived). Returns how many were active.
         Task<int> CheckActivationsAsync();
+        // The Enrolments page's note by each approve button (DeviceLockRules.ApprovalNote).
+        Task<Dictionary<Guid, string>> ApprovalNotesAsync(IReadOnlyCollection<Enrolment> enrolments);
     }
 
     public class EnrolmentApprovalService : IEnrolmentApprovalService
@@ -143,6 +145,23 @@ namespace Ranalo.Services.DeviceLock
                 }
             }
             return activated;
+        }
+
+        public async Task<Dictionary<Guid, string>> ApprovalNotesAsync(IReadOnlyCollection<Enrolment> enrolments)
+        {
+            var orderIds = enrolments.Where(e => e.OrderId > 0).Select(e => (long)e.OrderId).Distinct().ToList();
+            var calls = (await _screening.GetScreeningCallsForOrdersAsync(orderIds)).ToLookup(c => c.OrderId);
+            var notes = new Dictionary<Guid, string>();
+            foreach (var e in enrolments)
+            {
+                var passed = ScreeningRules.Status(true, calls[e.OrderId].ToList()) == ScreeningStatus.Passed;
+                var note = DeviceLockRules.ApprovalNote(e, passed, DateTime.Now);
+                if (note != null)
+                {
+                    notes[e.Id] = note;
+                }
+            }
+            return notes;
         }
 
         private async Task<bool> ScreeningPassedAsync(long orderId) =>

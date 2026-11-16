@@ -180,6 +180,8 @@
     {
         var isTranssion = DeviceLockRules.IsTranssion(enrolment.DeviceBrand);
         var decision = Model.CanApprove?.Invoke(enrolment);
+        // Why a person must approve this one, or what it's waiting for.
+        Model.ApprovalNotes.TryGetValue(enrolment.Id, out var approvalNote);
         if (isTranssion && Model.CanApprove != null)
         {
             if (DeviceLockRules.NeedsSendingToTranssion(enrolment))
@@ -197,6 +199,10 @@
                     @Html.AntiForgeryToken()
                     <button type="submit" class="btn btn-sm btn-primary">Approve call</button>
                 </form>
+                @if (approvalNote != null)
+                {
+                    <div class="small text-soft mt-1" style="white-space:normal">@approvalNote</div>
+                }
             }
             else if (DeviceLockRules.ReadyToUnlock(enrolment))
             {
@@ -229,6 +235,10 @@
             if (pending && decision is { Allowed: false })
             {
                 <div class="small text-soft" style="white-space:normal">@decision.Reason</div>
+            }
+            else if (pending && approvalNote != null)
+            {
+                <div class="small text-soft" style="white-space:normal">@approvalNote</div>
             }
             <ul class="nk-tb-actions gx-2 justify-content-md-end align-items-center">
                 @if (pending && decision?.Allowed == true)

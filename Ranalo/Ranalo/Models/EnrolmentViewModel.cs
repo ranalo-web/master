@@ -17,6 +17,10 @@ namespace Ranalo.Models
         // Lets the views ask "can the viewer approve this row?" without
         // re-implementing DeviceLockRules.
         public Func<Enrolment, Ranalo.Services.DeviceLock.ApprovalDecision>? CanApprove { get; set; }
+
+        // By enrolment id: why a person must approve it, or what it's
+        // waiting for (DeviceLockRules.ApprovalNote). Admins/approvers only.
+        public Dictionary<Guid, string> ApprovalNotes { get; set; } = new();
         public bool IsAdmin { get; set; }
 
         // Devices.LockGroup per enrolment account; missing = no device yet.
