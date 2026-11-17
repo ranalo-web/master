@@ -4,7 +4,9 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
     const int pageSize = 20;
     const string key = "agents-totals";
-    var rows = Model.AgentTotalsCommissions?.Items?.ToList() ?? new();
+    var allRows = Model.AgentTotalsCommissions?.Items?.ToList() ?? new();
+    var suspendedCount = allRows.Count(a => a.IsSuspended);
+    var rows = Ranalo.Services.SuspendedFilter.Apply(allRows, a => a.IsSuspended, Ranalo.Services.SuspendedFilter.Hide(Context.Request));
 }
 
 <link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
@@ -18,6 +20,9 @@
                     <p>Commission per assigned agent across every dealer. Earned is the 50% upfront on each deposit plus the 25% bonus once the contract is 90 days old, not past its lock date and has a WooCommerce order. Whatever customers are behind by is withheld. An agent with more than 30% of accounts 7+ days past their lock date is suspended: Payable is 0 and the commission is held. Same figures as the dashboards and Pay Commissions.</p>
                 </div>
             </div>
+            <div class="nk-block-head-content">
+                <partial name="_HideSuspendedToggle" model="suspendedCount" />
+            </div>
         </div>
     </div>
 
@@ -27,7 +32,7 @@
                 <div class="card-inner p-0">
                     @if (rows.Count == 0)
                     {
-                        <div class="card-inner text-soft">No agent-assigned accounts found.</div>
+                        <div class="card-inner text-soft">@(allRows.Count > 0 ? "Every agent listed is suspended. Switch off \"Hide suspended\" to see them." : "No agent-assigned accounts found.")</div>
                     }
                     else
                     {

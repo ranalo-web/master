@@ -10,6 +10,9 @@
     var totalPayable = Model.Payees.Sum(p => p.Payable);
     var totalHeld = Model.Payees.Where(p => p.IsSuspended).Sum(p => p.Pool.Owed);
     var search = Model.Search;
+    // The table leaves suspended dealers/agents out when "Hide suspended" is
+    // on; the cards above it still count everyone.
+    var rows = SuspendedFilter.Apply(Model.Payees, p => p.IsSuspended, SuspendedFilter.Hide(Context.Request));
     string FilterLink(string? t) => "/commission-payouts" + Microsoft.AspNetCore.Http.QueryString.Create(new Dictionary<string, string?>
     {
         ["type"] = t,
@@ -94,6 +97,9 @@
                         <a href="@FilterLink(CommissionPayeeType.Agent)" class="btn btn-sm @(filter == CommissionPayeeType.Agent ? "btn-primary" : "btn-outline-light btn-white")">Agents</a>
                         <a href="@FilterLink(CommissionPayeeType.Collector)" class="btn btn-sm @(filter == CommissionPayeeType.Collector ? "btn-primary" : "btn-outline-light btn-white")">Collectors</a>
                     </div>
+                    <div class="mt-2">
+                        <partial name="_HideSuspendedToggle" model="suspendedCount" />
+                    </div>
                 </div></div>
             </div>
         </div>
@@ -102,9 +108,9 @@
     <div class="nk-block">
         <div class="card card-bordered card-stretch">
             <div class="card-inner p-0">
-                @if (Model.Payees.Count == 0)
+                @if (rows.Count == 0)
                 {
-                    <div class="card-inner text-soft">No commission accounts found.</div>
+                    <div class="card-inner text-soft">@(Model.Payees.Count > 0 ? "Everyone listed is suspended. Switch off \"Hide suspended\" to see them." : "No commission accounts found.")</div>
                 }
                 else
                 {
@@ -123,9 +129,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @for (var i = 0; i < Model.Payees.Count; i++)
+                                @for (var i = 0; i < rows.Count; i++)
                                 {
-                                    var p = Model.Payees[i];
+                                    var p = rows[i];
                                     <tr class="@(i >= pageSize ? "d-none" : "")" data-watchlist-row="@key">
                                         <td>
                                             <span class="fw-medium">@p.Name</span>
@@ -175,10 +181,10 @@
                             </tbody>
                         </table>
                     </div>
-                    @if (Model.Payees.Count > pageSize)
+                    @if (rows.Count > pageSize)
                     {
                         <div class="card-inner d-flex" style="column-gap:1rem;">
-                            <a href="#" class="link link-primary" data-more-for="@key" onclick="event.preventDefault(); Ranalo.showMoreRows(this, '@key', @pageSize);">Show @Math.Min(pageSize, Model.Payees.Count - pageSize) more</a>
+                            <a href="#" class="link link-primary" data-more-for="@key" onclick="event.preventDefault(); Ranalo.showMoreRows(this, '@key', @pageSize);">Show @Math.Min(pageSize, rows.Count - pageSize) more</a>
                             <a href="#" class="link link-primary" data-less-for="@key" style="display:none;" onclick="event.preventDefault(); Ranalo.showLessRows(this, '@key', @pageSize);">Show less</a>
                         </div>
                     }

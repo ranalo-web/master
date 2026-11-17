@@ -1,0 +1,19 @@
+@* "Hide suspended" switch for the commission pages (Services/SuspendedFilter).
+   Model: how many suspended rows the page has. The choice is a cookie, so it
+   holds on every commission page until switched off. *@
+@model int
+@{
+    var hide = Ranalo.Services.SuspendedFilter.Hide(Context.Request);
+    var id = "hide-suspended-" + Guid.NewGuid().ToString("N")[..8];
+}
+<div class="custom-control custom-switch" title="Dealers and agents over @Ranalo.Services.CommissionPayoutRules.SuspensionThresholdPct.ToString("0")% default rate">
+    <input type="checkbox" class="custom-control-input" id="@id" @(hide ? "checked" : "")
+           onchange="document.cookie = '@Ranalo.Services.SuspendedFilter.CookieName=' + (this.checked ? '1' : '0') + '; path=/; max-age=31536000; SameSite=Lax'; location.reload();">
+    <label class="custom-control-label" for="@id">
+        Hide suspended
+        @if (Model > 0)
+        {
+            <span class="text-soft">(@Model@(hide ? " hidden" : ""))</span>
+        }
+    </label>
+</div>

@@ -10,6 +10,9 @@
 @model CommissionsMaster
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
+    var allReady = Model.DealerReadyToPayCommissions?.Items?.ToList() ?? new();
+    var suspendedCount = allReady.Count(c => c.DealerSuspended);
+    var readyRows = Ranalo.Services.SuspendedFilter.Apply(allReady, c => c.DealerSuspended, Ranalo.Services.SuspendedFilter.Hide(Context.Request));
 }
 
 <link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
@@ -55,6 +58,7 @@
                         <div class="card-title-group">
                             <div class="card-title">
                                 <h6 class="title"><span class="me-2">Accounts</span> <a href="#" class="link d-none d-sm-inline">See All</a></h6>
+                                <div class="mt-1"><partial name="_HideSuspendedToggle" model="suspendedCount" /></div>
                             </div>
                             <div class="card-tools">
                                 <ul class="card-tools-nav">
@@ -84,7 +88,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                        @foreach (var commission in Model.DealerReadyToPayCommissions.Items)
+                        @foreach (var commission in readyRows)
                         {
                             <tr>
                                 <td><a href="/account-details/@commission.AccountNo" class="fw-medium">#@commission.AccountNo</a></td>
