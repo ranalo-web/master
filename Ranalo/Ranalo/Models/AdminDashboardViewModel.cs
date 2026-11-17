@@ -5,6 +5,10 @@ namespace Ranalo.Models
         // Reporting period (week | month | ytd | year) and what it's compared
         // with -- see AdminDashboardRules.ResolvePeriod.
         public string Period { get; set; } = "month";
+
+        // When these figures were worked out (AdminDashboardCache shares one
+        // copy between admins and rebuilds it every 30 minutes).
+        public DateTime? BuiltAtUtc { get; set; }
         public string PeriodLabel { get; set; } = "this month";
         public string PriorLabel { get; set; } = "same days last month";
 

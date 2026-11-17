@@ -35,6 +35,13 @@
                 <h3 class="nk-block-title page-title">Admin Dashboard</h3>
                 <div class="nk-block-des text-soft">
                     <p>Welcome back, @ViewBag.UserName &mdash; are we making money, and what to do next. Figures are for @Model.PeriodLabel, compared with @Model.PriorLabel.</p>
+                    @if (Model.BuiltAtUtc.HasValue)
+                    {
+                        <p class="small">
+                            Figures as of @Model.BuiltAtUtc.Value.AddHours(3).ToString("HH:mm") (Kenya time), updated every 30 minutes &middot;
+                            <a href="/admin-dashboard?period=@Model.Period&amp;refresh=true" class="link link-primary" title="Works the figures out again now (takes a little while)">Refresh now</a>
+                        </p>
+                    }
                 </div>
             </div>
             <div class="nk-block-head-content">

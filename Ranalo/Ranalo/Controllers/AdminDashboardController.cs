@@ -10,20 +10,18 @@ namespace Ranalo.Controllers
     [LoadUserSettingsFromCookie]
     public class AdminDashboardController : Controller
     {
-        private readonly IDashboardReportService _dashboardReportService;
-        private readonly IWriteOffRepository _writeOffRepository;
-        private readonly ILogger<AdminDashboardController> _logger;
+        private readonly IAdminDashboardCache _dashboards;
 
-        public AdminDashboardController(IDashboardReportService dashboardReportService, IWriteOffRepository writeOffRepository, ILogger<AdminDashboardController> logger)
+        public AdminDashboardController(IAdminDashboardCache dashboards)
         {
-            _dashboardReportService = dashboardReportService;
-            _writeOffRepository = writeOffRepository;
-            _logger = logger;
+            _dashboards = dashboards;
         }
 
+        // The figures come from AdminDashboardCache: one copy shared by every
+        // admin, rebuilt every 30 minutes; refresh=true rebuilds it now.
         [HttpGet]
         [Route("admin-dashboard")]
-        public async Task<IActionResult> Index(string? period = null)
+        public async Task<IActionResult> Index(string? period = null, bool refresh = false)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -42,34 +40,7 @@ namespace Ranalo.Controllers
             ViewBag.IsDealer = false;
             ViewBag.UserName = settings.KnownAs;
 
-            var model = await _dashboardReportService.GetAdminDashboardAsync(period);
-
-            try
-            {
-                var window = AdminDashboardRules.ResolvePeriod(model.Period, DateTime.Now);
-                model.WriteOffsPeriod = await _writeOffRepository.GetPeriodSummaryAsync(window.From, window.ToExclusive);
-                model.WriteOffsThisMonth = model.WriteOffsPeriod;
-                model.WriteOffsLastMonth = await _writeOffRepository.GetPeriodSummaryAsync(window.PriorFrom, window.PriorToExclusive);
-
-                var summary = await _writeOffRepository.GetSummaryAsync();
-                var pending = summary.Where(s => s.Status is "pending" or "held").ToList();
-                model.WriteOffsPendingCount = pending.Sum(s => s.Count);
-                model.WriteOffsPendingBalance = pending.Sum(s => s.Outstanding);
-
-                // Still to collect: every open contract that owes money,
-                // approved write-offs left out (same as the Financials book).
-                var ageing = await _writeOffRepository.GetLoanBookAgeingAsync(DateTime.UtcNow.AddHours(3).Date);
-                model.LoanBookOutstanding = ageing.Where(b => !b.IsWrittenOff).Sum(b => b.Outstanding);
-                model.LoanBookAccounts = ageing.Where(b => !b.IsWrittenOff).Sum(b => b.Accounts);
-            }
-            catch (Exception ex)
-            {
-                // e.g. Database/WriteOffs/001 not applied -- those cards show zeros.
-                _logger.LogError(ex, "Admin dashboard: write-off figures unavailable");
-            }
-
-            model.Actions = AdminDashboardRules.BuildActions(model);
-            return View(model);
+            return View(await _dashboards.GetAsync(period, refresh));
         }
     }
 
