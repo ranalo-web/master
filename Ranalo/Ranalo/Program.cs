@@ -267,6 +267,8 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService<ScheduledRecoveryKnoxApproval>();
         builder.Services.AddHostedService<ScheduledLockerCheck>();
         builder.Services.AddHostedService<ScheduledEnrolmentAutoApproval>();
+        // Commission figures three times a day instead of on every page load.
+        builder.Services.AddHostedService<ScheduledCommissionSnapshot>();
     }
 }
 

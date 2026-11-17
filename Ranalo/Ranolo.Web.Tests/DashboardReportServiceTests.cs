@@ -203,8 +203,10 @@ namespace Ranolo.Web.Tests
 
         public List<CommissionAccount> CommissionAccountsToReturn { get; set; } = new();
 
-        public Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null) =>
+        public Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null, bool live = false) =>
             Task.FromResult(CommissionAccountsToReturn);
+
+        public Task<DateTime> RefreshCommissionSnapshotAsync() => Task.FromResult(DateTime.UtcNow);
 
         public Task<Dictionary<long, Ranalo.Services.CollectionTerms>> GetCollectionTermsAsync() =>
             Task.FromResult(new Dictionary<long, Ranalo.Services.CollectionTerms>());

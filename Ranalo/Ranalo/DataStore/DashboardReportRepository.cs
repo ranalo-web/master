@@ -1672,7 +1672,82 @@ namespace Ranalo.DataStore
         // The raw per-account commission inputs used by every commission
         // figure in the app. Commission itself is calculated from these rows
         // by Services.CommissionCalculator (see Breakdown below).
-        private async Task<List<AgentCommissionAccountRow>> FetchAgentCommissionAccountRowsAsync(int? dealerId = null, int? agentUserId = null)
+        // ---- Commission snapshot -------------------------------------------
+        //
+        // The commission query totals every payment ever received against
+        // every contract. On the S1 database it can take minutes and hold the
+        // database at 100% (2026-11-17: every admin login ran it via the admin
+        // dashboard, they piled up and the site went down). So the dashboards,
+        // collections and reports read one company-wide snapshot, worked out
+        // three times a day by ScheduledCommissionSnapshot (and once after
+        // the app starts); dealer and agent views filter it in memory.
+        // Pay Commissions asks for live figures (live: true) so what's
+        // already been paid is always current when paying.
+        private static List<AgentCommissionAccountRow>? _snapshotRows;
+        private static DateTime? _snapshotTakenAtUtc;
+        private static readonly SemaphoreSlim SnapshotGate = new(1, 1);
+
+        public static DateTime? CommissionSnapshotTakenAtUtc => _snapshotTakenAtUtc;
+
+        public async Task<DateTime> RefreshCommissionSnapshotAsync()
+        {
+            await SnapshotGate.WaitAsync();
+            try
+            {
+                await TakeSnapshotAsync();
+                return _snapshotTakenAtUtc!.Value;
+            }
+            finally
+            {
+                SnapshotGate.Release();
+            }
+        }
+
+        private async Task TakeSnapshotAsync()
+        {
+            var rows = await FetchAgentCommissionAccountRowsLiveAsync();
+            _snapshotRows = rows;
+            _snapshotTakenAtUtc = DateTime.UtcNow;
+        }
+
+        // The snapshot, worked out now if there isn't one yet (straight after
+        // a restart) -- once, however many pages ask at the same time.
+        private async Task<List<AgentCommissionAccountRow>> SnapshotRowsAsync()
+        {
+            var rows = _snapshotRows;
+            if (rows != null)
+            {
+                return rows;
+            }
+
+            await SnapshotGate.WaitAsync();
+            try
+            {
+                if (_snapshotRows == null)
+                {
+                    await TakeSnapshotAsync();
+                }
+                return _snapshotRows!;
+            }
+            finally
+            {
+                SnapshotGate.Release();
+            }
+        }
+
+        private async Task<List<AgentCommissionAccountRow>> FetchAgentCommissionAccountRowsAsync(int? dealerId = null, int? agentUserId = null, bool live = false)
+        {
+            if (live)
+            {
+                return await FetchAgentCommissionAccountRowsLiveAsync(dealerId, agentUserId);
+            }
+
+            return (await SnapshotRowsAsync())
+                .Where(r => (dealerId == null || r.DealerId == dealerId) && (agentUserId == null || r.AssignedAgentId == agentUserId))
+                .ToList();
+        }
+
+        private async Task<List<AgentCommissionAccountRow>> FetchAgentCommissionAccountRowsLiveAsync(int? dealerId = null, int? agentUserId = null)
         {
             const string sql = @"
                 ;WITH ValidPayments AS (
@@ -1957,11 +2032,11 @@ namespace Ranalo.DataStore
 
         // Every account with its full commission breakdown. Backs the
         // Account Commissions page and the admin Commissions pages.
-        public async Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null)
+        public async Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null, bool live = false)
         {
             try
             {
-                var rows = await FetchAgentCommissionAccountRowsAsync(dealerId, agentUserId);
+                var rows = await FetchAgentCommissionAccountRowsAsync(dealerId, agentUserId, live);
                 var now = DateTime.Now;
                 return rows.Select(r => new CommissionAccount
                 {

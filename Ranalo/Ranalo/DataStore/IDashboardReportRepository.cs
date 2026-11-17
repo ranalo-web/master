@@ -178,7 +178,12 @@ namespace Ranalo.DataStore
         Task<List<DashboardAccountCommissionRow>> GetAccountCommissionsAsync(int? dealerId, int? agentUserId = null);
 
         // Every account with its full commission breakdown (CommissionCalculator).
-        Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null);
+        // From the commission snapshot (worked out three times a day), unless
+        // live: true -- Pay Commissions, where what's been paid must be current.
+        Task<List<CommissionAccount>> GetCommissionAccountsAsync(int? dealerId, int? agentUserId = null, bool live = false);
+
+        // Works the commission snapshot out again now (ScheduledCommissionSnapshot).
+        Task<DateTime> RefreshCommissionSnapshotAsync();
 
         // Each contract's latest collections case, keyed by ContractID
         // (empty until Database/Collections/001 has been run).

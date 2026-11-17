@@ -479,10 +479,11 @@ namespace Ranalo.Services
 
         // No-commission (legacy) accounts are left off, apart from dealer
         // accounts whose arrears are being recovered (they're deducted).
+        // Live, not the snapshot: paying must see every payment made so far.
         private async Task<List<CommissionAccount>> GetPayeeAccountsAsync(string payeeType, int payeeId) =>
             (payeeType == CommissionPayeeType.Agent
-                ? (await _reportRepository.GetCommissionAccountsAsync(null, payeeId)).Where(a => a.AgentId == payeeId)
-                : await _reportRepository.GetCommissionAccountsAsync(payeeId))
+                ? (await _reportRepository.GetCommissionAccountsAsync(null, payeeId, live: true)).Where(a => a.AgentId == payeeId)
+                : await _reportRepository.GetCommissionAccountsAsync(payeeId, live: true))
             .Where(a => CommissionPayees.CountsFor(payeeType, a))
             .ToList();
 
