@@ -3,7 +3,7 @@ using Ranalo.Services;
 namespace Ranalo.ScheduledServices
 {
     // Rebuilds the shared Admin Dashboard ("This month", the page admins land
-    // on) three times a day -- 06:05, 12:05 and 18:05 Kenya time, five minutes
+    // on) three times a day -- 00:05, 06:05 and 18:05 Kenya time, five minutes
     // after the commission snapshot so it uses fresh commission figures --
     // and once a minute after the app starts, so no admin waits for it
     // (AdminDashboardCache). "Refresh now" on the page rebuilds it any time.

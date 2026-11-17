@@ -19,8 +19,8 @@ namespace Ranalo.Services
 
     public class AdminDashboardCache : IAdminDashboardCache
     {
-        // Longer than the longest gap between scheduled rebuilds (18:05 to
-        // 06:05, 12 hours), so a copy is only built on a visit when there's
+        // Longer than the longest gap between scheduled rebuilds (06:05 to
+        // 18:05, 12 hours), so a copy is only built on a visit when there's
         // none for that period yet (after a restart, or a period nobody's
         // opened today).
         public static readonly TimeSpan MaxAge = TimeSpan.FromHours(13);

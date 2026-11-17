@@ -1749,20 +1749,32 @@ namespace Ranalo.DataStore
 
         private async Task<List<AgentCommissionAccountRow>> FetchAgentCommissionAccountRowsLiveAsync(int? dealerId = null, int? agentUserId = null)
         {
+            // Payment totals go into an indexed temp table first, worked out
+            // once. As a CTE joined on an expression, SQL Server could
+            // re-total every payment for each contract -- minutes at 100% DTU
+            // on S1 (2026-11-17). Checked against the old query on a local
+            // copy (restructured _R accounts, orphaned payments, PaymentAccount,
+            // no payments; company, dealer and agent runs): identical rows.
             const string sql = @"
-                ;WITH ValidPayments AS (
-                    SELECT CASE WHEN op.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(op.AccountNo))
-                                 WHEN op.MpesaCode IS NULL AND kp.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(kp.AccountNo))
-                                 ELSE CAST(COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS NVARCHAR(30)) END AS AccountNo, kp.AmountValue
+                SET NOCOUNT ON;
+                IF OBJECT_ID('tempdb..#PaymentTotals') IS NOT NULL DROP TABLE #PaymentTotals;
+
+                SELECT v.AccountNo, SUM(v.AmountValue) AS TotalPaid
+                INTO #PaymentTotals
+                FROM (
+                    SELECT CAST(CASE WHEN op.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(op.AccountNo))
+                                     WHEN op.MpesaCode IS NULL AND kp.AccountNo LIKE '%\_R%' ESCAPE '\' THEN LTRIM(RTRIM(kp.AccountNo))
+                                     ELSE CAST(COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS NVARCHAR(30)) END
+                                AS NVARCHAR(100)) COLLATE DATABASE_DEFAULT AS AccountNo,
+                           kp.AmountValue
                     FROM KosePayments kp
                     LEFT JOIN OrphanedPayments op ON op.MpesaCode = kp.MpesaCode
-                ),
-                PaymentTotals AS (
-                    SELECT AccountNo, SUM(AmountValue) AS TotalPaid
-                    FROM ValidPayments
-                    GROUP BY AccountNo
-                ),
-                AccountCommission AS (
+                ) v
+                GROUP BY v.AccountNo;
+
+                CREATE CLUSTERED INDEX IX_PaymentTotals_AccountNo ON #PaymentTotals (AccountNo);
+
+                ;WITH AccountCommission AS (
                     SELECT
                         dl.DealerId,
                         ci.ID AS AccountId,
@@ -1800,7 +1812,7 @@ namespace Ranalo.DataStore
                     INNER JOIN Devices d ON d.Id = ci.ID
                     INNER JOIN Dealers dl ON dl.DealerReference = COALESCE(ci.DealerReference, d.DeviceGroupId)
                     LEFT JOIN Users au ON au.UserId = ci.AssignedAgentId
-                    LEFT JOIN PaymentTotals pt ON pt.AccountNo = ISNULL(ci.PaymentAccount, CAST(ci.ID AS NVARCHAR(30)))
+                    LEFT JOIN #PaymentTotals pt ON pt.AccountNo = ISNULL(ci.PaymentAccount, CAST(ci.ID AS NVARCHAR(30)))
                     CROSS APPLY (
                         SELECT CASE
                             WHEN DATEDIFF(DAY, ci.StartDate, CASE WHEN ci.PaymentAccount IS NOT NULL AND ci.EndDate IS NOT NULL THEN ci.EndDate ELSE GETDATE() END) < CAST(ci.Term_in_Months * 30 AS INT)
@@ -1854,7 +1866,9 @@ namespace Ranalo.DataStore
                 FROM AccountCommission ac
                 LEFT JOIN AgentPaymentsAgg ap ON ap.ContractId = ac.ContractID
                 LEFT JOIN DealerPaymentsAgg dp ON dp.ContractId = ac.ContractID
-                OPTION (RECOMPILE)";
+                OPTION (RECOMPILE);
+
+                DROP TABLE #PaymentTotals;";
 
             // RECOMPILE: the same query serves one agent, one dealer and the
             // whole company ("@X IS NULL OR ..."), so a cached plan built for

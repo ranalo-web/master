@@ -2,15 +2,16 @@ using Ranalo.DataStore;
 
 namespace Ranalo.ScheduledServices
 {
-    // Works the commission snapshot out three times a day -- 06:00, 12:00 and
-    // 18:00 Kenya time -- and once shortly after the app starts. Dashboards,
+    // Works the commission snapshot out three times a day -- 00:00, 06:00 and
+    // 18:00 Kenya time, out of the busy middle of the day -- and once shortly
+    // after the app starts. Dashboards,
     // collections and reports read the snapshot instead of running the heavy
     // commission query on every page load (see DashboardReportRepository,
     // "Commission snapshot"). Pay Commissions stays live.
     public class ScheduledCommissionSnapshot : BackgroundService
     {
-        // UTC hours: 06:00, 12:00, 18:00 in Nairobi (UTC+3).
-        public static readonly int[] RunHoursUtc = { 3, 9, 15 };
+        // UTC hours, in order: 06:00, 18:00 and 00:00 in Nairobi (UTC+3).
+        public static readonly int[] RunHoursUtc = { 3, 15, 21 };
         private static readonly TimeSpan StartupDelay = TimeSpan.FromSeconds(30);
 
         private readonly ILogger<ScheduledCommissionSnapshot> _logger;

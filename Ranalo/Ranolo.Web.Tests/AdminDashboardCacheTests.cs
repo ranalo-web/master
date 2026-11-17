@@ -90,8 +90,8 @@ namespace Ranolo.Web.Tests
         [Test]
         public void Fresh_UntilTheNextScheduledRebuild()
         {
-            var now = new DateTime(2026, 11, 18, 3, 0, 0, DateTimeKind.Utc);
-            // Built at 18:05 Kenya (15:05 UTC) yesterday: still shown overnight.
+            var now = new DateTime(2026, 11, 18, 15, 0, 0, DateTimeKind.Utc);
+            // Built at 06:05 Kenya (03:05 UTC): still shown until the 18:05 rebuild.
             Assert.That(AdminDashboardCache.IsFresh(new AdminDashboardViewModel { BuiltAtUtc = now.AddHours(-12) }, now), Is.True);
             Assert.That(AdminDashboardCache.IsFresh(new AdminDashboardViewModel { BuiltAtUtc = now.AddHours(-14) }, now), Is.False);
             Assert.That(AdminDashboardCache.IsFresh(new AdminDashboardViewModel(), now), Is.False);
@@ -99,8 +99,9 @@ namespace Ranolo.Web.Tests
 
         [TestCase("2026-11-17 02:00", "2026-11-17 03:05")] // before 06:05 Nairobi
         [TestCase("2026-11-17 03:02", "2026-11-17 03:05")] // between the snapshot and the rebuild
-        [TestCase("2026-11-17 03:05", "2026-11-17 09:05")]
-        [TestCase("2026-11-17 16:00", "2026-11-18 03:05")]
+        [TestCase("2026-11-17 03:05", "2026-11-17 15:05")] // next: 18:05 Nairobi
+        [TestCase("2026-11-17 16:00", "2026-11-17 21:05")] // next: 00:05 Nairobi
+        [TestCase("2026-11-17 21:10", "2026-11-18 03:05")]
         public void Rebuilds_FiveMinutesAfterEachCommissionSnapshot(string nowUtc, string expectedUtc)
         {
             Assert.That(Ranalo.ScheduledServices.ScheduledAdminDashboardRefresh.NextRunUtc(DateTime.Parse(nowUtc)),
