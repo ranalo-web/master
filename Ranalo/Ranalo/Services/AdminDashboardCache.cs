@@ -8,10 +8,10 @@ namespace Ranalo.Services
     // payment, revenue for 12 months, write-offs, loan book...). Admins land
     // on it after login, so every login ran all of them, and on 2026-11-17
     // that kept the S1 database at 100%. Now one copy per period is built
-    // and shared by every admin: rebuilt in the background every 30 minutes
-    // (ScheduledAdminDashboardRefresh), built once on demand when there's
-    // none, and only one build per period runs at a time. "Refresh now" on
-    // the page forces a rebuild.
+    // and shared by every admin: rebuilt in the background three times a
+    // day, just after the commission snapshot (ScheduledAdminDashboardRefresh),
+    // built once on demand when there's none, and only one build per period
+    // runs at a time. "Refresh now" on the page forces a rebuild.
     public interface IAdminDashboardCache
     {
         Task<AdminDashboardViewModel> GetAsync(string? period, bool refresh = false);
@@ -19,7 +19,11 @@ namespace Ranalo.Services
 
     public class AdminDashboardCache : IAdminDashboardCache
     {
-        public static readonly TimeSpan MaxAge = TimeSpan.FromMinutes(30);
+        // Longer than the longest gap between scheduled rebuilds (18:05 to
+        // 06:05, 12 hours), so a copy is only built on a visit when there's
+        // none for that period yet (after a restart, or a period nobody's
+        // opened today).
+        public static readonly TimeSpan MaxAge = TimeSpan.FromHours(13);
 
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<AdminDashboardCache> _logger;

@@ -3,11 +3,14 @@ using Ranalo.Services;
 namespace Ranalo.ScheduledServices
 {
     // Rebuilds the shared Admin Dashboard ("This month", the page admins land
-    // on) every 30 minutes, and once a minute after the app starts, so no
-    // admin waits for it to be worked out (AdminDashboardCache).
+    // on) three times a day -- 06:05, 12:05 and 18:05 Kenya time, five minutes
+    // after the commission snapshot so it uses fresh commission figures --
+    // and once a minute after the app starts, so no admin waits for it
+    // (AdminDashboardCache). "Refresh now" on the page rebuilds it any time.
     public class ScheduledAdminDashboardRefresh : BackgroundService
     {
         private static readonly TimeSpan StartupDelay = TimeSpan.FromMinutes(1);
+        public static readonly TimeSpan AfterCommissionSnapshot = TimeSpan.FromMinutes(5);
 
         private readonly IAdminDashboardCache _dashboards;
         private readonly ILogger<ScheduledAdminDashboardRefresh> _logger;
@@ -16,6 +19,14 @@ namespace Ranalo.ScheduledServices
         {
             _dashboards = dashboards;
             _logger = logger;
+        }
+
+        // The next rebuild after nowUtc: five minutes after the next
+        // commission snapshot run (or the current one, if that's still ahead).
+        public static DateTime NextRunUtc(DateTime nowUtc)
+        {
+            var next = ScheduledCommissionSnapshot.NextRunUtc(nowUtc - AfterCommissionSnapshot) + AfterCommissionSnapshot;
+            return next > nowUtc ? next : ScheduledCommissionSnapshot.NextRunUtc(nowUtc) + AfterCommissionSnapshot;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -43,7 +54,8 @@ namespace Ranalo.ScheduledServices
                     _logger.LogError(ex, "Admin dashboard rebuild failed; admins keep the previous copy");
                 }
 
-                delay = AdminDashboardCache.MaxAge;
+                var now = DateTime.UtcNow;
+                delay = NextRunUtc(now) - now;
             }
         }
     }

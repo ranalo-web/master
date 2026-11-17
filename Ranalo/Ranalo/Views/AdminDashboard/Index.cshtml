@@ -38,7 +38,7 @@
                     @if (Model.BuiltAtUtc.HasValue)
                     {
                         <p class="small">
-                            Figures as of @Model.BuiltAtUtc.Value.AddHours(3).ToString("HH:mm") (Kenya time), updated every 30 minutes &middot;
+                            Figures as of @Model.BuiltAtUtc.Value.AddHours(3).ToString("dd MMM HH:mm") (Kenya time), updated at 06:05, 12:05 and 18:05 &middot;
                             <a href="/admin-dashboard?period=@Model.Period&amp;refresh=true" class="link link-primary" title="Works the figures out again now (takes a little while)">Refresh now</a>
                         </p>
                     }
