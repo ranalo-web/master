@@ -526,6 +526,7 @@ namespace Ranalo.DataStore
                     dealer.DealerReference AS DealerId,
                     dealer.CompanyName AS DealerName,
 	                d.CreatedAt,
+	                TRY_CONVERT(datetime2, '20' + SUBSTRING(d.CreatedAt, 7, 2) + '-' + SUBSTRING(d.CreatedAt, 4, 2) + '-' + LEFT(d.CreatedAt, 2) + ' ' + SUBSTRING(d.CreatedAt, 10, 8), 120) AS CreatedAtSort, -- CreatedAt is day-month-year text
                     d.ImeiNo,
                     d.EnrolledOn,
                     d.[LastConnectedAt],
@@ -549,7 +550,7 @@ namespace Ranalo.DataStore
                     OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
                     OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
                 )
-                order by d.CreatedAt
+                ORDER BY CreatedAtSort DESC, d.Id DESC   -- newest first
                 OFFSET @Offset ROWS
                 FETCH NEXT @pageSize ROWS ONLY";
             var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerReference, offset, pageSize, searchTerm, AgentUserId = agentUserId });
@@ -595,6 +596,7 @@ namespace Ranalo.DataStore
                                 dealer.DealerReference AS DealerId,
                                 dealer.CompanyName AS DealerName,
 								d.CreatedAt,
+								TRY_CONVERT(datetime2, '20' + SUBSTRING(d.CreatedAt, 7, 2) + '-' + SUBSTRING(d.CreatedAt, 4, 2) + '-' + LEFT(d.CreatedAt, 2) + ' ' + SUBSTRING(d.CreatedAt, 10, 8), 120) AS CreatedAtSort, -- CreatedAt is day-month-year text
                                 d.ImeiNo,
                                 d.EnrolledOn,
                                 d.[LastConnectedAt],
@@ -617,7 +619,7 @@ namespace Ranalo.DataStore
                                 OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
                             )
                             
-                          order by d.CreatedAt
+                          ORDER BY CreatedAtSort DESC, d.Id DESC   -- newest first
                           OFFSET @Offset ROWS 
                           FETCH NEXT @pageSize ROWS ONLY";
             var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerId, offset, pageSize, searchTerm });
@@ -674,6 +676,7 @@ WHERE kp.AccountNoBigint IS NULL
     dealer.DealerReference AS DealerId,
     dealer.CompanyName AS DealerName,
     d.CreatedAt,
+    TRY_CONVERT(datetime2, '20' + SUBSTRING(d.CreatedAt, 7, 2) + '-' + SUBSTRING(d.CreatedAt, 4, 2) + '-' + LEFT(d.CreatedAt, 2) + ' ' + SUBSTRING(d.CreatedAt, 10, 8), 120) AS CreatedAtSort, -- CreatedAt is day-month-year text
     d.ImeiNo,
     d.EnrolledOn,
     d.LastConnectedAt,
@@ -708,7 +711,7 @@ WHERE kp.AccountNoBigint IS NULL
                                 OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
                             )
 
-                          order by d.CreatedAt
+                          ORDER BY CreatedAtSort DESC, d.Id DESC   -- newest first
                           OFFSET @Offset ROWS
                           FETCH NEXT @pageSize ROWS ONLY";
             var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerId, offset, pageSize, searchTerm, AgentUserId = agentUserId });
@@ -772,6 +775,7 @@ WHERE kp.AccountNoBigint IS NULL
                             dealer.DealerReference AS DealerId,
                             dealer.CompanyName AS DealerName,
 	                        d.CreatedAt,
+	                        TRY_CONVERT(datetime2, '20' + SUBSTRING(d.CreatedAt, 7, 2) + '-' + SUBSTRING(d.CreatedAt, 4, 2) + '-' + LEFT(d.CreatedAt, 2) + ' ' + SUBSTRING(d.CreatedAt, 10, 8), 120) AS CreatedAtSort, -- CreatedAt is day-month-year text
                             d.ImeiNo,
                             d.EnrolledOn,
                             d.[LastConnectedAt],
@@ -792,7 +796,7 @@ WHERE kp.AccountNoBigint IS NULL
                                 OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
                             )
                             
-                          order by d.CreatedAt
+                          ORDER BY CreatedAtSort DESC, d.Id DESC   -- newest first
                           OFFSET @Offset ROWS 
                           FETCH NEXT @pageSize ROWS ONLY";
             var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { userId, offset, pageSize, searchTerm });
