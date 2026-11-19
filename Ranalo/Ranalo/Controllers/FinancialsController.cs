@@ -99,7 +99,7 @@ namespace Ranalo.Controllers
                 model.LoanBookAgeing = await _writeOffRepository.GetLoanBookAgeingAsync(model.AsOfDate);
                 (model.Lgd, model.LgdLeftOut) = await _dashboardReportService.GetLossGivenDefaultAsync();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)   // stopped: another page was opened
             {
                 // e.g. Database/WriteOffs/001 not applied -- the rest of the page still works.
                 _logger.LogError(ex, "Financials: write-off figures unavailable");

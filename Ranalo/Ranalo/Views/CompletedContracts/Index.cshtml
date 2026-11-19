@@ -83,7 +83,7 @@
                             }
                             @foreach (var r in Model.Rows)
                             {
-                                <tr style="cursor:pointer;" onclick="location.href='/completed-contracts/@r.ContractId'">
+                                <tr style="cursor:pointer;" onclick="Ranalo.go('/completed-contracts/@r.ContractId', event)">
                                     <td>
                                         <a href="/completed-contracts/@r.ContractId" class="fw-medium">@r.AccountNo</a>
                                         <div class="small text-soft">@r.CustomerName</div>

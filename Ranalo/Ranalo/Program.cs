@@ -32,8 +32,13 @@ builder.Services.AddRazorPages();
 // uses and can close the rest (api/DataSync/OrderById returns customer data).
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddScoped<IDbConnection>(sp =>
-    new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+// A SqlConnection whose read queries stop when the page that asked for them
+// is no longer wanted (PageLoadMiddleware); see CancellableDbConnection.
+builder.Services.AddScoped<RequestCancellation>();
+builder.Services.AddSingleton<PageLoadRegistry>();
+builder.Services.AddScoped<IDbConnection>(sp => new CancellableDbConnection(
+    new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")),
+    sp.GetRequiredService<RequestCancellation>()));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -332,6 +337,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 app.UseMiddleware<UserSettingsMiddleware>();
+app.UseMiddleware<PageLoadMiddleware>();
 app.MapRazorPages();
 app.MapControllerRoute(
     name: "default",
