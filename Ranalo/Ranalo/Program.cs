@@ -136,6 +136,9 @@ builder.Services.AddScoped<IApplicationReportRepository, ApplicationReportReposi
 builder.Services.AddScoped<IDashboardReportService, DashboardReportService>();
 // One Admin Dashboard shared by every admin, rebuilt every 30 minutes.
 builder.Services.AddSingleton<IAdminDashboardCache, AdminDashboardCache>();
+// Financials: this month's page worked out daily at 04:00 and shared.
+builder.Services.AddScoped<IFinancialsBuilder, FinancialsBuilder>();
+builder.Services.AddSingleton<IFinancialsCache, FinancialsCache>();
 builder.Services.AddScoped<IDashboardReportRepository, DashboardReportRepository>();
 builder.Services.AddScoped<IAccountWatchlistService, AccountWatchlistService>();
 builder.Services.AddScoped<IAccountWatchlistRepository, AccountWatchlistRepository>();
@@ -277,6 +280,7 @@ if (!builder.Environment.IsDevelopment())
         // Commission figures three times a day instead of on every page load.
         builder.Services.AddHostedService<ScheduledCommissionSnapshot>();
         builder.Services.AddHostedService<ScheduledAdminDashboardRefresh>();
+        builder.Services.AddHostedService<ScheduledFinancialsRefresh>();
     }
 }
 

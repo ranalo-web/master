@@ -86,6 +86,13 @@
                 <div class="text-soft small mt-2">
                     Showing <span class="fw-medium">@periodRange</span>. Age of debt and balance sheet are @asOfLabel.
                 </div>
+                @if (ViewBag.IsDailyCopy == true && Model.BuiltAtUtc.HasValue)
+                {
+                    <div class="text-soft small mt-1">
+                        Figures as of @Model.BuiltAtUtc.Value.AddHours(3).ToString("dd MMM HH:mm") (Kenya time), worked out every day at 04:00 &middot;
+                        <a href="/financials?period=month&amp;refresh=true" class="link link-primary" title="Works the figures out again now (takes a few seconds)">Refresh now</a>
+                    </div>
+                }
             </div>
         </div>
     </div>
