@@ -40,6 +40,16 @@ namespace Ranalo.Services
             _operatingExpenseRepository = operatingExpenseRepository;
         }
 
+        // Every account company-wide is the heaviest query here (~1s), and one
+        // page can need it more than once (Financials: the balance sheet and
+        // the loss-given-default card). This service is scoped -- one per
+        // request -- so the rows are fetched once per page load and shared.
+        // Callers only read them.
+        private Task<List<DashboardAccountDetailRow>>? _allAccountDetails;
+
+        private Task<List<DashboardAccountDetailRow>> AllAccountDetailsAsync() =>
+            _allAccountDetails ??= _repository.GetDealerAccountDetailsAsync(null);
+
         // Admin Dashboard: is the business making money, what to do about
         // it, and the tables to run it day to day. Everything is live --
         // nothing comes from the nightly DashboardSnapshot (that job isn't
@@ -54,7 +64,7 @@ namespace Ranalo.Services
             model.PeriodLabel = window.Label;
             model.PriorLabel = window.PriorLabel;
 
-            var accountDetails = await _repository.GetDealerAccountDetailsAsync(null);
+            var accountDetails = await AllAccountDetailsAsync();
             var deviceCosts = await _repository.GetDeviceCostsAsync();
 
             model.Profit = await GetProfitAsync(window.From, window.ToExclusive, deviceCosts);
@@ -281,7 +291,7 @@ namespace Ranalo.Services
             var model = new FinancialsViewModel();
             var now = DateTime.Now;
 
-            var accountDetails = await _repository.GetDealerAccountDetailsAsync(null);
+            var accountDetails = await AllAccountDetailsAsync();
 
             model.RevenueThisMonth = await _repository.GetRevenueForPeriodAsync(fromDate, toDateExclusive);
             model.CommissionsPaidThisMonth = await _repository.GetCommissionsPaidForPeriodAsync(fromDate, toDateExclusive);
@@ -640,7 +650,7 @@ namespace Ranalo.Services
                 ? Math.Round(model.WriteOffRecoveredThisMonth / model.WriteOffTotal * 100, 1)
                 : 0;
 
-            var accountDetails = await _repository.GetDealerAccountDetailsAsync(null);
+            var accountDetails = await AllAccountDetailsAsync();
             model.TotalAccounts = accountDetails.Count;
 
             if (TryResolvePeriodWindow("month", out var monthWindow))
@@ -1222,7 +1232,7 @@ namespace Ranalo.Services
         // rules as the Admin Dashboard's.
         public async Task<(LossGivenDefault.Summary Summary, LossGivenDefault.LeftOut LeftOut)> GetLossGivenDefaultAsync()
         {
-            var rows = await _repository.GetDealerAccountDetailsAsync(null);
+            var rows = await AllAccountDetailsAsync();
             var (defaulted, leftOut) = DefaultedAccounts(rows, Over90DaysPastLock(rows), await LossCostsAsync(), KenyaNow());
             return (LossGivenDefault.Summarise(defaulted), leftOut);
         }

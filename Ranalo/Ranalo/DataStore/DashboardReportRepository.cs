@@ -1032,6 +1032,26 @@ namespace Ranalo.DataStore
                     SELECT AccountNo, SUM(AmountValue) AS TotalPaid, MAX(PaymentDateValue) AS LastPaymentDate
                     FROM ValidPayments
                     GROUP BY AccountNo
+                ),
+                -- Devices.CustomerPhoneNumber is never populated in this
+                -- dataset -- Woo_Orders.Phone (via KosePayments.MpesaCode) is
+                -- the only reliably-populated phone source, so take each
+                -- account's most recent order. Built once from the ~1k orders
+                -- rather than per contract over every payment (that per-row
+                -- lookup was ~1.5s of this query's ~2.5s).
+                AccountOrders AS (
+                    SELECT kp.AccountNoBigint AS AccountNo, wo.Phone, wo.OrderID,
+                        ROW_NUMBER() OVER (PARTITION BY kp.AccountNoBigint ORDER BY wo.DateCreated DESC, wo.OrderID DESC) AS rn
+                    FROM Woo_Orders wo
+                    INNER JOIN KosePayments kp ON kp.MpesaCode = wo.MpesaDepositRef
+                    WHERE kp.AccountNoBigint IS NOT NULL
+                ),
+                -- Next of kin captured on that order (primary and second),
+                -- same table and IsPrimary flag as the customer details pages.
+                NextOfKin AS (
+                    SELECT nk.OrderId, nk.IsPrimary, nk.[Name], nk.Phone, nk.IdNumber,
+                        ROW_NUMBER() OVER (PARTITION BY nk.OrderId, nk.IsPrimary ORDER BY nk.Id) AS rn
+                    FROM Woo_Orders_NextOfKin nk
                 )
                 SELECT
                     ci.ID AS AccountId,
@@ -1075,29 +1095,9 @@ namespace Ranalo.DataStore
                         ELSE CAST(ci.Term_in_Months * 30 AS INT)
                     END AS Days
                 ) DaysAccrued
-                OUTER APPLY (
-                    -- Devices.CustomerPhoneNumber is never populated in this
-                    -- dataset -- Woo_Orders.Phone (via KosePayments.MpesaCode)
-                    -- is the only reliably-populated phone source, so pull
-                    -- whichever of this account's orders is most recent.
-                    SELECT TOP 1 wo.Phone, wo.OrderID
-                    FROM KosePayments kpPhone
-                    INNER JOIN Woo_Orders wo ON wo.MpesaDepositRef = kpPhone.MpesaCode
-                    WHERE kpPhone.AccountNoBigint = ci.ID
-                    ORDER BY wo.DateCreated DESC
-                ) ph
-                -- Next of kin captured on that same order (primary and second),
-                -- same table and IsPrimary flag as the customer details pages.
-                OUTER APPLY (
-                    SELECT TOP 1 nk.[Name], nk.Phone, nk.IdNumber
-                    FROM Woo_Orders_NextOfKin nk
-                    WHERE nk.OrderId = ph.OrderID AND nk.IsPrimary = 1
-                ) nk1
-                OUTER APPLY (
-                    SELECT TOP 1 nk.[Name], nk.Phone, nk.IdNumber
-                    FROM Woo_Orders_NextOfKin nk
-                    WHERE nk.OrderId = ph.OrderID AND nk.IsPrimary = 0
-                ) nk2
+                LEFT JOIN AccountOrders ph ON ph.AccountNo = ci.ID AND ph.rn = 1
+                LEFT JOIN NextOfKin nk1 ON nk1.OrderId = ph.OrderID AND nk1.IsPrimary = 1 AND nk1.rn = 1
+                LEFT JOIN NextOfKin nk2 ON nk2.OrderId = ph.OrderID AND nk2.IsPrimary = 0 AND nk2.rn = 1
                 WHERE (@DealerId IS NULL OR dl.DealerId = @DealerId) AND ci.StartDate IS NOT NULL
                 AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)";
 
