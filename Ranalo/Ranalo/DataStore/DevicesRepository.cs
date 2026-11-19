@@ -55,7 +55,11 @@ namespace Ranalo.DataStore
                     dealer.DealerReference AS DealerId,
                     dealer.CompanyName AS DealerName,
 	                d.CreatedAt,
-                    d.ImeiNo
+                    d.ImeiNo,
+                    -- CreatedAt is text like '19-11-26 11:07:16 UTC' (day-month-year),
+                    -- so sorting the text put 01-01-26 before 02-12-25.
+                    TRY_CONVERT(datetime2, '20' + SUBSTRING(d.CreatedAt, 7, 2) + '-' + SUBSTRING(d.CreatedAt, 4, 2)
+                        + '-' + LEFT(d.CreatedAt, 2) + ' ' + SUBSTRING(d.CreatedAt, 10, 8), 120) AS CreatedAtSort
                 FROM Devices d
                 LEFT JOIN Dealers dealer
                     ON dealer.DealerReference = d.DeviceGroupId
@@ -82,7 +86,7 @@ namespace Ranalo.DataStore
                     OR dealer.DealerReference LIKE '%' + @SearchTerm + '%'
                     OR dealer.CompanyName LIKE '%' + @SearchTerm + '%'
                 )
-                order by d.CreatedAt
+                ORDER BY CreatedAtSort DESC, d.Id DESC   -- newest first
                 OFFSET @Offset ROWS
                 FETCH NEXT @pageSize ROWS ONLY";
             var records = await _db.QueryAsync<DeviceWithDealerDto>(sql, new { DealerId = dealerReference, offset, pageSize, searchTerm, AgentUserId = agentUserId });
