@@ -449,6 +449,13 @@
                             </div>
                         </div>
                         <div class="col-12">
+                            <div class="small text-soft">
+                                Special rate: change the Deposit and/or Term (or type the Daily you want), then press
+                                Calculate. The Daily is worked out so the Total Cost stays the same.
+                            </div>
+                            <div id="calc-summary" class="small mt-1" hidden></div>
+                        </div>
+                        <div class="col-12">
                             <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
                                 <li>
                                     <button type="submit" class="btn btn-lg btn-primary">Update Contract</button>
@@ -602,117 +609,82 @@
             document.getElementById('edit-buying').value = buyingPrice;
         });
 
-             // --------------------- CALCULATE BUTTON ---------------------
-    var calcBtn = document.getElementById("btn-calc");
-    let lastEdited = null;
-
-    // Track last edited field
-    document.getElementById("edit-deposit").addEventListener("input", function () {
-        lastEdited = "deposit";
-    });
-
-    document.getElementById("edit-loan").addEventListener("input", function () {
-        lastEdited = "loan";
-    });
-
-    document.getElementById("edit-device").addEventListener("input", function () {
-        lastEdited = "device";
-    });
-
-    document.getElementById("edit-totalcost").addEventListener("input", function () {
-        lastEdited = "totalcost";
-    });
-
-    document.getElementById("edit-daily").addEventListener("input", function () {
-    lastEdited = "daily";
+        // --------------------- CALCULATE BUTTON ---------------------
+        // A special rate for a customer (e.g. a forbearance plan): change the
+        // deposit and/or the term, press Calculate, and the daily rate is
+        // worked out so the customer still pays the same Total Cost:
+        //     Total Loan = Total Cost - Deposit
+        //     Daily      = Total Loan / (Term x 30 days)
+        // Or type the daily rate you want: Calculate picks the shortest term
+        // (12-24 months) that covers the loan at that rate.
+        // Nothing is saved until "Update Contract".
+        var calcBtn = document.getElementById("btn-calc");
+        var lastEdited = null;
+        ["deposit", "daily", "loan", "device", "totalcost", "term"].forEach(function (f) {
+            var el = document.getElementById("edit-" + f);
+            if (!el) return;
+            el.addEventListener("input", function () { lastEdited = f; });
+            el.addEventListener("change", function () { lastEdited = f; });
         });
 
-        document.getElementById("edit-term").addEventListener("input", function () {
-            lastEdited = "term";
-            });
+        var summary = document.getElementById("calc-summary");
+        function money(n) { return n.toLocaleString("en-KE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+        function show(text, isError) {
+            summary.textContent = text;
+            summary.className = "small mt-1 " + (isError ? "text-danger" : "text-soft");
+            summary.hidden = false;
+        }
 
-    if (calcBtn) {
-        calcBtn.addEventListener("click", function (e) {
-            e.preventDefault(); // prevent form submission
-
-            // Inputs
-            const depositInput = document.getElementById("edit-deposit");
-            const dailyInput = document.getElementById("edit-daily");
-            const termInput = document.getElementById("edit-term");
-            const loanInput = document.getElementById("edit-loan");
-            const costInput = document.getElementById("edit-totalcost");
-            const deviceInput = document.getElementById("edit-device");
-
-            // Values
-            let deposit = parseFloat(depositInput.value) || 0;
-            let totalLoan = parseFloat(loanInput.value) || 0;
-            let totalCost = parseFloat(costInput.value) || 0;
-            let deviceAmount = parseFloat(deviceInput.value) || 0;
-            let dailyRate = parseFloat(dailyInput.value) || 0;
-            let term = parseFloat(termInput.value) || 0;
-
-            //0 If the daily rate is changed
-            if (lastEdited === "daily") {
-                    const CONTRACT_DAYS = (term * 30);
-                const DEPOSIT_RATE = 0.2778; // 27.78%
-
-                // 1️⃣ LOAN = dailyRate * 360
-                let loan = dailyRate * CONTRACT_DAYS;
-                loanInput.value = loan.toFixed(2);
-
-                // 2️⃣ DEPOSIT = devicePrice * 0.2778
-                    let deposit = deviceAmount * DEPOSIT_RATE;
-                depositInput.value = deposit.toFixed(2);
-
-                // 3️⃣ TOTAL COST = loan + deposit
-                let totalCost = loan + deposit;
-                    costInput.value = totalCost.toFixed(2);
+        // Opening the form for another contract starts afresh.
+        document.addEventListener("click", function (event) {
+            if (event.target.closest('a[data-bs-toggle="modal"][href="#edit-contract"]')) {
+                lastEdited = null;
+                summary.hidden = true;
             }
+        });
 
-            // 2️⃣ If the user updated Total Loan (loanInput)
-            if (lastEdited === "loan") {
-                    // 1️⃣ Deposit is always based on device amount
-                deposit = deviceAmount * 0.2778;
-                depositInput.value = deposit.toFixed(2);
+        if (calcBtn) {
+            calcBtn.addEventListener("click", function (e) {
+                e.preventDefault();
 
-                // 2️⃣ Daily rate based on Total Loan
-                dailyRate = +(deviceAmount / (term * 30)).toFixed(2);
-                dailyInput.value = dailyRate.toFixed(2);
+                var depositInput = document.getElementById("edit-deposit");
+                var dailyInput = document.getElementById("edit-daily");
+                var termInput = document.getElementById("edit-term");
+                var loanInput = document.getElementById("edit-loan");
+                var costInput = document.getElementById("edit-totalcost");
 
-                // 4️⃣ Total Cost = Loan + Deposit
-                totalCost = totalLoan + deposit;
-                costInput.value = totalCost.toFixed(2);
-            }
+                var deposit = parseFloat(depositInput.value) || 0;
+                var totalCost = parseFloat(costInput.value) || 0;
+                var daily = parseFloat(dailyInput.value) || 0;
+                var term = parseInt(termInput.value, 10) || 0;
 
-            // 3️⃣ If the user updated Device Amount or Total Cost
-                if (lastEdited === "device" || lastEdited === "totalcost") {
+                var loan = totalCost - deposit;
+                if (totalCost <= 0) { show("Enter the Total Cost the customer pays.", true); return; }
+                if (loan <= 0) { show("The deposit can't be more than the Total Cost.", true); return; }
 
-                    if(deviceAmount === 0)
-                    {
-                        deviceAmount = deposit / 0.2778
+                if (lastEdited === "daily" && daily > 0) {
+                    var months = Math.ceil(loan / (daily * 30));
+                    if (months > 24) {
+                        show("At KES " + money(daily) + " a day the loan of KES " + money(loan) +
+                            " needs " + months + " months; the longest term is 24. Raise the daily rate or the deposit.", true);
+                        return;
                     }
-                // deposit = 27.78% of deviceAmount
-                deposit = deviceAmount * 0.2778;
-                depositInput.value = deposit.toFixed(2);
-
-                dailyRate = +(deviceAmount / (term * 30)).toFixed(2);
-                    dailyInput.value = dailyRate.toFixed(2);
-                // total loan
-                    totalLoan = dailyRate * 30 * term;
-                loanInput.value = totalLoan.toFixed(2);
-
-                // total loan
-                totalCost = totalLoan + deposit;
-                costInput.value = totalCost.toFixed(2);
-            }
-
-                if(lastEdited === "term")
-                {
-                    dailyRate = +(totalLoan / (term * 30)).toFixed(2);
-                    dailyInput.value = dailyRate.toFixed(2);
+                    term = Math.max(12, months);
+                    termInput.value = term;
                 }
-        });
-    }   
+                if (term < 1) { show("Choose a term.", true); return; }
+
+                var days = term * 30;
+                daily = Math.round(loan / days * 100) / 100;
+
+                loanInput.value = loan.toFixed(2);
+                dailyInput.value = daily.toFixed(2);
+
+                show("Deposit KES " + money(deposit) + ", then KES " + money(daily) + " a day for " + term +
+                    " months (" + days + " days). Total stays KES " + money(totalCost) +
+                    ". Check, then press Update Contract to save.", false);
+            });
+        }
     });
     
     </script>
