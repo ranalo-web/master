@@ -1516,26 +1516,61 @@ namespace Ranalo.DataStore
         public async Task<PaymentsViewModel> GetPaymentSummaryAsync(int? accountId, int deviceGroupId = 0, int page = 1, int pageSize = 10, string searchTerm = "", int? agentUserId = null, bool includeCount = true)
         {
             var offset = (page - 1) * pageSize;
+            var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
+            var args = new { DealerId = deviceGroupId, offset, pageSize, searchParam, AccountId = accountId, AgentUserId = agentUserId };
 
             // The qualifying-records reports page in memory and never read the
-            // count, so they skip it (it scans every KosePayments row).
+            // count, so they skip it. The count is the same query as the list,
+            // so it always matches the rows the list can show.
             var totalRecords = includeCount
-                ? await _db.QuerySingleAsync<int>(SetPaymentSummaryQuery(), new { DealerId = deviceGroupId, searchParam = searchTerm, AccountId = accountId, AgentUserId = agentUserId })
+                ? await _db.QuerySingleAsync<int>(PaymentSummaryCountSql, args)
                 : 0;
 
-            // Payments are read once: totals plus first and last payment come
-            // from one pass (it used to scan KosePayments three times, and the
-            // Auto Restructured report took 100s for 473 accounts).
-            var sql = @";WITH ValidPayments AS
+            var payments = await _db.QueryAsync<PaymentSummary>(PaymentSummarySql, args);
+
+            return new PaymentsViewModel() 
+            { 
+                CurrentPage = page,
+                Payments = payments.ToList(),
+                SearchTerm = searchTerm,
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
+                TotalRecords = totalRecords
+            };
+        }
+
+        // Payment totals for open contracts on enrolled devices. Only those
+        // accounts' payments are read (about 34k of 78k in Nov 2026): the
+        // whole payments table used to be totalled and sorted for every
+        // account ever, then all but ~490 thrown away. Payments are read once:
+        // totals plus first and last payment come from one pass.
+        //
+        // A payment listed in OrphanedPayments with an account counts for
+        // that account instead of the one it was paid to.
+        private const string PaymentSummaryCtes = @";WITH OpenAccounts AS
 (
-    SELECT
-        COALESCE(op.AccountNoBigint, kp.AccountNoBigint) AS AccountNo,
-        kp.MpesaCode,
-        kp.AmountValue,
-        kp.PaymentDateValue
+    SELECT DISTINCT d.Id
+    FROM Devices d
+    JOIN Contract_Info ci ON ci.ID = d.Id AND ci.EndDate IS NULL
+    WHERE d.Status = 'enrolled'
+    AND (@DealerId = 0 OR d.DeviceGroupId = @DealerId)
+    AND (@AccountId IS NULL OR d.Id = @AccountId)
+    AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+),
+
+ValidPayments AS
+(
+    SELECT kp.AccountNoBigint AS AccountNo, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
     FROM KosePayments kp
-    LEFT JOIN OrphanedPayments op 
-        ON op.MpesaCode = kp.MpesaCode
+    WHERE kp.AccountNoBigint IN (SELECT Id FROM OpenAccounts)
+    AND NOT EXISTS (SELECT 1 FROM OrphanedPayments op
+                    WHERE op.MpesaCode = kp.MpesaCode AND op.AccountNoBigint IS NOT NULL)
+
+    UNION ALL
+
+    SELECT op.AccountNoBigint, kp.MpesaCode, kp.AmountValue, kp.PaymentDateValue
+    FROM OrphanedPayments op
+    JOIN KosePayments kp ON kp.MpesaCode = op.MpesaCode
+    WHERE op.AccountNoBigint IN (SELECT Id FROM OpenAccounts)
 ),
 
 RankedPayments AS
@@ -1577,7 +1612,28 @@ PaymentStats AS
     FROM RankedPayments
     GROUP BY AccountNo
 )
+";
 
+        private const string PaymentSummaryFromWhere = @"
+FROM Devices d
+JOIN PaymentStats ps ON d.Id = ps.AccountNo
+JOIN Contract_Info ci 
+    ON ci.ID = d.Id
+    AND ci.EndDate IS NULL
+
+WHERE d.Status = 'enrolled'
+AND (@DealerId = 0 OR d.DeviceGroupId = @DealerId)
+AND (@AccountId IS NULL OR d.Id = @AccountId)
+AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
+AND (
+    @searchParam IS NULL
+    OR CAST(d.Id AS NVARCHAR(50)) LIKE '%' + @searchParam + '%'
+    OR ps.FirstMPesaCode LIKE '%' + @searchParam + '%'
+    OR ci.First_Name LIKE '%' + @searchParam + '%'
+)
+";
+
+        private const string PaymentSummarySql = PaymentSummaryCtes + @"
 SELECT
     d.Id AS AccountNo,
     ci.TotalAmount,
@@ -1615,77 +1671,13 @@ SELECT
     d.NextLockDate,
     ci.DebtCollectorUserId,
     d.LockGroup
-
-FROM Devices d
-JOIN PaymentStats ps ON d.Id = ps.AccountNo
-JOIN Contract_Info ci 
-    ON ci.ID = d.Id
-    AND ci.EndDate IS NULL
-
-WHERE d.Status = 'enrolled'
-AND (@DealerId = 0 OR d.DeviceGroupId = @DealerId)
-AND (@AccountId IS NULL OR d.Id = @AccountId)
-AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
-AND (
-    @searchParam IS NULL
-    OR CAST(d.Id AS NVARCHAR(50)) LIKE '%' + @searchParam + '%'
-    OR ps.FirstMPesaCode LIKE '%' + @searchParam + '%'
-    OR ci.First_Name LIKE '%' + @searchParam + '%'
-)
-
+" + PaymentSummaryFromWhere + @"
 ORDER BY ps.LastPaidDate DESC
-                        	OFFSET @offset ROWS
-                        	FETCH NEXT @pageSize ROWS ONLY;";
+OFFSET @offset ROWS
+FETCH NEXT @pageSize ROWS ONLY;";
 
-            var searchParam = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
-            var payments = await _db.QueryAsync<PaymentSummary>(sql, new { DealerId = deviceGroupId, offset, pageSize, searchParam, AccountId = accountId, AgentUserId = agentUserId });
-
-            return new PaymentsViewModel() 
-            { 
-                CurrentPage = page,
-                Payments = payments.ToList(),
-                SearchTerm = searchTerm,
-                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize),
-                TotalRecords = totalRecords
-            };
-        }
-
-        private string SetPaymentSummaryQuery()
-        {
-            return @"SELECT COUNT(*)
-FROM
-(
-    SELECT kp.AccountNoBigint
-    FROM KosePayments kp
-
-    JOIN Devices d 
-        ON d.Id = kp.AccountNoBigint
-
-    JOIN Contract_Info ci 
-        ON ci.ID = d.Id
-        AND ci.EndDate IS NULL
-
-    WHERE d.Status = 'enrolled'
-
-    AND (@DealerId = 0 OR d.DeviceGroupId = @DealerId)
-
-    AND (@AccountId IS NULL OR kp.AccountNoBigint = @AccountId)
-
-    AND (@AgentUserId IS NULL OR ci.AssignedAgentId = @AgentUserId)
-
-    AND (
-        @searchParam IS NULL
-        OR ci.First_Name LIKE '%' + @searchParam + '%'
-        OR kp.MpesaCode LIKE '%' + @searchParam + '%'
-        OR (
-            TRY_CAST(@searchParam AS bigint) IS NOT NULL
-            AND kp.AccountNoBigint = TRY_CAST(@searchParam AS BIGINT)
-        )
-    )
-
-    GROUP BY kp.AccountNoBigint
-) t;";
-        }
+        private const string PaymentSummaryCountSql = PaymentSummaryCtes + @"
+SELECT COUNT(*)" + PaymentSummaryFromWhere + ";";
 
         public async Task CreateCustomerNote(CustomerNote newNote)
         {
