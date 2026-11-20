@@ -19,6 +19,12 @@
         }
     }
 
+    // Every page / page-size link keeps the search, so page 2 of a search
+    // is page 2 of the results, not of all devices.
+    private string PageUrl(int page, int pageSize) =>
+        $"/alldevices?page={page}&pageSize={pageSize}"
+        + (string.IsNullOrWhiteSpace(Model?.SearchTerm) ? "" : "&searchTerm=" + Uri.EscapeDataString(Model.SearchTerm));
+
     private string SetLockStatusTextBadge(bool status)
     {
         if (status == true)
@@ -111,10 +117,10 @@
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
                                                             <ul class="link-check">
                                                                 <li><span>Show</span></li>
-                                                                <li class="@(Model.PageSize == 10 ? "active" : "")"><a href="/alldevices?page=1&pageSize=10">10</a></li>
-                                                                <li class="@(Model.PageSize == 20 ? "active" : "")"><a href="/alldevices?page=1&pageSize=20">20</a></li>
-                                                                <li class="@(Model.PageSize == 40 ? "active" : "")"><a href="/alldevices?page=1&pageSize=40">40</a></li>
-                                                                <li class="@(Model.PageSize == 80 ? "active" : "")"><a href="/alldevices?page=1&pageSize=80">80</a></li>
+                                                                <li class="@(Model.PageSize == 10 ? "active" : "")"><a href="@PageUrl(1, 10)">10</a></li>
+                                                                <li class="@(Model.PageSize == 20 ? "active" : "")"><a href="@PageUrl(1, 20)">20</a></li>
+                                                                <li class="@(Model.PageSize == 40 ? "active" : "")"><a href="@PageUrl(1, 40)">40</a></li>
+                                                                <li class="@(Model.PageSize == 80 ? "active" : "")"><a href="@PageUrl(1, 80)">80</a></li>
                                                             </ul>
                                                             <ul class="link-check">
                                                                 <li><span>Order</span></li>
@@ -136,6 +142,7 @@
                             <div class="search-content">
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
                                 <form action="/alldevices" method="get">
+                                    <input type="hidden" name="pageSize" value="@Model?.PageSize">
                                     <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" value="@Model?.SearchTerm" placeholder="Search by name">
                                     <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
                                 </form>
@@ -216,7 +223,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/alldevices?page=@(Model.CurrentPage - 1)&pageSize=@(Model.PageSize)">Prev</a>
+                                        <a class="page-link" href="@PageUrl(Model.CurrentPage - 1, Model.PageSize)">Prev</a>
                                     </li>
                                 }
 
@@ -233,7 +240,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/alldevices?page=1&pageSize=@(Model.PageSize)">1</a>
+                                        <a class="page-link" href="@PageUrl(1, Model.PageSize)">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -243,7 +250,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/alldevices?page=@i&pageSize=@(Model.PageSize)">@i</a>
+                                        <a class="page-link" href="@PageUrl(i, Model.PageSize)">@i</a>
                                     </li>
                                 }
 
@@ -253,14 +260,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/alldevices?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="@PageUrl(Model.TotalPages, Model.PageSize)">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/alldevices?page=@(Model.CurrentPage + 1)&pageSize=@(Model.PageSize)">Next</a>
+                                        <a class="page-link" href="@PageUrl(Model.CurrentPage + 1, Model.PageSize)">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -272,7 +279,8 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/alldevices?page=' + this.value + '&pageSize=@(Model.PageSize)'">
+                                            data-url="@PageUrl(0, Model.PageSize)"
+                                            onchange="location.href=this.dataset.url.replace('page=0', 'page=' + this.value)">
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>

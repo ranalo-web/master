@@ -209,7 +209,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/missingmpesacode?page=@(Model.CurrentPage - 1)">Prev</a>
+                                        <a class="page-link" href="/missingmpesacode?page=@(Model.CurrentPage - 1)@(PagingLinks.Keep(Context.Request))">Prev</a>
                                     </li>
                                 }
 
@@ -226,7 +226,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/missingmpesacode?page=1">1</a>
+                                        <a class="page-link" href="/missingmpesacode?page=1@(PagingLinks.Keep(Context.Request))">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -236,7 +236,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/missingmpesacode?page=@i">@i</a>
+                                        <a class="page-link" href="/missingmpesacode?page=@i@(PagingLinks.Keep(Context.Request))">@i</a>
                                     </li>
                                 }
 
@@ -246,14 +246,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/missingmpesacode?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/missingmpesacode?page=@Model.TotalPages@(PagingLinks.Keep(Context.Request))">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/missingmpesacode?page=@(Model.CurrentPage + 1)">Next</a>
+                                        <a class="page-link" href="/missingmpesacode?page=@(Model.CurrentPage + 1)@(PagingLinks.Keep(Context.Request))">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -265,7 +265,7 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/missingmpesacode?page=' + this.value">
+                                            onchange="location.href='/missingmpesacode?page=' + this.value + '@(PagingLinks.Keep(Context.Request))'">
                                         >
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {

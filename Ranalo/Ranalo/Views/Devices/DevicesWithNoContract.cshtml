@@ -141,10 +141,10 @@
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
                                                             <ul class="link-check">
                                                                 <li><span>Show</span></li>
-                                                                <li class="@(Model.PageSize == 10 ? "active" : "")"><a href="/devices-with-no-orders?page=1&pageSize=10">10</a></li>
-                                                                <li class="@(Model.PageSize == 20 ? "active" : "")"><a href="/devices-with-no-orders?page=1&pageSize=20">20</a></li>
-                                                                <li class="@(Model.PageSize == 40 ? "active" : "")"><a href="/devices-with-no-orders?page=1&pageSize=40">40</a></li>
-                                                                <li class="@(Model.PageSize == 80 ? "active" : "")"><a href="/devices-with-no-orders?page=1&pageSize=80">80</a></li>
+                                                                <li class="@(Model.PageSize == 10 ? "active" : "")"><a href="/devices-with-no-contracts?page=1&pageSize=10@(PagingLinks.Keep(Context.Request, "pageSize"))">10</a></li>
+                                                                <li class="@(Model.PageSize == 20 ? "active" : "")"><a href="/devices-with-no-contracts?page=1&pageSize=20@(PagingLinks.Keep(Context.Request, "pageSize"))">20</a></li>
+                                                                <li class="@(Model.PageSize == 40 ? "active" : "")"><a href="/devices-with-no-contracts?page=1&pageSize=40@(PagingLinks.Keep(Context.Request, "pageSize"))">40</a></li>
+                                                                <li class="@(Model.PageSize == 80 ? "active" : "")"><a href="/devices-with-no-contracts?page=1&pageSize=80@(PagingLinks.Keep(Context.Request, "pageSize"))">80</a></li>
                                                             </ul>
                                                             <ul class="link-check">
                                                                 <li><span>Order</span></li>
@@ -229,7 +229,7 @@
                                 @if (Model.CurrentPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-contracts?page=@(Model.CurrentPage - 1)&pageSize=@(Model.PageSize)">Prev</a>
+                                        <a class="page-link" href="/devices-with-no-contracts?page=@(Model.CurrentPage - 1)&pageSize=@(Model.PageSize)@(PagingLinks.Keep(Context.Request, "pageSize"))">Prev</a>
                                     </li>
                                 }
 
@@ -246,7 +246,7 @@
                                 @if (startPage > 1)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-contracts?page=1&pageSize=@(Model.PageSize)">1</a>
+                                        <a class="page-link" href="/devices-with-no-contracts?page=1&pageSize=@(Model.PageSize)@(PagingLinks.Keep(Context.Request, "pageSize"))">1</a>
                                     </li>
                                     <li class="page-item">
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
@@ -256,7 +256,7 @@
                                 @for (int i = startPage; i <= endPage; i++)
                                 {
                                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="/devices-with-no-contracts?page=@i&pageSize=@(Model.PageSize)">@i</a>
+                                        <a class="page-link" href="/devices-with-no-contracts?page=@i&pageSize=@(Model.PageSize)@(PagingLinks.Keep(Context.Request, "pageSize"))">@i</a>
                                     </li>
                                 }
 
@@ -266,14 +266,14 @@
                                         <span class="page-link"><em class="icon ni ni-more-h"></em></span>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-contracts?page=@Model.TotalPages">@Model.TotalPages</a>
+                                        <a class="page-link" href="/devices-with-no-contracts?page=@Model.TotalPages&pageSize=@(Model.PageSize)@(PagingLinks.Keep(Context.Request, "pageSize"))">@Model.TotalPages</a>
                                     </li>
                                 }
 
                                 @if (Model.CurrentPage < Model.TotalPages)
                                 {
                                     <li class="page-item">
-                                        <a class="page-link" href="/devices-with-no-contracts?page=@(Model.CurrentPage + 1)&pageSize=@(Model.PageSize)">Next</a>
+                                        <a class="page-link" href="/devices-with-no-contracts?page=@(Model.CurrentPage + 1)&pageSize=@(Model.PageSize)@(PagingLinks.Keep(Context.Request, "pageSize"))">Next</a>
                                     </li>
                                 }
                             </ul>
@@ -285,7 +285,7 @@
                                     <select class="form-select js-select2"
                                             data-search="on"
                                             data-dropdown="xs center"
-                                            onchange="location.href='/devices-with-no-contracts?page=' + this.value + '&pageSize=@(Model.PageSize)'">
+                                            onchange="location.href='/devices-with-no-contracts?page=' + this.value + '&pageSize=@(Model.PageSize)' + '@(PagingLinks.Keep(Context.Request, "pageSize"))'">
                                         @for (int i = 1; i <= Model.TotalPages; i++)
                                         {
                                             <option value="@i" @(Model.CurrentPage == i ? "selected" : "")>
