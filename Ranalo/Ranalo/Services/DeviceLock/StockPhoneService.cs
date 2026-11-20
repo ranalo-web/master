@@ -54,7 +54,7 @@ namespace Ranalo.Services.DeviceLock
             var errors = new List<string>();
             if (!StockPhoneRules.CanManage(actor))
             {
-                errors.Add("Only an admin, approver or dealer can lock stock phones.");
+                errors.Add("Only an admin, approver, dealer or agent (linked to a dealer) can lock stock phones.");
                 return (messages, errors);
             }
             dealerId = StockPhoneRules.DealerFor(actor, dealerId);

@@ -15,6 +15,10 @@ namespace Ranalo.DataStore
         // change. Accounts with no device record are skipped. Returns how
         // many were moved.
         Task<int> AssignAsync(IReadOnlyCollection<long> accountNos, int dealerId, int userId, string? note);
+
+        // A stock phone (no account yet) moved between dealers, logged in the
+        // same trail with AccountNo 0 and the IMEI in the note.
+        Task LogStockMoveAsync(string imei, int fromDealerId, int toDealerId, int userId);
     }
 
     // An account's dealer is its device's group: Devices.DeviceGroupId =
@@ -185,6 +189,18 @@ namespace Ranalo.DataStore
 
             transaction.Commit();
             return moved;
+        }
+
+        public async Task LogStockMoveAsync(string imei, int fromDealerId, int toDealerId, int userId)
+        {
+            const string sql = @"
+                INSERT INTO DealerAllocationLog (AccountNo, OldDeviceGroupId, NewDeviceGroupId, NewDealerId, Note, ChangedByUserId)
+                SELECT 0,
+                       (SELECT TRY_CAST(DealerReference AS BIGINT) FROM Dealers WHERE DealerId = @From),
+                       ISNULL((SELECT TRY_CAST(DealerReference AS BIGINT) FROM Dealers WHERE DealerId = @To), 0),
+                       @To, @Note, @UserId";
+            await _db.ExecuteAsync(sql, new { From = fromDealerId, To = toDealerId, UserId = userId,
+                Note = $"Stock phone {imei} moved to another dealer (was dealer {fromDealerId})" });
         }
     }
 }

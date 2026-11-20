@@ -151,13 +151,15 @@ namespace Ranalo.DataStore
         }
 
         public async Task<(IEnumerable<Enrolment> Items, int TotalCount)>
-        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null)
+        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null, int? enrolledByUserId = null)
         {
             if (pageNumber <= 0) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
             var query = ApplyEnrolmentSearch(
-                _context.Enrolments.AsNoTracking().Where(x => x.DealerId == dealerId && x.Status != EnrolmentStatus.Stock),
+                _context.Enrolments.AsNoTracking().Where(x => x.DealerId == dealerId && x.Status != EnrolmentStatus.Stock
+                    // An agent sees only the phones they enrolled.
+                    && (enrolledByUserId == null || x.EnrolledByUserId == enrolledByUserId)),
                 searchTerm);
 
             var totalCount = await query.CountAsync();

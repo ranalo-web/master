@@ -131,7 +131,7 @@
                                 <tbody>
                                     @if (Model.Rows.Count == 0)
                                     {
-                                        <tr><td colspan="4" class="text-center text-soft py-4">No stock phones.</td></tr>
+                                        <tr><td colspan="4" class="text-center text-soft py-4">@(ViewBag.IsAgent == true ? "No stock phones locked by you. To sell any of your dealer's stock, type its IMEI on Add Enrolment." : "No stock phones.")</td></tr>
                                     }
                                     @foreach (var e in Model.Rows)
                                     {
@@ -185,6 +185,23 @@
                                                             <button type="submit" class="btn btn-sm btn-success w-100">Assign</button>
                                                         </form>
                                                     </details>
+                                                    @if (Model.CanMove)
+                                                    {
+                                                        <details class="mt-1 text-start">
+                                                            <summary class="btn btn-sm btn-outline-light">Move to dealer</summary>
+                                                            <form method="post" action="/enrolments/stock/@e.Id/move?filter=@Model.Filter" class="mt-2" style="min-width:220px;">
+                                                                @Html.AntiForgeryToken()
+                                                                <select name="dealerId" class="form-select form-select-sm mb-1" required>
+                                                                    <option value="">Choose dealer</option>
+                                                                    @foreach (var d in Model.Dealers.Where(d => d.Key != e.DealerId))
+                                                                    {
+                                                                        <option value="@d.Key">@d.Value</option>
+                                                                    }
+                                                                </select>
+                                                                <button type="submit" class="btn btn-sm btn-primary w-100">Move</button>
+                                                            </form>
+                                                        </details>
+                                                    }
                                                 }
                                             </td>
                                         </tr>

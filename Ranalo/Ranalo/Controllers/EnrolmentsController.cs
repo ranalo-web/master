@@ -93,13 +93,25 @@ namespace Ranalo.Controllers
                 return View(response);
             }
 
-            var dealer = await _userService.GetDealerByUserId(settings.UserId);
+            // A dealer owns their Dealers row; an agent belongs to one (Users.DealerId).
+            var dealer = settings.RoleId == UserRole.Agent
+                ? await _userService.GetDealerByDealerId(settings.DealerId)
+                : await _userService.GetDealerByUserId(settings.UserId);
+            if (dealer == null)
+            {
+                // Show why on the (empty) list rather than an error page.
+                var unlinked = new EnrolmentViewModel { Enrolments = new List<Enrolment>(), SearchTerm = searchTerm.Trim() };
+                unlinked.Errors.Add(DeviceLockRules.CannotEnrol(settings)
+                    ?? "Your login isn't linked to a dealer. Ask an admin to set your dealer on the Users page.");
+                return View(unlinked);
+            }
 
             // Enrolment.DealerId is set from settings.DealerId (see the POST
             // AddEnrolment action below), which is the real Dealers.DealerId
             // PK -- not DealerReference (the separate value matched against
             // Devices.DeviceGroupId elsewhere in the app).
-            var dealerEnrolments = await _enrolmentService.GetDealerEnrolmentsAsync(dealer.DealerId, page, pageSize, searchTerm.Trim());
+            var dealerEnrolments = await _enrolmentService.GetDealerEnrolmentsAsync(dealer.DealerId, page, pageSize, searchTerm.Trim(),
+                enrolledByUserId: settings.RoleId == UserRole.Agent ? settings.UserId : null);
 
             var dealerResponse = new EnrolmentViewModel()
             {
@@ -125,8 +137,10 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            if (!DeviceLockRules.CanEnrol(settings.RoleId))
+            var notAllowed = DeviceLockRules.CannotEnrol(settings);
+            if (notAllowed != null)
             {
+                TempData["EnrolmentError"] = notAllowed;
                 return RedirectToAction("Index");
             }
 
@@ -301,8 +315,10 @@ namespace Ranalo.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            if (!DeviceLockRules.CanEnrol(settings.RoleId))
+            var notAllowed = DeviceLockRules.CannotEnrol(settings);
+            if (notAllowed != null)
             {
+                TempData["EnrolmentError"] = notAllowed;
                 return RedirectToAction("Index");
             }
 
@@ -446,9 +462,14 @@ namespace Ranalo.Controllers
             // Dealers enrol for themselves; approvers/admins for the dealer
             // on the order, or one they pick when the order has none.
             int dealerId;
-            if (settings.RoleId == UserRole.Dealer)
+            if (settings.RoleId is UserRole.Dealer or UserRole.Agent)
             {
+                // Agents enrol for the dealer they work for, never another.
                 dealerId = settings.DealerId;
+                if (stock != null && stock.DealerId > 0 && stock.DealerId != dealerId)
+                {
+                    response.Errors.Add($"Stock phone {stock.IMEI} belongs to another dealer, so you can't sell it.");
+                }
             }
             else if (checks.OrderDealerId.HasValue)
             {
@@ -677,6 +698,7 @@ namespace Ranalo.Controllers
             ViewBag.IsAdmin = settings.RoleId == UserRole.Admin;
             ViewBag.IsApprover = settings.RoleId == UserRole.Approver;
             ViewBag.IsDealer = settings.RoleId == UserRole.Dealer;
+            ViewBag.IsAgent = settings.RoleId == UserRole.Agent;
             ViewBag.UserName = settings.KnownAs;
             ViewBag.SearchTerm = searchTerm.Trim();
             if (settings.RoleId == UserRole.Dealer)

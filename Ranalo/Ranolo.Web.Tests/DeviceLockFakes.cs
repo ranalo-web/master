@@ -46,7 +46,7 @@ namespace Ranolo.Web.Tests
         }
 
         public Task<Enrolment> UpdateEnrolmentPasswordAsync(int userId, string newPasswordHash) => throw new NotImplementedException();
-        public Task<(IEnumerable<Enrolment> Items, int TotalCount)> GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null) => throw new NotImplementedException();
+        public Task<(IEnumerable<Enrolment> Items, int TotalCount)> GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null, int? enrolledByUserId = null) => throw new NotImplementedException();
         public Task<(IEnumerable<Enrolment> Items, int TotalCount)> GetAllEnrolmentsAsync(int pageNumber, int pageSize, string? searchTerm = null) => throw new NotImplementedException();
         public Task<bool> DeleteEnrolmentAsync(Enrolment enrolment) => Task.FromResult(Items.Remove(enrolment));
         public Task<List<Enrolment>> GetAwaitingApprovalAsync() =>

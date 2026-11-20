@@ -14,6 +14,13 @@ namespace Ranalo.DataStore
         // these accounts' open contracts, logging each change. An agent is
         // only set on accounts of their own dealer. Returns how many changed.
         Task<int> AssignAsync(string role, IReadOnlyCollection<long> accountNos, int? userId, int changedByUserId);
+
+        // An agent's own sales are theirs (2026-11-20): each open contract
+        // whose phone an agent enrolled gets that agent, so every agent
+        // report and their commission shows it. Logged with the agent as
+        // ChangedBy. Never overrides: skips accounts that already have an
+        // agent, or that have ever been assigned or unassigned by hand.
+        Task<int> AssignAgentSalesAsync();
     }
 
     // Agent and collector are stored on the account's open contract
@@ -144,6 +151,45 @@ namespace Ranalo.DataStore
                 changed += await _db.ExecuteAsync(updateSql, args, transaction);
             }
 
+            transaction.Commit();
+            return changed;
+        }
+
+        public async Task<int> AssignAgentSalesAsync()
+        {
+            // The agent must still work for the dealer the phone was sold
+            // for, and the account must belong to that dealer.
+            const string targets = @"
+                SELECT DISTINCT ci.ID AS AccountNo, ci.ContractID, e.EnrolledByUserId AS AgentUserId
+                FROM Enrolments e
+                JOIN Contract_Info ci ON ci.ID = e.AccountId AND ci.StartDate IS NOT NULL AND ci.EndDate IS NULL
+                JOIN Users u ON u.UserId = e.EnrolledByUserId AND u.RoleId = 7 AND u.DealerId = e.DealerId
+                JOIN Devices d ON d.Id = ci.ID
+                JOIN Dealers dl ON dl.DealerReference = d.DeviceGroupId AND dl.DealerId = e.DealerId
+                WHERE e.EnrolledByRole = 7 AND e.AccountId > 0
+                  AND ci.AssignedAgentId IS NULL
+                  AND NOT EXISTS (SELECT 1 FROM AccountAssignmentLog l
+                                  WHERE l.AccountNo = ci.ID AND l.AssignmentRole = 'Agent')";
+
+            const string sql = @"
+                DECLARE @Sales TABLE (AccountNo BIGINT, ContractId BIGINT, AgentUserId INT);
+                INSERT INTO @Sales " + targets + @";
+
+                INSERT INTO AccountAssignmentLog (AccountNo, ContractId, AssignmentRole, OldUserId, NewUserId, ChangedByUserId)
+                SELECT DISTINCT s.AccountNo, s.ContractId, 'Agent', NULL, s.AgentUserId, s.AgentUserId FROM @Sales s;
+
+                UPDATE ci SET ci.AssignedAgentId = s.AgentUserId
+                FROM Contract_Info ci
+                JOIN @Sales s ON s.AccountNo = ci.ID AND s.ContractId = ci.ContractID
+                WHERE ci.AssignedAgentId IS NULL AND ci.EndDate IS NULL;
+                SELECT @@ROWCOUNT;";
+
+            if (_db.State != ConnectionState.Open)
+            {
+                _db.Open();
+            }
+            using var transaction = _db.BeginTransaction();
+            var changed = await _db.ExecuteScalarAsync<int>(sql, transaction: transaction);
             transaction.Commit();
             return changed;
         }

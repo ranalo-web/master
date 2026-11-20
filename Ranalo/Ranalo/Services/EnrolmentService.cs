@@ -207,9 +207,9 @@ namespace Ranalo.Services
         }
 
         public async Task<(IEnumerable<Enrolment> Items, int TotalCount)>
-        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null)
+        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null, int? enrolledByUserId = null)
         {
-            return await _enrolmentRepository.GetDealerEnrolmentsAsync(dealerId, pageNumber, pageSize, searchTerm);
+            return await _enrolmentRepository.GetDealerEnrolmentsAsync(dealerId, pageNumber, pageSize, searchTerm, enrolledByUserId);
         }
 
         public async Task<Enrolment?> GetByImeiNumberAsync(string imei)

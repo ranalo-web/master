@@ -17,9 +17,12 @@ namespace Ranalo.Controllers
         private readonly IStockPhoneService _stock;
         private readonly IEnrolmentRepository _enrolments;
         private readonly IUserService _users;
+        private readonly IDealerAllocationRepository _allocation;
 
-        public StockPhonesController(IStockPhoneService stock, IEnrolmentRepository enrolments, IUserService users)
+        public StockPhonesController(IStockPhoneService stock, IEnrolmentRepository enrolments, IUserService users,
+            IDealerAllocationRepository allocation)
         {
+            _allocation = allocation;
             _stock = stock;
             _enrolments = enrolments;
             _users = users;
@@ -48,6 +51,7 @@ namespace Ranalo.Controllers
                     .Where(d => StockPhoneRules.SeesAll(CurrentUser.RoleId) || d.DealerId == CurrentUser.DealerId)
                     .OrderBy(d => d.CompanyName).ToDictionary(d => d.DealerId, d => d.CompanyName),
                 ChooseDealer = StockPhoneRules.SeesAll(CurrentUser.RoleId),
+                CanMove = StockPhoneRules.CanMoveToDealer(CurrentUser),
             };
             if (TempData["StockMessages"] is string[] messages) model.Messages.AddRange(messages);
             if (TempData["StockErrors"] is string[] errors) model.Errors.AddRange(errors);
@@ -83,6 +87,50 @@ namespace Ranalo.Controllers
             }
 
             Flash(await _stock.KnoxApproveAndLockAsync(id, CurrentUser));
+            return RedirectToAction("Index", new { filter });
+        }
+
+        // Admin: an unsold stock phone handed to another dealer. Logged on the
+        // Dealer Allocation trail.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("enrolments/stock/{id:guid}/move")]
+        public async Task<IActionResult> MoveToDealer(Guid id, int dealerId, string filter = StockPhoneRules.FilterAll)
+        {
+            if (!CanManage(out var redirect))
+            {
+                return redirect!;
+            }
+            if (!StockPhoneRules.CanMoveToDealer(CurrentUser))
+            {
+                TempData["StockErrors"] = new[] { "Only an admin can move a stock phone to another dealer." };
+                return RedirectToAction("Index", new { filter });
+            }
+
+            var e = await _enrolments.GetByEnrolmentIdAsync(id);
+            var dealers = await _users.GetAllDealers() ?? new List<DataStore.Dealer>();
+            var to = dealers.FirstOrDefault(d => d.DealerId == dealerId);
+            var problem = StockPhoneRules.CheckMove(e, dealerId, to != null);
+            if (problem != null)
+            {
+                TempData["StockErrors"] = new[] { problem };
+                return RedirectToAction("Index", new { filter });
+            }
+
+            var from = e!.DealerId;
+            e.DealerId = dealerId;
+            e.Updated = DateTime.UtcNow;
+            e.UpdatedBy = CurrentUser.Name;
+            await _enrolments.UpdateEnrolmentAsync(e);
+            try
+            {
+                await _allocation.LogStockMoveAsync(e.IMEI, from, dealerId, CurrentUser.UserId);
+            }
+            catch (Exception)
+            {
+                // The move stands; only the trail entry is missing.
+            }
+            TempData["StockMessages"] = new[] { $"Stock phone {e.IMEI} moved to {to!.CompanyName}." };
             return RedirectToAction("Index", new { filter });
         }
 
@@ -134,6 +182,7 @@ namespace Ranalo.Controllers
             ViewBag.IsAdmin = CurrentUser.RoleId == UserRole.Admin;
             ViewBag.IsApprover = CurrentUser.RoleId == UserRole.Approver;
             ViewBag.IsDealer = CurrentUser.RoleId == UserRole.Dealer;
+            ViewBag.IsAgent = CurrentUser.RoleId == UserRole.Agent;
             ViewBag.UserName = CurrentUser.KnownAs;
         }
     }

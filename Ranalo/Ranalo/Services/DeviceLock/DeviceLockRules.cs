@@ -289,8 +289,21 @@ namespace Ranalo.Services.DeviceLock
 
         // ---- Who can do what -----------------------------------------------
 
+        // Agents find the customers and sell the phones, so they enrol too
+        // (2026-11-20) -- always for their own dealer, and a person approves
+        // every agent enrolment (EnrolledByAgent).
         public static bool CanEnrol(UserRole role) =>
-            role is UserRole.Admin or UserRole.Approver or UserRole.Dealer;
+            role is UserRole.Admin or UserRole.Approver or UserRole.Dealer or UserRole.Agent;
+
+        public static bool EnrolledByAgent(Enrolment enrolment) =>
+            enrolment.EnrolledByRole == (int)UserRole.Agent;
+
+        // Why someone can't enrol, shown instead of silently going back.
+        public static string? CannotEnrol(User user) =>
+            !CanEnrol(user.RoleId) ? "Your login can't enrol phones. Ask your dealer or an admin."
+            : user.RoleId == UserRole.Agent && user.DealerId <= 0
+                ? "Your agent login isn't linked to a dealer, so you can't enrol yet. Ask an admin to set your dealer on the Users page."
+            : null;
 
         public static bool CanOverrideBrand(UserRole role) => role == UserRole.Admin;
 
@@ -333,6 +346,10 @@ namespace Ranalo.Services.DeviceLock
             {
                 return "The brand was overridden at enrolment, so a person must approve it.";
             }
+            if (EnrolledByAgent(enrolment))
+            {
+                return "Enrolled by an agent, so a person must approve it.";
+            }
             if (!screeningPassed)
             {
                 return "Order not screened in the app (no passing customer and next-of-kin calls logged) -- "
@@ -353,6 +370,7 @@ namespace Ranalo.Services.DeviceLock
         public static bool AutoApproves(Enrolment enrolment, bool screeningPassed, DateTime now)
         {
             if (!screeningPassed || enrolment.DepositShort || enrolment.BrandOverriddenByUserId.HasValue
+                || EnrolledByAgent(enrolment)
                 || enrolment.CallApprovedAt.HasValue || enrolment.OrderId <= 0
                 || enrolment.Status is EnrolmentStatus.Error or EnrolmentStatus.Approved or EnrolmentStatus.Stock
                 || NeedsSendingToTranssion(enrolment))

@@ -234,15 +234,28 @@ namespace Ranolo.Web.Tests
         // ---- Permissions ----
 
         [Test]
-        public void CanEnrol_DealersApproversAdminsOnly()
+        public void CanEnrol_DealersAgentsApproversAdmins()
         {
             Assert.Multiple(() =>
             {
                 Assert.That(DeviceLockRules.CanEnrol(UserRole.Dealer), Is.True);
+                Assert.That(DeviceLockRules.CanEnrol(UserRole.Agent), Is.True, "agents sell the phones (2026-11-20)");
                 Assert.That(DeviceLockRules.CanEnrol(UserRole.Approver), Is.True);
                 Assert.That(DeviceLockRules.CanEnrol(UserRole.Admin), Is.True);
-                Assert.That(DeviceLockRules.CanEnrol(UserRole.Agent), Is.False);
                 Assert.That(DeviceLockRules.CanEnrol(UserRole.Collector), Is.False);
+                Assert.That(DeviceLockRules.CanEnrol(UserRole.Customer), Is.False);
+            });
+        }
+
+        [Test]
+        public void CannotEnrol_SaysWhy()
+        {
+            Assert.Multiple(() =>
+            {
+                Assert.That(DeviceLockRules.CannotEnrol(new User { RoleId = UserRole.Agent, DealerId = 4 }), Is.Null);
+                Assert.That(DeviceLockRules.CannotEnrol(new User { RoleId = UserRole.Agent, DealerId = 0 }), Does.Contain("isn't linked to a dealer"));
+                Assert.That(DeviceLockRules.CannotEnrol(new User { RoleId = UserRole.Collector, DealerId = 4 }), Does.Contain("can't enrol"));
+                Assert.That(DeviceLockRules.CannotEnrol(new User { RoleId = UserRole.Admin }), Is.Null);
             });
         }
 
@@ -377,6 +390,29 @@ namespace Ranolo.Web.Tests
             e.OrderId = 19922;
             e.Created = Now;
             Assert.That(DeviceLockRules.AutoApproves(e, screeningPassed: true, Now), Is.True);
+        }
+
+        [Test]
+        public void AutoApproves_EnrolledByAgent_AlwaysNeedsAPerson()
+        {
+            // Screened, paid in full, Transsion: would approve itself if a dealer enrolled it.
+            var e = NewEnrolment(enrolledBy: 30, enrolledRole: UserRole.Agent);
+            e.OrderId = 19922;
+            e.Created = Now;
+            Assert.That(DeviceLockRules.AutoApproves(e, screeningPassed: true, Now), Is.False);
+            Assert.That(DeviceLockRules.ApprovalNote(e, true, Now), Does.Contain("Enrolled by an agent"));
+
+            var knox = Knox(minutesAgo: 30);
+            knox.EnrolledByRole = (int)UserRole.Agent;
+            Assert.That(DeviceLockRules.AutoApproves(knox, screeningPassed: true, Now), Is.False);
+        }
+
+        [Test]
+        public void CanApprove_AgentEnrolment_ApproverOrAdmin()
+        {
+            var e = NewEnrolment(enrolledBy: 30, enrolledRole: UserRole.Agent);
+            Assert.That(DeviceLockRules.CanApproveEnrolment(UserRole.Approver, 20, e).Allowed, Is.True);
+            Assert.That(DeviceLockRules.CanApproveEnrolment(UserRole.Agent, 30, e).Allowed, Is.False, "not their own");
         }
 
         // ---- The note by the approve button ----

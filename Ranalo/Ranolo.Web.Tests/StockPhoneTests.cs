@@ -237,11 +237,25 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
-        public async Task Lock_AgentOrCollector_Refused()
+        public async Task Lock_CollectorOrUnlinkedAgent_Refused()
         {
-            var (_, errors) = await _service.LockAsync("356938035643809", "TECNO", 0, new User { UserId = 2, RoleId = UserRole.Agent, DealerId = 4 });
-            Assert.That(errors.Single(), Does.Contain("Only an admin, approver or dealer"));
+            foreach (var user in new[] { new User { UserId = 2, RoleId = UserRole.Collector, DealerId = 4 },
+                                         new User { UserId = 3, RoleId = UserRole.Agent, DealerId = 0 } })
+            {
+                var (_, errors) = await _service.LockAsync("356938035643809", "TECNO", 0, user);
+                Assert.That(errors.Single(), Does.Contain("Only an admin, approver, dealer or agent"));
+            }
             Assert.That(_payTrigger.PreEnrolCalls, Is.Empty);
+        }
+
+        [Test]
+        public async Task Lock_Agent_PhoneGoesToTheirDealer()
+        {
+            var agent = new User { UserId = 2, RoleId = UserRole.Agent, DealerId = 4 };
+            var (_, errors) = await _service.LockAsync("356938035643809", "TECNO", 7, agent);
+
+            Assert.That(errors, Is.Empty);
+            Assert.That(_enrolments.Items.Single().DealerId, Is.EqualTo(4), "an agent can't lock phones for another dealer");
         }
 
         [Test]
@@ -283,6 +297,46 @@ namespace Ranolo.Web.Tests
                 Assert.That(StockPhoneRules.CanSee(new User { RoleId = UserRole.Approver }, phone), Is.True);
                 Assert.That(StockPhoneRules.CanSee(new User { RoleId = UserRole.Dealer, DealerId = 4 }, phone), Is.True);
                 Assert.That(StockPhoneRules.CanSee(new User { RoleId = UserRole.Dealer, DealerId = 5 }, phone), Is.False);
+            });
+        }
+
+        [Test]
+        public void Agent_ManagesTheirOwnDealersStockOnly()
+        {
+            var phone = new Enrolment { IMEI = "356938035643809", DealerId = 4, StockLockedByUserId = 30 };
+            var dealersOther = new Enrolment { IMEI = "350522366526928", DealerId = 4, StockLockedByUserId = 9 };
+            var agent = new User { UserId = 30, RoleId = UserRole.Agent, DealerId = 4 };
+            Assert.Multiple(() =>
+            {
+                Assert.That(StockPhoneRules.CanManage(agent), Is.True);
+                Assert.That(StockPhoneRules.CanSee(agent, phone), Is.True, "a phone they locked");
+                Assert.That(StockPhoneRules.CanSee(agent, dealersOther), Is.False, "the dealer's other stock is hidden from agents");
+                Assert.That(StockPhoneRules.CanSee(new User { RoleId = UserRole.Dealer, DealerId = 4 }, dealersOther), Is.True, "the dealer sees all theirs");
+                Assert.That(StockPhoneRules.CanSee(new User { UserId = 30, RoleId = UserRole.Agent, DealerId = 5 }, phone), Is.False);
+                Assert.That(StockPhoneRules.CanManage(new User { RoleId = UserRole.Agent, DealerId = 0 }), Is.False, "no dealer");
+                Assert.That(StockPhoneRules.CanManage(new User { RoleId = UserRole.Collector, DealerId = 4 }), Is.False);
+                Assert.That(StockPhoneRules.DealerFor(agent, chosen: 9), Is.EqualTo(4), "always their own dealer");
+            });
+        }
+
+        [Test]
+        public void MoveToDealer_AdminOnly_UnsoldStockToAnotherDealer()
+        {
+            var stock = new Enrolment { IMEI = "356938035643809", DealerId = 4, Status = EnrolmentStatus.Stock };
+            var sold = new Enrolment { IMEI = "356938035643809", DealerId = 4, Status = EnrolmentStatus.Pending };
+            Assert.Multiple(() =>
+            {
+                Assert.That(StockPhoneRules.CanMoveToDealer(new User { RoleId = UserRole.Admin }), Is.True);
+                Assert.That(StockPhoneRules.CanMoveToDealer(new User { RoleId = UserRole.Approver }), Is.False);
+                Assert.That(StockPhoneRules.CanMoveToDealer(new User { RoleId = UserRole.Dealer, DealerId = 4 }), Is.False);
+                Assert.That(StockPhoneRules.CanMoveToDealer(new User { RoleId = UserRole.Agent, DealerId = 4 }), Is.False);
+
+                Assert.That(StockPhoneRules.CheckMove(stock, 5, dealerExists: true), Is.Null);
+                Assert.That(StockPhoneRules.CheckMove(stock, 4, true), Does.Contain("already with that dealer"));
+                Assert.That(StockPhoneRules.CheckMove(stock, 0, false), Does.Contain("Choose the dealer"));
+                Assert.That(StockPhoneRules.CheckMove(stock, 99, false), Does.Contain("Choose the dealer"));
+                Assert.That(StockPhoneRules.CheckMove(sold, 5, true), Does.Contain("unsold stock phone"));
+                Assert.That(StockPhoneRules.CheckMove(null, 5, true), Does.Contain("unsold stock phone"));
             });
         }
 

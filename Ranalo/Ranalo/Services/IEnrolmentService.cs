@@ -13,7 +13,7 @@ namespace Ranalo.Services
         GetAllEnrolmentsAsync(int pageNumber, int pageSize, string? searchTerm = null);
 
         Task<(IEnumerable<Enrolment> Items, int TotalCount)>
-        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null);
+        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null, int? enrolledByUserId = null);
 
         Task<Enrolment?> GetByImeiNumberAsync(string imei);
         Task<string?> AttachStockSaleAsync(Enrolment stock, Enrolment sale);

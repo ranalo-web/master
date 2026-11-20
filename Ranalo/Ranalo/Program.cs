@@ -277,6 +277,8 @@ if (!builder.Environment.IsDevelopment())
         builder.Services.AddHostedService<ScheduledRecoveryKnoxApproval>();
         builder.Services.AddHostedService<ScheduledLockerCheck>();
         builder.Services.AddHostedService<ScheduledEnrolmentAutoApproval>();
+        // An agent's own sales are assigned to them (their reports and commission).
+        builder.Services.AddHostedService<ScheduledAgentSalesAssignment>();
         // Commission figures three times a day instead of on every page load.
         builder.Services.AddHostedService<ScheduledCommissionSnapshot>();
         builder.Services.AddHostedService<ScheduledAdminDashboardRefresh>();

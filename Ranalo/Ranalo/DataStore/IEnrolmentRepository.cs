@@ -14,7 +14,7 @@ namespace Ranalo.DataStore
         Task<Enrolment> UpdateEnrolmentAsync(Enrolment updateEnrolment);
         Task<Enrolment> UpdateEnrolmentPasswordAsync(int userId, string newPasswordHash);
         Task<(IEnumerable<Enrolment> Items, int TotalCount)>
-        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null);
+        GetDealerEnrolmentsAsync(int dealerId, int pageNumber, int pageSize, string? searchTerm = null, int? enrolledByUserId = null);
 
         Task<(IEnumerable<Enrolment> Items, int TotalCount)>
         GetAllEnrolmentsAsync(int pageNumber, int pageSize, string? searchTerm = null);

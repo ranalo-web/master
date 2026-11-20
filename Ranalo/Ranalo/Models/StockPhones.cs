@@ -11,6 +11,8 @@
         public Dictionary<int, string> Dealers { get; set; } = new();
         // Admins/approvers pick the dealer; a dealer's phones are their own.
         public bool ChooseDealer { get; set; }
+        // Admin: a "Move to dealer" choice on each phone.
+        public bool CanMove { get; set; }
         public List<string> Messages { get; } = new();
         public List<string> Errors { get; } = new();
     }

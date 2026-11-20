@@ -24,12 +24,32 @@ namespace Ranalo.Services.DeviceLock
         // Admins and approvers manage every stock phone. A dealer locks and
         // sees only their own (2026-10-21), so they aren't waiting on an admin
         // before taking phones to the field.
+        // Dealers and their agents (2026-11-20) lock and sell their own dealer's stock.
         public static bool CanManage(User user) =>
-            SeesAll(user.RoleId) || (user.RoleId == UserRole.Dealer && user.DealerId > 0);
+            SeesAll(user.RoleId) || (user.RoleId is UserRole.Dealer or UserRole.Agent && user.DealerId > 0);
 
         public static bool SeesAll(UserRole role) => role == UserRole.Admin || role == UserRole.Approver;
 
-        public static bool CanSee(User user, Enrolment e) => SeesAll(user.RoleId) || e.DealerId == user.DealerId;
+        // An agent sees only the stock phones they locked themselves (to
+        // check the lock), never the rest of the dealer's stock, so they
+        // can't pick the wrong phone off a list (2026-11-20). They sell any
+        // of their dealer's stock by typing its IMEI on Add Enrolment.
+        public static bool CanSee(User user, Enrolment e) =>
+            SeesAll(user.RoleId)
+            || (e.DealerId == user.DealerId
+                && (user.RoleId != UserRole.Agent || e.StockLockedByUserId == user.UserId));
+
+        // ---- Moving a stock phone to another dealer (admin) ----------------
+
+        public static bool CanMoveToDealer(User user) => user.RoleId == UserRole.Admin;
+
+        public static string? CheckMove(Enrolment? e, int toDealerId, bool dealerExists)
+        {
+            if (e == null || !IsStock(e)) return "Only an unsold stock phone can be moved to another dealer.";
+            if (toDealerId <= 0 || !dealerExists) return "Choose the dealer to move it to.";
+            if (e.DealerId == toDealerId) return "It's already with that dealer.";
+            return null;
+        }
 
         // The dealer a newly locked phone goes to: a dealer's own phones are always theirs.
         public static int DealerFor(User user, int chosen) => SeesAll(user.RoleId) ? chosen : user.DealerId;
