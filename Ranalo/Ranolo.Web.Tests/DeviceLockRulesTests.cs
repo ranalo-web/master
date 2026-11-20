@@ -393,18 +393,51 @@ namespace Ranolo.Web.Tests
         }
 
         [Test]
-        public void AutoApproves_EnrolledByAgent_AlwaysNeedsAPerson()
+        public void AutoApproves_SellerDefaultRate_TenPercentOrMoreNeedsAPerson()
         {
-            // Screened, paid in full, Transsion: would approve itself if a dealer enrolled it.
+            // Screened, paid in full, Transsion: approves itself unless the seller's default rate is high.
             var e = NewEnrolment(enrolledBy: 30, enrolledRole: UserRole.Agent);
             e.OrderId = 19922;
             e.Created = Now;
-            Assert.That(DeviceLockRules.AutoApproves(e, screeningPassed: true, Now), Is.False);
-            Assert.That(DeviceLockRules.ApprovalNote(e, true, Now), Does.Contain("Enrolled by an agent"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(DeviceLockRules.AutoApproves(e, true, Now, sellerDefaultRatePct: 9.9m), Is.True, "agents too, like dealers");
+                Assert.That(DeviceLockRules.AutoApproves(e, true, Now, sellerDefaultRatePct: 10m), Is.False);
+                Assert.That(DeviceLockRules.AutoApproves(e, true, Now, sellerDefaultRatePct: null), Is.False, "unknown = a person");
+                Assert.That(DeviceLockRules.ApprovalNote(e, true, Now, 12.5m), Does.Contain("default rate is 12.5%"));
+                Assert.That(DeviceLockRules.ApprovalNote(e, true, Now, null), Does.Contain("Couldn't check"));
+                Assert.That(DeviceLockRules.ApprovalNote(e, true, Now, 3m), Does.Contain("automatically"));
+                Assert.That(DeviceLockRules.AutoApproves(e, false, Now, 0m), Is.False, "screening still required");
+            });
 
             var knox = Knox(minutesAgo: 30);
-            knox.EnrolledByRole = (int)UserRole.Agent;
-            Assert.That(DeviceLockRules.AutoApproves(knox, screeningPassed: true, Now), Is.False);
+            Assert.That(DeviceLockRules.AutoApproves(knox, true, Now, 10m), Is.False);
+            Assert.That(DeviceLockRules.AutoApproves(knox, true, Now, 0m), Is.True);
+        }
+
+        private static CommissionAccount Acct(int? agentId, double daysPastLock) => new() { AgentId = agentId, DealerId = 4, DaysPastLock = daysPastLock };
+
+        [Test]
+        public void SellerDefaultRate_WorseOfDealerAndAgent()
+        {
+            // Dealer: 1 of 10 in default (10%). Agent 30: 1 of 2 (50%). Agent 31: 0 of 3.
+            var accounts = new List<CommissionAccount> { Acct(30, 20), Acct(30, 0), Acct(31, 0), Acct(31, 0), Acct(31, 0) };
+            accounts.AddRange(Enumerable.Range(0, 5).Select(_ => Acct(null, 0)));
+
+            var byDealer = NewEnrolment(enrolledBy: 9, enrolledRole: UserRole.Dealer);
+            byDealer.DealerId = 4;
+            var byAgent30 = NewEnrolment(enrolledBy: 30, enrolledRole: UserRole.Agent);
+            byAgent30.DealerId = 4;
+            var byAgent31 = NewEnrolment(enrolledBy: 31, enrolledRole: UserRole.Agent);
+            byAgent31.DealerId = 4;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(EnrolmentApprovalService.SellerDefaultRate(byDealer, accounts), Is.EqualTo(10m));
+                Assert.That(EnrolmentApprovalService.SellerDefaultRate(byAgent30, accounts), Is.EqualTo(50m));
+                Assert.That(EnrolmentApprovalService.SellerDefaultRate(byAgent31, accounts), Is.EqualTo(10m), "the dealer's rate counts for their agents");
+                Assert.That(EnrolmentApprovalService.SellerDefaultRate(byDealer, new List<CommissionAccount>()), Is.EqualTo(0m), "a new dealer");
+            });
         }
 
         [Test]

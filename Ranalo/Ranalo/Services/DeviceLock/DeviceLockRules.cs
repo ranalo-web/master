@@ -290,13 +290,23 @@ namespace Ranalo.Services.DeviceLock
         // ---- Who can do what -----------------------------------------------
 
         // Agents find the customers and sell the phones, so they enrol too
-        // (2026-11-20) -- always for their own dealer, and a person approves
-        // every agent enrolment (EnrolledByAgent).
+        // (2026-11-20) -- always for their own dealer.
         public static bool CanEnrol(UserRole role) =>
             role is UserRole.Admin or UserRole.Approver or UserRole.Dealer or UserRole.Agent;
 
         public static bool EnrolledByAgent(Enrolment enrolment) =>
             enrolment.EnrolledByRole == (int)UserRole.Agent;
+
+        // A seller (the dealer, and for an agent's sale the agent too) whose
+        // default rate -- commission-earning accounts more than 7 days past
+        // the lock date, as on the commission pages -- is 10% or more has
+        // every enrolment approved by a person (2026-11-20).
+        public const decimal ApprovalDefaultRatePct = 10m;
+
+        // sellerDefaultRatePct: the worse of the dealer's and the agent's;
+        // null = couldn't be worked out, so a person approves.
+        public static bool SellerNeedsApproval(decimal? sellerDefaultRatePct) =>
+            sellerDefaultRatePct is not { } rate || rate >= ApprovalDefaultRatePct;
 
         // Why someone can't enrol, shown instead of silently going back.
         public static string? CannotEnrol(User user) =>
@@ -325,7 +335,7 @@ namespace Ranalo.Services.DeviceLock
         // approve this one, or what it's waiting for when it will be approved
         // automatically (the same conditions as AutoApproves). null = nothing
         // to approve. now: the same clock as Enrolment.Created (DateTime.Now).
-        public static string? ApprovalNote(Enrolment enrolment, bool screeningPassed, DateTime now)
+        public static string? ApprovalNote(Enrolment enrolment, bool screeningPassed, DateTime now, decimal? sellerDefaultRatePct = 0m)
         {
             if (enrolment.CallApprovedAt.HasValue
                 || enrolment.Status is EnrolmentStatus.Error or EnrolmentStatus.Approved or EnrolmentStatus.Stock
@@ -346,9 +356,11 @@ namespace Ranalo.Services.DeviceLock
             {
                 return "The brand was overridden at enrolment, so a person must approve it.";
             }
-            if (EnrolledByAgent(enrolment))
+            if (SellerNeedsApproval(sellerDefaultRatePct))
             {
-                return "Enrolled by an agent, so a person must approve it.";
+                return sellerDefaultRatePct is { } rate
+                    ? $"The seller's default rate is {rate:0.#}% ({ApprovalDefaultRatePct:0}% or more), so a person must approve it."
+                    : "Couldn't check the seller's default rate, so a person must approve it.";
             }
             if (!screeningPassed)
             {
@@ -367,10 +379,10 @@ namespace Ranalo.Services.DeviceLock
         }
 
         // now: the same clock as Enrolment.Created (DateTime.Now).
-        public static bool AutoApproves(Enrolment enrolment, bool screeningPassed, DateTime now)
+        public static bool AutoApproves(Enrolment enrolment, bool screeningPassed, DateTime now, decimal? sellerDefaultRatePct = 0m)
         {
             if (!screeningPassed || enrolment.DepositShort || enrolment.BrandOverriddenByUserId.HasValue
-                || EnrolledByAgent(enrolment)
+                || SellerNeedsApproval(sellerDefaultRatePct)
                 || enrolment.CallApprovedAt.HasValue || enrolment.OrderId <= 0
                 || enrolment.Status is EnrolmentStatus.Error or EnrolmentStatus.Approved or EnrolmentStatus.Stock
                 || NeedsSendingToTranssion(enrolment))

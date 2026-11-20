@@ -32,12 +32,14 @@ namespace Ranalo.Services.DeviceLock
         private readonly ITranssionEnrolmentWorkflow _transsion;
         private readonly IOrderContractService _contracts;
         private readonly ICustomerScreeningRepository _screening;
+        private readonly IDashboardReportRepository _reports;
         private readonly ILogger<EnrolmentApprovalService> _logger;
 
         public EnrolmentApprovalService(IEnrolmentRepository enrolments, IEnrolmentService enrolmentService,
             IStockPhoneService stock, ITranssionEnrolmentWorkflow transsion, IOrderContractService contracts,
-            ICustomerScreeningRepository screening, ILogger<EnrolmentApprovalService> logger)
+            ICustomerScreeningRepository screening, IDashboardReportRepository reports, ILogger<EnrolmentApprovalService> logger)
         {
+            _reports = reports;
             _enrolments = enrolments;
             _enrolmentService = enrolmentService;
             _stock = stock;
@@ -89,7 +91,8 @@ namespace Ranalo.Services.DeviceLock
         // null = not one to approve automatically (or not yet).
         public async Task<WorkflowResult?> TryAutoApproveAsync(Enrolment enrolment)
         {
-            if (!DeviceLockRules.AutoApproves(enrolment, await ScreeningPassedAsync(enrolment.OrderId), DateTime.Now))
+            if (!DeviceLockRules.AutoApproves(enrolment, await ScreeningPassedAsync(enrolment.OrderId), DateTime.Now,
+                    await SellerDefaultRateAsync(enrolment)))
             {
                 return null;
             }
@@ -105,10 +108,11 @@ namespace Ranalo.Services.DeviceLock
         // Approved automatically, now or (Knox) once it's had time to reach Knox.
         public async Task<bool> WillAutoApproveAsync(Enrolment enrolment) =>
             DeviceLockRules.AutoApproves(enrolment, await ScreeningPassedAsync(enrolment.OrderId),
-                enrolment.Created.Add(DeviceLockRules.KnoxApprovalDelay));
+                enrolment.Created.Add(DeviceLockRules.KnoxApprovalDelay), await SellerDefaultRateAsync(enrolment));
 
         public async Task<int> SweepAsync()
         {
+            _dealerAccounts.Clear();
             var approved = 0;
             foreach (var enrolment in await _enrolments.GetAwaitingApprovalAsync())
             {
@@ -155,13 +159,48 @@ namespace Ranalo.Services.DeviceLock
             foreach (var e in enrolments)
             {
                 var passed = ScreeningRules.Status(true, calls[e.OrderId].ToList()) == ScreeningStatus.Passed;
-                var note = DeviceLockRules.ApprovalNote(e, passed, DateTime.Now);
+                var note = DeviceLockRules.ApprovalNote(e, passed, DateTime.Now, await SellerDefaultRateAsync(e));
                 if (note != null)
                 {
                     notes[e.Id] = note;
                 }
             }
             return notes;
+        }
+
+        // The dealer's commission accounts (from the 3-a-day commission
+        // snapshot), kept for this request / sweep.
+        private readonly Dictionary<int, List<CommissionAccount>> _dealerAccounts = new();
+
+        // The worse of the dealer's and (an agent's sale) the agent's default
+        // rate, as on the commission pages. null = couldn't be worked out.
+        private async Task<decimal?> SellerDefaultRateAsync(Enrolment enrolment)
+        {
+            try
+            {
+                if (!_dealerAccounts.TryGetValue(enrolment.DealerId, out var accounts))
+                {
+                    accounts = await _reports.GetCommissionAccountsAsync(enrolment.DealerId);
+                    _dealerAccounts[enrolment.DealerId] = accounts;
+                }
+                return SellerDefaultRate(enrolment, accounts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Couldn't work out the default rate for enrolment {Imei}", enrolment.IMEI);
+                return null;
+            }
+        }
+
+        public static decimal SellerDefaultRate(Enrolment enrolment, IReadOnlyCollection<CommissionAccount> dealerAccounts)
+        {
+            var rate = CommissionPayees.Summarize(CommissionPayeeType.Dealer, enrolment.DealerId, dealerAccounts).DefaultRatePct;
+            if (DeviceLockRules.EnrolledByAgent(enrolment) && enrolment.EnrolledByUserId is { } agentId)
+            {
+                var agentAccounts = dealerAccounts.Where(a => a.AgentId == agentId).ToList();
+                rate = Math.Max(rate, CommissionPayees.Summarize(CommissionPayeeType.Agent, agentId, agentAccounts).DefaultRatePct);
+            }
+            return rate;
         }
 
         private async Task<bool> ScreeningPassedAsync(long orderId) =>
