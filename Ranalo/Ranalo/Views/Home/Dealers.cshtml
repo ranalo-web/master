@@ -82,7 +82,7 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Dealers Lists</h3>
                 <div class="nk-block-des text-soft">
-                    <p>You have total @Model.Dealers.Count() dealers.</p>
+                    <p>You have a total of @Model.TotalRecords dealers@(string.IsNullOrEmpty(Model.SearchTerm) ? "" : $" matching \"{Model.SearchTerm}\"").</p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -155,14 +155,10 @@
                                                         <div class="dropdown-menu dropdown-menu-xs dropdown-menu-end">
                                                             <ul class="link-check">
                                                                 <li><span>Show</span></li>
-                                                                <li class="active"><a href="#">10</a></li>
-                                                                <li><a href="#">20</a></li>
-                                                                <li><a href="#">50</a></li>
-                                                            </ul>
-                                                            <ul class="link-check">
-                                                                <li><span>Order</span></li>
-                                                                <li class="active"><a href="#">DESC</a></li>
-                                                                <li><a href="#">ASC</a></li>
+                                                                @foreach (var size in DealersViewModel.PageSizes)
+                                                                {
+                                                                    <li class="@(Model.PageSize == size ? "active" : "")"><a href="/dealers?page=1&pageSize=@size@(PagingLinks.Keep(Context.Request, "pageSize"))">@size</a></li>
+                                                                }
                                                             </ul>
                                                         </div>
                                                     </div><!-- .dropdown -->
@@ -178,15 +174,18 @@
                         <div class="card-body">
                             <div class="search-content">
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
-                                <input type="text" class="form-control border-transparent form-focus-none" placeholder="Search by dealer name">
-                                <button class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                <form action="/dealers" method="get" class="d-flex w-100">
+                                    <input type="hidden" name="pageSize" value="@Model.PageSize">
+                                    <input name="searchTerm" type="text" value="@Model.SearchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by name, reference, email or phone">
+                                    <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
+                                </form>
                             </div>
                         </div>
                     </div><!-- .card-search -->
                 </div><!-- .card-inner -->
                 <div class="card-inner p-0">
                     <div class="table-responsive">
-                    <table class="table mb-0" style="white-space:nowrap;" data-key="dealers" data-page-size="10">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="dealers" data-page-size="@Model.PageSize">
                         <thead>
                             <tr>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
@@ -200,7 +199,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                        @foreach (var dealer in Model.Dealers)
+                        @if (Model.Dealers == null || Model.Dealers.Count == 0)
+                        {
+                            <tr><td colspan="8" class="text-soft">No dealers found.</td></tr>
+                        }
+                        @foreach (var dealer in Model.Dealers ?? new List<Ranalo.DataStore.Dealer>())
                         {
                             <tr>
                                 <td><span class="fw-medium">@dealer.CompanyName</span></td>
@@ -236,15 +239,39 @@
                     </div><!-- .table-responsive -->
                 </div><!-- .card-inner -->
                 <div class="card-inner">
-                    <ul class="pagination justify-content-center justify-content-md-start">
-                        <li class="page-item"><a class="page-link" href="#">Prev</a></li>
-                        <li class="page-item"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><span class="page-link"><em class="icon ni ni-more-h"></em></span></li>
-                        <li class="page-item"><a class="page-link" href="#">6</a></li>
-                        <li class="page-item"><a class="page-link" href="#">7</a></li>
-                        <li class="page-item"><a class="page-link" href="#">Next</a></li>
-                    </ul><!-- .pagination -->
+@{
+                        var start = Math.Max(1, Model.CurrentPage - 2);
+                        var end = Math.Min(Model.TotalPages, start + 4);
+                        start = Math.Max(1, end - 4);
+                        string Url(int p) => $"/dealers?page={p}&pageSize={Model.PageSize}" + PagingLinks.Keep(Context.Request, "pageSize");
+                    }
+                    <div class="nk-block-between-md g-3">
+                        <ul class="pagination justify-content-center justify-content-md-start">
+                            @if (Model.CurrentPage > 1)
+                            {
+                                <li class="page-item"><a class="page-link" href="@Url(Model.CurrentPage - 1)">Prev</a></li>
+                            }
+                            @if (start > 1)
+                            {
+                                <li class="page-item"><a class="page-link" href="@Url(1)">1</a></li>
+                                <li class="page-item"><span class="page-link"><em class="icon ni ni-more-h"></em></span></li>
+                            }
+                            @for (var i = start; i <= end; i++)
+                            {
+                                <li class="page-item @(i == Model.CurrentPage ? "active" : "")"><a class="page-link" href="@Url(i)">@i</a></li>
+                            }
+                            @if (end < Model.TotalPages)
+                            {
+                                <li class="page-item"><span class="page-link"><em class="icon ni ni-more-h"></em></span></li>
+                                <li class="page-item"><a class="page-link" href="@Url(Model.TotalPages)">@Model.TotalPages</a></li>
+                            }
+                            @if (Model.CurrentPage < Model.TotalPages)
+                            {
+                                <li class="page-item"><a class="page-link" href="@Url(Model.CurrentPage + 1)">Next</a></li>
+                            }
+                        </ul><!-- .pagination -->
+                        <div class="text-soft">@Model.TotalRecords dealers · page @Model.CurrentPage of @Model.TotalPages</div>
+                    </div>
                 </div><!-- .card-inner -->
             </div><!-- .card-inner-group -->
         </div><!-- .card -->

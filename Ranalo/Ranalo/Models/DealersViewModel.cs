@@ -5,6 +5,40 @@
         public List<DataStore.Dealer>? Dealers { get; set; }
         public int CurrentPage { get; set; }
         public int TotalPages { get; set; }
+        public int TotalRecords { get; set; }
+        public int PageSize { get; set; } = 20;
         public string? SearchTerm { get; set; }
+
+        public static readonly int[] PageSizes = { 10, 20, 50, 100 };
+
+        // Search by name, reference, id, email or phone; newest dealer first.
+        public static DealersViewModel Page(IEnumerable<DataStore.Dealer> dealers, int page, int pageSize, string? searchTerm)
+        {
+            var term = (searchTerm ?? "").Trim();
+            pageSize = PageSizes.Contains(pageSize) ? pageSize : 20;
+
+            var matches = dealers
+                .Where(d => term == ""
+                    || Has(d.CompanyName, term) || Has(d.DealerReference, term) || Has(d.Email, term)
+                    || Has(d.Phone, term) || d.DealerId.ToString() == term)
+                .OrderByDescending(d => d.DealerId)
+                .ToList();
+
+            var totalPages = Math.Max(1, (int)Math.Ceiling(matches.Count / (double)pageSize));
+            page = Math.Clamp(page, 1, totalPages);
+
+            return new DealersViewModel
+            {
+                Dealers = matches.Skip((page - 1) * pageSize).Take(pageSize).ToList(),
+                CurrentPage = page,
+                TotalPages = totalPages,
+                TotalRecords = matches.Count,
+                PageSize = pageSize,
+                SearchTerm = term,
+            };
+        }
+
+        private static bool Has(string? value, string term) =>
+            value != null && value.Contains(term, StringComparison.OrdinalIgnoreCase);
     }
 }
