@@ -400,7 +400,7 @@ namespace Ranalo.Controllers
         }
 
         [Route("dealers")]
-        public async Task<IActionResult> Dealers(int page = 1, int pageSize = 20, string searchTerm = "")
+        public async Task<IActionResult> Dealers(int page = 1, int pageSize = 20, string searchTerm = "", bool closed = false)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -415,7 +415,7 @@ namespace Ranalo.Controllers
                 // Paged and searched here: the list is small, and the page
                 // used to show every dealer under placeholder page links.
                 var all = await _userService.GetAllDealers() ?? new List<DataStore.Dealer>();
-                return View(DealersViewModel.Page(all, page, pageSize, searchTerm));
+                return View(DealersViewModel.Page(all, page, pageSize, searchTerm, closed));
             }
 
             // Anyone else (a dealer) sees their own users -- on the Users page,

@@ -8,16 +8,21 @@
         public int TotalRecords { get; set; }
         public int PageSize { get; set; } = 20;
         public string? SearchTerm { get; set; }
+        // Closed dealers (DealerRules) are hidden unless asked for.
+        public bool ShowClosed { get; set; }
+        public int ClosedCount { get; set; }
 
         public static readonly int[] PageSizes = { 10, 20, 50, 100 };
 
         // Search by name, reference, id, email or phone; newest dealer first.
-        public static DealersViewModel Page(IEnumerable<DataStore.Dealer> dealers, int page, int pageSize, string? searchTerm)
+        public static DealersViewModel Page(IEnumerable<DataStore.Dealer> dealers, int page, int pageSize, string? searchTerm, bool showClosed = false)
         {
             var term = (searchTerm ?? "").Trim();
             pageSize = PageSizes.Contains(pageSize) ? pageSize : 20;
 
-            var matches = dealers
+            var all = dealers.ToList();
+            var matches = all
+                .Where(d => showClosed || !Ranalo.Services.DealerRules.IsClosed(d.CompanyName))
                 .Where(d => term == ""
                     || Has(d.CompanyName, term) || Has(d.DealerReference, term) || Has(d.Email, term)
                     || Has(d.Phone, term) || d.DealerId.ToString() == term)
@@ -35,6 +40,8 @@
                 TotalRecords = matches.Count,
                 PageSize = pageSize,
                 SearchTerm = term,
+                ShowClosed = showClosed,
+                ClosedCount = all.Count(d => Ranalo.Services.DealerRules.IsClosed(d.CompanyName)),
             };
         }
 

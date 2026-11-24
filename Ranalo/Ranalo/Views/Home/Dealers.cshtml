@@ -82,7 +82,19 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Dealers Lists</h3>
                 <div class="nk-block-des text-soft">
-                    <p>You have a total of @Model.TotalRecords dealers@(string.IsNullOrEmpty(Model.SearchTerm) ? "" : $" matching \"{Model.SearchTerm}\"").</p>
+                    <p>You have a total of @Model.TotalRecords dealers@(string.IsNullOrEmpty(Model.SearchTerm) ? "" : $" matching \"{Model.SearchTerm}\"").
+                        @if (Model.ClosedCount > 0)
+                        {
+                            @if (Model.ShowClosed)
+                            {
+                                <a href="/dealers?searchTerm=@Uri.EscapeDataString(Model.SearchTerm ?? "")&pageSize=@Model.PageSize">Hide closed</a>
+                            }
+                            else
+                            {
+                                <a href="/dealers?closed=true&searchTerm=@Uri.EscapeDataString(Model.SearchTerm ?? "")&pageSize=@Model.PageSize">Show closed (@Model.ClosedCount)</a>
+                            }
+                        }
+                    </p>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -176,6 +188,7 @@
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
                                 <form action="/dealers" method="get" class="d-flex w-100">
                                     <input type="hidden" name="pageSize" value="@Model.PageSize">
+                                    @if (Model.ShowClosed) { <input type="hidden" name="closed" value="true"> }
                                     <input name="searchTerm" type="text" value="@Model.SearchTerm" class="form-control border-transparent form-focus-none" placeholder="Search by name, reference, email or phone">
                                     <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
                                 </form>
