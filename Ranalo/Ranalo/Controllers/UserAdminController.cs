@@ -160,7 +160,7 @@ namespace Ranalo.Controllers
         {
             User = target,
             AssignableRoles = UserAdminRules.AssignableRoles(actor),
-            Dealers = actor.RoleId == UserRole.Admin ? await _users.GetAllDealers() ?? new() : new()
+            Dealers = actor.RoleId == UserRole.Admin ? DealerRules.Open(await _users.GetAllDealers()) : new()
         };
 
         private async Task SetViewBagsAsync(User settings)

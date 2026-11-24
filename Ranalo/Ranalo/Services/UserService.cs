@@ -93,7 +93,7 @@ namespace Ranalo.Services
             }
 
             var user = await _userRepository.GetUserByEmailAsync(email.Trim());
-            if (user == null || user.Status == UserStatus.Suspended)
+            if (user == null || user.Status == UserStatus.Suspended || user.Status == UserStatus.Deleted)
             {
                 return null;
             }
@@ -127,6 +127,7 @@ namespace Ranalo.Services
         }
 
         public Task<User?> GetSignedInUserAsync(int userId) => _userRepository.GetSignedInUserAsync(userId);
+        public Task StampLastSeenAsync(int userId, DateTime utc) => _userRepository.StampLastSeenAsync(userId, utc);
 
         // A user loaded with GetUserAnyUserByIdAsync and changed.
         public Task SaveUserAsync(User user) => _userRepository.UpdateUserAsync(user);

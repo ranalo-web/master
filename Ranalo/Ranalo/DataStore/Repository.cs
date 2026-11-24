@@ -86,7 +86,7 @@ namespace Ranalo.DataStore
         public async Task<User?> GetSignedInUserAsync(int userId)
         {
             return await _context.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.UserId == userId && u.Status != UserStatus.Suspended);
+                .FirstOrDefaultAsync(u => u.UserId == userId && u.Status != UserStatus.Suspended && u.Status != UserStatus.Deleted);
         }
 
         public async Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash)
@@ -102,7 +102,8 @@ namespace Ranalo.DataStore
 
                 // Update password
                 user.PasswordHash = newPasswordHash; // Assume it's already hashed
-                user.LastLogin = DateTime.UtcNow;    // Optional: track modification time
+                // LastLogin is left alone: it is set only when the user really
+                // logs in, so the Users page shows who is using the system.
 
                 // Save changes
                 await _context.SaveChangesAsync();
@@ -121,7 +122,7 @@ namespace Ranalo.DataStore
             try
             {
                 return await _context.Users
-                .FirstOrDefaultAsync(u => u.UserId == userId && u.Status != UserStatus.Suspended);
+                .FirstOrDefaultAsync(u => u.UserId == userId && u.Status != UserStatus.Suspended && u.Status != UserStatus.Deleted);
             }
             catch (Exception)
             {
@@ -193,7 +194,8 @@ namespace Ranalo.DataStore
 
         public async Task<(List<User> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize, string searchTerm)
         {
-            var query = _context.Users.AsNoTracking();
+            // A deleted login (a duplicate, say) is hidden from the Users page.
+            var query = _context.Users.AsNoTracking().Where(u => u.Status != UserStatus.Deleted);
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 query = query.Where(u =>
@@ -214,7 +216,7 @@ namespace Ranalo.DataStore
 
         public async Task<(List<User> Users, int TotalCount)> GetUsersByDealerIdPagedAsync(int dealerId, int page, int pageSize, string searchTerm)
         {
-            var query = _context.Users.AsNoTracking().Where(u => u.DealerId == dealerId);
+            var query = _context.Users.AsNoTracking().Where(u => u.DealerId == dealerId && u.Status != UserStatus.Deleted);
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 query = query.Where(u =>
@@ -282,6 +284,11 @@ namespace Ranalo.DataStore
         }
 
 
+        // One small UPDATE, without loading or tracking the user.
+        public Task StampLastSeenAsync(int userId, DateTime utc) =>
+            _context.Users.Where(u => u.UserId == userId)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.LastSeen, utc));
+
         public async Task UpdateUserLastLogin(User user)
         {
             try
@@ -293,7 +300,8 @@ namespace Ranalo.DataStore
                     throw new InvalidOperationException($"User with ID {currentUser.UserId} not found.");
                 }
 
-                currentUser.LastLogin = DateTime.UtcNow;    // Optional: track modification time
+                currentUser.LastLogin = DateTime.UtcNow;
+                currentUser.LastSeen = currentUser.LastLogin;
 
                 // Save changes
                 await _context.SaveChangesAsync();

@@ -84,7 +84,7 @@
                                             <label class="form-label" for="user-dealer">Dealer</label>
                                             <select name="dealerId" id="user-dealer" class="form-control">
                                                 <option value="0">Choose the dealer…</option>
-                                                @foreach (var d in (IEnumerable<Ranalo.DataStore.Dealer>)ViewBag.Dealers)
+                                                @foreach (var d in Ranalo.Services.DealerRules.Open((IEnumerable<Ranalo.DataStore.Dealer>)ViewBag.Dealers))
                                                 {
                                                     <option value="@d.DealerId">@d.CompanyName (ref @d.DealerReference)</option>
                                                 }

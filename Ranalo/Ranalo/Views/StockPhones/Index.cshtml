@@ -68,7 +68,7 @@
                                         <label class="form-label" for="dealerId">With dealer</label>
                                         <select id="dealerId" name="dealerId" class="form-select">
                                             <option value="0">Not given out yet</option>
-                                            @foreach (var d in Model.Dealers)
+                                            @foreach (var d in Model.Dealers.Where(d => !Ranalo.Services.DealerRules.IsClosed(d.Value)))
                                             {
                                                 <option value="@d.Key">@d.Value</option>
                                             }
@@ -193,7 +193,7 @@
                                                                 @Html.AntiForgeryToken()
                                                                 <select name="dealerId" class="form-select form-select-sm mb-1" required>
                                                                     <option value="">Choose dealer</option>
-                                                                    @foreach (var d in Model.Dealers.Where(d => d.Key != e.DealerId))
+                                                                    @foreach (var d in Model.Dealers.Where(d => d.Key != e.DealerId && !Ranalo.Services.DealerRules.IsClosed(d.Value)))
                                                                     {
                                                                         <option value="@d.Key">@d.Value</option>
                                                                     }

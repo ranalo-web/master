@@ -104,7 +104,7 @@ namespace Ranalo.Controllers
         public async Task<IActionResult> ForgotPassword(string email)
         {
             var user = string.IsNullOrWhiteSpace(email) ? null : await _usersService.GetUserByEmail(email.Trim());
-            if (user != null && user.Status != UserStatus.Suspended)
+            if (user != null && user.Status != UserStatus.Suspended && user.Status != UserStatus.Deleted)
             {
                 await _resets.RequestAsync(user.UserId);
                 _logger.LogInformation("Password reset requested for user {UserId}", user.UserId);

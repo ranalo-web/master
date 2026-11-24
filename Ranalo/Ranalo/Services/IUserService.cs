@@ -31,6 +31,7 @@ namespace Ranalo.Services
 
         Task<User> UpdateUserPasswordAsync(int userId, string newPassword);
         Task<User?> GetSignedInUserAsync(int userId);
+        Task StampLastSeenAsync(int userId, DateTime utc);
         Task SaveUserAsync(User user);
         Task<User?> GetUserByEmail(string email);
         Task<IEnumerable<User>> GetDebtCollectors();

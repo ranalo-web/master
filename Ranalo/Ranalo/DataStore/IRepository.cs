@@ -32,6 +32,7 @@ namespace Ranalo.DataStore
         Task<User> UpdateUserPasswordAsync(int userId, string newPasswordHash);
         Task<User?> GetSignedInUserAsync(int userId);
         Task UpdateUserLastLogin(User user);
+        Task StampLastSeenAsync(int userId, DateTime utc);
         Task<IEnumerable<User>> GetDebtCollectorsAsync();
         Task<IEnumerable<Dealer>> GetAllDealersAsync();
         Task<Dealer?> GetDealerByDealerRefAsync(string dealerReference);

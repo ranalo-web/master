@@ -144,6 +144,7 @@
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Email</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">City</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Seen</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Login</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
                                 <th class="wl-th"></th>
@@ -162,7 +163,11 @@
                                 <td>@(string.IsNullOrWhiteSpace(user.Email) ? "-" : user.Email)</td>
                                 <td>@(string.IsNullOrWhiteSpace(user.Phone) ? "-" : user.Phone)</td>
                                 <td>@(string.IsNullOrWhiteSpace(user.City) ? "-" : user.City)</td>
-                                <td>@(user.LastLogin?.ToString("dd MMM yyyy") ?? "Never")</td>
+                                @* Stored in UTC; shown in Kenya time, with the hour, so you can see who is using the system. *@
+                                <td data-sort="@(user.LastSeen?.ToString("yyyyMMddHHmmss") ?? "0")">
+                                    <span class="@(Ranalo.Services.LastSeenRules.ShouldStamp(user.LastSeen, DateTime.UtcNow) ? "" : "badge bg-success")">@(Ranalo.Services.LastSeenRules.Describe(user.LastSeen, DateTime.UtcNow))</span>
+                                </td>
+                                <td data-sort="@(user.LastLogin?.ToString("yyyyMMddHHmmss") ?? "0")">@(user.LastLogin?.AddHours(3).ToString("dd MMM yyyy HH:mm") ?? "Never")</td>
                                 <td><span class="@SetStatusBadge(user.Status)">@SetStatusText(user.Status)</span></td>
                                 <td class="text-end">
                                     @if (actor != null && actor.UserId == user.UserId)

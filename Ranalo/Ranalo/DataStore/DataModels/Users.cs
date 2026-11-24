@@ -15,6 +15,8 @@ namespace Ranalo.DataStore.DataModels
         public string? LastName { get; set; }
         public UserStatus Status { get; set; }
         public DateTime? LastLogin { get; set; }
+        // Last time they used the app, UTC (LastSeenRules; Database/Security/003).
+        public DateTime? LastSeen { get; set; }
         public string? City { get; set; }
         public string? Phone { get; set; }
         public List<string>? OtherSelectedRoles { get; set; }

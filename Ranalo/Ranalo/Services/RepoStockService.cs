@@ -49,7 +49,7 @@ namespace Ranalo.Services
                 PaymentsPage = paymentsPage,
                 PaymentsPageSize = PaymentsPageSize,
                 PaymentsTotal = total,
-                Dealers = (await _dealers.GetAllDealersAsync()).OrderBy(d => d.CompanyName).ToList(),
+                Dealers = DealerRules.Open(await _dealers.GetAllDealersAsync()).OrderBy(d => d.CompanyName).ToList(),
             };
         }
 

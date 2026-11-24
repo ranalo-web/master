@@ -109,7 +109,7 @@ namespace Ranalo.Controllers
 
             var e = await _enrolments.GetByEnrolmentIdAsync(id);
             var dealers = await _users.GetAllDealers() ?? new List<DataStore.Dealer>();
-            var to = dealers.FirstOrDefault(d => d.DealerId == dealerId);
+            var to = DealerRules.Open(dealers).FirstOrDefault(d => d.DealerId == dealerId);
             var problem = StockPhoneRules.CheckMove(e, dealerId, to != null);
             if (problem != null)
             {

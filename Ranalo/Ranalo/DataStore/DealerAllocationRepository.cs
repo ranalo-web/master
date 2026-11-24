@@ -131,7 +131,9 @@ namespace Ranalo.DataStore
                 FROM Dealers
                 ORDER BY CompanyName";
 
-            return (await _db.QueryAsync<DealerOption>(sql)).ToList();
+            // Closed dealers can't be given accounts or picked as a filter.
+            return (await _db.QueryAsync<DealerOption>(sql))
+                .Where(d => !Ranalo.Services.DealerRules.IsClosed(d.CompanyName)).ToList();
         }
 
         public async Task<List<DealerAllocationLogEntry>> GetRecentChangesAsync(int take)

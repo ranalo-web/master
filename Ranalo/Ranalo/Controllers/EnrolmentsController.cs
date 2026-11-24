@@ -681,7 +681,7 @@ namespace Ranalo.Controllers
             response.Enrolments.Add(enrolment);
             if (ViewBag.AskDealer is true)
             {
-                response.Dealers = await _userService.GetAllDealers();
+                response.Dealers = DealerRules.Open(await _userService.GetAllDealers());
             }
             return View("AddEnrolment", response);
         }

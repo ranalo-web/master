@@ -25,6 +25,18 @@ namespace Ranalo
                 if (user != null && PasswordRules.Stamp(user.PasswordHash) == signedIn.Value.Stamp)
                 {
                     context.Items["UserSettings"] = user;
+
+                    // Last seen, at most every few minutes. Never blocks the page.
+                    var now = DateTime.UtcNow;
+                    if (LastSeenRules.ShouldStamp(user.LastSeen, now))
+                    {
+                        try { await users.StampLastSeenAsync(user.UserId, now); }
+                        catch (Exception ex)
+                        {
+                            context.RequestServices.GetService<ILogger<UserSettingsMiddleware>>()
+                                ?.LogWarning(ex, "Couldn't stamp last seen for user {UserId}", user.UserId);
+                        }
+                    }
                 }
                 else
                 {
