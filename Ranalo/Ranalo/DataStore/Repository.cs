@@ -195,7 +195,7 @@ namespace Ranalo.DataStore
         // The Users page: one tab of logins (active or suspended), searched,
         // whoever used the app most recently first. dealerId limits it to one
         // dealer's logins. Deleted logins (duplicates, say) never show.
-        public async Task<UsersPage> GetUsersPageAsync(int? dealerId, bool suspended, int page, int pageSize, string searchTerm)
+        public async Task<UsersPage> GetUsersPageAsync(int? dealerId, bool suspended, UserRole? role, int page, int pageSize, string searchTerm)
         {
             var scope = _context.Users.AsNoTracking().Where(u => u.Status != UserStatus.Deleted);
             if (dealerId != null) scope = scope.Where(u => u.DealerId == dealerId);
@@ -210,7 +210,16 @@ namespace Ranalo.DataStore
 
             var suspendedCount = await scope.CountAsync(u => u.Status == UserStatus.Suspended);
             var activeCount = await scope.CountAsync(u => u.Status != UserStatus.Suspended);
+            // Active logins by role, for the role tabs (All / Admins / Dealers / ...).
+            var roleCounts = (await scope.Where(u => u.Status != UserStatus.Suspended)
+                    .GroupBy(u => u.RoleId).Select(g => new { g.Key, Count = g.Count() }).ToListAsync())
+                .ToDictionary(x => x.Key, x => x.Count);
+
+            // The Suspended tab shows every suspended login; a role tab, that
+            // role's active ones.
             var tab = scope.Where(u => (u.Status == UserStatus.Suspended) == suspended);
+            if (!suspended && role != null) tab = tab.Where(u => u.RoleId == role);
+            var tabCount = await tab.CountAsync();
             var users = await tab
                 .OrderByDescending(u => u.LastSeen ?? u.LastLogin)
                 .ThenByDescending(u => u.UserId)
@@ -218,7 +227,7 @@ namespace Ranalo.DataStore
                 .Take(pageSize)
                 .ToListAsync();
 
-            return new UsersPage(users, suspended ? suspendedCount : activeCount, activeCount, suspendedCount);
+            return new UsersPage(users, tabCount, activeCount, suspendedCount, roleCounts);
         }
 
         public async Task<Dealer?> GetDealerByUserIdAsync(int userId)

@@ -4,7 +4,7 @@ namespace Ranalo.Models
 {
     // One tab of the Users page (Repository.GetUsersPageAsync): the logins on
     // this page, how many the tab has, and both tabs' counts.
-    public record UsersPage(List<User> Users, int TotalCount, int ActiveCount, int SuspendedCount);
+    public record UsersPage(List<User> Users, int TotalCount, int ActiveCount, int SuspendedCount, Dictionary<UserRole, int> RoleCounts);
 
     public class UsersViewModel
     {
@@ -18,6 +18,18 @@ namespace Ranalo.Models
         public bool Suspended { get; set; }
         public int ActiveCount { get; set; }
         public int SuspendedCount { get; set; }
+
+        // The role tab picked (null = All) and active logins per role.
+        public UserRole? Role { get; set; }
+        public Dictionary<UserRole, int> RoleCounts { get; set; } = new();
+
+        // Tabs in this order, shown only when the role has active logins.
+        public static readonly (UserRole Role, string Label)[] RoleTabs =
+        {
+            (UserRole.Admin, "Admins"), (UserRole.Dealer, "Dealers"), (UserRole.Agent, "Agents"),
+            (UserRole.Approver, "Approvers"), (UserRole.Collector, "Collectors"),
+            (UserRole.Customer, "Customers"), (UserRole.Supplier, "Suppliers"), (UserRole.Guest, "Guests"),
+        };
 
         // DealerId -> dealer name, for the Dealer column. 0 is Ranalo's own staff.
         public Dictionary<int, string> DealerNames { get; set; } = new();

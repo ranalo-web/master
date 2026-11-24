@@ -82,12 +82,20 @@
             <div class="nk-block-head-content">
                 <h3 class="nk-block-title page-title">Users</h3>
                 <div class="nk-block-des text-soft">
-                    <p>@Model.TotalRecords.ToString("N0") @(Model.Suspended ? "suspended" : "active") login@(Model.TotalRecords == 1 ? "" : "s")@(string.IsNullOrEmpty(Model.SearchTerm) ? "" : $" matching \"{Model.SearchTerm}\""). @(Model.Suspended ? "" : "Most recently seen first.")</p>
+                    @{ var tabNoun = Model.Suspended ? "suspended logins" : Model.Role == null ? "active logins" : (UsersViewModel.RoleTabs.FirstOrDefault(t => t.Role == Model.Role).Label ?? Model.Role.ToString()!).ToLowerInvariant(); }
+                    <p>@Model.TotalRecords.ToString("N0") @tabNoun@(string.IsNullOrEmpty(Model.SearchTerm) ? "" : $" matching \"{Model.SearchTerm}\""). @(Model.Suspended ? "" : "Most recently seen first.")</p>
                 </div>
                 @{ var userSearch = Uri.EscapeDataString(Model.SearchTerm ?? ""); }
-                <div class="btn-group mt-1" role="group" aria-label="Active or suspended logins">
-                    <a href="/users?searchTerm=@userSearch" class="btn btn-sm @(Model.Suspended ? "btn-outline-light btn-white" : "btn-primary")">Active (@Model.ActiveCount)</a>
-                    <a href="/users?suspended=true&searchTerm=@userSearch" class="btn btn-sm @(Model.Suspended ? "btn-primary" : "btn-outline-light btn-white")">Suspended (@Model.SuspendedCount)</a>
+                <div class="d-flex flex-wrap mt-1" style="gap:.35rem;" role="group" aria-label="Users by role">
+                    <a href="/users?searchTerm=@userSearch" class="btn btn-sm @(!Model.Suspended && Model.Role == null ? "btn-primary" : "btn-outline-light btn-white")">All (@Model.ActiveCount)</a>
+                    @foreach (var (r, label) in UsersViewModel.RoleTabs)
+                    {
+                        if (Model.RoleCounts.TryGetValue(r, out var n) && n > 0)
+                        {
+                            <a href="/users?role=@r&searchTerm=@userSearch" class="btn btn-sm @(!Model.Suspended && Model.Role == r ? "btn-primary" : "btn-outline-light btn-white")">@label (@n)</a>
+                        }
+                    }
+                    <a href="/users?suspended=true&searchTerm=@userSearch" class="btn btn-sm @(Model.Suspended ? "btn-danger" : "btn-outline-light btn-white")">Suspended (@Model.SuspendedCount)</a>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -132,6 +140,7 @@
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
                                 <form action="/users" method="get">
                                     @if (Model.Suspended) { <input type="hidden" name="suspended" value="true"> }
+                                    @if (Model.Role != null) { <input type="hidden" name="role" value="@Model.Role"> }
                                     <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" value="@ViewBag.SearchTerm" placeholder="Search by name, email or phone">
                                     <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
                                 </form>
@@ -197,7 +206,7 @@
                 </div><!-- .card-inner -->
                 <div class="card-inner">
                     @{
-                        string PageLink(int p) => Url.Action("Users", "Home", new { page = p, searchTerm = ViewBag.SearchTerm, suspended = Model.Suspended ? true : (bool?)null })!;
+                        string PageLink(int p) => Url.Action("Users", "Home", new { page = p, searchTerm = ViewBag.SearchTerm, suspended = Model.Suspended ? true : (bool?)null, role = Model.Role })!;
                         var maxVisiblePages = 5;
                         var startPage = Math.Max(1, Model.CurrentPage - 2);
                         var endPage = Math.Min(Model.TotalPages, startPage + maxVisiblePages - 1);

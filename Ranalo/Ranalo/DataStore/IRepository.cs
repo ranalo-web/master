@@ -21,7 +21,7 @@ namespace Ranalo.DataStore
         // Paged variants backing the Users list page (Views/Home/Users.cshtml)
         // -- the unbounded methods above previously loaded every row with no
         // limit at all, rendered behind fake, non-functional pagination.
-        Task<Ranalo.Models.UsersPage> GetUsersPageAsync(int? dealerId, bool suspended, int page, int pageSize, string searchTerm);
+        Task<Ranalo.Models.UsersPage> GetUsersPageAsync(int? dealerId, bool suspended, UserRole? role, int page, int pageSize, string searchTerm);
 
         Task<User> CreateUserAsync(User newUser);
         Task<User> UpdateUserAsync(User newUser);

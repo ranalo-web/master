@@ -355,7 +355,7 @@ namespace Ranalo.Controllers
 
         [Route("users")]
         [Route("users/{page:int?}")]
-        public async Task<IActionResult> Users(string searchTerm = "", int page = 1, int pageSize = 20, bool suspended = false)
+        public async Task<IActionResult> Users(string searchTerm = "", int page = 1, int pageSize = 20, bool suspended = false, UserRole? role = null)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -376,7 +376,7 @@ namespace Ranalo.Controllers
             // Admins and approvers see every login; a dealer sees their own.
             var seesAll = settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver;
             page = Math.Max(1, page);
-            var result = await _userService.GetUsersPageAsync(seesAll ? null : settings.DealerId, suspended, page, pageSize, searchTerm.Trim());
+            var result = await _userService.GetUsersPageAsync(seesAll ? null : settings.DealerId, suspended, suspended ? null : role, page, pageSize, searchTerm.Trim());
             var dealers = await _userService.GetAllDealers() ?? new List<DataStore.Dealer>();
 
             return View(new UsersViewModel
@@ -389,6 +389,8 @@ namespace Ranalo.Controllers
                 Suspended = suspended,
                 ActiveCount = result.ActiveCount,
                 SuspendedCount = result.SuspendedCount,
+                Role = suspended ? null : role,
+                RoleCounts = result.RoleCounts,
                 DealerNames = dealers.GroupBy(d => d.DealerId).ToDictionary(g => g.Key, g => g.First().CompanyName ?? $"Dealer {g.Key}"),
             });
         }
