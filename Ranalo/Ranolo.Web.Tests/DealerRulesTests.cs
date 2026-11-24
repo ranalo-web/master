@@ -40,8 +40,11 @@ namespace Ranolo.Web.Tests
             Assert.That(hidden.ClosedCount, Is.EqualTo(1));
             Assert.That(hidden.TotalRecords, Is.EqualTo(1));
 
-            var shown = Ranalo.Models.DealersViewModel.Page(dealers, 1, 20, "", showClosed: true);
-            Assert.That(shown.Dealers!.Count, Is.EqualTo(2));
+            Assert.That(hidden.OpenCount, Is.EqualTo(1));
+
+            // The Closed tab shows only the closed ones.
+            var closed = Ranalo.Models.DealersViewModel.Page(dealers, 1, 20, "", showClosed: true);
+            Assert.That(closed.Dealers!.Select(d => d.DealerId), Is.EqualTo(new[] { 1 }));
         }
     }
 }

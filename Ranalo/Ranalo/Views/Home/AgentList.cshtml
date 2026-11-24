@@ -1,0 +1,116 @@
+@using Ranalo.Models
+@using Ranalo.Services
+@model AgentListViewModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Agents";
+    string Link(bool suspended, int? dealerId) =>
+        "/agent-list?" + string.Join("&", new[]
+        {
+            suspended ? "suspended=true" : null,
+            dealerId != null ? $"dealerId={dealerId}" : null,
+            string.IsNullOrEmpty(Model.Search) ? null : "searchTerm=" + Uri.EscapeDataString(Model.Search),
+        }.Where(x => x != null));
+}
+
+<link rel="stylesheet" href="~/css/watchlist-table.css?v=4">
+
+<div class="nk-content-body">
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h3 class="nk-block-title page-title">Agents</h3>
+                <div class="nk-block-des text-soft">
+                    <p>@Model.Rows.Count @(Model.Suspended ? "suspended" : "active") agent@(Model.Rows.Count == 1 ? "" : "s")@(string.IsNullOrEmpty(Model.Search) ? "" : $" matching \"{Model.Search}\""). Most recently seen first. Arrears, default rate and commission are the same figures as Pay Commissions.</p>
+                </div>
+                <div class="btn-group mt-1" role="group" aria-label="Active or suspended agents">
+                    <a href="@Link(false, Model.DealerFilter)" class="btn btn-sm @(Model.Suspended ? "btn-outline-light btn-white" : "btn-primary")">Active (@Model.ActiveCount)</a>
+                    <a href="@Link(true, Model.DealerFilter)" class="btn btn-sm @(Model.Suspended ? "btn-primary" : "btn-outline-light btn-white")">Suspended (@Model.SuspendedCount)</a>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <form method="get" action="/agent-list" class="d-flex flex-wrap align-items-center" style="gap:.5rem;">
+                    @if (Model.Suspended) { <input type="hidden" name="suspended" value="true"> }
+                    @if (Model.ShowDealerFilter)
+                    {
+                        <select name="dealerId" class="form-select form-select-sm" style="max-width:220px;" onchange="this.form.submit()">
+                            <option value="">All dealers</option>
+                            @foreach (var d in Model.Dealers)
+                            {
+                                <option value="@d.Id" selected="@(Model.DealerFilter == d.Id)">@d.Name</option>
+                            }
+                        </select>
+                    }
+                    <input name="searchTerm" value="@Model.Search" class="form-control form-control-sm" style="max-width:220px;" placeholder="Search name, email or phone">
+                    <button type="submit" class="btn btn-sm btn-outline-light">Search</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="card card-bordered card-stretch">
+            <div class="card-inner p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0" style="white-space:nowrap;" data-key="agents">
+                        <thead>
+                            <tr>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Agent</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Sales</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">This month</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">In arrears</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Earned</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Paid</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Owed</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Last seen</th>
+                                <th class="wl-th"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Rows.Count == 0)
+                            {
+                                <tr><td colspan="10" class="text-center text-soft py-4">@(Model.Suspended ? "No suspended agents." : "No agents found.")</td></tr>
+                            }
+                            @foreach (var r in Model.Rows)
+                            {
+                                var u = r.User;
+                                var st = r.Stats;
+                                var name = (u.Name + " " + u.LastName).Trim();
+                                <tr>
+                                    <td>
+                                        <span class="fw-medium">@(string.IsNullOrEmpty(name) ? "(no name)" : name)</span>
+                                        <div class="small text-soft">@(string.Join(" · ", new[] { u.Email?.Trim(), u.Phone }.Where(x => !string.IsNullOrWhiteSpace(x))))</div>
+                                    </td>
+                                    <td>@r.DealerName</td>
+                                    <td data-sort="@st.Sales">@st.Sales.ToString("N0")</td>
+                                    <td data-sort="@st.SalesThisMonth">@st.SalesThisMonth.ToString("N0")</td>
+                                    <td data-sort="@st.DefaultRatePct">
+                                        @if (st.Sales > 0)
+                                        {
+                                            <span class="@(st.CommissionSuspended ? "text-danger fw-medium" : "")">@st.InArrears (@st.DefaultRatePct.ToString("0.#")%)</span>
+                                            @if (st.CommissionSuspended) { <div class="small text-danger">Commission suspended</div> }
+                                        }
+                                        else { <span class="text-soft">-</span> }
+                                    </td>
+                                    <td data-sort="@st.Earned">KES @st.Earned.ToString("N0")</td>
+                                    <td data-sort="@st.Paid">KES @st.Paid.ToString("N0")</td>
+                                    <td data-sort="@st.Owed" class="@(st.Owed < 0 ? "text-danger" : "")">KES @st.Owed.ToString("N0")</td>
+                                    <td data-sort="@((u.LastSeen ?? u.LastLogin)?.ToString("yyyyMMddHHmmss") ?? "0")">
+                                        <span class="@(LastSeenRules.ShouldStamp(u.LastSeen, DateTime.UtcNow) ? "" : "badge bg-success")">@(LastSeenRules.Describe(u.LastSeen ?? u.LastLogin, DateTime.UtcNow))</span>
+                                    </td>
+                                    <td class="text-end"><a href="/users/@u.UserId/edit" class="btn btn-sm btn-outline-light">Edit</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/watchlist-table.js"></script>
+}

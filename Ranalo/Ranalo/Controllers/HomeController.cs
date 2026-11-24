@@ -27,13 +27,15 @@ namespace Ranalo.Controllers
         private readonly IKnoxGuardClient _knoxSerciceClient;
         private readonly IVeritechApiClient _veritechApiClient;
         private readonly IPasswordResetRepository _passwordResets;
+        private readonly ISalesTeamService _salesTeam;
         public HomeController(IApplicationReportService applicationReportService, 
             IUserService userService, 
             IStatementService statementService,
             IMySqlPaymentsRepository mysqlRepository, IKnoxGuardClient knoxClient, IVeritechApiClient veritechApiClient,
-            IPasswordResetRepository passwordResets)
+            IPasswordResetRepository passwordResets, ISalesTeamService salesTeam)
         {
             _passwordResets = passwordResets;
+            _salesTeam = salesTeam;
             _mysqlRepository = mysqlRepository;
             _applicationReportService = applicationReportService;
             _userService = userService;
@@ -353,7 +355,7 @@ namespace Ranalo.Controllers
 
         [Route("users")]
         [Route("users/{page:int?}")]
-        public async Task<IActionResult> Users(string searchTerm = "", int page = 1, int pageSize = 20)
+        public async Task<IActionResult> Users(string searchTerm = "", int page = 1, int pageSize = 20, bool suspended = false)
         {
             var settings = HttpContext.Items["UserSettings"] as User;
             if (settings == null)
@@ -371,32 +373,24 @@ namespace Ranalo.Controllers
                     new User { UserId = r.UserId, RoleId = r.RoleId, DealerId = r.DealerId }))
                 .ToList();
 
-            if (settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver)
-            {
-                var (allUsers, allTotal) = await _userService.GetAllUsersPagedAsync(page, pageSize, searchTerm.Trim());
-                var users = new UsersViewModel()
-                {
-                    Users = allUsers,
-                    CurrentPage = page,
-                    TotalRecords = allTotal,
-                    TotalPages = (int)Math.Ceiling((double)allTotal / pageSize),
-                    SearchTerm = searchTerm,
-                };
+            // Admins and approvers see every login; a dealer sees their own.
+            var seesAll = settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver;
+            page = Math.Max(1, page);
+            var result = await _userService.GetUsersPageAsync(seesAll ? null : settings.DealerId, suspended, page, pageSize, searchTerm.Trim());
+            var dealers = await _userService.GetAllDealers() ?? new List<DataStore.Dealer>();
 
-                return View(users);
-            }
-
-            var (dealerUsersList, dealerTotal) = await _userService.GetUsersByDealerIdPagedAsync(settings.DealerId, page, pageSize, searchTerm.Trim());
-            var dealerUsers = new UsersViewModel()
+            return View(new UsersViewModel
             {
-                Users = dealerUsersList,
+                Users = result.Users,
                 CurrentPage = page,
-                TotalRecords = dealerTotal,
-                TotalPages = (int)Math.Ceiling((double)dealerTotal / pageSize),
+                TotalRecords = result.TotalCount,
+                TotalPages = Math.Max(1, (int)Math.Ceiling((double)result.TotalCount / pageSize)),
                 SearchTerm = searchTerm,
-            };
-
-            return View(dealerUsers);
+                Suspended = suspended,
+                ActiveCount = result.ActiveCount,
+                SuspendedCount = result.SuspendedCount,
+                DealerNames = dealers.GroupBy(d => d.DealerId).ToDictionary(g => g.Key, g => g.First().CompanyName ?? $"Dealer {g.Key}"),
+            });
         }
 
         [Route("dealers")]
@@ -415,21 +409,34 @@ namespace Ranalo.Controllers
                 // Paged and searched here: the list is small, and the page
                 // used to show every dealer under placeholder page links.
                 var all = await _userService.GetAllDealers() ?? new List<DataStore.Dealer>();
-                return View(DealersViewModel.Page(all, page, pageSize, searchTerm, closed));
+                var model = DealersViewModel.Page(all, page, pageSize, searchTerm, closed);
+                (model.Stats, model.LastSeen) = await _salesTeam.GetDealerStatsAsync();
+                return View(model);
             }
 
-            // Anyone else (a dealer) sees their own users -- on the Users page,
-            // whose model this is; the Dealers page needs a dealer list and
-            // crashed ("model item ... UsersViewModel ... requires DealersViewModel").
-            var dealerUsers = new UsersViewModel()
-            {
-                Users = await _userService.GetUsersByDealerIdAsync(settings.DealerId)
-            };
-            dealerUsers.CurrentPage = 1;
-            dealerUsers.TotalPages = 1;
-            dealerUsers.TotalRecords = dealerUsers.Users?.Count ?? 0;
+            // Anyone else (a dealer) sees their own logins on the Users page.
+            return RedirectToAction("Users");
+        }
 
-            return View("Users", dealerUsers);
+        // Agents: every agent, how they're selling and what they're owed.
+        // Admins and approvers see all agents; a dealer sees their own.
+        [Route("agent-list")]
+        public async Task<IActionResult> AgentList(int? dealerId = null, bool suspended = false, string? searchTerm = null)
+        {
+            var settings = HttpContext.Items["UserSettings"] as User;
+            if (settings == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var seesAll = settings.RoleId == UserRole.Admin || settings.RoleId == UserRole.Approver;
+            if (!seesAll && settings.RoleId != UserRole.Dealer)
+            {
+                return RedirectToAction("Index");
+            }
+
+            await SetViewBags(settings, "index");
+            return View(await _salesTeam.GetAgentsAsync(seesAll ? null : settings.DealerId, seesAll ? dealerId : null, suspended, searchTerm));
         }
 
         [Route("adduser")]

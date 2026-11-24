@@ -182,15 +182,8 @@ namespace Ranalo.Services
             return users.ToList();
         }
 
-        public async Task<(List<User> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize, string searchTerm)
-        {
-            return await _userRepository.GetAllUsersPagedAsync(page, pageSize, searchTerm);
-        }
-
-        public async Task<(List<User> Users, int TotalCount)> GetUsersByDealerIdPagedAsync(int dealerId, int page, int pageSize, string searchTerm)
-        {
-            return await _userRepository.GetUsersByDealerIdPagedAsync(dealerId, page, pageSize, searchTerm);
-        }
+        public Task<Ranalo.Models.UsersPage> GetUsersPageAsync(int? dealerId, bool suspended, int page, int pageSize, string searchTerm) =>
+            _userRepository.GetUsersPageAsync(dealerId, suspended, page, pageSize, searchTerm);
 
         public async Task<IEnumerable<User>> GetDebtCollectors()
         {

@@ -22,8 +22,7 @@ namespace Ranalo.Services
 
         Task<List<User>> GetAllUsersAsync();
 
-        Task<(List<User> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize, string searchTerm);
-        Task<(List<User> Users, int TotalCount)> GetUsersByDealerIdPagedAsync(int dealerId, int page, int pageSize, string searchTerm);
+        Task<Ranalo.Models.UsersPage> GetUsersPageAsync(int? dealerId, bool suspended, int page, int pageSize, string searchTerm);
 
         Task AddUserAsync(User user);
         Task UpdateUserAsync(User user);

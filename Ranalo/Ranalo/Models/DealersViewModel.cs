@@ -8,9 +8,15 @@
         public int TotalRecords { get; set; }
         public int PageSize { get; set; } = 20;
         public string? SearchTerm { get; set; }
-        // Closed dealers (DealerRules) are hidden unless asked for.
+        // Two tabs: Open dealers (the default) and Closed ones (DealerRules).
         public bool ShowClosed { get; set; }
+        public int OpenCount { get; set; }
         public int ClosedCount { get; set; }
+
+        // How each dealer is doing (SalesTeamRules) and when their dealer
+        // login was last seen, by DealerId.
+        public Dictionary<int, Ranalo.Services.SalesTeamStats> Stats { get; set; } = new();
+        public Dictionary<int, DateTime?> LastSeen { get; set; } = new();
 
         public static readonly int[] PageSizes = { 10, 20, 50, 100 };
 
@@ -22,7 +28,7 @@
 
             var all = dealers.ToList();
             var matches = all
-                .Where(d => showClosed || !Ranalo.Services.DealerRules.IsClosed(d.CompanyName))
+                .Where(d => Ranalo.Services.DealerRules.IsClosed(d.CompanyName) == showClosed)
                 .Where(d => term == ""
                     || Has(d.CompanyName, term) || Has(d.DealerReference, term) || Has(d.Email, term)
                     || Has(d.Phone, term) || d.DealerId.ToString() == term)
@@ -42,6 +48,7 @@
                 SearchTerm = term,
                 ShowClosed = showClosed,
                 ClosedCount = all.Count(d => Ranalo.Services.DealerRules.IsClosed(d.CompanyName)),
+                OpenCount = all.Count(d => !Ranalo.Services.DealerRules.IsClosed(d.CompanyName)),
             };
         }
 

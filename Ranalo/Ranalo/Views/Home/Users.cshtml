@@ -1,4 +1,4 @@
-@using Ranalo.DataStore.DataModels
+﻿@using Ranalo.DataStore.DataModels
 @using Ranalo.Models
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -80,9 +80,14 @@
     <div class="nk-block-head nk-block-head-sm">
         <div class="nk-block-between">
             <div class="nk-block-head-content">
-                <h3 class="nk-block-title page-title">Users Lists</h3>
+                <h3 class="nk-block-title page-title">Users</h3>
                 <div class="nk-block-des text-soft">
-                    <p>You have total @Model.TotalRecords.ToString("N0") users.</p>
+                    <p>@Model.TotalRecords.ToString("N0") @(Model.Suspended ? "suspended" : "active") login@(Model.TotalRecords == 1 ? "" : "s")@(string.IsNullOrEmpty(Model.SearchTerm) ? "" : $" matching \"{Model.SearchTerm}\""). @(Model.Suspended ? "" : "Most recently seen first.")</p>
+                </div>
+                @{ var userSearch = Uri.EscapeDataString(Model.SearchTerm ?? ""); }
+                <div class="btn-group mt-1" role="group" aria-label="Active or suspended logins">
+                    <a href="/users?searchTerm=@userSearch" class="btn btn-sm @(Model.Suspended ? "btn-outline-light btn-white" : "btn-primary")">Active (@Model.ActiveCount)</a>
+                    <a href="/users?suspended=true&searchTerm=@userSearch" class="btn btn-sm @(Model.Suspended ? "btn-primary" : "btn-outline-light btn-white")">Suspended (@Model.SuspendedCount)</a>
                 </div>
             </div><!-- .nk-block-head-content -->
             <div class="nk-block-head-content">
@@ -95,7 +100,6 @@
                             {
                                 <li><a href="/adduser" class="btn btn-primary"><em class="icon ni ni-user-add"></em><span>Add User</span></a></li>
                             }
-                            <li><a href="#" class="btn btn-white btn-outline-light"><em class="icon ni ni-download-cloud"></em><span>Export</span></a></li>
                         </ul>
                     </div>
                 </div><!-- .toggle-wrap -->
@@ -127,7 +131,8 @@
                             <div class="search-content">
                                 <a href="#" class="search-back btn btn-icon toggle-search" data-target="search"><em class="icon ni ni-arrow-left"></em></a>
                                 <form action="/users" method="get">
-                                    <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" value="@ViewBag.SearchTerm" placeholder="Search by name or email">
+                                    @if (Model.Suspended) { <input type="hidden" name="suspended" value="true"> }
+                                    <input name="searchTerm" type="text" class="form-control border-transparent form-focus-none" value="@ViewBag.SearchTerm" placeholder="Search by name, email or phone">
                                     <button type="submit" class="search-submit btn btn-icon"><em class="icon ni ni-search"></em></button>
                                 </form>
                             </div>
@@ -141,9 +146,8 @@
                             <tr>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">User</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Role</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Email</th>
+                                <th class="wl-th" onclick="Ranalo.sortTable(this)">Dealer</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Phone</th>
-                                <th class="wl-th" onclick="Ranalo.sortTable(this)">City</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Seen</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Last Login</th>
                                 <th class="wl-th" onclick="Ranalo.sortTable(this)">Status</th>
@@ -155,14 +159,20 @@
                             // SetViewBags has set a dealer's DealerId to their dealer.
                             var actor = Context.Items["UserSettings"] as Ranalo.DataStore.DataModels.User;
                         }
-                        @foreach (var user in Model.Users)
+                        @if (Model.Users == null || Model.Users.Count == 0)
+                        {
+                            <tr><td colspan="9" class="text-center text-soft py-4">@(Model.Suspended ? "No suspended logins." : "No logins found.")</td></tr>
+                        }
+                        @foreach (var user in Model.Users ?? new List<Ranalo.DataStore.DataModels.User>())
                         {
                             <tr>
-                                <td><span class="fw-medium">@user.Name @user.LastName</span></td>
+                                <td>
+                                    <span class="fw-medium">@(string.IsNullOrWhiteSpace((user.Name + " " + user.LastName).Trim()) ? "(no name)" : (user.Name + " " + user.LastName).Trim())</span>
+                                    <div class="small text-soft">@(string.IsNullOrWhiteSpace(user.Email) ? "-" : user.Email.Trim())</div>
+                                </td>
                                 <td>@user.RoleId</td>
-                                <td>@(string.IsNullOrWhiteSpace(user.Email) ? "-" : user.Email)</td>
+                                <td>@Model.DealerName(user.DealerId)</td>
                                 <td>@(string.IsNullOrWhiteSpace(user.Phone) ? "-" : user.Phone)</td>
-                                <td>@(string.IsNullOrWhiteSpace(user.City) ? "-" : user.City)</td>
                                 @* Stored in UTC; shown in Kenya time, with the hour, so you can see who is using the system. *@
                                 <td data-sort="@(user.LastSeen?.ToString("yyyyMMddHHmmss") ?? "0")">
                                     <span class="@(Ranalo.Services.LastSeenRules.ShouldStamp(user.LastSeen, DateTime.UtcNow) ? "" : "badge bg-success")">@(Ranalo.Services.LastSeenRules.Describe(user.LastSeen, DateTime.UtcNow))</span>
@@ -187,7 +197,7 @@
                 </div><!-- .card-inner -->
                 <div class="card-inner">
                     @{
-                        string PageLink(int p) => Url.Action("Users", "Home", new { page = p, searchTerm = ViewBag.SearchTerm })!;
+                        string PageLink(int p) => Url.Action("Users", "Home", new { page = p, searchTerm = ViewBag.SearchTerm, suspended = Model.Suspended ? true : (bool?)null })!;
                         var maxVisiblePages = 5;
                         var startPage = Math.Max(1, Model.CurrentPage - 2);
                         var endPage = Math.Min(Model.TotalPages, startPage + maxVisiblePages - 1);

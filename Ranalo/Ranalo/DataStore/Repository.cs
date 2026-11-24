@@ -192,47 +192,33 @@ namespace Ranalo.DataStore
 
         }
 
-        public async Task<(List<User> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize, string searchTerm)
+        // The Users page: one tab of logins (active or suspended), searched,
+        // whoever used the app most recently first. dealerId limits it to one
+        // dealer's logins. Deleted logins (duplicates, say) never show.
+        public async Task<UsersPage> GetUsersPageAsync(int? dealerId, bool suspended, int page, int pageSize, string searchTerm)
         {
-            // A deleted login (a duplicate, say) is hidden from the Users page.
-            var query = _context.Users.AsNoTracking().Where(u => u.Status != UserStatus.Deleted);
+            var scope = _context.Users.AsNoTracking().Where(u => u.Status != UserStatus.Deleted);
+            if (dealerId != null) scope = scope.Where(u => u.DealerId == dealerId);
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(u =>
+                scope = scope.Where(u =>
                     (u.Name != null && u.Name.Contains(searchTerm))
                     || (u.LastName != null && u.LastName.Contains(searchTerm))
-                    || u.Email.Contains(searchTerm));
+                    || u.Email.Contains(searchTerm)
+                    || (u.Phone != null && u.Phone.Contains(searchTerm)));
             }
 
-            var totalCount = await query.CountAsync();
-            var users = await query
-                .OrderByDescending(u => u.UserId)
+            var suspendedCount = await scope.CountAsync(u => u.Status == UserStatus.Suspended);
+            var activeCount = await scope.CountAsync(u => u.Status != UserStatus.Suspended);
+            var tab = scope.Where(u => (u.Status == UserStatus.Suspended) == suspended);
+            var users = await tab
+                .OrderByDescending(u => u.LastSeen ?? u.LastLogin)
+                .ThenByDescending(u => u.UserId)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            return (users, totalCount);
-        }
-
-        public async Task<(List<User> Users, int TotalCount)> GetUsersByDealerIdPagedAsync(int dealerId, int page, int pageSize, string searchTerm)
-        {
-            var query = _context.Users.AsNoTracking().Where(u => u.DealerId == dealerId && u.Status != UserStatus.Deleted);
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                query = query.Where(u =>
-                    (u.Name != null && u.Name.Contains(searchTerm))
-                    || (u.LastName != null && u.LastName.Contains(searchTerm))
-                    || u.Email.Contains(searchTerm));
-            }
-
-            var totalCount = await query.CountAsync();
-            var users = await query
-                .OrderByDescending(u => u.UserId)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (users, totalCount);
+            return new UsersPage(users, suspended ? suspendedCount : activeCount, activeCount, suspendedCount);
         }
 
         public async Task<Dealer?> GetDealerByUserIdAsync(int userId)
